@@ -4,6 +4,7 @@ on:
     branches-ignore: [main, staging]
 permissions:
   contents: read
+  actions: read
   deployments: read
 concurrency:
   group: branch-${{ github.ref }}

@@ -52,7 +52,9 @@
 	$effect(() => modals.hydrate());
 	$effect(() => {
 		// Drawer records resolve their own level before canonicalizing a deep link.
-		if (!$page.params.id && selected && $page.url.searchParams.get('gradeLevel') !== selected.id) {
+		// Creating the first level refreshes the shell while its form is still saving.
+		// Select it only after that draft has closed, not during the mutation.
+		if (!$page.params.id && $page.url.searchParams.get('modal') !== 'create-level' && selected && $page.url.searchParams.get('gradeLevel') !== selected.id) {
 			const next = new URL($page.url);
 			next.searchParams.set('gradeLevel', selected.id);
 			void appGoto(`${next.pathname}${next.search}`, { replaceState: true, noScroll: true });

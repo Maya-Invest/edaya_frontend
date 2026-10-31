@@ -19,6 +19,11 @@ const tests = group('Run test suites.', Object.fromEntries(Object.entries({ unit
 const emergency = leaf('ops emergency-deploy', 'Build and deploy through the emergency qualification bypass; does not migrate or seed.', { arguments: [env], options: { '--yes': { ...yes, aliases: [] }, '--dry-run': dry }, validate: confirmed, examples: ['bun repo ops emergency-deploy staging --dry-run', 'bun repo ops emergency-deploy staging --yes'] })
 const ci: Record<string, Command> = {
   'verify': leaf('ci verify', 'Run repository checks, workflow lint, tooling tests, quality, builds and unit tests.'),
+  'quality': { ...leaf('ci quality', 'Run repository checks, workflow lint, lint and type checks.'), children: Object.fromEntries(Object.entries({ checks: 'Run repository and workflow checks.', lint: 'Run workspace lint.', types: 'Run workspace type checks.', finalize: 'Validate complete matching quality evidence.' }).map(([name, description]) => [name, leaf(`ci quality ${name}`, description)])) },
+  'build': leaf('ci build', 'Build release artifacts once and record stage evidence.', { arguments: [env] }),
+  'finalize': leaf('ci finalize', 'Qualify existing artifacts from matching stage evidence without rebuilding.', { arguments: [env] }),
+  'prepare-inputs': leaf('ci prepare-inputs', 'Archive immutable client and dependency input identity.', { arguments: [env] }),
+  'restore-inputs': leaf('ci restore-inputs', 'Restore and validate frozen inputs for this run attempt.', { arguments: [env] }),
   'qualify': leaf('ci qualify', 'Verify, integrate, build and qualify a release.', { arguments: [env] }),
   'deploy': leaf('ci deploy', 'Deploy existing qualified release artifacts.', { arguments: [env], options: { '--dry-run': dry } }),
   'workflows': leaf('ci workflows', 'Validate workflow definitions.'),

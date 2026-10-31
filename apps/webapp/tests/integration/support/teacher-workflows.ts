@@ -14,7 +14,7 @@ export async function exerciseTeacherRead(page: Page, base: string, action: stri
     const data = await response.json() as { events: Array<{ id: string; title: string; classGroupId: string; lessonSessionId?: string; assessmentId?: string }> };
     assert(data.events.length > 0, 'Required published teacher timetable fixture missing');
     const event = data.events[0]!;
-    await page.getByRole('complementary', { name: /enseignant|teacher/i }).getByRole('link').filter({ hasText: event.title }).first().waitFor();
+    await page.getByRole('dialog', { name: /enseignant|teacher/i }).getByRole('link').filter({ hasText: event.title }).first().waitFor();
     const initialRange = response.request().postDataJSON() as { startDate: string; endDate: string };
     assert(new Date(initialRange.endDate).getTime() - new Date(initialRange.startDate).getTime() > 7 * 86400000, 'Teacher timetable loads the academic year');
     let dateRequests = 0;

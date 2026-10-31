@@ -32,7 +32,7 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/classes/${CLASS_6B}/attendance`, 'DC5', 'Attendance list shell', {
 		pathPrefix: `/classes/${CLASS_6B}/attendance`,
 	});
-	await assertListShell(ctx, 'DC5', 'Attendance Filter + More menu', { exportName: ATTENDANCE_EXPORT_NAME });
+	await assertListShell(ctx, 'DC5', 'Attendance Filter + More menu', { menuAction: ATTENDANCE_EXPORT_NAME });
 
 	await visit(ctx, `${base}/school/announcements`, 'DC6', 'Announcements list shell', {
 		pathPrefix: '/school/announcements',
@@ -58,7 +58,7 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/configuration/structure/subjects`, 'DC11', 'Subjects list shell', {
 		pathPrefix: '/configuration/structure/subjects',
 	});
-	await assertStructureListShell(ctx, 'DC11', 'Subjects level navigation and search');
+	await assertStructureListShell(ctx, 'DC11', 'Subjects level navigation and search', /add subject|ajouter une matière/i);
 
 	await visitOrSkip(ctx, `${base}/configuration/grade-scales`, 'DC12', 'Grade scales list shell', {
 		pathPrefix: '/configuration/grade-scales',

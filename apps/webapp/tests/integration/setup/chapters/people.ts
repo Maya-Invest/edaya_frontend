@@ -317,6 +317,12 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 					modal: 'add-absence',
 					pathname: `/school/students/${studentId}/attendance`,
 					command: 'record-daily-attendance',
+					fill: async (current) => {
+						// Daily records are anchored at midnight; the new enrollment starts now.
+						const date = new Date();
+						date.setUTCDate(date.getUTCDate() + 1);
+						await current.getByTestId('form-modal').locator('input[type="date"]').fill(date.toISOString().slice(0, 10));
+					},
 					actionPath: 'http://localhost:5173/school/students/[id]/attendance',
 					actions: ['Consulter / enregistrer absence'],
 				});
@@ -422,7 +428,7 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 			parentRoute: '/school/guardians/[id]',
 			modal: 'edit-profile',
 			pathname: `/school/guardians/${guardianId}`,
-			command: 'update-guardian-contact-methods',
+			command: 'update-guardian-profile',
 			fill: async (current) => {
 				await fillLabeledInput(current, /^nom$|^last name$/i, editedGuardian);
 			},

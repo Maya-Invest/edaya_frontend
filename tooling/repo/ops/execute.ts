@@ -5,7 +5,9 @@ import { brandCheck, brandGallery, brandTokens } from './brand'
 import { acquireClient, checkClient, clientOptions, installPreparedDependencies } from './client'
 import { commandDocs } from './command-docs'
 import { main, reference } from './main'
-import { buildRelease, deployRelease, qualifyRelease } from './release'
+import { finalizeQualification, recordStage, resetQualification } from './qualification'
+import { finalizeQuality, qualityParts, resetQuality } from './quality'
+import { buildRelease, deployRelease } from './release'
 import { assertCommittedSource, digest, environment, githubOutput, hashes, root, run, sha, writeJson } from './runtime'
 import { tool } from './tools'
 
@@ -64,7 +66,7 @@ export async function executeCommand(args: string[]): Promise<void> {
   }
   if (group === 'test' && !rest.length) {
     if (name === 'unit') {
-      await run(['bun', 'run', 'test'])
+      await recordStage('unit', () => run(['bun', 'run', 'test']))
       return
     }
     if (name === 'tooling') {
@@ -73,7 +75,7 @@ export async function executeCommand(args: string[]): Promise<void> {
     }
     if (name === 'integration') {
       const { integration } = await import('./integration')
-      await integration()
+      await recordStage('integration', integration)
       return
     }
   }
@@ -128,11 +130,52 @@ export async function executeCommand(args: string[]): Promise<void> {
       await run([await tool('actionlint'), '-shellcheck=', ...Array.from(new Bun.Glob('.github/workflows/*.yml').scanSync({ cwd: root }))])
       return
     }
+    if (name === 'quality') {
+      const part = rest[0]
+      if (!part) {
+        resetQuality()
+        for (const step of qualityParts)
+          await main(['ci', 'quality', step])
+        await finalizeQuality()
+      }
+      else if (part === 'finalize') {
+        await finalizeQuality()
+      }
+      else {
+        if (part === 'checks')
+          resetQuality()
+        await recordStage(part, async () => {
+          if (part === 'checks') {
+            await main(['check'])
+            await main(['ci', 'workflows'])
+          }
+          else {
+            await run(['bun', 'x', '--bun', 'turbo', 'run', part === 'lint' ? 'lint' : 'check', '--cache-dir=.cache/quality/turbo'], { env: verificationEnv })
+          }
+        }, undefined, 'quality')
+      }
+      return
+    }
+    if (name === 'build') {
+      const target = environment(rest[0])
+      await recordStage('build', async () => {
+        checkClient()
+        await buildRelease(target)
+        await main(['ci', 'archive-inputs'])
+      }, target)
+      return
+    }
+    if (name === 'finalize') {
+      await finalizeQualification(environment(rest[0]))
+      return
+    }
+    if (name === 'prepare-inputs' || name === 'restore-inputs') {
+      const { prepareInputs, restoreInputs } = await import('./inputs')
+      await (name === 'prepare-inputs' ? prepareInputs : restoreInputs)(environment(rest[0]))
+      return
+    }
     if (name === 'verify') {
-      await main(['check'])
-      await main(['ci', 'workflows'])
-      await main(['test', 'tooling'])
-      await run(['bun', 'run', 'quality'], { env: verificationEnv })
+      await main(['ci', 'quality'])
       await run(['bun', 'run', 'build'], { env: verificationEnv })
       await main(['test', 'unit'])
       return
@@ -168,23 +211,31 @@ export async function executeCommand(args: string[]): Promise<void> {
     }
     if (name === 'qualify') {
       const target = environment(rest[0])
-      const evidence = { environment: target, sourceCommit: sha(await run(['git', 'rev-parse', 'HEAD'], { quiet: true })), checks: { verification: false, integration: false, client: false } }
-      writeJson(resolve(root, '.ci-evidence/qualification.json'), evidence)
+      resetQualification()
+      await assertCommittedSource(['bun.lock'])
+      const previousTarget = process.env.CI_TARGET
+      const previousAttempt = process.env.EDAYA_QUALIFICATION_ATTEMPT
+      process.env.CI_TARGET = target
+      process.env.EDAYA_QUALIFICATION_ATTEMPT = crypto.randomUUID()
       try {
-        await main(['ci', 'verify'])
-        evidence.checks.verification = true
+        await main(['ci', 'quality'])
+        await main(['test', 'unit'])
+        // Integration owns a test-configured build; release artifacts are built afterwards.
         await main(['test', 'integration'])
-        evidence.checks.integration = true
-        checkClient()
-        evidence.checks.client = true
+        await main(['ci', 'build', target])
+        await finalizeQualification(target)
       }
       finally {
-        writeJson(resolve(root, '.ci-evidence/qualification.json'), evidence)
+        if (previousTarget === undefined)
+          delete process.env.CI_TARGET
+        else process.env.CI_TARGET = previousTarget
+        if (previousAttempt === undefined)
+          delete process.env.EDAYA_QUALIFICATION_ATTEMPT
+        else process.env.EDAYA_QUALIFICATION_ATTEMPT = previousAttempt
       }
-      await buildRelease(target)
-      await qualifyRelease(target)
       return
     }
   }
+
   throw new Error(`Unknown command.\n${reference()}`)
 }

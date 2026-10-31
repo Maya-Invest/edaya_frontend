@@ -41,12 +41,14 @@ export async function exerciseTimetable(page: Page, base: string, verifyRegenera
 		end.setUTCDate(end.getUTCDate() + 6);
 		const endDate = end.toISOString().slice(0, 10);
 		await inputs.nth(1).fill(endDate);
+		await dialog.locator('form').getByRole('button', { name: /^(classes et paramètres|classes and settings)$/i }).click();
+		await page.waitForURL(url => url.searchParams.get('taskStep') === 'selection');
 		const checkboxes = dialog.getByTestId('timetable-class-checkbox');
 		await checkboxes.first().waitFor({ state: 'visible' });
 		const classIds = await checkboxes.evaluateAll(elements => elements.map(element => element.getAttribute('data-class-id')!));
 		for (const checkbox of await checkboxes.all()) assert(await checkbox.isChecked(), 'All classes must start selected');
 		await dialog.getByTestId('timetable-clear-selection').click();
-		assert(await dialog.getByTestId('timetable-generate-submit').isDisabled(), 'Empty selection must disable generation');
+		assert(await dialog.getByTestId('timetable-review-scope').isDisabled(), 'Empty selection must disable generation');
 		await dialog.getByTestId('timetable-select-all').click();
 		for (const checkbox of await checkboxes.all()) assert(await checkbox.isChecked(), 'Select all must restore every class');
 		const selectedClassId = classIds[0]!;
@@ -62,7 +64,7 @@ export async function exerciseTimetable(page: Page, base: string, verifyRegenera
 			.sort();
 		const selectionSearch = dialog.getByTestId('timetable-class-selection').getByTestId('list-search');
 		await selectionSearch.fill('no-matching-timetable-class');
-		assert(await dialog.getByTestId('timetable-generate-submit').isEnabled(), 'Search must not clear the hidden selection');
+		assert(await dialog.getByTestId('timetable-review-scope').isEnabled(), 'Search must not clear the hidden selection');
 		await selectionSearch.fill('');
 		// Set a valid workload for every offered subject through the production form.
 		await dialog.getByRole('tab', { name: /classes.*(?:matières|subjects)/i }).click();
@@ -81,6 +83,8 @@ export async function exerciseTimetable(page: Page, base: string, verifyRegenera
 		const enforce = dialog.locator('label').filter({ hasText: /charge.*complète|workload.*fulfillment|respect.*volume|charge.*horaire/i }).first().getByRole('checkbox');
 		if (await enforce.count())
 			await enforce.uncheck();
+		await dialog.getByTestId('timetable-review-scope').click();
+		await page.waitForURL(url => url.searchParams.get('taskStep') === 'review');
 		const responsePromise = page.waitForResponse(response => response.url().includes('/commands/generate-school-timetable') && response.request().method() === 'POST', { timeout: 60000 });
 		await dialog.getByTestId('timetable-generate-submit').click();
 		const response = await responsePromise;
@@ -90,7 +94,7 @@ export async function exerciseTimetable(page: Page, base: string, verifyRegenera
 		assert.equal(request.academicYearId, year);
 		assert.equal(request.startDate, startDate);
 		assert.equal(request.endDate, endDate);
-		await page.waitForURL(url => url.searchParams.get('modalStep') === 'success', { timeout: 60000 });
+		await page.waitForURL(url => url.searchParams.get('taskStep') === 'success', { timeout: 60000 });
 		const persistedSessions = await list();
 		const generated = persistedSessions.filter(row => row.classGroupId === selectedClassId && String(row.startsAt).slice(0, 10) >= startDate && String(row.startsAt).slice(0, 10) <= endDate);
 		assert(generated.length > 0, 'Generation must persist usable lesson sessions');

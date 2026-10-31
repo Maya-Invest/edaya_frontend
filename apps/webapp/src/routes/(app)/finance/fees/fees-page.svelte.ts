@@ -20,6 +20,7 @@ const FEES_VERSION_FAMILIES = ['fees', 'billing', 'payments'] as const satisfies
 const FEES_PAGE_STATE_KEY = Symbol('fees-page-state');
 export type { FeesPageSlice };
 export class FeesPageState {
+    drawerReadyId = $state<string | null>(null);
     readonly autoBilling = new FeeAutoBillingState();
     autoBillingFeeId = $state<string | null>(null);
     slice = $state<FeesPageSlice | null>(null);
@@ -64,6 +65,7 @@ export class FeesPageState {
     }
 
     clear() {
+        this.drawerReadyId = null;
         this.slice = null;
         this.detail = null;
         this.autoBillingFeeId = null;

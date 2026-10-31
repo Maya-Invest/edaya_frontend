@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
 import { createFixtureServer } from './support/fixture-server';
+import { verifyHarnessDialogBoundaries } from './support/harness-checks';
 import { chooseOption } from './support/custom-select';
 
 async function main() {
@@ -20,6 +21,7 @@ async function main() {
   page.on('pageerror', error => errors.push(error.message));
   const measurements: object[] = [];
   try {
+    await verifyHarnessDialogBoundaries(page);
     if (!process.argv.includes('--drawer-only')) for (const language of ['en', 'fr']) for (const width of [360, 768, 1024, 1280]) for (const scale of [1, 2]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${server.url}?referenceFrame=1&referenceLocale=${language}&referenceScale=${scale}`);

@@ -86,6 +86,6 @@ export async function integrationEvidence(runId: string, processPassed: boolean)
   const suites = Object.fromEntries(Object.entries(BROWSER_SUITE_DIRECTORIES).map(([name, directory]) =>
     [name, readSuiteEvidence(resolve(root, 'apps/webapp', directory), name, fingerprint, runId)]))
   const passed = processPassed && Object.values(suites).every(suite => suite.passed)
-  writeJson(resolve(root, '.ci-evidence/results.json'), { schemaVersion: 1, role: 'web', runId, passed, commit: await run(['git', 'rev-parse', 'HEAD'], { quiet: true }), backendCommit: checkClient().backendCommit, clientChecksum: digest(readFileSync(resolve(root, '.generated/client.json'))), lockSha256: digest(readFileSync(resolve(root, 'bun.lock'))), suites })
+  writeJson(resolve(root, '.ci-evidence/results.json'), { schemaVersion: 1, role: 'web', runId, passed, githubRunId: process.env.GITHUB_RUN_ID ?? 'local', attempt: process.env.GITHUB_RUN_ATTEMPT ?? process.env.EDAYA_QUALIFICATION_ATTEMPT ?? 'local', environment: process.env.CI_TARGET ?? 'staging', commit: await run(['git', 'rev-parse', 'HEAD'], { quiet: true }), backendCommit: checkClient().backendCommit, clientChecksum: digest(readFileSync(resolve(root, '.generated/client.json'))), lockSha256: digest(readFileSync(resolve(root, 'bun.lock'))), suites })
   return passed
 }

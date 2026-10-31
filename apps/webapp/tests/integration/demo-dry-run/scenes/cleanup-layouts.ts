@@ -17,7 +17,7 @@ export async function runCleanupLayouts(browser: Browser, base: string, outDir: 
 		{ name: 'imports', path: '/configuration/tools?modal=import&modalTab=students&modalStep=upload', selector: '[role="dialog"]' },
 		{ name: 'generation', path: '/configuration/tools?modal=generate-timetable', selector: '[role="dialog"]' },
 		{ name: 'subjects', path: '/configuration/structure/subjects', selector: 'main' },
-		{ name: 'class-assignments', path: `/configuration/structure/classes/${CLASS_6A}/assignments`, selector: 'aside[aria-label]' },
+		{ name: 'class-assignments', path: `/configuration/structure/classes/${CLASS_6A}/assignments`, selector: '[role="dialog"].ui-drawer' },
 		{ name: 'report-definitions', path: '/configuration/structure/details', selector: 'main' },
 		{ name: 'timetable', path: `/classes/${CLASS_6A}/timetable?week=${SEEDED_TIMETABLE_WEEK}`, selector: '.edaya-timetable-calendar' },
 		{ name: 'finance', path: '/finance/billing', selector: 'main' },

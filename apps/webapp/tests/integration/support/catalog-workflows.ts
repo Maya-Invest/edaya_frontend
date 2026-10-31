@@ -27,7 +27,7 @@ export async function exerciseActivityCreateEdit(page: Page, base: string) {
 	await waitForMutationDialog(page);
 	await page.reload({ waitUntil: 'domcontentloaded' });
 	assert.equal((await readEntity(page, base, 'activities', id)).name, editedName);
-	await page.locator('aside[aria-label]').getByText(editedName, { exact: true }).first().waitFor();
+	await page.locator('[role="dialog"].ui-drawer').getByText(editedName, { exact: true }).first().waitFor();
 	return 'Created and edited an isolated activity in the UI; persisted name and visible detail verified after reload';
 }
 
@@ -52,7 +52,13 @@ export async function exerciseFeeEditArchive(page: Page, base: string) {
 	const price = edited.defaultPrice as number | { amount: number };
 	assert.equal(typeof price === 'number' ? price : price.amount, 32100, 'Edited fee amount must persist');
 	assert(await openUrlModal(page, '/finance/fees', 'archive', { target: id, base }));
-	await uiCommand(page, '/commands/archive-catalog-service', () => page.getByRole('dialog').getByRole('button', { name: /^(archiver|archive)$/i }).click());
+	const confirmation = page.getByTestId('confirm-modal');
+	await page.waitForFunction(() => document.activeElement?.getAttribute('data-testid') === 'confirm-cancel');
+	await confirmation.getByTestId('confirm-cancel').click();
+	await waitForMutationDialog(page);
+	assert.equal((await readEntity(page, base, 'catalog-services', id)).status, 'active', 'Cancelling archive must preserve the active fee');
+	assert(await openUrlModal(page, `/finance/fees/${id}`, 'archive', { target: id, base }));
+	await uiCommand(page, '/commands/archive-catalog-service', () => confirmation.getByTestId('confirm-submit').click());
 	await waitForMutationDialog(page);
 	await page.reload({ waitUntil: 'domcontentloaded' });
 	await waitForPageQuery(page);

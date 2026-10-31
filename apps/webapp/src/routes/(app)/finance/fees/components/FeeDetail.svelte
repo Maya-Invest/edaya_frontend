@@ -16,6 +16,7 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { openRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import { hasPermission } from '$lib/permissions';
+	import { untrack } from 'svelte';
 	import AssignFeeFormModal from '../../billing/components/AssignFeeFormModal.svelte';
 	import FinanceOverview from '../../components/FinanceOverview.svelte';
 	import { getFeesPageState } from '../fees-page.svelte';
@@ -23,6 +24,14 @@
 
 	const { fee }: { fee: Fee } = $props();
 	const state = getFeesPageState();
+	$effect(() => {
+		const id = fee.id;
+		state.drawerReadyId = id;
+		return () => untrack(() => {
+			if (state.drawerReadyId === id)
+				state.drawerReadyId = null;
+		});
+	});
 	const overviewQuery = $derived(state.queryOverview(fee.id));
 	const modals = createUrlSyncedModals({ allowed: () => hasPermission('PAYMENT_RECORD') && fee.status === 'active' ? ['assign-fee'] as const : [], owned: ['assign-fee'], getUrl: () => $page.url });
 	const assign = bindUrlModal(modals, 'assign-fee');

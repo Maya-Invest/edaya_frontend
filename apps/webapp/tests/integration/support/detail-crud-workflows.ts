@@ -15,7 +15,7 @@ export async function exerciseDetailCrud(page: Page, base: string, id: string, e
   if (!contract) return null;
   const text = `Integration ${crypto.randomUUID()}`;
   assert(await openUrlModal(page, contract.path, contract.create, { base }));
-  await page.getByRole('dialog').locator(contract.input).first().fill(text);
+  await page.getByTestId('form-modal').locator(contract.input).first().fill(text);
   const created = await uiCommand(page, contract.command, () => page.getByTestId('form-modal-submit').click());
   const result = await created.json() as { id?: string };
   const entityId = result.id ?? (created.request().postDataJSON() as { id: string }).id;
@@ -27,11 +27,11 @@ export async function exerciseDetailCrud(page: Page, base: string, id: string, e
     const response = await apiFetch(page, base, `/core/entities/${contract.collection}/${entityId}`);
     assert(response.ok());
     assert.equal((await response.json() as Record<string,unknown>)[contract.field], expected);
-    await page.locator('aside[aria-label]').getByText(expected, { exact: id === 'web.scenario.0159' }).filter({ visible: true }).first().waitFor();
+    await page.locator('[role="dialog"].ui-drawer').getByText(expected, { exact: id === 'web.scenario.0159' }).filter({ visible: true }).first().waitFor();
   };
   await persisted(text);
   assert(await openUrlModal(page, contract.path, contract.edit, { base, target: entityId }));
-  await page.getByRole('dialog').locator(contract.input).first().fill(`${text} edited`);
+  await page.getByTestId('form-modal').locator(contract.input).first().fill(`${text} edited`);
   await uiCommand(page, contract.update, () => page.getByTestId('form-modal-submit').click());
   await waitForMutationDialog(page);
   await persisted(`${text} edited`);
@@ -40,13 +40,13 @@ export async function exerciseDetailCrud(page: Page, base: string, id: string, e
     const deleteCommand = contract.collection === 'subject-matters'
       ? '/commands/remove-subject-matter'
       : `/entities/${contract.collection}/delete`;
-    await uiCommand(page, deleteCommand, () => page.getByRole('dialog').getByRole('button', { name: /^(supprimer|delete)$/i }).click());
+    await uiCommand(page, deleteCommand, () => page.getByTestId('confirm-modal').getByRole('button', { name: /^(supprimer|delete)$/i }).click());
     await waitForMutationDialog(page);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPageQuery(page);
     const response = await apiFetch(page, base, `/core/entities/${contract.collection}/${entityId}`);
     assert(response.status() === 404 || (response.ok() && await response.json() === null));
-    assert.equal(await page.locator('aside[aria-label]').getByText(`${text} edited`, { exact: false }).count(), 0);
+    assert.equal(await page.locator('[role="dialog"].ui-drawer').getByText(`${text} edited`, { exact: false }).count(), 0);
   }
   return `Executed create/edit${contract.remove ? '/delete' : ''} in the UI and verified persisted values after reload`;
 }

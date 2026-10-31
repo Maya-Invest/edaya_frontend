@@ -45,17 +45,21 @@ export interface RunOptions {
   inheritInput?: boolean
   input?: string
   inheritEnv?: boolean
+  signal?: AbortSignal
 }
 export async function run(command: readonly string[], options: RunOptions = {}): Promise<string> {
+  options.signal?.throwIfAborted()
   const [executable, ...args] = command
   if (!executable)
     throw new Error('Empty command')
   return new Promise((accept, reject) => {
     const child = spawn(executable, args, { cwd: options.cwd ?? root, env: options.inheritEnv === false ? options.env : { ...process.env, ...options.env }, stdio: [options.input !== undefined ? 'pipe' : options.inheritInput ? 'inherit' : 'ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32', windowsHide: true })
     let output = ''
-    let interrupted = false
-    const kill = () => {
-      interrupted = true
+    let interruption: string | undefined
+    const kill = (reason: string) => {
+      if (interruption)
+        return
+      interruption = reason
       if (child.pid) {
         try {
           process.kill(process.platform === 'win32' ? child.pid : -child.pid, 'SIGTERM')
@@ -72,15 +76,21 @@ export async function run(command: readonly string[], options: RunOptions = {}):
         force.unref()
       }
     }
-    const timer = options.timeout === 0 ? undefined : setTimeout(kill, options.timeout ?? 30 * 60000)
-    const signal = () => kill()
-    process.once('SIGINT', signal)
-    process.once('SIGTERM', signal)
+    const timer = options.timeout === 0 ? undefined : setTimeout(kill, options.timeout ?? 30 * 60000, `timed out after ${options.timeout ?? 30 * 60000}ms`)
+    const abort = () => kill('owned service failed or was cancelled')
+    options.signal?.addEventListener('abort', abort, { once: true })
+    if (options.signal?.aborted)
+      abort()
+    const interrupt = () => kill('interrupted by SIGINT')
+    const terminate = () => kill('interrupted by SIGTERM')
+    process.once('SIGINT', interrupt)
+    process.once('SIGTERM', terminate)
     const cleanup = () => {
       if (timer)
         clearTimeout(timer)
-      process.off('SIGINT', signal)
-      process.off('SIGTERM', signal)
+      options.signal?.removeEventListener('abort', abort)
+      process.off('SIGINT', interrupt)
+      process.off('SIGTERM', terminate)
     }
     child.stdout!.on('data', (chunk: Buffer) => {
       output += chunk.toString()
@@ -101,10 +111,10 @@ export async function run(command: readonly string[], options: RunOptions = {}):
       cleanup()
       reject(new Error(`Could not start ${executable}`))
     })
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
       cleanup()
-      if (code !== 0 || interrupted)
-        reject(new Error(`${executable} ${interrupted ? 'interrupted or timed out' : `exited ${code}`}`))
+      if (code !== 0 || interruption)
+        reject(new Error(`${executable} ${interruption ?? (signal ? `terminated by ${signal}` : `exited ${code}`)}`))
       else
         accept(output.trim())
     })
@@ -134,14 +144,17 @@ export async function waitForUrl(url: string, seconds = 120, assertActive: () =>
   const end = Date.now() + seconds * 1000
   while (Date.now() < end) {
     assertActive()
+    let ready = false
     try {
       const response = await fetch(url, { headers: { accept: 'text/html, application/json' }, signal: AbortSignal.timeout(2000) })
       await response.body?.cancel()
-      if (response.ok)
-        return
+      ready = response.ok
     }
     catch { /* still starting */
     }
+    assertActive()
+    if (ready)
+      return
     await Bun.sleep(500)
   }
   throw new Error('Service readiness timed out')

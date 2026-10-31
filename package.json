@@ -15,7 +15,7 @@
     "quality": "bun x --bun turbo run quality",
     "lint": "bun x --bun turbo run lint",
     "lint:fix": "bun x --bun turbo run lint:fix",
-    "test": "bun x --bun turbo run test",
+    "test": "bun x --bun turbo run test --concurrency=1",
     "test:integration:onboarding": "bun --filter @edaya/webapp test:integration:onboarding",
     "test:integration:provisioned": "bun --filter @edaya/webapp test:integration:provisioned",
     "verify": "bun run repo ci verify",

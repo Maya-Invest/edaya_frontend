@@ -129,15 +129,16 @@ export async function dismissOpenDialogs(page: Page): Promise<void> {
 	}
 }
 
+/** Mutation dialogs close back to a still-open inspection drawer. */
 export async function waitForDialogClosed(page: Page, timeout = 15_000): Promise<boolean> {
-	const started = Date.now();
-	while (Date.now() - started < timeout) {
-		if ((await visibleDialogCount(page)) === 0) {
-			return true;
-		}
-		await page.waitForTimeout(120);
+	try {
+		await page.waitForFunction(() => !Array.from(document.querySelectorAll('[role="dialog"]:not(.ui-drawer)'))
+			.some(node => node instanceof HTMLElement && node.checkVisibility()), undefined, { timeout });
+		return true;
 	}
-	return (await visibleDialogCount(page)) === 0;
+	catch {
+		return false;
+	}
 }
 
 function mainContentScope(page: Page): Locator {
@@ -399,17 +400,19 @@ export async function openDialogButton(
 	timeout = 20_000,
 	scope?: Locator,
 ): Promise<boolean> {
-	const root = scope ?? page;
-	const btn = root.getByRole('button', { name }).or(page.getByRole('menuitem', { name })).first();
 	try {
+		const foreground = page.getByRole('dialog').filter({ visible: true }).last();
+		const root = scope ?? (await foreground.count() ? foreground : page);
+		const btn = root.getByRole('button', { name }).or(page.getByRole('menuitem', { name })).filter({ visible: true }).first();
+		const menu = root.getByTestId('collection-menu').first();
+		await btn.or(menu).first().waitFor({ state: 'visible', timeout });
 		if (!await btn.isVisible()) {
-			const menu = root.getByTestId('collection-menu').first();
-			if (await menu.isVisible()) await menu.click();
+			await menu.click();
 		}
 		await btn.waitFor({ state: 'visible', timeout });
 		await waitForEnabled(btn);
 		await btn.click();
-		await page.getByRole('dialog').waitFor({ state: 'visible', timeout: 10_000 });
+		await page.locator('[role="dialog"]:not(.ui-drawer)').last().waitFor({ state: 'visible', timeout: 10_000 });
 		return true;
 	}
 	catch {
@@ -445,7 +448,7 @@ function formModalSubmit(
 	label: RegExp = /enregistrer|save changes|^save$|add note|ajouter une note|ajouter une facture|add invoice/i,
 ): Locator {
 	const modal = page.getByTestId('form-modal');
-	const dialog = modal.or(page.getByRole('dialog'));
+	const dialog = modal.or(page.locator('[role="dialog"]:not(.ui-drawer)'));
 	return modal.getByTestId('form-modal-submit')
 		.or(dialog.getByRole('button', { name: label }))
 		.last();
@@ -486,7 +489,7 @@ export async function trySubmitDialog(page: Page): Promise<boolean> {
 export async function waitForFormModal(page: Page, timeout = 12_000): Promise<boolean> {
 	const dialog = page
 		.locator('[data-testid="form-modal"], [data-testid="confirm-modal"], [data-testid="picker-modal"]')
-		.or(page.getByRole('dialog'));
+		.or(page.locator('[role="dialog"]:not(.ui-drawer)'));
 	try {
 		await dialog.first().waitFor({ state: 'visible', timeout });
 		// Let the dialog's scheduled autofocus complete before filling controls.
@@ -549,19 +552,16 @@ export async function fillLabeledInput(
 export async function searchAndSelectPerson(page: Page, name: string): Promise<boolean> {
 	const dialog = page.getByRole('dialog').last();
 	const trigger = dialog.getByTestId('person-picker-trigger').first();
-	if (!(await trigger.isVisible({ timeout: 5_000 }).catch(() => false))) {
+	if (!(await trigger.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false))) {
 		return false;
 	}
 	await trigger.click();
-	const anyOption = page.getByRole('option').first();
-	await anyOption.isVisible({ timeout: 8_000 }).catch(() => false);
-	const search = page.locator('[data-state="open"] input').last()
-		.or(dialog.locator('input').last());
-	if (name && await search.isVisible({ timeout: 2_000 }).catch(() => false)) {
-		await search.fill(name);
-	}
-	const named = page.getByRole('option', { name: new RegExp(name, 'i') }).first();
-	if (await named.isVisible({ timeout: 5_000 }).catch(() => false)) {
+	const search = page.locator('[data-person-picker-search] input:visible').last();
+	await search.waitFor({ state: 'visible' });
+	if (name) await search.fill(name);
+	const anyOption = page.getByRole('option').filter({ visible: true }).first();
+	const named = page.getByRole('option', { name: new RegExp(name, 'i') }).filter({ visible: true }).first();
+	if (await named.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)) {
 		await named.click();
 		return true;
 	}
@@ -738,7 +738,7 @@ export const LIST_FILTER_NATIVE_LOCATOR
 
 export async function selectListFilter(page: Page, value: string): Promise<boolean> {
 	const native = page.locator(LIST_FILTER_NATIVE_LOCATOR).first();
-	if (!await selectTrigger(native).isVisible()) await page.getByTestId('list-filter').first().click();
+	if (!await selectTrigger(native).isVisible()) await page.getByTestId('collection-filter').first().click();
 	if (await selectTrigger(native).isVisible({ timeout: 4_000 }).catch(() => false)) {
 		await chooseOption(native, value);
 		return true;
@@ -816,8 +816,8 @@ export async function waitForGradeLevelSelectOptions(
 /** GradeLevelFormModal — name and label are both required (label may mirror name on input). */
 export async function fillGradeLevelCreateDialog(page: Page, levelName: string): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	const nameInput = dialog.locator('input').first();
-	const labelInput = dialog.locator('input').nth(1);
+	const nameInput = dialog.getByRole('textbox', { name: /^(grade level name|nom du niveau)$/i });
+	const labelInput = dialog.getByRole('textbox', { name: /short label|libellé court/i });
 	const submit = dialog.getByRole('button', { name: /enregistrer|save changes|^save$/i }).last();
 
 	await nameInput.waitFor({ state: 'visible', timeout: 15_000 });
@@ -838,7 +838,12 @@ export async function fillGradeLevelCreateDialog(page: Page, levelName: string):
 	while (Date.now() - started < 15_000) {
 		await fillFields();
 		if (!(await submit.isDisabled())) {
+			const responsePromise = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/configure-grade-level'), { timeout: 20_000 });
 			await submit.click();
+			const response = await responsePromise;
+			const body = await response.json().catch(() => null);
+			if (!response.ok() || body?.success === false || body?.error)
+				throw new Error(`Grade level creation rejected (HTTP ${response.status()})`);
 			return;
 		}
 		await page.waitForTimeout(150);
@@ -1141,7 +1146,9 @@ export async function generateReportCardForStudent(
 ): Promise<string | null> {
  const rows = page.locator('main tr');
  const scope = studentName ? rows.filter({ hasText: studentName }) : rows;
- const button = scope.getByRole('button', { name: /^(generate|générer)$/i }).first();
+ const rowMenu = scope.getByRole('button', { name: ACTION_MENU_BUTTON_NAME }).first();
+ await rowMenu.click();
+ const button = page.getByRole('menuitem', { name: /^(generate|générer)$/i }).first();
  await button.waitFor({ state: 'visible', timeout: 20000 });
  const response = page.waitForResponse(result => result.request().method() === 'POST' && result.url().includes('/core/commands/generate-report-card-result'), { timeout: 30000 });
  await button.click();
@@ -1149,6 +1156,7 @@ export async function generateReportCardForStudent(
  if (!generated.ok()) throw new Error(`Report generation HTTP ${generated.status()}`);
  const body = await generated.json() as { id?: string };
  if (!body.id) throw new Error('Report generation returned no result ID');
+ await scope.locator('.ui-record-target').waitFor({ state: 'visible' });
  return body.id;
 }
 
@@ -1594,7 +1602,7 @@ async function openActionMenusForDelete(page: Page, root: Page | Locator): Promi
 
 /** Provisioned runs assert delete affordance without clicking (no destructive mutation). */
 export async function isDeleteControlVisible(page: Page): Promise<boolean> {
-	const drawer = page.locator('aside[aria-label]').first();
+	const drawer = page.locator('[role="dialog"].ui-drawer').first();
 	const scope = (await drawer.isVisible().catch(() => false)) ? drawer : page;
 
 	if (await isDirectDeleteVisible(scope)) {

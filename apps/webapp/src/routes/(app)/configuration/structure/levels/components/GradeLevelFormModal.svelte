@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { GradeLevel, GradingPolicy } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -10,6 +11,7 @@
 	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getGradeLevelsPageState } from '../grade-levels-page.svelte';
+	import { retainsGradeLevelDraft } from '../lib/grade-levels-helpers';
 
 	let {
 		gradeLevel,
@@ -111,7 +113,7 @@
 		untrack(() => {
 			resetForm();
 			formId = id ?? `gl-${crypto.randomUUID()}`;
-			savedDetails = id ? detailSnapshot : '';
+			savedDetails = detailSnapshot;
 			partialSave = false;
 			initialized = false;
 			editingYearId = yearId;
@@ -166,6 +168,9 @@
 				const ok = await gradeLevelsPage.configureGrading({ gradeLevelId: formId, scaleId, expectedScaleRevision: selectedScale?.revision, mode, aggregateLabel, numericEquivalents: { ...previous?.numericEquivalents, ...Object.fromEntries(conversions.map(row => [row.key, Number(equivalents[row.key])])) }, expectedRevision, confirmed: confirm, successMessage: get(t)('grading.saved') });
 				if (!ok)
 					return;
+				if (scopeGeneration !== academicContext.scopeGeneration || editingYearId !== academicContext.yearId)
+					return;
+				initialGrading = gradingSnapshot;
 			}
 			open = false;
 		}
@@ -175,12 +180,14 @@
 </script>
 
 <FormModal
+	retainsDraft={destination => retainsGradeLevelDraft($page.url, destination)}
 	bind:open
 	title={isEdit ? $t('gradeLevels.edit') : $t('gradeLevels.add')}
 	description={isEdit ? gradeLevel?.name : undefined}
 	submitLabel={confirm ? $t('grading.confirm') : $t('academic.save')}
 	cancelLabel={$t('academic.cancel')}
 	busy={busy}
+	dirty={detailsChanged || gradingChanged}
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
 >

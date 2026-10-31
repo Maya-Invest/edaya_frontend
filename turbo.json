@@ -25,11 +25,7 @@
         "^check"
       ]
     },
-    "test": {
-      "dependsOn": [
-        "^check"
-      ]
-    },
+    "test": {},
     "lint": {},
     "lint:fix": {}
   },

@@ -62,6 +62,8 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 			if (await cropConfirm.isVisible({ timeout: 8_000 }).catch(() => false)) {
 				await cropConfirm.click();
 				profileSaved = (await resultPromise) !== null;
+				if (profileSaved)
+					await cropConfirm.waitFor({ state: 'hidden', timeout: 20_000 });
 			}
 		}
 		await page.keyboard.press('Escape').catch(() => {});

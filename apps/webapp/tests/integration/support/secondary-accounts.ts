@@ -1,13 +1,14 @@
-import { selectTrigger, chooseOption, selectControl } from './custom-select';
+import { chooseOption, selectControl } from './custom-select';
 import {
 	clickCreateButton,
 	fillPersonCreateDialogWithInvite,
 	openDialogButton,
-	selectComboboxOption,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
 } from '../../../scripts/qa-harness-ui';
+import { uiCommand } from './ui-command';
+import { apiFetch } from '../setup/journey-api';
 import { firstIdFromLinks } from '../../../scripts/qa-matrix-support';
 import type { MatrixEntities } from '../../../scripts/qa-matrix-support';
 import {
@@ -55,25 +56,19 @@ async function inviteEducatorStaff(
 			},
 		});
 		if (!response.ok()) {
-			return null;
+			throw new Error(`Staff invitation HTTP ${response.status()}`);
 		}
 	}
 	finally {
 		await isolated.dispose();
 	}
 
-	await gotoApp(journey, '/school/staff');
-	await waitForPageQuery(page);
-	const row = page.locator('main').getByText(email, { exact: false }).first();
-	if (await row.isVisible({ timeout: 10_000 }).catch(() => false)) {
-		await row.click();
-		await page.waitForTimeout(800);
-		const fromUrl = page.url().match(/\/school\/staff\/([^/?]+)/)?.[1];
-		if (fromUrl) {
-			return fromUrl;
-		}
-	}
-	return firstIdFromLinks(page, /\/school\/staff\/([^/?]+)/);
+	const response = await apiFetch(page, base, '/core/entities/staff-members/list', { method: 'POST', data: {} });
+	if (!response.ok()) throw new Error(`Invited staff readback HTTP ${response.status()}`);
+	const staff = await response.json() as Array<{ id: string; email: string }>;
+	const invited = staff.filter(member => member.email === email);
+	if (invited.length !== 1) throw new Error(`Expected one invited staff member; found ${invited.length}`);
+	return invited[0]!.id;
 }
 
 async function resendStaffInvitation(journey: UiJourney, staffId: string): Promise<string | null> {
@@ -167,34 +162,16 @@ async function assignTeacherToClass(
 		return false;
 	}
 
-	const dialog = page.getByRole('dialog');
-	const classSelect = dialog.locator('select').first();
-	if (await selectTrigger(classSelect).isVisible().catch(() => false)) {
-		await chooseOption(classSelect, classId).catch(async () => {
-			const options = classSelect.locator('option');
-			if (await options.count() > 1) {
-				await chooseOption(classSelect, { index: 1 });
-			}
-		});
-		await page.waitForTimeout(1_000);
-	}
-
-	const subjectSelect = dialog.locator('select').nth(1);
-	if (await selectTrigger(subjectSelect).isVisible().catch(() => false)) {
-		const optionCount = await subjectSelect.locator('option').count();
-		if (optionCount > 1) {
-			await chooseOption(subjectSelect, { index: 1 });
-		}
-	}
-	else {
-		const combo = selectControl(dialog).first();
-		if (await combo.isVisible().catch(() => false)) {
-			await selectComboboxOption(page, combo);
-		}
-	}
-
-	await submitDialog(page);
-	await waitForDialogClosed(page).catch(() => {});
+	const dialog = page.getByTestId('form-modal');
+	await chooseOption(selectControl(dialog, { name: /^(classe|class)$/i }), classId);
+	await chooseOption(selectControl(dialog, { name: /^(matière dans la classe|subject offering)$/i }), { index: 1 });
+	const response = await uiCommand(page, '/entities/teacher-assignments/save', () => submitDialog(page));
+	const assignment = response.request().postDataJSON() as { id: string };
+	await waitForDialogClosed(page);
+	const saved = await apiFetch(page, journey.ctx.base, `/core/entities/teacher-assignments/${assignment.id}`);
+	if (!saved.ok()) throw new Error(`Teacher assignment readback HTTP ${saved.status()}`);
+	const persisted = await saved.json() as { teacherId: string; classGroupId: string };
+	if (persisted.teacherId !== teacherId || persisted.classGroupId !== classId) throw new Error('Teacher assignment did not persist in the requested class');
 	return true;
 }
 
@@ -260,7 +237,7 @@ export async function provisionSecondaryAccounts(
 				`Teacher invitation did not activate for ${teacherEmail}: ${teacherActivation.detail ?? 'unknown'}`,
 			);
 		}
-		await assignTeacherToClass(journey, teacherId, entities.classId);
+		if (!await assignTeacherToClass(journey, teacherId, entities.classId)) throw new Error('Required teacher class assignment missing');
 		logStep(journey, {
 			step: 'secondary-teacher',
 			ok: true,

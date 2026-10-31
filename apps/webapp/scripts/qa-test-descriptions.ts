@@ -74,7 +74,7 @@ export function describeTestExactly(row: QaTemplateRow): string {
 	}
 
 	if (action === 'Navigation directe — contenu visible') {
-		return `Cold-navigate to ${ep}; waitForPageQuery; assert main/table/[data-testid] OR aside[aria-label] drawer visible (15s for student routes).`;
+		return `Cold-navigate to ${ep}; waitForPageQuery; assert main/table/[data-testid] OR [role="dialog"].ui-drawer drawer visible (15s for student routes).`;
 	}
 
 	if (/^Redirect — cible attendue$/i.test(action)) {

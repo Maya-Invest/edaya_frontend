@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
+import { stageContext, validateQualificationEvidence } from './qualification'
 import { assertCommittedSource, digest, environment, files, hashes, root, run, sha, writeJson } from './runtime'
 
 export interface ReleaseRecord {
@@ -14,6 +15,7 @@ export interface ReleaseRecord {
   schemaFingerprint?: string
   tests: string[]
   sourceState?: string
+  emergency?: boolean
 }
 const isBackend = existsSync(resolve(root, 'apps/api'))
 export async function buildRelease(target: string): Promise<void> {
@@ -48,21 +50,34 @@ export async function buildRelease(target: string): Promise<void> {
     record.tools.oasdiff = '1.11.7'
   writeJson(resolve(root, '.release/manifest.json'), record)
 }
+/** Validate every recorded file and reject extra files in deployment output trees. */
+export function validateReleaseArtifacts(record: ReleaseRecord, repository = root): void {
+  for (const [file, hash] of Object.entries(record.artifacts)) {
+    if (file.startsWith('/') || file.split('/').includes('..') || digest(readFileSync(resolve(repository, file))) !== hash)
+      throw new Error('Release artifact drift')
+  }
+  const directories = isBackend ? ['.release/worker'] : ['apps/webapp/build', 'apps/webadmin/build']
+  for (const directory of directories) {
+    for (const file of files(resolve(repository, directory))) {
+      if (!record.artifacts[relative(repository, file)])
+        throw new Error('Unrecorded release artifact')
+    }
+  }
+}
 export async function validateRelease(target: string): Promise<ReleaseRecord> {
   const record = JSON.parse(readFileSync(resolve(root, '.release/manifest.json'), 'utf8')) as ReleaseRecord
   if (!isBackend && JSON.stringify(record.client) !== JSON.stringify(JSON.parse(readFileSync(resolve(root, '.generated/client.json'), 'utf8'))))
     throw new Error('Release client evidence differs from prepared input')
   if (record.formatVersion !== 1 || record.environment !== environment(target) || record.sourceCommit !== await run(['git', 'rev-parse', 'HEAD'], { quiet: true }))
     throw new Error('Release identity mismatch')
-  for (const [file, hash] of Object.entries(record.artifacts)) {
-    if (file.startsWith('/') || file.split('/').includes('..') || digest(readFileSync(resolve(root, file))) !== hash)
-      throw new Error('Release artifact drift')
-  }
-  const directories = isBackend ? ['.release/worker'] : ['apps/webapp/build', 'apps/webadmin/build']
-  for (const directory of directories) {
-    for (const file of files(resolve(root, directory))) {
-      if (!record.artifacts[relative(root, file)])
-        throw new Error('Unrecorded release artifact')
+  validateReleaseArtifacts(record, root)
+  if (record.status === 'qualified' || record.status === 'deployed') {
+    if (!record.emergency) {
+      const evidence = JSON.parse(readFileSync(resolve(root, '.ci-evidence/qualification.json'), 'utf8'))
+      const context = await stageContext(target)
+      if (!process.env.GITHUB_RUN_ID && !process.env.EDAYA_QUALIFICATION_ATTEMPT)
+        context.attempt = evidence.attempt
+      validateQualificationEvidence(evidence, context)
     }
   }
   return record
@@ -93,13 +108,8 @@ export async function deployRelease(target: string, dryRun = false): Promise<voi
 }
 export async function qualifyRelease(target: string): Promise<void> {
   const record = await validateRelease(target)
-  const results = JSON.parse(readFileSync(resolve(root, '.ci-evidence/qualification.json'), 'utf8')) as {
-    sourceCommit: string
-    environment: string
-    checks: Record<string, boolean>
-  }
-  if (results.environment !== target || results.sourceCommit !== record.sourceCommit || results.checks.verification !== true || results.checks.integration !== true || results.checks[isBackend ? 'compatibility' : 'client'] !== true)
-    throw new Error('Missing successful qualification evidence')
+  const results = JSON.parse(readFileSync(resolve(root, '.ci-evidence/qualification.json'), 'utf8'))
+  validateQualificationEvidence(results, await stageContext(target))
   record.tests = Object.keys(results.checks)
   record.status = 'qualified'
   writeJson(resolve(root, '.release/manifest.json'), record)

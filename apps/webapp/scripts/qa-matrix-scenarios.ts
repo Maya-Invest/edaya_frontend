@@ -1,4 +1,4 @@
-import { selectControl } from '../tests/integration/support/custom-select';
+import { chooseOption, selectControl } from '../tests/integration/support/custom-select';
 import { openViewSurface } from '../tests/integration/support/view-workflow';
 import { bindBrowserScenarioContext } from '../tests/integration/support/browser-scenario';
 import { captureIntegrationCheckpoint } from '../tests/integration/support/visual-artifacts';
@@ -104,7 +104,7 @@ async function loginPassword(page: Page, base: string, email: string, password: 
 
 async function hasMainContent(page: Page, options: { drawerTimeout?: number } = {}): Promise<boolean> {
 	const drawerTimeout = options.drawerTimeout ?? 15_000;
-	const drawer = page.locator('aside[aria-label]');
+	const drawer = page.locator('[role="dialog"].ui-drawer');
 	if (await drawer.isVisible({ timeout: drawerTimeout }).catch(() => false)) {
 		return true;
 	}
@@ -303,7 +303,7 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
     const response = await apiFetch(page,base,`/core/entities/schools/${schoolId}`);
     assert(response.ok());
     const school = await response.json() as {name:string};
-    const label = (await page.getByTestId('school-selector').locator('p').innerText()).trim();
+    const label = (await page.getByTestId('school-selector').innerText()).trim();
     assert(label.length > 0 && school.name.startsWith(label), 'School selector must identify the persisted active school');
     assert.equal(await page.getByTestId('school-selector-menu').count(),0, 'A single-school fixture must not offer a school switch');
     return ok(row,'Verified the active school label against persisted data; multi-school switching executes in invited-staff-second-school');
@@ -323,9 +323,13 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
     const year = await response.json() as {name:string;schoolId:string};
     assert.equal(year.schoolId,schoolId);
     await trigger.click();
-    await page.getByRole('button',{name:year.name,exact:true}).click();
+    const yearChoice = page.getByTestId('academic-year-choice');
+    await chooseOption(yearChoice, yearId);
+    assert(await page.getByTestId('academic-year-apply').isDisabled(), 'Selecting the current year must not create a scope change');
+    await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(({schoolId}) => sessionStorage.getItem(`edaya:yearId:${schoolId}`),{schoolId}),yearId);
     await page.reload({waitUntil:'domcontentloaded'});
+    await waitForResolvedAcademicYearId(page);
     await trigger.waitFor();
     assert.equal(await trigger.getAttribute('data-year-id'),yearId);
     return ok(row,'Selected the published year and verified school-scoped persistence after reload');
@@ -1080,7 +1084,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 				const rowBtn = page.locator('main ul button, [role="main"] ul button').first();
 				if (await rowBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
 					await rowBtn.click();
-					const drawer = page.locator('aside[aria-label]');
+					const drawer = page.locator('[role="dialog"].ui-drawer');
 					const visible = await drawer.isVisible({ timeout: 5_000 }).catch(() => false);
 					return visible ? ok(row) : notOk(row, 'Drawer facturation non ouvert');
 				}
@@ -1106,24 +1110,20 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 	// ── Save preferences ──
 	if (/sauver|charger préférences/i.test(action)) {
-		const save = page.getByRole('button', { name: /sauver|save|enregistrer/i }).first();
-		const toggles = page.locator('input[type="checkbox"], [role="switch"]');
-		const count = await toggles.count();
-		if (action.includes('Charger') && count > 0) return ok(row, `${count} préférences`);
-		if (await save.isVisible().catch(() => false)) {
-			const email = `qa-notifications-${Date.now()}@integration.edaya.test`;
-			const input = page.locator('#staff-notification-email');
-			await input.fill(email);
-			const saved = page.waitForResponse(response => response.url().includes('/core/commands/update-notification-contact') && response.request().method() === 'POST', { timeout: 15000 });
-			await save.click();
-			const response = await saved;
-			if (!response.ok()) return notOk(row, `Notification contact save returned ${response.status()}`);
-			await page.reload({ waitUntil: 'domcontentloaded' });
-			await page.locator('#staff-notification-email').waitFor({ state: 'visible' });
-			await page.waitForFunction(value => (document.querySelector('#staff-notification-email') as HTMLInputElement | null)?.value === value, email, { timeout: 15000 });
-			return ok(row, 'Changed notification contact persisted after reload');
-		}
-		return notOk(row, 'Préférences introuvables');
+		const custom = page.locator('main input[type=radio][value=custom]');
+		await custom.waitFor();
+		await custom.check();
+		const email = `qa-notifications-${Date.now()}@integration.edaya.test`;
+		const input = page.locator('main input[type=email]');
+		await input.fill(email);
+		const saved = page.waitForResponse(response => response.url().includes('/core/commands/update-notification-contact') && response.request().method() === 'POST', { timeout: 15000 });
+		await page.getByTestId('notification-save-actions').getByRole('button', { name: /^(save|enregistrer)$/i }).click();
+		const response = await saved;
+		if (!response.ok()) return notOk(row, `Notification contact save returned ${response.status()}`);
+		await page.reload({ waitUntil: 'domcontentloaded' });
+		await input.waitFor({ state: 'visible' });
+		assert.equal(await input.inputValue(), email);
+		return ok(row, 'Changed notification contact persisted after reload');
 	}
 
 	// ── Remove draft recipient (visibility only — must not mutate) ──

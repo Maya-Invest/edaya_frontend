@@ -37,7 +37,7 @@ export async function browserSuites(): Promise<void> {
   async function suite(name: string, command: string[], overrides = {}) {
     services.assertRunning()
     try {
-      await run(command, { cwd, env: { ...env, ...overrides }, timeout: 60 * 60000 })
+      await services.run(command, { cwd, env: { ...env, ...overrides }, timeout: 60 * 60000 })
     }
     catch {
       services.assertRunning()
@@ -46,15 +46,15 @@ export async function browserSuites(): Promise<void> {
   }
   const start = (command: string[], overrides = {}) => services.start(command.join(' '), command, cwd, { ...env, ...overrides })
   try {
-    await run(['bun', 'x', '--bun', 'playwright', 'install', '--with-deps', 'chromium'], { cwd })
+    await services.run(['bun', 'x', '--bun', 'playwright', 'install', '--with-deps', 'chromium'], { cwd })
     // The backend fixture uses NODE_ENV=test. A browser production build must
     // not inherit that value, which embeds Vite's development client in HTML.
-    await run(['bun', 'run', 'build'], { cwd, env: { ...env, NODE_ENV: 'production' } })
+    await services.run(['bun', 'run', 'build'], { cwd, env: { ...env, NODE_ENV: 'production' } })
     start(['bun', 'x', 'wrangler', 'dev', '--local', '--port', '14173', '--ip', '127.0.0.1'])
     await waitForUrl(`${env.WEBAPP_URL}/login`, 120, () => services.assertRunning())
     for (const name of ['availability', 'onboarding', 'provisioned', 'webadmin'])
       await suite(name, ['bun', 'run', `test:integration:${name}`])
-    await run(['bun', '--no-env-file', 'tooling/repo/ops/main.ts', 'ops', 'seed'], { cwd: process.env.BACKEND_ROOT, env })
+    await services.run(['bun', '--no-env-file', 'tooling/repo/ops/main.ts', 'ops', 'seed'], { cwd: process.env.BACKEND_ROOT, env })
     start(['bun', 'run', 'dev', '--host', '127.0.0.1', '--port', '14174', '--strictPort'], { PUBLIC_APP_ENV: 'development' })
     await waitForUrl('http://127.0.0.1:14174/login', 120, () => services.assertRunning())
     const demo = { WEBAPP_URL: 'http://127.0.0.1:14174', DEMO_DRY_RUN_OUT_DIR: resolve(cwd, '.demo-dry-run') }

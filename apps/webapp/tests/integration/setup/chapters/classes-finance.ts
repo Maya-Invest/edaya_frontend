@@ -2,6 +2,7 @@ import { redactDiagnostic } from '../../support/scenario-registry';
 import assert from 'node:assert/strict';
 import type { UiJourney } from '../journey-context';
 import {
+	ACTION_MENU_BUTTON_NAME,
 	assertListContains,
 	clickCreateButton,
 	fillAssignFeeDialog,
@@ -38,7 +39,7 @@ import {
 	gotoApp,
 	idFromUrl,
 	logStep,
-	recordAttendanceForToday,
+	recordAttendanceForFixtureDay,
 	runModalMutation,
 	visitCovered,
 	waitForCommandResult,
@@ -180,7 +181,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 				command: 'record-assessment-result',
 				openLabel: /saisir la note|enter grade|modifier la note|edit grade/i,
 				fill: async (current) => {
-					const score = current.getByRole('dialog').locator('input[type="number"]').first();
+					const score = current.getByTestId('form-modal').locator('input[data-grade-input]');
 					await score.fill('12');
 				},
 				visibleAfter: '12',
@@ -218,7 +219,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 		coverActions(journey, 'http://localhost:5173/classes/[classId]/attendance', ['Liste jours'], 'OK');
 		let recordedDayId: string | null = null;
 		try {
-			recordedDayId = await recordAttendanceForToday(journey, classId);
+			recordedDayId = await recordAttendanceForFixtureDay(journey, classId);
 		}
 		catch (err) {
 			await journey.ctx.shot('failure-attendance');
@@ -264,31 +265,37 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 			{ exercised: generatedInUi, postcondition: generated },
 			generated ? undefined : 'generate not confirmed',
 		);
-		const classGenerate = page.getByRole('button', { name: /^(tout générer|generate all)$/i });
-		const pendingCount = await page.getByRole('button', { name: /^(générer|generate)$/i }).count();
+		const classGenerate = page.getByRole('menuitem', { name: /^(tout générer|generate all)$/i });
+		const pendingCount = await page.locator('main tbody tr').filter({ hasNot: page.locator('.ui-record-target') }).count();
 		if (pendingCount < 1) throw new Error('Class report generation requires additional eligible students');
-		const generatedIds = new Set<string>();
+		const generatedReports = new Map<string, { status: string; studentId: string; periodId: string }>();
 		const responses: Array<import('playwright').Response> = [];
 		const collect = (response: import('playwright').Response) => {
 			if (response.url().includes('/commands/generate-report-card-result') && response.request().method() === 'POST') responses.push(response);
 		};
 		page.on('response', collect);
 		try {
+			await page.getByTestId('collection-menu').click();
 			await classGenerate.click();
-			await page.waitForFunction(() => !Array.from(document.querySelectorAll('main button')).some(button => /^(générer|generate)$/i.test(button.textContent?.trim() ?? '')), undefined, { timeout: 60000 });
+			const deadline = Date.now() + 60_000;
+			while (responses.length < pendingCount && Date.now() < deadline) await page.waitForTimeout(100);
 			for (const response of responses) {
 				if (!response.ok()) throw new Error(`Class report generation HTTP ${response.status()}`);
-				generatedIds.add((await response.json() as { id: string }).id);
+				const result = await response.json() as { id: string; status: string; studentId: string; periodId: string };
+				assert(result.id && ['draft', 'generated'].includes(result.status), 'Generation must return a complete result');
+				generatedReports.set(result.id, result);
 			}
-			if (generatedIds.size !== pendingCount) throw new Error(`Class report generation completed ${generatedIds.size}/${pendingCount} students`);
+			if (generatedReports.size !== pendingCount) throw new Error(`Class report generation completed ${generatedReports.size}/${pendingCount} students`);
 		} finally { page.off('response', collect); }
 		await page.reload({ waitUntil: 'domcontentloaded' });
 		await waitForPageQuery(page);
-		for (const id of generatedIds) {
+		for (const [id, expected] of generatedReports) {
 			const saved = await apiFetch(page, journey.ctx.base, `/core/entities/results/${id}`);
-			if (!saved.ok() || (await saved.json() as { status: string }).status !== 'draft') throw new Error(`Generated class report ${id} did not persist`);
+			assert(saved.ok(), `Generated class report ${id} readback HTTP ${saved.status()}`);
+			const persisted = await saved.json() as typeof expected;
+			for (const key of ['status', 'studentId', 'periodId'] as const) assert.equal(persisted[key], expected[key], `Generated report ${id}: ${key} must persist`);
 		}
-		coverMutationActions(journey, 'http://localhost:5173/classes/[classId]/report-cards', ['Générer bulletin classe'], { exercised: true, postcondition: true }, `${generatedIds.size} persisted reports`);
+		coverMutationActions(journey, 'http://localhost:5173/classes/[classId]/report-cards', ['Générer bulletin classe'], { exercised: true, postcondition: true }, `${generatedReports.size} persisted reports`);
 		if (!reportCardId) {
 			reportCardId = await firstIdFromLinks(page, new RegExp(`/classes/${classId}/report-cards/([^/?]+)`));
 		}
@@ -323,7 +330,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 			);
 			await publishAcademicPeriodsViaApi(page, journey.ctx.base);
 			await page.reload({ waitUntil: 'domcontentloaded' });
-			const publishBtn = page.locator('aside[aria-label]').getByRole('button', { name: /^(publish|publier)$/i });
+			const publishBtn = page.locator('[role="dialog"].ui-drawer').getByRole('button', { name: /^(publish|publier)$/i });
 			await publishBtn.waitFor({ state: 'visible', timeout: 15000 });
 			const publishPromise = waitForCommandResult(page, 'publish-report-card-result', 30000);
 			await publishBtn.click();

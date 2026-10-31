@@ -18,8 +18,10 @@ async function main() {
 	page.setDefaultTimeout(15000);
 	const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
 	const requests: { path: string; body: any }[] = [];
-	let healthRead = true; let failHealth = false; let failGuardians = false; let failHistory = false; let failStatus = false; let failPublish = false; let pending = true; let delayHealth = false; let clinicalNotes = 'Clinical note';
+	const fixture = { healthRead: true, failHealth: false, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
+	let clinicalNotes = 'Clinical note';
 	let releaseHealth: (() => void) | undefined;
+	let releaseNotes: (() => void) | undefined;
 	const student = { id: 'child', schoolId: 'school', firstName: 'Aminata', lastName: 'Koné', sourceFullName: 'KONE Aminata Mariam', matricule: 'S-0042', nationalMatricule: 'CI-2042', birthDate: '2012-05-18', gender: 'female', nationality: 'Ivoirienne', placeOfBirth: 'Abidjan', enrollmentDate: '2025-09-01', status: 'active', email: 'student@example.test', photoUrl: '/core/files/published/content', photoAttachmentId: 'published' };
 	const years = [{ id: 'year', schoolId: 'school', name: '2026–2027', startDate: '2026-09-01', endDate: '2027-06-30', status: 'published' }];
 	const enrollment = { id: 'placement', schoolId: 'school', studentId: 'child', classGroupId: 'class', academicYearId: 'year', enrolledAt: '2026-09-01', status: 'active' };
@@ -36,7 +38,7 @@ async function main() {
 		if (path.includes('/files/'))
 			return route.fulfill({ contentType: 'image/png', body: png });
 		let response: any = []; let status = 200;
-		const grants = ['STUDENT_READ', 'STUDENT_MANAGE', 'STUDENT_HEALTH_UPDATE', 'PARENT_READ', 'PARENT_MANAGE', 'ENROLLMENT_READ', 'ENROLLMENT_MANAGE', 'STAFF_READ', 'DOCUMENT_READ', ...(healthRead ? ['STUDENT_HEALTH_READ'] : [])].map(permission => ({ permission, scopes: [{ kind: 'school' }] }));
+		const grants = ['STUDENT_READ', 'STUDENT_MANAGE', 'STUDENT_HEALTH_UPDATE', 'PARENT_READ', 'PARENT_MANAGE', 'ENROLLMENT_READ', 'ENROLLMENT_MANAGE', 'STAFF_READ', 'DOCUMENT_READ', ...(fixture.healthRead ? ['STUDENT_HEALTH_READ'] : [])].map(permission => ({ permission, scopes: [{ kind: 'school' }] }));
 		if (path.endsWith('/access-token'))
 			response = { accessToken: 'fixture.payload.signature', expiresAt: new Date(Date.now() + 3600000).toISOString() };
 		if (path.endsWith('/session'))
@@ -69,8 +71,8 @@ async function main() {
 			response = JSON.stringify(input).includes('child2') ? [{ ...student, id: 'child2', firstName: 'Other', lastName: 'Student' }] : [student];
 		if (path.endsWith('/students/count'))
 			response = { count: 1 };
-		if (path.endsWith('/enrollments/list')) { response = [JSON.stringify(input).includes('child2') ? { ...enrollment, studentId: 'child2' } : enrollment]; if (failHistory) { response = { message: 'History unavailable' }; status = 503; } }
-		if (path.endsWith('/guardians/list')) { response = [guardian]; if (failGuardians) { response = { message: 'Guardian failure' }; status = 503; } }
+		if (path.endsWith('/enrollments/list')) { response = [JSON.stringify(input).includes('child2') ? { ...enrollment, studentId: 'child2' } : enrollment]; if (fixture.failHistory) { response = { message: 'History unavailable' }; status = 503; } }
+		if (path.endsWith('/guardians/list')) { response = [guardian]; if (fixture.failGuardians) { response = { message: 'Guardian failure' }; status = 503; } }
 		if (path.endsWith('/guardians/guardian'))
 			response = guardian;
 		if (path.endsWith('/guardians/count'))
@@ -78,24 +80,26 @@ async function main() {
 		if (path.endsWith('/guardian-links/list'))
 			response = [link];
 		if (path.endsWith('/student-photo-submissions/list'))
-			response = pending ? [{ id: 'proposal', schoolId: 'school', studentId: 'child', attachmentId: 'proposed', status: 'pending', version: 1 }] : [];
+			response = fixture.pending ? [{ id: 'proposal', schoolId: 'school', studentId: 'child', attachmentId: 'proposed', status: 'pending', version: 1 }] : [];
 		if (path.endsWith('/student-health-profiles/list')) {
-			if (delayHealth)
+			if (fixture.delayHealth)
 				await new Promise<void>(resolve => releaseHealth = resolve);
 			response = [{ id: 'health', schoolId: 'school', studentId: JSON.stringify(input).includes('child2') ? 'child2' : 'child', bloodType: 'A+', medicalConditions: medical, allergies: 'Peanuts', medications: 'Prescribed medication', emergencyProtocols: 'Contact the emergency team.', clinicalNotes, lastVisit: '2026-10-02' }];
-			if (failHealth) { status = 403; response = { message: 'Restricted medical records' }; }
+			if (fixture.failHealth) { status = 403; response = { message: 'Restricted medical records' }; }
 		}
-		if (path.endsWith('/student-notes/list'))
+		if (path.endsWith('/student-notes/list')) {
+			if (fixture.delayNotes) await new Promise<void>(resolve => releaseNotes = resolve);
 			response = [{ id: 'note', studentId: 'child', body: 'Steady progress in class.', authorStaffId: 'author', createdAt: '2026-10-03T12:00:00Z', category: 'progress', visibility: 'staff' }];
+		}
 		if (path.includes('upsert-student-health-profile')) { clinicalNotes = input.clinicalNotes; response = { id: 'health', schoolId: 'school', ...input }; }
 		if (path.includes('get-student-subject-enrollments'))
 			response = { studentId: 'child', placements: [enrollment], offerings: [], enrollments: [], periods: [] };
 		if (path.includes('update-student-status')) {
-			if (failStatus) { status = 503; response = { message: 'Save failed' }; }
+			if (fixture.failStatus) { status = 503; response = { message: 'Save failed' }; }
 			else { student.status = input.status; response = student; }
 		}
 		if (path.includes('review-student-photo') || path.includes('approve-student-photo') || path.includes('reject-student-photo')) {
-			pending = false; if (input.decision === 'approve')
+			fixture.pending = false; if (input.decision === 'approve')
 				student.photoUrl = '/core/files/proposed/content'; response = student;
 		}
 		if (path.includes('create-profile-photo-upload'))
@@ -103,8 +107,8 @@ async function main() {
 		if (path.includes('complete-profile-photo-upload'))
 			response = { id: 'replacement', status: 'ready' };
 		if (path.includes('publish-student-photo')) {
-			if (failPublish) { status = 503; response = { message: 'Photo publication unavailable' }; }
-			else { pending = false; student.photoUrl = '/core/files/replacement/content'; response = student; }
+			if (fixture.failPublish) { status = 503; response = { message: 'Photo publication unavailable' }; }
+			else { fixture.pending = false; student.photoUrl = '/core/files/replacement/content'; response = student; }
 		}
 		await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(response) });
 	});
@@ -165,20 +169,40 @@ async function main() {
 			await page.getByTestId('form-modal-cancel').click();
 			await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
 		}
+		// A valid note deep link must wait for its independent section query.
+		fixture.delayNotes = true;
+		await page.goto(`${new URL(server.url).origin}/school/students/child/profile?modal=edit-note&modalTarget=note`);
+		const noteDeadline = Date.now() + 15000;
+		while (!releaseNotes && Date.now() < noteDeadline) await page.waitForTimeout(20);
+		assert(releaseNotes, 'Delayed note request must start');
+		await profile.locator('[data-profile-section=health]').getByRole('button', { name: /edit health/i }).waitFor();
+		assert.equal(new URL(page.url()).searchParams.get('modal'), 'edit-note');
+		fixture.delayNotes = false;
+		releaseNotes();
+		await page.getByTestId('form-modal').locator('textarea').waitFor();
+		assert.equal(await page.getByTestId('form-modal').locator('textarea').inputValue(), 'Steady progress in class.');
+		await page.keyboard.press('Escape');
+		await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
+		await page.goto(`${new URL(server.url).origin}/school/students/child/profile?modal=edit-note&modalTarget=missing-note`);
+		await page.waitForURL(url => !url.searchParams.has('modal'));
+
 		// A health read failure must not blank pedagogical notes or guardians.
-		failHealth = true; await page.reload(); await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
+		fixture.failHealth = true; await page.reload(); await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
 		await profile.locator('[data-profile-section=health]').getByText('Access denied', { exact: false }).waitFor();
-		failHealth = false; healthRead = false; const before = requests.filter(row => row.path.endsWith('/student-health-profiles/list')).length;
+		fixture.failHealth = false; fixture.healthRead = false; const before = requests.filter(row => row.path.endsWith('/student-health-profiles/list')).length;
 		await page.reload(); await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
 		assert.equal(await profile.locator('[data-profile-section=health]').count(), 0);
 		assert.equal(requests.filter(row => row.path.endsWith('/student-health-profiles/list')).length, before, 'No medical request without the health-read grant');
-		healthRead = true; failGuardians = true; await page.reload(); await profile.locator('[data-profile-section=guardians]').getByRole('button', { name: 'Try again', exact: true }).waitFor();
-		failGuardians = false; await profile.locator('[data-profile-section=guardians]').getByRole('button', { name: 'Try again', exact: true }).click();
+		fixture.healthRead = true; fixture.failGuardians = true; await page.reload(); await profile.locator('[data-profile-section=guardians]').getByRole('button', { name: 'Try again', exact: true }).waitFor();
+		fixture.failGuardians = false;
+		const retriedGuardians = page.waitForResponse(response => response.url().endsWith('/guardians/list') && response.ok());
+		await profile.locator('[data-profile-section=guardians]').getByRole('button', { name: 'Try again', exact: true }).click();
+		await retriedGuardians;
 		await profile.getByRole('button', { name: 'Mariam Koné', exact: true }).waitFor();
-		failHistory = true; await page.reload();
+		fixture.failHistory = true; await page.reload();
 		await profile.locator('[data-profile-section=schooling]').getByRole('button', { name: 'Try again', exact: true }).last().waitFor();
 		await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
-		failHistory = false; await profile.locator('[data-profile-section=schooling]').getByRole('button', { name: 'Try again', exact: true }).last().click();
+		fixture.failHistory = false; await profile.locator('[data-profile-section=schooling]').getByRole('button', { name: 'Try again', exact: true }).last().click();
 		await page.getByTestId('student-placement-history').waitFor();
 		// Status changes remain explicit; a failed save preserves the draft for retry.
 		await page.getByTestId('student-drawer-body').evaluate(element => element.scrollTop = 0);
@@ -186,9 +210,9 @@ async function main() {
 		await page.getByRole('button', { name: 'Change status', exact: true }).click();
 		const statusDialog = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Change status', exact: true }) });
 		await chooseOption(statusDialog.locator('#student-status'), 'inactive');
-		assert.equal(student.status, 'active'); failStatus = true;
+		assert.equal(student.status, 'active'); fixture.failStatus = true;
 		await statusDialog.getByTestId('form-modal-submit').click(); await statusDialog.getByTestId('form-modal-submit').waitFor({ state: 'visible' });
-		assert.equal(student.status, 'active'); failStatus = false;
+		assert.equal(student.status, 'active'); fixture.failStatus = false;
 		await statusDialog.getByTestId('form-modal-submit').click(); await statusDialog.waitFor({ state: 'hidden' });
 		assert.equal(student.status, 'inactive');
 		// School/class source and guardian identity survive contextual Back.
@@ -202,9 +226,9 @@ async function main() {
 		await profile.getByRole('button', { name: 'Approve', exact: true }).click();
 		await page.getByTestId('confirm-submit').click();
 		await page.getByTestId('confirm-modal').waitFor({ state: 'hidden' });
-		assert.equal(pending, false);
+		assert.equal(fixture.pending, false);
 		await profile.getByText('No portrait awaiting review.', { exact: true }).waitFor();
-		pending = true; await page.reload(); await profile.getByRole('button', { name: 'Reject', exact: true }).click();
+		fixture.pending = true; await page.reload(); await profile.getByRole('button', { name: 'Reject', exact: true }).click();
 		const reject = page.getByTestId('student-photo-reject-modal');
 		await reject.getByRole('textbox').fill('Please upload a clearer portrait.');
 		await reject.getByRole('button', { name: 'Reject', exact: true }).click();
@@ -212,23 +236,23 @@ async function main() {
 		assert.equal(requests.findLast(row => row.path.includes('review-student-photo'))?.body.rejectionReason, 'Please upload a clearer portrait.');
 		await profile.locator('input[type=file]').setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: png });
 		const crop = page.getByTestId('profile-photo-crop-dialog');
-		failPublish = true;
+		fixture.failPublish = true;
 		const failedPublication = page.waitForResponse(response => response.url().includes('publish-student-photo') && response.status() === 503);
 		await crop.getByRole('button', { name: 'Use this photo', exact: true }).click();
 		await failedPublication;
 		assert(await crop.isVisible(), 'A failed publication preserves the crop for retry');
-		failPublish = false;
+		fixture.failPublish = false;
 		await crop.getByRole('button', { name: 'Use this photo', exact: true }).click();
 		await crop.waitFor({ state: 'hidden' });
 		assert(requests.some(row => row.path.includes('publish-student-photo')), 'Replacement uses existing crop/upload/publication workflow');
 		assert.equal(await profile.locator('[data-profile-section=portrait] img').count(), 0, 'Published portrait is never duplicated in body');
 		// Delay a medical response across navigation: the previous student cannot seed the next one.
-		delayHealth = true;
+		fixture.delayHealth = true;
 		await page.goto(`${new URL(server.url).origin}/school/students/child/profile`);
 		await page.waitForFunction(() => !!document.querySelector('[data-testid=student-profile]'));
 		for (let attempt = 0; !releaseHealth && attempt < 100; attempt++) await page.waitForTimeout(10);
 		assert(releaseHealth, 'Delayed medical request was issued');
-		delayHealth = false;
+		fixture.delayHealth = false;
 		await page.goto(`${new URL(server.url).origin}/school/students/child2/profile`);
 		releaseHealth(); releaseHealth = undefined;
 		await profile.locator('[data-profile-section=health]').getByText('A+', { exact: true }).waitFor();

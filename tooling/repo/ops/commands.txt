@@ -300,6 +300,11 @@ Run CI verification and release operations.
 
 Commands:
   verify                   Run repository checks, workflow lint, tooling tests, quality, builds and unit tests.
+  quality                  Run repository checks, workflow lint, lint and type checks.
+  build                    Build release artifacts once and record stage evidence.
+  finalize                 Qualify existing artifacts from matching stage evidence without rebuilding.
+  prepare-inputs           Archive immutable client and dependency input identity.
+  restore-inputs           Restore and validate frozen inputs for this run attempt.
   qualify                  Verify, integrate, build and qualify a release.
   deploy                   Deploy existing qualified release artifacts.
   workflows                Validate workflow definitions.
@@ -323,6 +328,114 @@ Options:
 
 Examples:
   bun repo ci verify
+
+Usage: bun repo ci quality [command]
+
+Run repository checks, workflow lint, lint and type checks.
+
+Commands:
+  checks                   Run repository and workflow checks.
+  lint                     Run workspace lint.
+  types                    Run workspace type checks.
+  finalize                 Validate complete matching quality evidence.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci quality
+
+Usage: bun repo ci quality checks
+
+Run repository and workflow checks.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci quality checks
+
+Usage: bun repo ci quality lint
+
+Run workspace lint.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci quality lint
+
+Usage: bun repo ci quality types
+
+Run workspace type checks.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci quality types
+
+Usage: bun repo ci quality finalize
+
+Validate complete matching quality evidence.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci quality finalize
+
+Usage: bun repo ci build <staging|production>
+
+Build release artifacts once and record stage evidence.
+
+Arguments:
+  environment              Values: staging, production.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci build staging
+
+Usage: bun repo ci finalize <staging|production>
+
+Qualify existing artifacts from matching stage evidence without rebuilding.
+
+Arguments:
+  environment              Values: staging, production.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci finalize staging
+
+Usage: bun repo ci prepare-inputs <staging|production>
+
+Archive immutable client and dependency input identity.
+
+Arguments:
+  environment              Values: staging, production.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci prepare-inputs staging
+
+Usage: bun repo ci restore-inputs <staging|production>
+
+Restore and validate frozen inputs for this run attempt.
+
+Arguments:
+  environment              Values: staging, production.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci restore-inputs staging
 
 Usage: bun repo ci qualify <staging|production>
 

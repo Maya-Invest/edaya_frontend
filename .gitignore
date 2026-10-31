@@ -66,6 +66,7 @@ apps/webapp/.screenshots/
 .release/
 .ci-evidence/
 .cache/repo-tools/
+.cache/quality/
 
 .cache/clients/
 

@@ -4,6 +4,7 @@ on:
     branches: [main, staging]
 permissions:
   contents: read
+  actions: read
   deployments: read
 concurrency:
   group: pr-${{ github.event.pull_request.number }}

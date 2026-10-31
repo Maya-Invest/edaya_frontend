@@ -1,15 +1,18 @@
 import type { ChildProcess } from 'node:child_process'
+import type { RunOptions } from './runtime'
 import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 import { createInterface } from 'node:readline'
-import { redact, root, writeJson } from './runtime'
+import { redact, root, run, writeJson } from './runtime'
 /** Services are owned by one invocation (process groups on Unix); never stop a shared port. */
 export class Services {
   private children: ChildProcess[] = []
+  private controller = new AbortController()
   private cancelled = false
   private failed = false
   private onSignal = () => {
     this.cancelled = true
+    this.controller.abort()
     void this.stop().catch(() => {
     })
   }
@@ -45,10 +48,24 @@ export class Services {
     }
     child.on('error', () => {
       this.failed = true
+      this.controller.abort()
       record('Service could not start')
     })
-    child.on('exit', (code, signal) => record(`Service exited: ${code ?? signal}`))
+    child.on('exit', (code, signal) => {
+      record(`Service exited: ${code ?? signal}`)
+      if (!this.stopping) {
+        this.failed = true
+        this.controller.abort()
+      }
+    })
     return child
+  }
+
+  async run(command: readonly string[], options: RunOptions = {}): Promise<string> {
+    this.assertRunning()
+    const output = await run(command, { ...options, signal: this.controller.signal })
+    this.assertRunning()
+    return output
   }
 
   async wait(): Promise<void> {

@@ -72,7 +72,9 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
   } else if (type === 'subjects') {
     const disciplineId = crypto.randomUUID();
     await request('/core/commands/configure-academic-discipline', { id: disciplineId, schoolId, code: unique, name: unique, isActive: true });
-    csv = { nom: unique, niveau: level.id, abbreviation: unique, coefficient: '2', discipline_code: disciplineId };
+    const category = (await list('subject-categories'))[0];
+    assert(category, 'Subject import requires a persisted category');
+    csv = { nom: unique, niveau: level.id, abbreviation: unique, coefficient: '2', discipline_code: unique, category: category.id };
     collection = 'subjects'; matches = row => row.name === unique;
   } else if (type === 'staff' || type === 'teachers') {
     csv = { code: unique, prenom: 'Integration', nom: unique, email: `${unique}@integration.edaya.test`, ...(type === 'staff' ? { role: 'Secrétaire', phone: '00000123' } : {}) };
@@ -122,7 +124,7 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
     await page.getByTestId('import-action').click();
     const modal = page.getByTestId('data-import-modal');
     await modal.waitFor({ state: 'visible', timeout: 15000 });
-    assert.equal(await page.getByTestId('import-mode').inputValue(), 'M');
+    assert.equal(await page.getByTestId('import-mode').locator('xpath=ancestor-or-self::*[@data-select-field][1]').locator('select[data-select-value]').inputValue(), 'M');
     await page.getByTestId('import-create').click();
     await chooseOption(page.getByTestId('data-import-type-select'), type);
     if (type === 'students') {

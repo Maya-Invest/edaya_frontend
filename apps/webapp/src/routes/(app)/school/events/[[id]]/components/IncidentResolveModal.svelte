@@ -103,10 +103,13 @@
 				loading = false;
 		}
 	}
+	// Compare identity values, so a refreshed instance of the same incident does
+	// not invalidate the command that caused that refresh.
+	const resolutionIdentity = $derived(open
+		? JSON.stringify([incident.id, academicContext.scopeGeneration, academicContext.periodId])
+		: null);
 	$effect(() => {
-		// Data refreshes must not replace a draft; identity/scope changes must.
-		const identity = [open, incident.id, academicContext.scopeGeneration, academicContext.periodId];
-		if (identity[0])
+		if (resolutionIdentity)
 			untrack(() => void loadModalData());
 		return () => {
 			loadGeneration += 1;

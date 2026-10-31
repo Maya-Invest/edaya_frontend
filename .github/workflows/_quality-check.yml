@@ -1,0 +1,71 @@
+name: Quality
+on:
+  workflow_call:
+    inputs:
+      source_ref:
+        type: string
+        required: true
+      backend_sha:
+        type: string
+        required: true
+      target:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      CI_SOURCE_SHA: ${{ inputs.source_ref }}
+      CI_BACKEND_SHA: ${{ inputs.backend_sha }}
+      CI_TARGET: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          source_sha: ${{ inputs.source_ref }}
+          backend_sha: ${{ inputs.backend_sha }}
+          target: ${{ inputs.target }}
+      - name: Restore quality caches
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            .cache/quality/
+            .cache/repo-tools/
+          key: ${{ runner.os }}-${{ runner.arch }}-quality-v1-${{ hashFiles('bun.lock', '.generated/client.json', '**/tsconfig*.json', '**/eslint.config.*', 'turbo.json', '.github/actions/setup/action.yml', '!**/node_modules/**') }}-${{ inputs.source_ref }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-quality-v1-${{ hashFiles('bun.lock', '.generated/client.json', '**/tsconfig*.json', '**/eslint.config.*', 'turbo.json', '.github/actions/setup/action.yml', '!**/node_modules/**') }}-
+      - name: Repository and workflow checks
+        run: bun run repo ci quality checks
+      - name: ESLint
+        run: bun run repo ci quality lint
+      - name: Type checks
+        run: bun run repo ci quality types
+      - name: Finalize quality evidence
+        if: always()
+        run: bun run repo ci quality finalize
+      - name: Upload quality details
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: quality-details-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          if-no-files-found: warn
+          path: .ci-evidence/quality/
+      - name: Upload stage evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: stage-quality-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          if-no-files-found: error
+          path: .ci-evidence/stages/quality.json

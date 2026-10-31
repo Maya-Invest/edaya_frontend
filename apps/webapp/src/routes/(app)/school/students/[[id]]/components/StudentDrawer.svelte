@@ -102,9 +102,9 @@
 			modals.close();
 			return;
 		}
-		const profileLoaded = profileTab.slice?.studentId === student.id;
+		const notesLoaded = profileTab.statusFor('notes', student.id)?.status === 'ready';
 		const onProfileRoute = $page.route.id?.endsWith('/(tabs)/profile') ?? false;
-		if ((!profileLoaded && !onProfileRoute) || (profileLoaded && !editingNote)) {
+		if ((!notesLoaded && !onProfileRoute) || (notesLoaded && !editingNote)) {
 			modals.close();
 		}
 	});

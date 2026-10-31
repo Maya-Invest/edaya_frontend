@@ -36,16 +36,16 @@ const fixtureName = (collection: string, key: keyof MatrixEntities, field = 'nam
 };
 const studentProfile: ReadScenario = async ctx => {
   const student = await entity(ctx, 'students', ctx.entities.studentId);
-  await shown(ctx, student.lastName, 'aside[aria-label]');
-  await shown(ctx, student.firstName, 'aside[aria-label]');
+  await shown(ctx, student.lastName, '[role="dialog"].ui-drawer');
+  await shown(ctx, student.firstName, '[role="dialog"].ui-drawer');
 };
 const grades: ReadScenario = async ctx => {
   const results = await list(ctx, 'assessment-results', {studentId:ctx.entities.studentId});
   const result = results.find(row => row.assessmentId === ctx.entities.evaluationId);
   assert(result && typeof result.score === 'number', 'Required recorded assessment mark missing');
   const assessment = await entity(ctx, 'assessments', result.assessmentId);
-  await shown(ctx, assessment.title, 'aside[aria-label]');
-  const link = ctx.page.locator(`aside[aria-label] a[href*="/evaluations/${result.assessmentId}/"]`);
+  await shown(ctx, assessment.title, '[role="dialog"].ui-drawer');
+  const link = ctx.page.locator(`[role="dialog"].ui-drawer a[href*="/evaluations/${result.assessmentId}/"]`);
   await link.waitFor({state:'visible'});
   assert((await link.locator('..').innerText()).includes(result.score.toFixed(1)), 'Rendered mark differs from the persisted assessment result');
 };
@@ -54,14 +54,14 @@ const enrollments: ReadScenario = async ctx => {
   const enrollment = rows.find(row => row.status === 'active');
   assert(enrollment, 'Required active enrollment missing');
   const classroom = await entity(ctx, 'class-groups', enrollment.classGroupId);
-  await shown(ctx, classroom.name, 'aside[aria-label]');
+  await shown(ctx, classroom.name, '[role="dialog"].ui-drawer');
   const year = await entity(ctx, 'academic-years', enrollment.academicYearId);
-  await shown(ctx, year.name, 'aside[aria-label]');
+  await shown(ctx, year.name, '[role="dialog"].ui-drawer');
 };
 const finance: ReadScenario = async ctx => {
   const charges = await list(ctx, 'student-charges', {studentId:ctx.entities.studentId});
   for (const charge of charges) {
-    await shown(ctx, charge.label, 'aside[aria-label]');
+    await shown(ctx, charge.label, '[role="dialog"].ui-drawer');
   }
 };
 const inbox: ReadScenario = async ctx => {
@@ -78,14 +78,14 @@ const documents: ReadScenario = async ctx => {
 const attendance: ReadScenario = async ctx => {
   const rows = await list(ctx, 'attendance', {studentId:ctx.entities.studentId});
   assert(rows.some(row => ['absent','present','late','excused'].includes(row.status)), 'Required attendance record missing');
-  await ctx.page.locator('aside[aria-label]').getByText(/présent|absent|retard|justifié|present|late|excused/i).first().waitFor();
+  await ctx.page.locator('[role="dialog"].ui-drawer').getByText(/présent|absent|retard|justifié|present|late|excused/i).first().waitFor();
 };
 
 async function exerciseFilter(ctx: ReadContext, positive: string, row: Locator, urlField?: string) {
   assert(positive, 'Required filter fixture value missing');
   const select = ctx.page.locator('[data-select-field]:has([data-testid="list-filter-select"]) select[data-select-value]').filter({has:ctx.page.locator(`option[value="${positive}"]`)}).first();
   const openFilter = async () => {
-    if (!await selectTrigger(select).isVisible()) await ctx.page.getByTestId('list-filter').first().click();
+    if (!await selectTrigger(select).isVisible()) await ctx.page.getByTestId('collection-filter').first().click();
     await selectTrigger(select).waitFor();
   };
   const choose = async (value: string) => {
@@ -148,7 +148,9 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     await searchFixture(ctx,subject.name,ctx.page.locator('main').getByText(subject.name,{exact:true}).filter({visible:true}).first());
   },
   'web.scenario.0116': async ctx => {
-    const day=(offset:number)=>{const value=new Date();value.setUTCDate(value.getUTCDate()+offset);return value.toISOString().slice(0,10);};
+    const completeDay = decodeURIComponent(ctx.entities.dayId ?? '').split(':').at(-1);
+    assert(completeDay && /^\d{4}-\d{2}-\d{2}$/.test(completeDay), 'Required complete attendance fixture day missing');
+    const day=(offset:number)=>{const value=new Date(`${completeDay}T00:00:00Z`);value.setUTCDate(value.getUTCDate()+offset);return value.toISOString().slice(0,10);};
     for(const [status,offset] of [['marked',0],['partial',1],['unmarked',2]] as const) {
       await exerciseFilter(ctx,status,ctx.page.locator(`[data-attendance-id="${ctx.entities.classId}:${day(offset)}"]`));
     }
@@ -194,16 +196,20 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     ]);
     assert(response.ok(), `Notification settings HTTP ${response.status()}`);
     const staff = await response.json();
-    const input = ctx.page.locator('#staff-notification-email');
-    await input.waitFor();
-    assert.equal(await input.inputValue(),staff.notificationEmail ?? '');
+    const selected = ctx.page.locator('main input[type=radio]:checked');
+    await selected.waitFor();
+    assert.equal(await selected.inputValue(), staff.notificationEmail ? 'custom' : 'default');
+    if (staff.notificationEmail) assert.equal(await ctx.page.locator('main input[type=email]').inputValue(), staff.notificationEmail);
   },
   'web.scenario.0017': async ctx => {
     await inbox(ctx);
     const d = await entity(ctx,'message-deliveries',ctx.entities.deliveryId);
+    await ctx.page.goto(`${ctx.base}/account/inbox`, { waitUntil: 'domcontentloaded' });
+    await ctx.page.locator('main tbody button.ui-record-target').filter({ hasText: d.title }).click();
     const drawer = ctx.page.getByTestId('inbox-message-drawer');
     await drawer.waitFor({state:'visible'});
     await shown(ctx,d.body,'[data-testid="inbox-message-drawer"]');
+    await drawer.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
     const bounds = await drawer.boundingBox();
     const viewport = ctx.page.viewportSize();
     assert(bounds && viewport, 'Inbox drawer geometry unavailable');
@@ -235,7 +241,7 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     await search.fill('');
     await shown(ctx,guardian.lastName);
   },
-  'web.scenario.0045': fixtureName('students','studentId','lastName','aside[aria-label]'),
+  'web.scenario.0045': fixtureName('students','studentId','lastName','[role="dialog"].ui-drawer'),
   'web.scenario.0046': fixtureName('staff-members','staffId','lastName'),
   'web.scenario.0051': fixtureName('teachers','teacherId','lastName'),
   'web.scenario.0064': async ctx => {
@@ -260,9 +266,9 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     const moderator = await entity(ctx,'staff-members',campaign.moderatorStaffId);
     const assignment = await entity(ctx,'teacher-assignments',campaign.teacherAssignmentId);
     const teacher = await entity(ctx,'teachers',assignment.teacherId);
-    await shown(ctx,period.name ?? period.label,'aside[aria-label]');
-    await shown(ctx,moderator.lastName,'aside[aria-label]');
-    await shown(ctx,teacher.lastName,'aside[aria-label]');
+    await shown(ctx,period.name ?? period.label,'[role="dialog"].ui-drawer');
+    await shown(ctx,moderator.lastName,'[role="dialog"].ui-drawer');
+    await shown(ctx,teacher.lastName,'[role="dialog"].ui-drawer');
   },
   'web.scenario.0090': async ctx => {
     const student = await entity(ctx,'students',ctx.entities.studentId);
@@ -277,12 +283,12 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     const student = await entity(ctx,'students',report.studentId);
     await exerciseFilter(ctx,report.status,ctx.page.locator('main tr').filter({hasText:student.lastName}));
   },
-  'web.scenario.0066': fixtureName('activities','activityId','name','aside[aria-label]'),
+  'web.scenario.0066': fixtureName('activities','activityId','name','[role="dialog"].ui-drawer'),
   'web.scenario.0067': async ctx => {
     const enrollment = (await list(ctx,'activity-enrollments',{activityId:ctx.entities.activityId}))[0]!;
-    await shown(ctx,(await entity(ctx,'students',enrollment.studentId)).lastName,'aside[aria-label]');
+    await shown(ctx,(await entity(ctx,'students',enrollment.studentId)).lastName,'[role="dialog"].ui-drawer');
   },
-  'web.scenario.0068': fixtureName('class-groups','classId','name','aside[aria-label]'),
+  'web.scenario.0068': fixtureName('class-groups','classId','name','[role="dialog"].ui-drawer'),
   'web.scenario.0081': async ctx => {
     const [response] = await Promise.all([
       ctx.page.waitForResponse(response=>response.url().endsWith('/queries/preview-family-feedback-audience')),
@@ -291,8 +297,8 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     assert(response.ok());
     const audience = await response.json();
     assert(audience.eligibleCount > 0, 'Required eligible feedback audience missing');
-    await shown(ctx,`${audience.eligibleCount} élèves éligibles`,'aside[aria-label]');
-    await shown(ctx,`${audience.completedCount} réponses`,'aside[aria-label]');
+    await shown(ctx,`${audience.eligibleCount} élèves éligibles`,'[role="dialog"].ui-drawer');
+    await shown(ctx,`${audience.completedCount} réponses`,'[role="dialog"].ui-drawer');
   },
   'web.scenario.0082': async ctx => {
     const [response] = await Promise.all([
@@ -302,8 +308,8 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     assert(response.ok());
     const {comments} = await response.json();
     assert(Array.isArray(comments), 'Required moderation response missing');
-    if (comments.length) for(const comment of comments) await shown(ctx,comment.comment,'aside[aria-label]');
-    else await shown(ctx,'Aucun commentaire.','aside[aria-label]');
+    if (comments.length) for(const comment of comments) await shown(ctx,comment.comment,'[role="dialog"].ui-drawer');
+    else await shown(ctx,'Aucun commentaire.','[role="dialog"].ui-drawer');
     const campaign = await apiFetch(ctx.page,ctx.base,'/core/queries/get-family-feedback-campaign',{method:'POST',data:{id:ctx.entities.familyFeedbackCampaignId}});
     assert(campaign.ok());
     assert.equal((await campaign.json() as Data).themeDraft,'QA theme','The theme entered in the UI must remain persisted');
@@ -312,15 +318,15 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   'web.scenario.0092': studentProfile,
   'web.scenario.0093': grades,
   'web.scenario.0094': attendance,
-  'web.scenario.0095': async ctx => { const incidents = await list(ctx,'incidents',{studentId:ctx.entities.studentId}); await shown(ctx,incidents[0]!.title,'aside[aria-label]'); },
+  'web.scenario.0095': async ctx => { const incidents = await list(ctx,'incidents',{studentId:ctx.entities.studentId}); await shown(ctx,incidents[0]!.title,'[role="dialog"].ui-drawer'); },
   'web.scenario.0096': finance,
   'web.scenario.0097': async ctx => {
     const reports = await list(ctx,'results',{studentId:ctx.entities.studentId});
     const report = reports.find(row=>row.status==='published');
     assert(report,'Required published student report missing');
-    await ctx.page.locator('aside[aria-label]').getByText(/^(publié|published)$/i).waitFor();
+    await ctx.page.locator('[role="dialog"].ui-drawer').getByText(/^(publié|published)$/i).waitFor();
     assert(typeof report.overallAverage === 'number','Required computed report average missing');
-    await shown(ctx,String(report.overallAverage),'aside[aria-label]');
+    await shown(ctx,String(report.overallAverage),'[role="dialog"].ui-drawer');
   },
   'web.scenario.0098': enrollments,
   'web.scenario.0100': async ctx => {
@@ -344,14 +350,32 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     await ctx.page.getByRole('button',{name:/semaine précédente|previous week/i}).click();
     await ctx.page.waitForFunction(previous => (document.querySelector('#planning-week-picker') as HTMLInputElement)?.value === previous,before);
   },
-  'web.scenario.0102': fixtureName('lesson-sessions','sessionId','displayLabel','aside[aria-label]'),
+  'web.scenario.0102': fixtureName('lesson-sessions','sessionId','displayLabel','[role="dialog"].ui-drawer'),
   'web.scenario.0103': async ctx => {
-    const button = ctx.page.locator('aside[aria-label]').getByRole('button',{name:/tout marquer présent|mark all present|tous présents/i});
-    await uiCommand(ctx.page,'/commands/record-lesson-session-attendance',()=>button.click());
-    await ctx.page.reload({waitUntil:'domcontentloaded'});
-    const rows = await list(ctx,'attendance',{lessonSessionId:ctx.entities.sessionId});
-    assert(rows.length >= 2 && rows.every(row=>row.status === 'present'), 'Every enrolled student must have persisted present attendance');
-    await shown(ctx,(await entity(ctx,'students',ctx.entities.studentId)).lastName,'aside[aria-label]');
+    const classroom = await entity(ctx, 'class-groups', ctx.entities.classId);
+    const configure = async (mode: string) => {
+      const response = await apiFetch(ctx.page, ctx.base, '/core/commands/update-class-group-configuration', { method: 'POST', data: {
+        classGroupId: classroom.id, name: classroom.name, capacity: classroom.capacity ?? null,
+        homeroomStaffId: classroom.homeroomStaffId ?? null, attendanceMode: mode,
+      } });
+      assert(response.ok(), `Session attendance configuration HTTP ${response.status()}`);
+      await ctx.page.reload({ waitUntil: 'domcontentloaded' });
+      await waitForPageQuery(ctx.page);
+    };
+    try {
+      await configure('session');
+      const drawer = ctx.page.locator('[role="dialog"].ui-drawer');
+      await drawer.getByRole('button', { name: /^(faire l’appel|take attendance)$/i }).click();
+      const task = ctx.page.getByTestId('form-modal');
+      await task.getByRole('button', { name: /tout marquer présent|mark all present|tous présents/i }).click();
+      await uiCommand(ctx.page, '/commands/record-lesson-session-attendance', () => task.getByRole('button', { name: /^(enregistrer|save)$/i }).click());
+      await task.getByRole('button', { name: /^(fermer|close)$/i }).last().click();
+      await task.waitFor({ state: 'hidden' });
+      await ctx.page.reload({ waitUntil: 'domcontentloaded' });
+      const rows = await list(ctx, 'attendance', { lessonSessionId: ctx.entities.sessionId });
+      assert(rows.length >= 2 && rows.every(row => row.status === 'present'), 'Every enrolled student must have persisted present attendance');
+      await shown(ctx, (await entity(ctx, 'students', ctx.entities.studentId)).lastName, '[role="dialog"].ui-drawer');
+    } finally { await configure(classroom.attendanceMode); }
   },
   'web.scenario.0104': async ctx => {
     const content = `Integration lesson ${crypto.randomUUID()}`;
@@ -367,24 +391,24 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     assert.equal((await entity(ctx,'lesson-sessions',ctx.entities.sessionId)).sessionNote,content);
     const progress = await list(ctx,'class-subject-progress',{lessonSessionId:ctx.entities.sessionId});
     assert(progress.some(row=>row.completedPercentage===45 && row.notes===content));
-    await shown(ctx,content,'aside[aria-label]');
+    await shown(ctx,content,'[role="dialog"].ui-drawer');
   },
   'web.scenario.0108': async ctx => {
     const matters = await list(ctx,'class-subject-matters',{classSubjectId:ctx.entities.teachingId});
     const matter = await entity(ctx,'subject-matters',matters[0]!.subjectMatterId);
-    await shown(ctx,matter.name,'aside[aria-label]');
+    await shown(ctx,matter.name,'[role="dialog"].ui-drawer');
   },
   'web.scenario.0109': async ctx => {
     const session = await entity(ctx,'lesson-sessions',ctx.entities.sessionId);
-    await shown(ctx,session.sessionNote,'aside[aria-label]');
+    await shown(ctx,session.sessionNote,'[role="dialog"].ui-drawer');
   },
   'web.scenario.0160': async ctx => {
     assert(ctx.entities.configurationSubjectId, 'Required catalog subject route ID missing');
     await ctx.page.waitForURL(url => url.pathname.endsWith(`/configuration/structure/subjects/${ctx.entities.configurationSubjectId}/progression`));
-    await ctx.page.getByRole('complementary', { name: /catalogue des matières|subjects catalog/i }).waitFor();
+    await ctx.page.getByRole('dialog', { name: /catalogue des matières|subjects catalog/i }).waitFor();
   },
   'web.scenario.0105': fixtureName('subjects','subjectId'),
-  'web.scenario.0113': fixtureName('assessments','evaluationId','title','aside[aria-label]'),
+  'web.scenario.0113': fixtureName('assessments','evaluationId','title','[role="dialog"].ui-drawer'),
   'web.scenario.0115': async ctx => {
     assert(ctx.entities.dayId,'Required recorded attendance day missing');
     const row = ctx.page.locator(`[data-attendance-id="${decodeURIComponent(ctx.entities.dayId!)}"]`);
@@ -393,16 +417,16 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     assert(records.some(row=>row.attendanceId),'Required daily attendance record missing');
     await row.click();
     await ctx.page.waitForURL(url=>decodeURIComponent(url.pathname).endsWith(`/attendance/${decodeURIComponent(ctx.entities.dayId!)}`));
-    await shown(ctx,(await entity(ctx,'students',ctx.entities.studentId)).lastName,'aside[aria-label]');
+    await shown(ctx,(await entity(ctx,'students',ctx.entities.studentId)).lastName,'[role="dialog"].ui-drawer');
   },
   'web.scenario.0122': async ctx => {
     const report = await entity(ctx,'results',ctx.entities.reportCardId);
     assert.equal(report.status,'published');
     const student = await entity(ctx,'students',report.studentId);
-    await shown(ctx,student.lastName,'aside[aria-label]');
-    await ctx.page.locator('aside[aria-label]').getByText(/^(publié|published)$/i).waitFor();
+    await shown(ctx,student.lastName,'[role="dialog"].ui-drawer');
+    await ctx.page.locator('[role="dialog"].ui-drawer').getByText(/^(publié|published)$/i).waitFor();
     assert(report.teacherComment, 'Required persisted homeroom comment missing');
-    await shown(ctx,report.teacherComment,'aside[aria-label]');
+    await shown(ctx,report.teacherComment,'[role="dialog"].ui-drawer');
   },
   'web.scenario.0135': async ctx => {
     const account = (await list(ctx,'student-year-accounts',{studentId:ctx.entities.studentId}))[0]!;

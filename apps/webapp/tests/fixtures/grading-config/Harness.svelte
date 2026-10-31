@@ -2,9 +2,9 @@
  import SubjectsList from '../../../src/routes/(app)/configuration/structure/subjects/components/SubjectsList.svelte';
  import GradeScalesList from '../../../src/routes/(app)/configuration/grade-scales/components/GradeScalesList.svelte';
  import SchoolSettingsView from '../../../src/routes/(app)/configuration/school/components/SchoolSettingsView.svelte';
- import GradeLevelFormModal from '../../../src/routes/(app)/configuration/structure/levels/components/GradeLevelFormModal.svelte';
+ import LevelFormHarness from './LevelFormHarness.svelte';
  import { setLang } from '../../../src/lib/i18n';
- import { evidence, level } from './action-state.svelte';
+ import { evidence } from './action-state.svelte';
  import { page, appGoto } from './navigation';
  import { access } from './permissions.svelte';
  let gradingOpen = $state(false);
@@ -29,4 +29,4 @@
  {:else if $page.url.pathname.includes('/school')}<SchoolSettingsView />
  {:else}<GradeScalesList />{/if}
 </main>
-<GradeLevelFormModal bind:open={gradingOpen} gradeLevel={createLevel ? undefined : evidence.savedLevel ?? level} {confirm} onConfirmStep={value => confirm = value} />
+<LevelFormHarness bind:open={gradingOpen} create={createLevel} {confirm} onConfirmStep={value => confirm = value} />

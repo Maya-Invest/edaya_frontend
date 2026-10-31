@@ -250,10 +250,10 @@ export function modalMutationSteps<C extends BrowserScenarioContext>(input: Moda
 			state.submitted = false;
 		}
 	}
-	state.closed = state.submitted
+	state.result = state.submitted ? await resultPromise : null;
+	state.closed = state.submitted && state.result !== null
 		? await waitForDialogClosed(page).catch(() => false)
 		: false;
-	state.result = state.submitted ? await resultPromise : null;
 	if (!state.submitted) {
 		console.log(`modal ${input.modal} submit stayed disabled (${input.command})`);
 	}
@@ -280,7 +280,7 @@ export function modalMutationSteps<C extends BrowserScenarioContext>(input: Moda
 	}
 	state.postcondition = state.submitted && state.closed && state.result !== null && (!input.visibleAfter || visible) && persisted;
 	if (!state.postcondition) await hooks.shot(`failure-postcondition-${input.command.replaceAll('/', '-')}-${input.modal}`);
-	assert(state.postcondition, `${input.command}: mutation or persistence assertion failed`);
+	assert(state.postcondition, `${input.command}: mutation or persistence assertion failed (submitted=${state.submitted}, closed=${state.closed}, response=${state.result !== null}, persisted=${persisted})`);
 
     } },
   ];
@@ -332,19 +332,15 @@ async function waitForCommandResponse(
 	commandFragment: string,
 	timeout = 45_000,
 ): Promise<import('playwright').Response | null> {
-	return page.waitForResponse(
-		(res) => {
-			if (res.request().method() !== 'POST' || !matchesCommandResponse(res.url(), commandFragment)) {
-				return false;
-			}
-			if (!res.ok()) {
-				console.log(`command ${commandFragment} status=${res.status()}`);
-				return false;
-			}
-			return true;
-		},
+	const response = await page.waitForResponse(
+		res => res.request().method() === 'POST' && matchesCommandResponse(res.url(), commandFragment),
 		{ timeout },
 	).catch(() => null);
+	if (response && !response.ok()) {
+		const detail = redactDiagnostic((await response.text().catch(() => '')).slice(0, 1000));
+		console.log(`command ${commandFragment} status=${response.status()} ${detail}`);
+	}
+	return response;
 }
 
 export async function waitForCommandPayload(
@@ -436,7 +432,7 @@ export async function publishAnnouncement(
   await addTarget();
   const before = await targets();
   await page.getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL }).first().click();
-  await uiCommand(page, '/entities/announcement-targets/delete', () => page.getByRole('dialog').getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL }).click());
+  await uiCommand(page, '/entities/announcement-targets/delete', () => page.getByTestId('confirm-modal').getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL }).click());
   await waitForMutationDialog(page);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForPageQuery(page);
@@ -457,10 +453,11 @@ async function recordCompletionFilterFixtureDays(
 	page: Page,
 	base: string,
 	classId: string,
+	completeDay: string,
 	studentId?: string | null,
 ): Promise<void> {
 	const isoDay = (offsetDays: number) => {
-		const next = new Date();
+		const next = new Date(`${completeDay}T00:00:00Z`);
 		next.setUTCDate(next.getUTCDate() + offsetDays);
 		return next.toISOString().slice(0, 10);
 	};
@@ -474,7 +471,7 @@ async function recordCompletionFilterFixtureDays(
 	}), 'Unmarked attendance fixture failed');
 }
 
-export async function recordAttendanceForToday(
+export async function recordAttendanceForFixtureDay(
   journey: UiJourney,
   classId: string,
 ): Promise<string | null> {
@@ -483,12 +480,18 @@ export async function recordAttendanceForToday(
   assert(studentId, 'Required attendance student missing');
   await ensureDailyAttendanceMode(journey.ctx, classId, { force: true });
   assert(await ensureDailyAttendanceViaApi(page, base, classId, journey.entities.staffId), 'Daily attendance configuration failed');
-  const today = new Date().toISOString().slice(0, 10);
-  const dayId = `${classId}:${today}`;
+  // Attendance is recorded at midnight, after these newly created enrollments.
+  // Keep separate days for complete, partial and unmarked filter fixtures.
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + 3);
+  const dayId = `${classId}:${date.toISOString().slice(0, 10)}`;
+  assert(await recordDailyAttendanceViaApi(page, base, classId, null, undefined, {
+    date: date.toISOString().slice(0, 10), attendanceByStudent: {},
+  }), 'Unrecorded attendance occurrence fixture failed');
   const path = `/classes/${classId}/attendance/${encodeURIComponent(dayId)}`;
   await gotoApp(journey, path);
   await waitForPageQuery(page);
-  const markAll = page.locator('aside[aria-label]').getByRole('button', { name: /mark all present|tout marquer présent|marquer tous présents|tous présents/i });
+  const markAll = page.locator('[role="dialog"].ui-drawer').getByRole('button', { name: /mark all present|tout marquer présent|marquer tous présents|tous présents/i });
   const bulk = await uiCommand(page, '/commands/record-class-daily-attendance', () => markAll.click());
   const bulkRecords = await bulk.json() as Array<{attendanceId:string;studentId:string;status:string}>;
   const attendanceId = bulkRecords[0]?.attendanceId;
@@ -512,7 +515,7 @@ export async function recordAttendanceForToday(
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForPageQuery(page);
   assert.equal((await readRecords()).find(row => row.studentId === studentId)?.status, nextStatus, 'Edited daily attendance must persist');
-  await recordCompletionFilterFixtureDays(page, base, classId, studentId);
+  await recordCompletionFilterFixtureDays(page, base, classId, date.toISOString().slice(0, 10), studentId);
   return dayId;
 }
 

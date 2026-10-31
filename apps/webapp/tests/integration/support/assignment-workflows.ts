@@ -46,7 +46,7 @@ export async function exerciseAssignmentCrud(page: Page, base: string, scenarioI
     assert.equal(value.teacherId, teacherId);
     assert.equal(value.classGroupId, classId);
     assert.equal(value.kind, kind);
-    await page.locator('main').getByText(`Integration assignment ${classId}`, { exact: false }).filter({ visible: true }).first().waitFor();
+    await page.locator(hub ? 'main' : '[role=dialog].ui-drawer').getByText(`Integration assignment ${classId}`, { exact: false }).filter({ visible: true }).first().waitFor();
   };
   await persisted('homeroom');
   if (!hub) {

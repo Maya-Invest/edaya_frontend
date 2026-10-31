@@ -1,8 +1,8 @@
 import { redactDiagnostic, runScenarios } from '../support/scenario-registry';
 import { withArtifactScope } from '../support/scenario-artifacts';
 import { createRequiredReadFixtures } from './required-read-fixtures';
-import { apiFetch, publishAcademicPeriodsViaApi } from './journey-api';
-import { waitForPageQuery } from '../../../scripts/qa-harness-ui';
+import { apiFetch, publishAcademicPeriodsViaApi, resolveSchoolId } from './journey-api';
+import { waitForPageQuery, waitForResolvedAcademicYearId } from '../../../scripts/qa-harness-ui';
 import assert from 'node:assert/strict';
 /**
  * Owner UI journey — one Playwright session, seed order as dependency spine,
@@ -79,9 +79,13 @@ export async function runUiJourney(
 		await publishAcademicPeriodsViaApi(ctx.page, ctx.base);
 		await ctx.page.goto(`${ctx.base}/dashboard`, { waitUntil: 'domcontentloaded' });
 		await waitForPageQuery(ctx.page);
+		await waitForResolvedAcademicYearId(ctx.page);
 		const yearId = await ctx.page.getByTestId('academic-year-trigger').getAttribute('data-year-id');
-		const response = await apiFetch(ctx.page, ctx.base, '/core/entities/academic-periods/list', { method: 'POST', data: { academicYearId: yearId } });
-		assert(response.ok(), 'Required fixture academic periods missing');
+		assert(yearId, 'Required fixture academic year missing');
+		const schoolId = await resolveSchoolId(ctx.page, ctx.base);
+		assert(schoolId, 'Required fixture school missing');
+		const response = await apiFetch(ctx.page, ctx.base, '/core/entities/academic-periods/list', { method: 'POST', data: { schoolId, academicYearId: yearId }, academicYearId: yearId });
+		assert(response.ok(), `Required fixture academic periods missing: HTTP ${response.status()} ${await response.text()}`);
 		const periods = await response.json() as Array<{ id: string; name: string; startDate: string }>;
 		const period = periods.sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
 		assert(period, 'Required fixture academic period missing');

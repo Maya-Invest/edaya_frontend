@@ -44,7 +44,7 @@ async function request(path: string, data: unknown, method = 'POST') {
 }
 async function open(modal: string, target = '') {
 	await page.goto(`${base}/school/staff/${staffId}/permissions?modal=${modal}${target ? `&modalTarget=${target}` : ''}`);
-	await page.getByRole('dialog').waitFor();
+	await page.locator('[role="dialog"]:not(.ui-drawer)').waitFor();
 	await page.getByTestId('form-modal-submit').waitFor();
 }
 async function review(path: string) {
@@ -108,7 +108,7 @@ try {
 		await emptyDrawer.waitFor();
 		await emptyDrawer.getByText(/No permissions in this profile|Ce profil ne contient aucune permission/).waitFor();
 		await emptyDrawer.getByRole('button', { name: /more actions|plus d.actions/i }).click();
-		await page.getByRole('menuitem', { name: /^(delete|supprimer)$/i }).click();
+		await page.getByRole('button', { name: /^(delete|supprimer)$/i }).click();
 		const confirm = page.getByTestId('confirm-modal');
 		await confirm.waitFor();
 		const deleted = page.waitForResponse(response => response.url().includes('/entities/staff-permission-profiles/delete'));
@@ -127,11 +127,11 @@ try {
 	// Start from the staff list before any Permissions tab has populated its catalog.
 	await page.route('**/authorization/permission-catalog', route => route.abort(), { times: 1 });
 	await page.goto(`${base}/school/staff?modal=create`);
-	const creation = page.getByRole('dialog');
+	const creation = page.locator('[role="dialog"]:not(.ui-drawer)');
 	await creation.getByRole('alert').waitFor();
-	assert(await creation.locator('select').isDisabled());
+	assert(await creation.locator('select[data-control-target]').isDisabled());
 	await creation.getByRole('button', { name: /try again|réessayer/i }).click();
-	await chooseOption(creation.locator('select'), profileId);
+	await chooseOption(creation.locator('select[data-control-target]'), profileId);
 	assert.equal(await creation.locator('[data-scope-grain="class_group"]').count(), 1, 'Mixed profile must offer class scope on a cold page');
 	await creation.locator('input').nth(0).fill('Permission');
 	await creation.locator('input').nth(1).fill('Regression');
@@ -156,9 +156,9 @@ try {
 
 
 	await open('default-scopes');
-	assert.equal(await page.getByRole('dialog').getByText(/Whole school|Toute l.école/i).count(), 0);
+	assert.equal(await page.locator('[role="dialog"]:not(.ui-drawer)').getByText(/Whole school|Toute l.école/i).count(), 0);
 	assert.equal(await page.locator('[data-scope-grain="class_subject"]').count(), 0);
-	const subjectSection = page.getByRole('dialog').locator('[data-scope-grain="subject"]');
+	const subjectSection = page.locator('[role="dialog"]:not(.ui-drawer)').locator('[data-scope-grain="subject"]');
 	await subjectSection.locator('summary').click();
 	await subjectSection.getByRole('button', { name: /add.*scope|ajouter.*périmètre/i }).click();
 	const classes = await request('entities/class-groups/list', { academicYearId: year });
@@ -178,7 +178,7 @@ try {
 	assert.equal(await subjectSection.locator('select').nth(3).inputValue(), '');
 	assert(await page.getByTestId('form-modal-submit').isDisabled());
 	await subjectSection.getByRole('button', { name: /^(remove|retirer)$/i }).click();
-	const group = page.getByRole('dialog').locator('[data-scope-grain="class_group"]');
+	const group = page.locator('[role="dialog"]:not(.ui-drawer)').locator('[data-scope-grain="class_group"]');
 	await group.locator('summary').click();
 	await group.getByRole('checkbox').check();
 	await staleReview('configure-staff-permission-scope-defaults', () => group.getByRole('checkbox').uncheck());
@@ -192,9 +192,9 @@ try {
 
 	await open('apply-profile');
 	await chooseOption(page.locator('#apply-profile-select'), profileId);
-	assert(await page.getByRole('dialog').getByRole('checkbox').first().isChecked());
-	await staleReview('apply-staff-permission-profile', () => page.getByRole('dialog').getByRole('checkbox').first().uncheck());
-	await page.getByRole('dialog').getByRole('checkbox').first().check();
+	assert(await page.locator('[role="dialog"]:not(.ui-drawer)').getByRole('checkbox').first().isChecked());
+	await staleReview('apply-staff-permission-profile', () => page.locator('[role="dialog"]:not(.ui-drawer)').getByRole('checkbox').first().uncheck());
+	await page.locator('[role="dialog"]:not(.ui-drawer)').getByRole('checkbox').first().check();
 	const appliedPreview = await review('apply-staff-permission-profile');
 	assert.equal(appliedPreview.resolution.changes.filter((row: any) => row.change === 'added').length, 2);
 	assert.equal((await request('entities/staff-permission-profile-bindings/list', { staffId, profileId, academicYearId: year })).length, 0);
@@ -252,9 +252,9 @@ try {
 	await uiCommand(page, '/commands/reorder-staff-permission-profiles', () => second.getByRole('button', { name: /move.*down|descendre/i }).click());
 	await card.getByTestId('scope-tag').first().waitFor();
 	await card.getByRole('button', { name: /^(edit|modifier)$/i }).click();
-	await page.getByRole('dialog').waitFor();
+	await page.locator('[role="dialog"]:not(.ui-drawer)').waitFor();
 	await page.keyboard.press('Escape');
-	await page.getByRole('dialog').waitFor({ state: 'hidden' });
+	await page.locator('[role="dialog"]:not(.ui-drawer)').waitFor({ state: 'hidden' });
 	assert.equal(await disclosure.getAttribute('aria-expanded'), 'true', 'Editing does not toggle disclosure');
 	await disclosure.click();
 	await second.locator('button[aria-expanded]').click();
@@ -291,7 +291,7 @@ try {
 	secondBindingSaved = false;
 
 	await open('default-scopes');
-	await page.getByRole('dialog').locator('[data-scope-grain="class_group"]').getByRole('checkbox').uncheck();
+	await page.locator('[role="dialog"]:not(.ui-drawer)').locator('[data-scope-grain="class_group"]').getByRole('checkbox').uncheck();
 	const removedPreview = await review('configure-staff-permission-scope-defaults');
 	assert(removedPreview.resolution.changes.some((row: any) => row.permission === 'GRADE_MANAGE' && row.change === 'removed'));
 	await save('configure-staff-permission-scope-defaults');
@@ -306,12 +306,12 @@ try {
 
 	await open('add-permission');
 	await chooseOption(page.locator('#permission-select'), 'STAFF_READ');
-	assert.equal(await page.getByRole('dialog').locator('details').count(), 0);
-	assert.equal(await page.getByRole('dialog').getByRole('checkbox').count(), 0);
+	assert.equal(await page.locator('[role="dialog"]:not(.ui-drawer)').locator('details').count(), 0);
+	assert.equal(await page.locator('[role="dialog"]:not(.ui-drawer)').getByRole('checkbox').count(), 0);
 	await chooseOption(page.locator('#permission-select'), 'GRADE_READ');
 	assert.match(await selectOptions(page.locator('#permission-select')).and(page.locator('option[value="GRADE_READ"]')).textContent() ?? '', /Classe|Class group/);
-	assert.equal(await page.getByRole('dialog').locator('[data-permission="GRADE_READ"] [data-scope-type="class_group"]').count(), 1);
-	assert(await page.getByRole('dialog').getByRole('checkbox').first().isChecked());
+	assert.equal(await page.locator('[role="dialog"]:not(.ui-drawer)').locator('[data-permission="GRADE_READ"] [data-scope-type="class_group"]').count(), 1);
+	assert(await page.locator('[role="dialog"]:not(.ui-drawer)').getByRole('checkbox').first().isChecked());
 	await staleReview('assign-staff-permission', () => chooseOption(page.locator('#permission-select'), 'GRADE_MANAGE'));
 	await chooseOption(page.locator('#permission-select'), 'GRADE_READ');
 	const manualPreview = await review('assign-staff-permission');
@@ -327,19 +327,19 @@ try {
 	const warnedRows = additional.locator('[data-assignment-id]').filter({ has: page.getByTestId('permission-scope-warning') });
 	assert.match(await additional.getByTestId('additional-permission-warning-summary').innerText(), new RegExp(`^${await warnedRows.count()} `));
 	await manualRow.getByRole('button', { name: /edit permission|modifier la permission/i }).click();
-	await page.getByRole('dialog').waitFor();
+	await page.locator('[role="dialog"]:not(.ui-drawer)').waitFor();
 	assert.equal(new URL(page.url()).searchParams.get('modalTarget'), manualId);
 	await page.keyboard.press('Escape');
-	await page.getByRole('dialog').waitFor({ state: 'hidden' });
+	await page.locator('[role="dialog"]:not(.ui-drawer)').waitFor({ state: 'hidden' });
 	assert.equal(await additionalToggle.getAttribute('aria-expanded'), 'true');
 	await manualRow.getByRole('button', { name: /delete|supprimer/i }).click();
-	await page.getByRole('dialog').waitFor();
+	await page.locator('[role="dialog"]:not(.ui-drawer)').waitFor();
 	assert.equal(new URL(page.url()).searchParams.get('modalTarget'), manualId);
 	await page.keyboard.press('Escape');
-	await page.getByRole('dialog').waitFor({ state: 'hidden' });
+	await page.locator('[role="dialog"]:not(.ui-drawer)').waitFor({ state: 'hidden' });
 
 	await open('default-scopes');
-	const restored = page.getByRole('dialog').locator('[data-scope-grain="class_group"]');
+	const restored = page.locator('[role="dialog"]:not(.ui-drawer)').locator('[data-scope-grain="class_group"]');
 	await restored.locator('summary').click();
 	await restored.getByRole('checkbox').check();
 	const restorePreview = await review('configure-staff-permission-scope-defaults');
@@ -348,14 +348,14 @@ try {
 	assert.equal((await request('entities/staff-permission-assignments/list', { staffId, academicYearId: year, sourceManualAssignmentId: manualId })).length, 1);
 
 	await page.goto(`${base}/configuration/permission-profiles?modal=edit&modalTarget=${profileId}`);
-	await page.getByRole('dialog').waitFor();
-	const profileEditor = page.getByRole('dialog');
+	await page.locator('[role="dialog"]:not(.ui-drawer)').waitFor();
+	const profileEditor = page.locator('[role="dialog"]:not(.ui-drawer)');
 	assert.equal(await profileEditor.locator('[data-permission="STAFF_READ"] [data-scope-type]').count(), 0);
 	assert.equal(await profileEditor.locator('[data-permission="GRADE_MANAGE"] [data-scope-type="class_group"]').count(), 1);
 	assert.deepEqual(await profileEditor.locator('[data-permission="ATTENDANCE_VALIDATE"] [data-scope-type]').evaluateAll(elements => elements.map(element => element.getAttribute('data-scope-type'))), ['grade_level', 'class_group']);
 	await page.screenshot({ path: '/private/tmp/permission-profile-scope-types.png' });
-	await page.getByRole('dialog').getByRole('checkbox', { checked: true }).first().uncheck();
-	await staleReview('configure-permission-profile', () => page.getByRole('dialog').locator('input').first().fill(`${profileId}-updated`));
+	await page.locator('[role="dialog"]:not(.ui-drawer)').getByRole('checkbox', { checked: true }).first().uncheck();
+	await staleReview('configure-permission-profile', () => page.locator('[role="dialog"]:not(.ui-drawer)').locator('input').first().fill(`${profileId}-updated`));
 	const profilePreview = await review('configure-permission-profile');
 	assert(profilePreview.resolution.changes.some((row: any) => row.change === 'removed'));
 	await save('configure-permission-profile');
@@ -378,7 +378,7 @@ catch (error) {
 	console.log('Permission UI failure:', error);
 	console.log('Permission UI failure URL:', page.url());
 	console.log('Permission UI errors:', errors);
-	console.log('Permission UI dialog:', await page.getByRole('dialog').allTextContents().catch(() => []));
+	console.log('Permission UI dialog:', await page.locator('[role="dialog"]:not(.ui-drawer)').allTextContents().catch(() => []));
 	await page.screenshot({ path: '/private/tmp/staff-permissions-failure.png', timeout: 5000 }).catch(() => {});
 	throw error;
 }

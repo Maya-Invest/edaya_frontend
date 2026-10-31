@@ -71,10 +71,10 @@ export async function ensureDailyAttendanceMode(
 		}
 		await editBtn.click();
 	}
-	await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 10_000 });
+	await page.getByTestId('form-modal').waitFor({ state: 'visible', timeout: 10_000 });
 
 	if (!dailyOk || force) {
-		const modeSelect = page.locator('[role="dialog"] select').filter({
+		const modeSelect = page.getByTestId('form-modal').locator('select').filter({
 			has: page.locator('option[value="daily"]'),
 		}).last();
 		const currentMode = await modeSelect.inputValue().catch(() => 'session');
@@ -95,7 +95,7 @@ export async function ensureDailyAttendanceMode(
 		await page.waitForTimeout(1_000);
 	}
 	await saveBtn.click();
-	await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
+	await page.getByTestId('form-modal').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
 
 	const dailyConfigured = await page
 		.getByText(dailyModePattern)

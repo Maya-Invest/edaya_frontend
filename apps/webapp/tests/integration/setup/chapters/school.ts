@@ -1,3 +1,5 @@
+import { apiFetch } from '../journey-api';
+import assert from 'node:assert/strict';
 import {
 	clickCreateButton,
 	dismissPageError,
@@ -403,6 +405,11 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 						}
 					},
 					listPath: `/school/events/${eventId}`,
+					verifyPersisted: async (current) => {
+						const response = await apiFetch(current, journey.ctx.base, `/core/entities/incidents/${eventId}`);
+						assert(response.ok(), 'Resolved incident readback failed');
+						assert.equal((await response.json() as { status: string }).status, 'resolved');
+					},
 				});
 				coverMutationActions(
 					journey,
@@ -437,12 +444,12 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 		await waitForPageQuery(page);
 		const deliveryId = await firstIdFromLinks(page, /\/account\/inbox\/([^/]+)/)
 			?? (await (async () => {
-				const row = page.locator('main button, main a[href*="/account/inbox/"]').first();
+				const row = page.locator('main tbody tr[data-entity-id] button.ui-record-target').first();
 				if (!(await row.isVisible({ timeout: 8_000 }).catch(() => false))) {
 					return null;
 				}
 				await row.click();
-				await page.waitForTimeout(800);
+				await page.waitForURL(/\/account\/inbox\/[^/?]+/);
 				return idFromUrl(page, /\/account\/inbox\/([^/]+)/);
 			})());
 		entities.deliveryId = deliveryId;

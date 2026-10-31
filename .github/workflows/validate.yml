@@ -16,6 +16,7 @@ on:
         default: ''
 permissions:
   contents: read
+  actions: read
   deployments: read
 jobs:
   qualify:

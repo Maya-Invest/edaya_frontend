@@ -11,6 +11,7 @@ import {
 	waitForDialogClosed,
 	waitForFormModal,
 	waitForPageQuery,
+	waitForResolvedAcademicYearId,
 	waitForSubmitEnabled,
 	assertListContains,
 	setAppLang,
@@ -63,6 +64,56 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	await submitDialog(page);
 	assert.ok(await waitForDialogClosed(page), 'Academic discipline creation must succeed');
 	assert.ok(await assertListContains(page, disciplineCode, true, 20_000));
+
+	// Subjects require a persisted category; provision that catalog first.
+	await visitCovered(journey, '/configuration/other/subject-categories', '/configuration/other/subject-categories');
+	const categoryName = `E2E-Category-${Date.now()}`;
+	const categoryOpened = await clickCreateButton(page, 'CRUD catégorie', '/configuration/other/subject-categories')
+		|| await openDialogButton(page, /ajouter une catégorie|add category/i);
+	if (categoryOpened) {
+		try {
+			await page.getByRole('dialog').locator('input').first().fill(categoryName);
+			await submitDialog(page);
+			const closed = await waitForDialogClosed(page);
+			const listed = await assertListContains(page, categoryName, true, 20_000);
+			coverCompletedModal(journey, '/configuration/other/subject-categories', 'create', {
+				opened: true,
+				submitted: true,
+				closed,
+				postcondition: listed,
+			}, categoryName);
+			coverActions(
+				journey,
+				'http://localhost:5173/configuration/other/subject-categories',
+				['Liste catégories', 'CRUD catégorie'],
+				listed ? 'OK' : 'NOT OK',
+				categoryName,
+			);
+			logStep(journey, { step: 'subject-category', ok: listed, detail: categoryName });
+		}
+		catch (err) {
+			const detail = err instanceof Error ? err.message : String(err);
+			coverCompletedModal(journey, '/configuration/other/subject-categories', 'create', {
+				opened: true,
+				submitted: false,
+				closed: false,
+			}, detail);
+			coverActions(journey, 'http://localhost:5173/configuration/other/subject-categories', ['CRUD catégorie'], 'NOT OK', detail);
+			logStep(journey, { step: 'subject-category', ok: false, detail });
+			await page.keyboard.press('Escape').catch(() => {});
+		}
+	}
+	else {
+		coverCompletedModal(journey, '/configuration/other/subject-categories', 'create', {
+			opened: false,
+			submitted: false,
+			closed: false,
+		}, 'Subject category modal not found');
+		coverActions(journey, 'http://localhost:5173/configuration/other/subject-categories', ['CRUD catégorie'], 'NOT OK', 'Subject category modal not found');
+		logStep(journey, { step: 'subject-category', ok: false, detail: 'Subject category modal not found' });
+	}
+
+	assert.ok(journey.steps.some(step => step.step === 'subject-category' && step.ok), 'Required subject category creation failed');
 
 	await visitCovered(journey, '/configuration/structure/subjects', '/configuration/structure/subjects');
 	const subjectName = `E2E-Subject-${Date.now()}`;
@@ -291,6 +342,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 				closed && listed && scaleId ? 'OK' : 'NOT OK',
 				scaleName,
 			);
+			await configureJourneyGrading(journey);
 			logStep(journey, { step: 'grade-scale', ok: Boolean(scaleId), detail: scaleName, entityId: scaleId ?? undefined });
 		}
 		catch (err) {
@@ -452,52 +504,6 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		logStep(journey, { step: 'discipline', ok: false, detail: 'Discipline modal not found' });
 	}
 
-	await visitCovered(journey, '/configuration/other/subject-categories', '/configuration/other/subject-categories');
-	const categoryName = `E2E-Category-${Date.now()}`;
-	const categoryOpened = await clickCreateButton(page, 'CRUD catégorie', '/configuration/other/subject-categories')
-		|| await openDialogButton(page, /ajouter une catégorie|add category/i);
-	if (categoryOpened) {
-		try {
-			await page.getByRole('dialog').locator('input').first().fill(categoryName);
-			await submitDialog(page);
-			const closed = await waitForDialogClosed(page);
-			const listed = await assertListContains(page, categoryName, true, 20_000);
-			coverCompletedModal(journey, '/configuration/other/subject-categories', 'create', {
-				opened: true,
-				submitted: true,
-				closed,
-				postcondition: listed,
-			}, categoryName);
-			coverActions(
-				journey,
-				'http://localhost:5173/configuration/other/subject-categories',
-				['Liste catégories', 'CRUD catégorie'],
-				listed ? 'OK' : 'NOT OK',
-				categoryName,
-			);
-			logStep(journey, { step: 'subject-category', ok: listed, detail: categoryName });
-		}
-		catch (err) {
-			const detail = err instanceof Error ? err.message : String(err);
-			coverCompletedModal(journey, '/configuration/other/subject-categories', 'create', {
-				opened: true,
-				submitted: false,
-				closed: false,
-			}, detail);
-			coverActions(journey, 'http://localhost:5173/configuration/other/subject-categories', ['CRUD catégorie'], 'NOT OK', detail);
-			logStep(journey, { step: 'subject-category', ok: false, detail });
-			await page.keyboard.press('Escape').catch(() => {});
-		}
-	}
-	else {
-		coverCompletedModal(journey, '/configuration/other/subject-categories', 'create', {
-			opened: false,
-			submitted: false,
-			closed: false,
-		}, 'Subject category modal not found');
-		coverActions(journey, 'http://localhost:5173/configuration/other/subject-categories', ['CRUD catégorie'], 'NOT OK', 'Subject category modal not found');
-		logStep(journey, { step: 'subject-category', ok: false, detail: 'Subject category modal not found' });
-	}
 
 	await visitCovered(journey, '/configuration/permission-profiles', '/configuration/permission-profiles');
 	const profileOpened = await clickCreateButton(page, 'CRUD entrée', '/configuration/permission-profiles')
@@ -537,4 +543,31 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		}, 'Permission profile modal not found');
 		logStep(journey, { step: 'permission-profiles', ok: false, detail: 'Permission profile modal not found' });
 	}
+}
+
+/** Provision the real annual grading policy before marks and report-card workflows. */
+export async function configureJourneyGrading(journey: UiJourney): Promise<void> {
+	const { page, base } = journey.ctx;
+	const { gradeLevelId, gradeScaleId } = journey.entities;
+	assert(gradeLevelId && gradeScaleId, 'Grading policy requires the created level and scale');
+	assert(await openUrlModal(page, `/configuration/structure/details?gradeLevel=${gradeLevelId}`, 'edit-level', { base }));
+	await waitForResolvedAcademicYearId(page);
+	const yearId = await page.getByTestId('academic-year-trigger').getAttribute('data-year-id');
+	assert(yearId, 'Grading policy requires a resolved academic year');
+	await chooseOption(page.locator('#grading-scale'), gradeScaleId);
+	await page.getByTestId('form-modal-submit').click();
+	await page.waitForURL(url => url.searchParams.get('modalStep') === 'confirm');
+	await uiCommand(page, '/commands/configure-grading', () => page.getByTestId('form-modal-submit').click());
+	await waitForMutationDialog(page);
+	const deadline = Date.now() + 60_000;
+	while (Date.now() < deadline) {
+		const response = await apiFetch(page, base, `/core/entities/grade-levels/${gradeLevelId}`);
+		assert(response.ok(), 'Configured grading policy readback failed');
+		const level = await response.json() as { gradingPolicies?: Array<{ academicYearId: string; scale: { id: string }; status: string }> };
+		const policy = level.gradingPolicies?.find(policy => policy.academicYearId === yearId && policy.scale.id === gradeScaleId);
+		assert(policy?.status !== 'failed', 'Grading policy calculation failed');
+		if (policy?.status === 'completed') return;
+		await page.waitForTimeout(250);
+	}
+	throw new Error('Grading policy did not complete for the current academic year');
 }

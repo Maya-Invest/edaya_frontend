@@ -121,7 +121,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	await selectAcademicPeriod(ctx);
 	await visit(ctx, `${base}/classes/${CLASS_6A}/evaluations?kind=homework`, 'D6', '6.1 Evaluations list', {
 		pathPrefix: `/classes/${CLASS_6A}/evaluations`,
-		selector: 'select[aria-label="Filter"]',
+		selector: '[data-testid="collection-filter"]',
 		selectorTimeoutMs: 20_000,
 	});
 	try {
@@ -198,25 +198,16 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 
 	await visit(ctx, `${base}/classes/${CLASS_6A}/report-cards`, 'D10', '10.1 Report cards list', { selector: 'main' });
 	try {
-		const viewBtn = page.getByRole('button', { name: /view|voir|consulter/i }).first();
-		const studentLink = page.locator('main tbody tr button.font-medium').first();
-		if (await viewBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
-			await viewBtn.click();
-		}
-		else if (await studentLink.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await studentLink.click();
-		}
-		else {
-			reporter.log('D10', '10.2 Open bulletin drawer', 'skip', 'No report card rows in list');
-			return;
-		}
+		const studentTarget = page.locator('main tbody tr[data-entity-id] button.ui-record-target').first();
+		await studentTarget.waitFor({ state: 'visible', timeout: 20_000 });
+		await studentTarget.click();
 
 		const drawer = await waitForDrawerAside(ctx, 15_000);
 		if (drawer) {
 			reporter.log('D10', '10.2 Open bulletin drawer', 'pass');
 		}
 		else {
-			reporter.log('D10', '10.2 Open bulletin drawer', 'skip', 'Drawer did not open — verify report card seed');
+			reporter.log('D10', '10.2 Open bulletin drawer', 'fail', 'Drawer did not open for the persisted report card');
 			await shot('D10-10.2-bulletin-drawer');
 		}
 	}

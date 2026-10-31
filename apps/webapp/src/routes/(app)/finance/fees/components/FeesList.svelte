@@ -290,16 +290,19 @@
 </div>
 
 <FeeFormModal bind:open={createOpen.open} onCreated={selectFee} />
-{#if editingFee}<FeeFormModal bind:open={editOpen.open} fee={editingFee} />{/if}
+{#if feesPage.drawerReadyId === $page.params.feeId && $page.params.feeId}
+	{#if editingFee}<FeeFormModal bind:open={editOpen.open} fee={editingFee} />{/if}
 
-<ConfirmModal
-	bind:open={archiveOpen.open}
-	title={$t('fee.archiveTitle')}
-	description={$t('fee.archiveConfirm', { name: archiveTarget?.name ?? '' })}
-	confirmLabel={$t('fee.archive')}
-	cancelLabel={$t('common.cancel')}
-	busy={archiveBusy}
-	onConfirm={confirmArchive}
-/>
+	<ConfirmModal
+		bind:open={archiveOpen.open}
+		title={$t('fee.archiveTitle')}
+		description={$t('fee.archiveConfirm', { name: archiveTarget?.name ?? '' })}
+		confirmLabel={$t('fee.archive')}
+		cancelLabel={$t('common.cancel')}
+		busy={archiveBusy}
+		onConfirm={confirmArchive}
+	/>
 
-<ConfirmModal bind:open={activateOpen.open} title={$t('fee.activate')} description={$t('finance.activateConfirm', { name: activationTarget?.name ?? '' })} confirmLabel={$t('fee.activate')} busy={archiveBusy} onConfirm={confirmActivate} />
+	<ConfirmModal bind:open={activateOpen.open} title={$t('fee.activate')} description={$t('finance.activateConfirm', { name: activationTarget?.name ?? '' })} confirmLabel={$t('fee.activate')} busy={archiveBusy} onConfirm={confirmActivate} />
+
+{/if}

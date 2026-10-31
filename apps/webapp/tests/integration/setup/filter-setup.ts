@@ -14,6 +14,7 @@ import {
 	fillGradeLevelCreateDialog,
 	fillStudentCreateDialog,
 	openDialogButton,
+	openUrlModal,
 	selectComboboxOption,
 	submitDialog,
 	waitForDialogClosed,
@@ -26,6 +27,8 @@ import {
 	waitForAppShell,
 
 } from '../../../scripts/qa-matrix-support';
+import { apiFetch } from './journey-api';
+import { uiCommand, waitForMutationDialog } from '../support/ui-command';
 import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
 
 async function gotoAppPage(ctx: DemoContext, routePath: string): Promise<void> {
@@ -245,27 +248,18 @@ export async function setStudentStatus(
 	status: 'inactive' | 'archived',
 ): Promise<boolean> {
 	const { page, base } = ctx;
-	await page.goto(`${base}/school/students/${studentId}/profile`, { waitUntil: 'domcontentloaded' });
-	await waitForAppShell(page);
-	await waitForPageQuery(page);
-
-	const select = page.locator('select').filter({ has: page.locator('option[value="inactive"]') }).last();
-	await select.waitFor({ state: 'attached', timeout: 20_000 }).catch(() => {});
-	await selectTrigger(select).scrollIntoViewIfNeeded().catch(() => {});
-	const mutation = page.waitForResponse(
-		res => res.request().method() === 'POST' && res.url().includes('/core/commands/update-student-status'),
-		{ timeout: 20_000 },
-	).catch(() => null);
 	try {
-		await chooseOption(select, status);
-	}
-	catch {
+		if (!await openUrlModal(page, `/school/students/${studentId}/profile`, 'change-status', { base })) return false;
+		const modal = page.getByTestId('form-modal');
+		await chooseOption(modal.locator('#student-status'), status);
+		await uiCommand(page, '/commands/update-student-status', () => modal.getByTestId('form-modal-submit').click());
+		await waitForMutationDialog(page);
+		const response = await apiFetch(page, base, `/core/entities/students/${studentId}`);
+		return response.ok() && (await response.json() as { status?: string }).status === status;
+	} catch (error) {
+		console.log(`Student status ${status} failed: ${error instanceof Error ? error.message : String(error)}`);
 		return false;
 	}
-	await mutation;
-	await waitForPageQuery(page);
-	await page.waitForTimeout(1_000);
-	return true;
 }
 
 async function createFilterStudent(ctx: DemoContext, lastName: string): Promise<string | null> {

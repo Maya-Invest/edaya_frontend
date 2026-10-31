@@ -96,9 +96,9 @@ try {
   assert.equal(await page.getByText(/^(subject teacher|homeroom teacher|enseignant de matière|professeur principal)$/i).count(), 0);
   assert.equal(await page.getByRole('button', { name: /add assignment|ajouter une affectation/i }).count(), 1);
   await page.getByRole('button', { name: /add assignment|ajouter une affectation/i }).click();
-  await page.getByRole('dialog').waitFor();
+  await page.getByTestId('form-modal').waitFor();
   await page.keyboard.press('Escape');
-  await page.getByRole('dialog').waitFor({ state: 'hidden' });
+  await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
   assert.equal(await homeroom.locator('li').count(), teacherAssignments.filter((row: any) => row.kind === 'homeroom').length, 'Closing the assignment modal must preserve the drawer data');
   assert.equal(await subject.locator('li').count(), teacherAssignments.filter((row: any) => row.kind === 'subject').length);
   await page.screenshot({ path: resolve(artifacts, 'teacher-assignments-fr.png') });

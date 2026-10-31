@@ -14,17 +14,18 @@ async function student(page: Page, base: string, id: string) {
 export async function exerciseStudentStatus(page: Page, base: string, id: string) {
   const before = await student(page, base, id);
   const status = before.status === 'active' ? 'inactive' : 'active';
-  const select = page.locator('select').filter({ has: page.locator('option[value="inactive"]') }).last();
-  try {
-    await uiCommand(page, '/commands/update-student-status', () => chooseOption(select, status));
+  const change = async (value: string) => {
+    assert(await openUrlModal(page, `/school/students/${id}/profile`, 'change-status', { base }), 'Student status form missing');
+    const select = page.getByTestId('form-modal').locator('select[data-select-value]');
+    await chooseOption(select, value);
+    await uiCommand(page, '/commands/update-student-status', () => page.getByTestId('form-modal-submit').click());
+    await waitForMutationDialog(page);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPageQuery(page);
-    assert.equal((await student(page, base, id)).status, status);
-    assert.equal(await select.inputValue(), status, 'Reloaded profile must display saved status');
-  } finally {
-    await uiCommand(page, '/commands/update-student-status', () => chooseOption(select, before.status));
-    assert.equal((await student(page, base, id)).status, before.status);
-  }
+    assert.equal((await student(page, base, id)).status, value);
+  };
+  try { await change(status); }
+  finally { if ((await student(page, base, id)).status !== before.status) await change(before.status); }
   return 'Changed student status through the UI, verified after reload, and restored the fixture';
 }
 

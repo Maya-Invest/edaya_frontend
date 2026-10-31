@@ -1,0 +1,83 @@
+name: Integration tests
+on:
+  workflow_call:
+    inputs:
+      source_ref:
+        type: string
+        required: true
+      backend_sha:
+        type: string
+        required: true
+      target:
+        type: string
+        required: true
+      baseline_sha:
+        type: string
+        default: ''
+    secrets:
+      BACKEND_CHECKOUT_TOKEN:
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CI: 'true'
+      CI_SOURCE_SHA: ${{ inputs.source_ref }}
+      CI_BACKEND_SHA: ${{ inputs.backend_sha }}
+      CI_TARGET: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          source_sha: ${{ inputs.source_ref }}
+          backend_sha: ${{ inputs.backend_sha }}
+          target: ${{ inputs.target }}
+      - name: Checkout exact integration backend
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Maya-Invest/edaya_backend
+          ref: ${{ inputs.backend_sha }}
+          path: .ci/edaya_backend
+          token: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+          persist-credentials: false
+      - name: Install backend fixture dependencies
+        working-directory: .ci/edaya_backend
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Set up integration services
+        run: bun run repo ci setup
+      - name: Run browser qualification
+        env:
+          COMPATIBILITY_BASE_SHA: ${{ inputs.baseline_sha }}
+        run: bun run repo test integration
+      - name: Upload browser result contract
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: browser-results-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          if-no-files-found: error
+          path: .ci-evidence/results.json
+      - name: Upload sanitized browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: integration-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          if-no-files-found: warn
+          path: .ci-evidence/
+      - name: Upload stage evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: stage-integration-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          if-no-files-found: error
+          path: .ci-evidence/stages/integration.json

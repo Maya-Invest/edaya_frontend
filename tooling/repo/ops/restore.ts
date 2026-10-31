@@ -1,7 +1,9 @@
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
-import { gitEnvironment, root, run, sha } from './runtime'
+import { validateQualificationEvidence } from './qualification'
+import { validateRelease } from './release'
+import { digest, environment, gitEnvironment, root, run, sha } from './runtime'
 
 export async function restore(): Promise<void> {
   const repository = process.env.GITHUB_REPOSITORY
@@ -35,21 +37,33 @@ export async function restore(): Promise<void> {
     if (paths.some(path => path.startsWith('/') || path.includes('\\') || path.split('/').includes('..') || !allowed.some(prefix => path.startsWith(prefix) || (path.endsWith('/') && prefix.startsWith(path)))))
       throw new Error('Unexpected candidate artifact path')
     await run(['unzip', '-q', zip, '-d', directory], { quiet: true })
-    const evidence = JSON.parse(readFileSync(resolve(directory, '.ci-evidence/qualification.json'), 'utf8')) as {
-      sourceCommit: string
-      checks: Record<string, boolean>
-    }
-    sha(evidence.sourceCommit)
-    if (evidence.checks.verification !== true || evidence.checks.integration !== true)
-      throw new Error('Candidate did not pass full validation')
+    const evidence = JSON.parse(readFileSync(resolve(directory, '.ci-evidence/qualification.json'), 'utf8'))
+    const manifest = JSON.parse(readFileSync(resolve(directory, '.release/manifest.json'), 'utf8'))
+    const client = JSON.parse(readFileSync(resolve(directory, '.generated/client.json'), 'utf8'))
+    const target = environment(process.env.TARGET)
+    if (manifest.status !== 'qualified' || manifest.environment !== target || manifest.emergency)
+      throw new Error('Candidate is not an ordinary qualified release')
+    validateQualificationEvidence(evidence, {
+      sourceCommit: sha(manifest.sourceCommit),
+      backendCommit: sha(client.backendCommit),
+      clientChecksum: digest(readFileSync(resolve(directory, '.generated/client.json'))),
+      lockSha256: digest(readFileSync(resolve(directory, '.release/bun.lock'))),
+      environment: target,
+      runId,
+      attempt,
+    })
     await run(['git', 'fetch', 'origin', evidence.sourceCommit], { quiet: true, env: gitEnvironment() })
     await run(['git', 'checkout', '--detach', evidence.sourceCommit], { quiet: true })
+    // A restored artifact must not inherit files from a previous checkout or attempt.
+    for (const path of allowed)
+      rmSync(resolve(root, path), { recursive: true, force: true })
     for (const path of allowed) {
       if (existsSync(resolve(directory, path)))
         cpSync(resolve(directory, path), resolve(root, path), { recursive: true })
     }
     if (existsSync(resolve(directory, '.release/bun.lock')))
       cpSync(resolve(directory, '.release/bun.lock'), resolve(root, 'bun.lock'))
+    await validateRelease(target)
   }
   finally {
     rmSync(directory, { recursive: true, force: true })

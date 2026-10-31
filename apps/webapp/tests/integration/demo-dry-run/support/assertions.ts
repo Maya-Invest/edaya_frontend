@@ -4,10 +4,10 @@ import { waitForPageQuery } from '../../../../scripts/qa-harness-ui';
 import { assertNoFatalError } from './visit';
 
 /** Structure lists are scoped by the level rail, with URL-backed text search. */
-export async function assertStructureListShell(ctx: DemoContext, scene: string, step: string): Promise<boolean> {
+export async function assertStructureListShell(ctx: DemoContext, scene: string, step: string, menuAction = /export|exporter/i): Promise<boolean> {
 	const { page, reporter, shot, pageErrors } = ctx;
 	const errorMark = pageErrors.snapshot();
-	if (!await assertListShell(ctx, scene, `${step} — export`, { requireFilter: false })) return false;
+	if (!await assertListShell(ctx, scene, `${step} — collection menu`, { requireFilter: false, menuAction })) return false;
 	try {
 		await waitForPageQuery(page);
 		const originalUrl = page.url();
@@ -65,14 +65,27 @@ export async function assertReportCardWorkspace(ctx: DemoContext, scene: string,
 		const originalUrl = page.url();
 		const originalLevel = new URL(originalUrl).searchParams.get('gradeLevel');
 		assert(originalLevel, 'Report models must resolve a selected level');
-		const newModel = page.getByRole('button', { name: /ajouter un modèle|add model/i });
 		const assertCreateAccess = async () => {
-			if (canConfigureReports) {
-				await newModel.waitFor({ state: 'visible' });
-				assert(await newModel.isEnabled(), 'Report configuration grant must enable model creation');
-			} else {
-				assert.equal(await newModel.count(), 0, 'Model creation must be hidden without report configuration authority');
+			await page.getByTestId('collection-menu').last().click();
+			const edit = page.getByRole('menuitem', { name: /modifier le niveau|edit (?:grade )?level/i });
+			await edit.waitFor({ state: 'visible' });
+			if (await edit.isDisabled()) {
+				assert(!canConfigureReports, 'Report configuration grant must enable level policy editing');
+				await page.keyboard.press('Escape');
+				return;
 			}
+			await edit.click();
+			const form = page.getByTestId('form-modal');
+			await form.waitFor({ state: 'visible' });
+			const gradingScale = form.locator('#grading-scale');
+			if (canConfigureReports) {
+				await gradingScale.and(page.locator(':enabled')).waitFor({ state: 'visible' });
+				assert(await gradingScale.isEnabled(), 'Report configuration grant must enable grading policy editing');
+			} else {
+				assert.equal(await gradingScale.count(), 0, 'Grading policy controls must be hidden without report configuration authority');
+			}
+			await page.keyboard.press('Escape');
+			await form.waitFor({ state: 'hidden' });
 		};
 		await assertCreateAccess();
 		const links = page.locator('aside').filter({ has: page.locator('#structure-level') }).getByRole('link');
@@ -105,7 +118,7 @@ export async function assertListShell(
 	ctx: DemoContext,
 	scene: string,
 	step: string,
-	{ requireFilter = true, exportName = /export|exporter/i }: { requireFilter?: boolean; exportName?: RegExp } = {},
+	{ requireFilter = true, menuAction = /export|exporter/i }: { requireFilter?: boolean; menuAction?: RegExp } = {},
 ): Promise<boolean> {
 	const { page, reporter, shot, pageErrors } = ctx;
 	const errorMark = pageErrors.snapshot();
@@ -122,9 +135,9 @@ export async function assertListShell(
 			return false;
 		}
 		await moreBtn.click();
-		const exportItem = page.getByRole('button', { name: exportName });
+		const exportItem = page.getByRole('menuitem', { name: menuAction });
 		if (!(await exportItem.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false))) {
-			reporter.log(scene, step, 'fail', 'Export action missing in more menu');
+			reporter.log(scene, step, 'fail', 'Required collection action missing in more menu');
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}-export`);
 			return false;
 		}
@@ -179,7 +192,7 @@ export async function assertFilterSelectShell(
 		if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
 			await loading.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
 		}
-		const filterSelect = page.getByTestId('list-filter');
+		const filterSelect = page.getByTestId('collection-filter').or(page.getByTestId('list-filter'));
 		const moreBtn = page.getByTestId('collection-menu');
 		if (!(await filterSelect.first().waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false))) {
 			reporter.log(scene, step, 'fail', 'Missing unified Filter action');
@@ -216,13 +229,13 @@ export async function assertListShellOrSkip(
 	ctx: DemoContext,
 	scene: string,
 	step: string,
-	{ requireFilter = true, skipReason, exportName }: { requireFilter?: boolean; skipReason?: string; exportName?: RegExp } = {},
+	{ requireFilter = true, skipReason, menuAction }: { requireFilter?: boolean; skipReason?: string; menuAction?: RegExp } = {},
 ): Promise<boolean> {
 	if (await pageHasFatalError(ctx)) {
 		ctx.reporter.log(scene, step, 'skip', skipReason ?? 'Page error — check permissions or seed');
 		return true;
 	}
-	return assertListShell(ctx, scene, step, { requireFilter, exportName });
+	return assertListShell(ctx, scene, step, { requireFilter, menuAction });
 }
 
 export async function assertFilterSelectShellOrSkip(
