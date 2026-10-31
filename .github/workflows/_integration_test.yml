@@ -51,8 +51,6 @@ jobs:
       - name: Install backend fixture dependencies
         working-directory: .ci/edaya_backend
         run: bun install --frozen-lockfile --ignore-scripts
-      - name: Set up integration services
-        run: bun run repo ci setup
       - name: Run browser qualification
         env:
           COMPATIBILITY_BASE_SHA: ${{ inputs.baseline_sha }}

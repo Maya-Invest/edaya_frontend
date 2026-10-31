@@ -64,9 +64,9 @@ export async function executeCommand(args: string[]): Promise<void> {
       await run(['bun', '--no-env-file', `tooling/repo/${script}`])
     return
   }
-  if (group === 'test' && !rest.length) {
+  if (group === 'test' && (!rest.length || name === 'integration')) {
     if (name === 'unit') {
-      await recordStage('unit', () => run(['bun', 'run', 'test']))
+      await recordStage('unit', () => run(['bun', 'x', '--bun', 'turbo', 'run', 'test', '--concurrency=1', '--force']))
       return
     }
     if (name === 'tooling') {
@@ -74,8 +74,12 @@ export async function executeCommand(args: string[]): Promise<void> {
       return
     }
     if (name === 'integration') {
-      const { integration } = await import('./integration')
-      await recordStage('integration', integration)
+      const { integration, selectedIntegrationSuite } = await import('./integration')
+      const selected = selectedIntegrationSuite(rest)
+      if (selected)
+        await integration(selected)
+      else
+        await recordStage('integration', () => integration())
       return
     }
   }
@@ -181,8 +185,8 @@ export async function executeCommand(args: string[]): Promise<void> {
       return
     }
     if (name === 'browser-suites') {
-      const { browserSuites } = await import('./integration')
-      await browserSuites()
+      const { browserSuites, selectedIntegrationSuite } = await import('./integration')
+      await browserSuites(selectedIntegrationSuite(rest))
       return
     }
     if (name === 'archive-inputs') {
@@ -193,11 +197,6 @@ export async function executeCommand(args: string[]): Promise<void> {
     }
     if (name === 'setup') {
       await main(['generate', 'setup'])
-      const path = await run(['pg_config', '--bindir'], { quiet: true })
-      if (process.env.GITHUB_PATH) {
-        const { appendFileSync } = await import('node:fs')
-        appendFileSync(process.env.GITHUB_PATH, `${path}\n`)
-      }
       return
     }
     if (name === 'deploy') {

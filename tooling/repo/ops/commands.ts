@@ -1,4 +1,5 @@
 import type { Argument, Command, Invocation, Option } from './command-tree'
+import { BROWSER_SUITE_DIRECTORIES } from './browser-suites'
 
 const env: Argument = { name: 'environment', choices: ['staging', 'production'] }
 const yes: Option = { description: 'Explicitly confirm the operation.', aliases: ['-y'] }
@@ -16,6 +17,7 @@ function leaf(path: string, description: string, extra: Partial<Command> = {}): 
 const group = (description: string, children: Record<string, Command>): Command => ({ description, children })
 const checks = (names: Record<string, string>) => ({ ...leaf('check', 'Run all repository checks.'), children: Object.fromEntries(Object.entries(names).map(([name, description]) => [name, leaf(`check ${name}`, description)])) })
 const tests = group('Run test suites.', Object.fromEntries(Object.entries({ unit: 'Run workspace unit tests.', tooling: 'Run the complete tooling package test suite.', integration: 'Run supervised integration suites.' }).map(([name, description]) => [name, leaf(`test ${name}`, description)])))
+tests.children!.integration = leaf('test integration', 'Run supervised integration suites; selected suites never qualify a release.', { options: { '--suite': { value: 'id', choices: Object.keys(BROWSER_SUITE_DIRECTORIES), description: 'Run one suite for diagnosis without qualification evidence.' } } })
 const emergency = leaf('ops emergency-deploy', 'Build and deploy through the emergency qualification bypass; does not migrate or seed.', { arguments: [env], options: { '--yes': { ...yes, aliases: [] }, '--dry-run': dry }, validate: confirmed, examples: ['bun repo ops emergency-deploy staging --dry-run', 'bun repo ops emergency-deploy staging --yes'] })
 const ci: Record<string, Command> = {
   'verify': leaf('ci verify', 'Run repository checks, workflow lint, tooling tests, quality, builds and unit tests.'),
@@ -59,7 +61,7 @@ export const commands: Command = group('Frontend repository commands. Use <comma
   }),
   ci: group('Run CI verification and release operations.', {
     ...ci,
-    'browser-suites': leaf('ci browser-suites', 'Run browser suites against the configured services.'),
+    'browser-suites': leaf('ci browser-suites', 'Run browser suites against the configured services.', { options: { '--suite': { value: 'id', choices: Object.keys(BROWSER_SUITE_DIRECTORIES), description: 'Run one suite without full coverage validation.' } } }),
     'client-key': leaf('ci client-key', 'Emit the backend/client cache key.', { arguments: [{ name: 'backend-path' }] }),
   }),
 })

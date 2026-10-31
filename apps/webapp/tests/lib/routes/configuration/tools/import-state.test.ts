@@ -401,3 +401,42 @@ test('failed final detail retains committed progress and can retry without a wri
 		spy.mockRestore();
 	}
 });
+
+const importTypes = ['students', 'guardians', 'staff', 'teachers', 'classes', 'subjects', 'teacher_assignments', 'chapters', 'billing', 'payments', 'academic_disciplines', 'placement_statuses', 'guardian_relationships', 'class_offerings'] as const;
+for (const type of importTypes) {
+	test(`${type} upload preserves batch, replacement identity, filename and exact bytes`, async () => {
+		const writes: unknown[] = [];
+		const spy = spyOn(schoolClient, 'getBrowserSchoolClient').mockReturnValue({ imports: {
+			history: async () => ({ batches: [] }), detail: async () => detail('batch'),
+			submit: async (input: unknown) => { writes.push(input); return { fileId: 'replacement' }; },
+		} } as unknown as ReturnType<typeof schoolClient.getBrowserSchoolClient>);
+		const state = createState();
+		try {
+			await state.connect('batch', 'school:user');
+			const bytes = new Uint8Array([0, 1, 127, 128, 195, 169, 255]);
+			await state.submit(new File([bytes], `${type}.xlsx`), type, 'replacement');
+			expect(writes).toEqual([{ batchId: 'batch', type, fileId: 'replacement', fileName: `${type}.xlsx`, base64: Buffer.from(bytes).toString('base64') }]);
+			expect(state.mutationError).toBe('');
+		}
+		finally { state.disconnect(); spy.mockRestore(); }
+	});
+}
+
+test('an oversized import fails before any upload and retains its selected batch', async () => {
+	let uploads = 0;
+	const feedback: string[] = [];
+	const spy = spyOn(schoolClient, 'getBrowserSchoolClient').mockReturnValue({ imports: {
+		history: async () => ({ batches: [] }), detail: async () => detail('batch'),
+		submit: async () => { uploads++; return { fileId: 'file' }; },
+	} } as unknown as ReturnType<typeof schoolClient.getBrowserSchoolClient>);
+	const state = createState(feedback);
+	try {
+		await state.connect('batch', 'school:user');
+		expect(await state.submit(new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'too-large.csv'), 'students')).toBeNull();
+		expect(uploads).toBe(0);
+		expect(feedback.length).toBe(1);
+		expect(state.detail?.batch.id).toBe('batch');
+		expect(state.busy).toBe(false);
+	}
+	finally { state.disconnect(); spy.mockRestore(); }
+});

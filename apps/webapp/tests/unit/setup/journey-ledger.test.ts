@@ -1,13 +1,13 @@
 import type { QaTemplateRow } from '../../../scripts/qa-template-matrix.manual';
-import type { UiJourney } from './journey-context';
+import type { UiJourney } from '../../integration/setup/journey-context';
 import { describe, expect, it } from 'bun:test';
 import {
 	MODAL_DEEP_LINK_ACTION_PREFIX,
 	ROUTE_SMOKE_ACTION,
 	sidebarLinkAction,
 } from '../../../scripts/qa-route-catalog';
-import { coverCompletedModal, coverMutationActions } from './journey-context';
-import { JourneyLedger } from './journey-ledger';
+import { coverCompletedModal, coverMutationActions } from '../../integration/setup/journey-context';
+import { JourneyLedger } from '../../integration/setup/journey-ledger';
 
 const TIMETABLE = 'http://localhost:5173/classes/[classId]/timetable';
 const STAFF_PROFILE = 'http://localhost:5173/school/staff/[id]/profile';

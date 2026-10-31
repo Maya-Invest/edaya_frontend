@@ -24,7 +24,11 @@ For local preparation, `--ref <branch-or-commit>` overrides the backend input, o
 
 `bun run verify` runs repository/workflow checks, quality, a local verification build, and workspace unit tests (including tooling once). `bun repo test tooling` runs this package's Bun suite. `bun repo test integration` supervises disposable local services from the prepared backend revision and runs required browser suites with source-freshness and feature-coverage gates. See [webapp testing](../../apps/webapp/tests/README.md).
 
-Bun is pinned in the root package manifest. Node.js 22+ runs the third-party Wrangler CLI; maintained frontend orchestration runs on Bun. Workflow validators use pinned versions and checked SHA-256 hashes. Local integrations also require the backend's native PostgreSQL/archive prerequisites.
+Bun is pinned in the root package manifest. Node.js 22+ runs the third-party Wrangler CLI; maintained frontend orchestration runs on Bun. Workflow validators use pinned versions and checked SHA-256 hashes. The owned backend fixture uses PGlite; frontend integration does not require native PostgreSQL tools. Shared setup synchronizes SvelteKit before the integration job starts.
+
+`bun repo test unit` forces fresh workspace test execution, including the tooling package once. Webapp state suites are discovered under `tests/unit` and each runs in an isolated Bun process; shared helper tests remain under `tests/lib`. Neither lane selection nor relocating a test changes its coverage claims.
+
+Use `bun repo test integration --suite onboarding` to diagnose one suite with owned backend/frontend services. A selected run clears earlier qualification and integration-stage success before backend preflight. Even a passing selected suite leaves the full browser result unsuccessful, so it cannot finalize or deploy a release. The command without `--suite` retains the complete mandatory browser gate.
 
 ## CI and release procedure
 
@@ -195,7 +199,7 @@ Run test suites.
 Commands:
   unit                     Run workspace unit tests.
   tooling                  Run the complete tooling package test suite.
-  integration              Run supervised integration suites.
+  integration              Run supervised integration suites; selected suites never qualify a release.
 
 Options:
   -h, --help               Show help for this command.
@@ -223,12 +227,14 @@ Options:
 Examples:
   bun repo test tooling
 
-Usage: bun repo test integration
+Usage: bun repo test integration [options]
 
-Run supervised integration suites.
+Run supervised integration suites; selected suites never qualify a release.
 
 Options:
   -h, --help               Show help for this command.
+  --suite <id>
+      Run one suite for diagnosis without qualification evidence. Values: availability, onboarding, provisioned, webadmin, demo, student-profile, grading-entry, school-year-switcher, shared-design, guardian-profile, subject-enrollment, imports-ui, account-settings-ui, inbox-pages-ui, messaging-ui, family-feedback-ui, permission-profiles, teacher-tabs, attendance-ui, assessment-permissions, grading-configuration, timetable-selection.
 
 Examples:
   bun repo test integration
@@ -589,12 +595,14 @@ Options:
 Examples:
   bun repo ci archive-inputs
 
-Usage: bun repo ci browser-suites
+Usage: bun repo ci browser-suites [options]
 
 Run browser suites against the configured services.
 
 Options:
   -h, --help               Show help for this command.
+  --suite <id>
+      Run one suite without full coverage validation. Values: availability, onboarding, provisioned, webadmin, demo, student-profile, grading-entry, school-year-switcher, shared-design, guardian-profile, subject-enrollment, imports-ui, account-settings-ui, inbox-pages-ui, messaging-ui, family-feedback-ui, permission-profiles, teacher-tabs, attendance-ui, assessment-permissions, grading-configuration, timetable-selection.
 
 Examples:
   bun repo ci browser-suites
