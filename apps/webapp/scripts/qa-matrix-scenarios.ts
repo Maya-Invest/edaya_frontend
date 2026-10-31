@@ -385,25 +385,19 @@ export async function runLogoutShellScenario(row: QaTemplateRow, ctx: DemoContex
 		await page.goto(`${base}/dashboard?modal=account-profile`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
 
-		const dialog = page.getByRole('dialog');
-		if (!(await dialog.isVisible({ timeout: 8_000 }).catch(() => false))) {
-			const profileBtn = page.locator('[data-testid="user-menu"]').first();
-			if (await profileBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-				await profileBtn.click();
-			}
-			if (!(await dialog.isVisible({ timeout: 5_000 }).catch(() => false))) {
-				return notOk(row, 'Modal profil non ouvert avant logout');
-			}
-		}
-
-		const signOut = dialog.getByRole('button', { name: /se déconnecter|sign out/i }).last();
-		if (!(await signOut.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return notOk(row, 'Bouton déconnexion introuvable');
-		}
-		await signOut.click();
-
-		const redirected = await page.waitForURL(/\/login/, { timeout: 15_000 }).then(() => true).catch(() => false);
-		return redirected ? ok(row) : notOk(row, `Pas de redirect /login (url=${page.url()})`);
+		const dialog = page.getByTestId('account-profile-dialog');
+		await dialog.waitFor({ state: 'visible' });
+		await dialog.getByRole('tab', { name: /^(sécurité|security)$/i }).click();
+		const signOut = dialog.getByRole('button', { name: /se déconnecter|sign out/i });
+		const [response] = await Promise.all([
+			page.waitForResponse(response => response.url().endsWith('/auth/edaya/sign-out') && response.request().method() === 'POST'),
+			signOut.click(),
+		]);
+		assert(response.ok(), `Sign out HTTP ${response.status()}`);
+		await page.waitForURL(/\/login/, { timeout: 15_000 });
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+		await page.waitForURL(/\/login/, { timeout: 15_000 });
+		return ok(row, 'Signed out from account Security; server response and protected-page redirect verified');
 	}
 	catch (err) {
 		return notOk(row, formatError(err));
