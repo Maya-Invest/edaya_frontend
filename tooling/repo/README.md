@@ -81,6 +81,8 @@ Qualification requires committed source (allowing the resolved `bun.lock`) and r
 
 ## Evidence and documentation maintenance
 
+The Ubuntu integration job removes unused preinstalled Android and .NET SDKs before installing dependencies and requires 12 GiB of free workspace storage. Cleanup is restricted to GitHub-hosted Linux runners. Each browser suite checks for at least 2 GiB remaining in the workspace and temporary filesystem while the fixture is alive. Capacity logs and final directory totals are retained in `.ci-evidence/disk-usage.txt`; low disk capacity fails explicitly before browser navigation.
+
 - `.ci-evidence/stages/` records mandatory stage outcomes and complete input/run identity.
 - `.ci-evidence/qualification.json` joins successful matching stages; `.ci-evidence/results.json` retains the browser contract.
 - `.release/manifest.json` records commit, environment, tool/API identity, artifact hashes and status. Consumer evidence includes backend SHA and generated-client checksums.

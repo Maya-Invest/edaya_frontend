@@ -2,6 +2,7 @@ import { rmSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { BROWSER_SUITE_DIRECTORIES, FOCUSED_BROWSER_SUITES } from './browser-suites'
 import { checkClient } from './client'
+import { checkIntegrationDiskSpace } from './disk'
 import { beginIntegrationEvidence, integrationEvidence } from './evidence'
 import { invalidateQualification } from './qualification'
 import { root, run, verifyBackend, waitForUrl } from './runtime'
@@ -52,6 +53,7 @@ export async function browserSuites(selectedSuite?: string): Promise<void> {
   const failures: string[] = []
   async function suite(name: string, command: string[], overrides = {}) {
     services.assertRunning()
+    checkIntegrationDiskSpace(name)
     try {
       await services.run(command, { cwd, env: { ...env, ...overrides }, timeout: 60 * 60000 })
     }

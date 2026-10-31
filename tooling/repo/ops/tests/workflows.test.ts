@@ -11,6 +11,25 @@ const preparation = 'preparation'
 const entries = ['branche_check.yml', 'pr_validation.yml', 'deploy.yml']
 const mandatory = [preparation, 'quality', 'unit', 'build', 'integration']
 
+test('integration reserves hosted runner capacity before setup and retains diagnostics after failure', () => {
+  const job = workflow('_integration_test.yml').jobs.integration
+  const steps = job.steps as Record<string, any>[]
+  const prepare = steps.findIndex(step => step.run === 'bash tooling/repo/ci/integration-disk.sh prepare')
+  const setup = steps.findIndex(step => step.uses === './.github/actions/setup')
+  const browser = steps.findIndex(step => step.run === 'bun run repo test integration')
+  const report = steps.findIndex(step => step.run === 'bash tooling/repo/ci/integration-disk.sh report')
+  const upload = steps.findIndex(step => step.with?.path === '.ci-evidence/')
+  expect(job['runs-on']).toBe('ubuntu-24.04')
+  expect(prepare).toBeGreaterThan(0)
+  expect(prepare).toBeLessThan(setup)
+  expect(report).toBeGreaterThan(browser)
+  expect(report).toBeLessThan(upload)
+  expect(steps[report]!.if).toBe('always()')
+  expect(steps[upload]!.if).toBe('always()')
+  for (const index of [prepare, report])
+    expect(steps[index]!.env.RUNNER_KIND).toBe('${{ runner.environment }}')
+})
+
 // These routing expressions use the common GitHub/JavaScript subset: property
 // access, string equality, &&, || and format. Evaluate the actual YAML values.
 function render(value: string | boolean, github: Record<string, any>, inputs: Record<string, any> = {}): string {

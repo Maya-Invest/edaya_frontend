@@ -35,6 +35,10 @@ jobs:
           ref: ${{ inputs.source_ref }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Prepare integration disk capacity
+        env:
+          RUNNER_KIND: ${{ runner.environment }}
+        run: bash tooling/repo/ci/integration-disk.sh prepare
       - uses: ./.github/actions/setup
         with:
           source_sha: ${{ inputs.source_ref }}
@@ -55,6 +59,11 @@ jobs:
         env:
           COMPATIBILITY_BASE_SHA: ${{ inputs.baseline_sha }}
         run: bun run repo test integration
+      - name: Record integration disk usage
+        if: always()
+        env:
+          RUNNER_KIND: ${{ runner.environment }}
+        run: bash tooling/repo/ci/integration-disk.sh report
       - name: Upload browser result contract
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
