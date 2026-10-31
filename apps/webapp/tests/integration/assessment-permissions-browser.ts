@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import process from 'node:process';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { chromium } from 'playwright';
@@ -7,6 +9,8 @@ import { createFixtureServer } from './support/fixture-server';
 
 async function main() {
 	ensurePlaywrightChromium();
+	const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? resolve(import.meta.dirname, '../../.focused-run/assessment-permissions');
+	mkdirSync(artifacts, { recursive: true });
 	const appRoot = new URL('../..', import.meta.url).pathname;
 	const fixture = `${appRoot}/tests/fixtures/assessment-permissions`;
 	process.chdir(appRoot);
@@ -78,7 +82,7 @@ async function main() {
 			}
 			catch (error) {
 				console.error(await page.locator('body').textContent());
-				await page.screenshot({ path: '/tmp/assessment-browser-failure.png', fullPage: true });
+				await page.screenshot({ path: resolve(artifacts, 'assessment-browser-failure.png'), fullPage: true });
 				throw error;
 			}
 			assert.equal(await create.isDisabled(), false, 'Setup authority can create assessments');
@@ -123,7 +127,7 @@ async function main() {
 			assert.equal(await submit.isDisabled(), true, 'Another subject does not confer edit authority');
 			await page.keyboard.press('Escape');
 			assert.deepEqual(errors, []);
-			await page.screenshot({ path: `/tmp/assessment-permissions-${locale}.png`, fullPage: true });
+			await page.screenshot({ path: resolve(artifacts, `assessment-permissions-${locale}.png`), fullPage: true });
 			await page.close();
 			process.stdout.write(`Assessment permission controls and progress: ${locale} passed\n`);
 		}

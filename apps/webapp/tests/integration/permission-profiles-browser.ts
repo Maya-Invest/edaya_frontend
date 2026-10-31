@@ -1,5 +1,7 @@
 import { chooseOption, selectOptions } from './support/custom-select';
 import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
 import { apiFetch } from './setup/journey-api';
@@ -11,6 +13,8 @@ import { uiCommand, waitForMutationDialog } from './support/ui-command';
 const base = (process.env.WEBAPP_URL ?? 'http://localhost:5173').replace(/\/+$/, '');
 assert(['localhost', '127.0.0.1'].includes(new URL(base).hostname), 'This journey must use a local fixture webapp');
 assert(['localhost', '127.0.0.1'].includes(new URL(process.env.API_URL ?? 'http://localhost:9999').hostname), 'This journey must use a local fixture API');
+const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? resolve(import.meta.dirname, '../../.focused-run/permission-profiles');
+mkdirSync(artifacts, { recursive: true });
 const schoolId = 'sch-edaya-ci-cocody';
 const staffId = 'ci-st4';
 const profileId = `permission-browser-${crypto.randomUUID()}`;
@@ -172,7 +176,7 @@ try {
 	assert(subjectOptions.length);
 	await chooseOption(subjectSection.locator('select').nth(1), subjectOptions[0]);
 	assert.equal(await subjectSection.locator('select').nth(3).inputValue(), firstClass.id, 'Changing Subject preserves the class restriction');
-	await page.screenshot({ path: '/private/tmp/unified-subject-picker.png' });
+	await page.screenshot({ path: resolve(artifacts, 'unified-subject-picker.png') });
 	await chooseOption(subjectSection.locator('select').nth(0), otherGrade.gradeLevelId);
 	assert.equal(await subjectSection.locator('select').nth(2).inputValue(), 'selected', 'Changing grade never broadens to all classes');
 	assert.equal(await subjectSection.locator('select').nth(3).inputValue(), '');
@@ -258,10 +262,10 @@ try {
 	assert.equal(await disclosure.getAttribute('aria-expanded'), 'true', 'Editing does not toggle disclosure');
 	await disclosure.click();
 	await second.locator('button[aria-expanded]').click();
-	await page.screenshot({ path: '/private/tmp/staff-permissions-desktop.png' });
+	await page.screenshot({ path: resolve(artifacts, 'staff-permissions-desktop.png') });
 	await page.setViewportSize({ width: 390, height: 844 });
 	await disclosure.click();
-	await page.screenshot({ path: '/private/tmp/staff-permissions-mobile.png' });
+	await page.screenshot({ path: resolve(artifacts, 'staff-permissions-mobile.png') });
 	assert(await card.evaluate(element => element.scrollWidth <= element.clientWidth), 'Profile content must wrap on mobile');
 	assert(await additional.evaluate(element => element.scrollWidth <= element.clientWidth), 'Grouped additional permissions must wrap on mobile');
 	assert.equal(await additionalToggle.getAttribute('aria-expanded'), 'true');
@@ -278,9 +282,9 @@ try {
 	assert(englishCategories.every(label => label !== label.toUpperCase()), 'Category headings use localized sentence case');
 	const enlarged = await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
 	assert(await additional.evaluate(element => element.scrollWidth <= element.clientWidth), 'Additional permissions must wrap with enlarged text');
-	await page.screenshot({ path: '/private/tmp/staff-additional-permissions-enlarged.png' });
+	await page.screenshot({ path: resolve(artifacts, 'staff-additional-permissions-enlarged.png') });
 	await enlarged.evaluate(element => element.parentNode?.removeChild(element));
-	await page.screenshot({ path: '/private/tmp/staff-permissions-desktop-en.png' });
+	await page.screenshot({ path: resolve(artifacts, 'staff-permissions-desktop-en.png') });
 	await page.evaluate(() => localStorage.setItem('lang', 'fr'));
 	await page.reload();
 	await card.getByTestId('scope-tag').first().waitFor();
@@ -353,7 +357,7 @@ try {
 	assert.equal(await profileEditor.locator('[data-permission="STAFF_READ"] [data-scope-type]').count(), 0);
 	assert.equal(await profileEditor.locator('[data-permission="GRADE_MANAGE"] [data-scope-type="class_group"]').count(), 1);
 	assert.deepEqual(await profileEditor.locator('[data-permission="ATTENDANCE_VALIDATE"] [data-scope-type]').evaluateAll(elements => elements.map(element => element.getAttribute('data-scope-type'))), ['grade_level', 'class_group']);
-	await page.screenshot({ path: '/private/tmp/permission-profile-scope-types.png' });
+	await page.screenshot({ path: resolve(artifacts, 'permission-profile-scope-types.png') });
 	await page.locator('[role="dialog"]:not(.ui-drawer)').getByRole('checkbox', { checked: true }).first().uncheck();
 	await staleReview('configure-permission-profile', () => page.locator('[role="dialog"]:not(.ui-drawer)').locator('input').first().fill(`${profileId}-updated`));
 	const profilePreview = await review('configure-permission-profile');
@@ -379,7 +383,7 @@ catch (error) {
 	console.log('Permission UI failure URL:', page.url());
 	console.log('Permission UI errors:', errors);
 	console.log('Permission UI dialog:', await page.locator('[role="dialog"]:not(.ui-drawer)').allTextContents().catch(() => []));
-	await page.screenshot({ path: '/private/tmp/staff-permissions-failure.png', timeout: 5000 }).catch(() => {});
+	await page.screenshot({ path: resolve(artifacts, 'staff-permissions-failure.png'), timeout: 5000 }).catch(() => {});
 	throw error;
 }
 finally {

@@ -85,6 +85,7 @@ Qualification requires committed source (allowing the resolved `bun.lock`) and r
 - `.ci-evidence/qualification.json` joins successful matching stages; `.ci-evidence/results.json` retains the browser contract.
 - `.release/manifest.json` records commit, environment, tool/API identity, artifact hashes and status. Consumer evidence includes backend SHA and generated-client checksums.
 - `.ci-evidence/reports/` contains sanitized JSON/CSV, masked browser captures and an HTML index. Integration clears its own previous report directories; private provisioning/session fixtures are excluded.
+- Focused browser suites receive `INTEGRATION_ARTIFACT_DIR` from their runner. Create that directory before capturing screenshots and resolve every success/failure image beneath it. Standalone runs should use a repository-relative ignored output directory; hardcoded host paths such as `/private/tmp` fail on Linux and bypass diagnostic collection. Unit checks reject absolute screenshot path literals in registered focused suites.
 - Screenshot runs use ignored `apps/webapp/.screenshots/<run-id>/`. Curated gallery instructions live in the [design-system README](../../design-system/README.md#visual-review).
 
 Evidence describes a run; it does not pin future releases or prove an unrelated revision. Never copy old successful results into a new qualification. Plans, audits and historical evidence are preserved externally, with source identity and outstanding items.
