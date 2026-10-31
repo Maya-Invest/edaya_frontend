@@ -4,13 +4,17 @@ import { bootstrapSession, resetBootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
+import { saveDraft } from '$lib/onboarding/draft-storage';
 import { onboardingUserErrorMessage } from '$lib/onboarding/onboarding-user-error';
 import {
+	loadProvisionAttempt,
 	markProvisionAttemptBootstrapReady,
 	markProvisionAttemptCommitted,
+	normalizeProvisionFingerprint,
+	provisionAttemptNeedsReconciliation,
 	resolveProvisionAttempt,
 } from '$lib/onboarding/provision-attempt';
-import { buildProvisionPayload } from '$lib/onboarding/provision-payload';
+import { buildProvisionPayload, restoreProvisionedDraft } from '$lib/onboarding/provision-payload';
 import {
 	estimateProvisionPercent,
 	mapServerPhaseToStepId,
@@ -133,8 +137,29 @@ export async function submitProvisionOnboarding(
 	}
 
 	try {
-		const payload = buildProvisionPayload(draft);
-		const attempt = resolveProvisionAttempt(authUserId, draft);
+		let payload = buildProvisionPayload(draft);
+		let reconciled = false;
+		if (provisionAttemptNeedsReconciliation(authUserId, draft)) {
+			// Resolve a lost response before replacing its request identity. Errors keep the attempt intact.
+			resetBootstrapSession();
+			const bootstrap = await bootstrapSession({ silent: true });
+			const previous = loadProvisionAttempt(authUserId)!;
+			if (bootstrap.session?.schoolId === previous.schoolId) {
+				markProvisionAttemptCommitted(authUserId, previous.schoolId);
+				// Replay the original request to recover its authoritative year/period and result.
+				const original = JSON.parse(normalizeProvisionFingerprint(previous.fingerprint)) as typeof payload;
+				payload = original;
+				restoreProvisionedDraft(draft, original);
+				saveDraft(authUserId, draft);
+			}
+			else if (bootstrap.pendingOnboarding) {
+				reconciled = true;
+			}
+			else {
+				throw new Error('ONBOARDING_ATTEMPT_RECONCILIATION_REQUIRED');
+			}
+		}
+		const attempt = resolveProvisionAttempt(authUserId, draft, reconciled);
 		const includeStaff = (payload.invites?.length ?? 0) > 0;
 		const client = getBrowserSchoolClient();
 		if (typeof client.onboarding.provision !== 'function') {

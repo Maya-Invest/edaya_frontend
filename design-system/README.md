@@ -1,6 +1,6 @@
 # Brand inputs and maintenance
 
-Frontend token revision **1.0.3** adds action, field, collection, dialog, menu, badge and message geometry roles alongside the existing interaction colors. Destructive triggers remain outlined; final destructive confirmations use the filled danger role. Busy buttons retain role colors and prevent duplicate activation.
+Frontend token revision **1.0.13** includes two-row student guardian lists with relationship badges, aligned contact fields, shared row actions and no redundant result footer, alongside the merged student Profile with flat ordered sections and independent medical/relationship reads, person-directory names without email subtitles and the concise Guardians column set, the responsive app header with school identity left and language/account controls pinned right, the labeled school-year text link and bounded switcher dialog, fixed gallery gutters and French text reflow at enlarged text, alongside the compact account dialog and the Inbox table composition: separate comparison columns, secondary timestamp lines and concise status/impact emphasis using shared geometry. Shared drawer motion, action, field, collection, menu, badge and message geometry and interaction colors remain part of the same system. Destructive triggers remain outlined; final destructive confirmations use the filled danger role. Busy buttons retain role colors and prevent duplicate activation.
 
 The frontend `tokens.json` is the canonical platform-neutral manifest. Mobile keeps a reviewed local snapshot; frontend verification/builds never read a mobile checkout. The staff webapp is light-only. Dark manifest values support mobile and component compatibility checks; they do not enable a web theme switch.
 
@@ -18,6 +18,10 @@ Edit the manifest rather than generated `apps/webapp/src/lib/design-system/token
 `assets.json` records SHA-256 integrity for bundled logos, fonts and OFL licenses. `visual-literals.json` records reviewed existing per-file literals; it is not permission to add new per-screen palettes. Checks reject increases, changed/missing assets, remote font loading, generated drift and inaccessible semantic text pairs. After explicitly reviewing changed assets/literals, use `bun repo generate reviewed-brand-baseline` and inspect its diff.
 
 Use supplied outlined EDAYA SVG artwork, bundled Poppins headings and Inter UI, existing semantic tokens and reusable components. Full visual requirements live in the [design-language spec](../docs/specs/design-language-spec.md); the [component registry](../docs/specs/shared-components-spec.md) identifies the production building blocks. Styling preserves product behavior, permissions, data and effective layouts.
+
+## Drawer motion
+
+`DrawerFrame` owns the modal portal and uses global Svelte transitions so URL-driven unmounts retain the panel and backdrop until the exit completes. Both directions use the existing `motion.enter` duration and respect reduced motion. Feature drawers must use this component rather than copy dialog positioning or attach separate animations.
 
 ## Visual review
 

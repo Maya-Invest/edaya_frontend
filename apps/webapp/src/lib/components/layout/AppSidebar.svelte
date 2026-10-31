@@ -7,7 +7,6 @@
 	import { authSession } from '$lib/auth/session.svelte';
 	import AcademicYearSelector from '$lib/components/layout/AcademicYearSelector.svelte';
 	import ClassSelector from '$lib/components/layout/ClassSelector.svelte';
-	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
 	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
 	import { t } from '$lib/i18n';
 	import { Crown, ChevronDown } from '$lib/icons';
@@ -54,10 +53,10 @@
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
 	let hoverExpanded = $state(false);
-	let yearPopoverExpanded = $state(false);
+	let yearDialogExpanded = $state(false);
 
 	const collapsed = $derived(!forceExpanded && !shellContext.sidebarOpen);
-	const showExpanded = $derived(!collapsed || hoverExpanded || yearPopoverExpanded);
+	const showExpanded = $derived(!collapsed || hoverExpanded || yearDialogExpanded);
 	const expanded = $state<Partial<Record<Exclude<ModuleKey, 'dashboard'>, boolean>>>({});
 
 	const visibleModules = $derived(
@@ -118,13 +117,12 @@
 	class={cn(
 		'flex h-full flex-col border-r border-border bg-card transition-[width] duration-200 ease-in-out',
 		forceExpanded ? 'w-full' : showExpanded ? 'w-64' : 'w-14',
-		collapsed && (hoverExpanded || yearPopoverExpanded) && 'absolute left-0 top-0 z-50 shadow-panel',
+		collapsed && (hoverExpanded || yearDialogExpanded) && 'absolute left-0 top-0 z-50 shadow-panel',
 	)}
 >
 	<div class={cn('flex flex-col border-b border-border', showExpanded ? 'items-start px-4 py-3' : 'items-center py-3')}>
 		<BrandLogo variant={showExpanded ? 'horizontal' : 'symbol'} width={showExpanded ? 144 : 32} />
-		<SchoolSelector collapsed={!showExpanded} />
-		<AcademicYearSelector collapsed={!showExpanded} onOpenChange={open => yearPopoverExpanded = open && hoverExpanded} />
+		<AcademicYearSelector collapsed={!showExpanded} onOpenChange={open => yearDialogExpanded = open && hoverExpanded} />
 	</div>
 
 	<nav class={cn('scrollbar-thin flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>

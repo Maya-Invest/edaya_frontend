@@ -1,9 +1,12 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
 	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
 	import { appPath } from '$lib/navigation/app-navigation';
 	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
+	import { untrack } from 'svelte';
 	import { getStudentsPageState } from '../students-page.svelte';
 	import StudentDrawer from './components/StudentDrawer.svelte';
 	import {
@@ -16,7 +19,10 @@
 	const studentsPage = getStudentsPageState();
 	const detailTabs = createAndRegisterStudentDetailStates(() => studentsPage);
 
-	const student = $derived(studentsPage.selected);
+	const scope = $derived(JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]));
+	let resolvedScope = $state(untrack(() => scope));
+	let requestedScope = untrack(() => scope);
+	const student = $derived(resolvedScope === scope ? studentsPage.selected : undefined);
 	const shouldResolveSelection = createDrawerEntitySelection();
 	let selectionRequestVersion = 0;
 
@@ -26,24 +32,38 @@
 	}
 
 	$effect(() => {
+		if (!academicContext.shellReady)
+			return;
 		const studentId = $page.params.id;
-		if (!shouldResolveSelection(studentId)) {
+		const nextScope = scope;
+		const changedScope = requestedScope !== nextScope;
+		if (!shouldResolveSelection(studentId) && !changedScope) {
 			if (!studentId) {
 				clearStudentDetailTabStates(detailTabs);
 			}
 			return;
 		}
 
+		if (!studentId)
+			return;
+		requestedScope = nextScope;
+		if (changedScope) {
+			resolvedScope = '';
+			clearStudentDetailTabStates(detailTabs);
+		}
 		const version = ++selectionRequestVersion;
 		studentsPage.selectedResolving = true;
 
-		void studentsPage.ensureDrawerSelection(studentId)
+		void untrack(() => changedScope ? studentsPage.ensureSelectedStudent(studentId, true) : studentsPage.ensureDrawerSelection(studentId))
 			.then((ok) => {
 				if (version !== selectionRequestVersion) {
 					return;
 				}
 				if (!ok) {
 					closeDetail();
+				}
+				else {
+					resolvedScope = nextScope;
 				}
 			})
 			.catch(() => {

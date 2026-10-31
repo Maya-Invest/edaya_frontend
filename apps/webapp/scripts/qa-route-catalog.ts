@@ -73,6 +73,8 @@ export function isNamespaceRootPath(matrixPath: string): boolean {
 
 /** Documented redirect targets (inventory + matrix redirect smoke). */
 export const ROUTE_REDIRECTS: Record<string, string> = {
+ '/school/students/:id?/enrollments': '/school/students/:id/profile',
+ '/classes/:classId/students/:id?/enrollments': '/classes/:classId/students/:id/profile',
 	'/configuration/report-cards/:id?': '/configuration/structure/subjects',
 	'/configuration/other/grade-scales': '/configuration/grade-scales',
 	'/school/marks-review': '/school/corrections?workflow=grades',
@@ -107,6 +109,8 @@ export const ROUTE_REDIRECTS: Record<string, string> = {
 };
 
 export const LEGACY_ROUTES = new Set([
+ '/school/students/:id?/enrollments',
+ '/classes/:classId/students/:id?/enrollments',
 	'/configuration/report-cards/:id?',
 	'/school/staff/:id?/assignments',
 	'/configuration/subjects',
@@ -181,7 +185,7 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 	{
 		name: 'school students',
 		routePattern: '/school/students/[id]',
-		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'],
+		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'documents'],
 	},
 	{
 		name: 'school staff',
@@ -221,7 +225,7 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 	{
 		name: 'class students',
 		routePattern: '/classes/[classId]/students/[id]',
-		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'],
+		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'documents'],
 	},
 	{
 		name: 'class evaluations',
@@ -256,6 +260,8 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
  { module: 'École', parentRoute: '/school/messages/[id]', modal: 'reply' },
 	{ module: 'École', parentRoute: '/school/events', modal: 'create' },
 	{ module: 'École', parentRoute: '/school/students/[id]/profile', modal: 'edit-profile' },
+ { module: 'École', parentRoute: '/school/students/[id]/profile', modal: 'change-status' },
+ { module: 'Classes', parentRoute: '/classes/[classId]/students/[id]/profile', modal: 'change-status' },
 	{ module: 'École', parentRoute: '/school/students/[id]/profile', modal: 'change-class' },
 	{ module: 'École', parentRoute: '/school/students/[id]/profile', modal: 'link-guardian' },
 	{ module: 'École', parentRoute: '/school/students/[id]/profile', modal: 'note' },

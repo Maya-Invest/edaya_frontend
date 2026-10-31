@@ -5,7 +5,7 @@ test('message selection and filters own loading while reply navigation preserves
 	const base = new URL('http://local/school/messages/one?status=awaiting_school&order=latest');
 	const modal = new URL(base); modal.searchParams.set('modal', 'reply'); modal.searchParams.set('modalStep', 'confirm');
 	expect(messageQueryKey(modal)).toBe(messageQueryKey(base));
-	for (const key of ['type', 'view', 'status', 'order']) {
+	for (const key of ['search', 'type', 'view', 'status', 'order']) {
 		const changed = new URL(base); changed.searchParams.set(key, 'different');
 		expect(messageQueryKey(changed)).not.toBe(messageQueryKey(base));
 	}

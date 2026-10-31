@@ -1,4 +1,6 @@
-export const ONBOARDING_DRAFT_VERSION = 7 as const;
+import type { DatasetReference } from './dataset-model';
+
+export const ONBOARDING_DRAFT_VERSION = 8 as const;
 export const ONBOARDING_STEP_COUNT = 4;
 
 export type OnboardingStep = 1 | 2 | 3 | 4;
@@ -32,15 +34,9 @@ export interface OnboardingStructureLevelDraft {
 	classNamingMode: OnboardingClassNamingMode;
 }
 
-export interface OnboardingDisciplineMapping {
-	subjectCode: string;
-	disciplineCode: string;
-	disciplineName: string;
-}
-
 export interface OnboardingStructureDraft {
-	disciplineMappings?: OnboardingDisciplineMapping[];
-	models: Array<'college' | 'lycee'>;
+	dataset: DatasetReference | null;
+	templates: string[];
 	levels: OnboardingStructureLevelDraft[];
 }
 

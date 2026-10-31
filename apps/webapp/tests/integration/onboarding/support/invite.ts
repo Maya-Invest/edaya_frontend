@@ -174,18 +174,19 @@ async function invitePersonFromOwnerPage(
 	const command = commands[options.listPath];
 	if (!command)
 		throw new Error(`Unregistered invitation fixture: ${options.listPath}`);
-	const creation = page.waitForResponse(response => response.request().method() === 'POST'
-		&& response.url().includes(`/core/commands/${command}`), { timeout: 25000 });
-	await fillPersonCreateDialogWithInvite(page, {
-		email: options.email,
-		firstName: options.firstName,
-		lastName: options.lastName,
-	});
-	const created = await creation;
+	const [created] = await Promise.all([
+		page.waitForResponse(response => response.request().method() === 'POST'
+			&& response.url().includes(`/core/commands/${command}`), { timeout: 25000 }),
+		fillPersonCreateDialogWithInvite(page, {
+			email: options.email,
+			firstName: options.firstName,
+			lastName: options.lastName,
+		}),
+	]);
 	if (!created.ok())
 		throw new Error(`${command} failed: HTTP ${created.status()}`);
 	await page.waitForURL(options.idPattern, { timeout: 30000 });
-	await page.locator('aside[aria-label]').waitFor({ state: 'visible', timeout: 15000 });
+	await page.getByRole('dialog').waitFor({ state: 'visible', timeout: 15000 });
 	return sendOrReadInvitationToken(page);
 }
 
@@ -234,19 +235,27 @@ export async function inviteGuardianFromOwnerPage(
 	});
 }
 
+async function openStaffProfileByEmail(page: Page, base: string, email: string): Promise<void> {
+	await page.goto(`${stripTrailingSlash(base)}/school/staff`, { waitUntil: 'domcontentloaded' });
+	await page.locator('aside#app-sidebar').waitFor({ state: 'visible', timeout: 30_000 });
+	await waitForPageQuery(page);
+	// Email is searchable even when it is not among the visible directory columns.
+	await page.getByTestId('list-search').fill(email);
+	await page.waitForURL(url => url.searchParams.get('q') === email);
+	await waitForPageQuery(page);
+	await page.waitForFunction(() => document.querySelectorAll('main tbody tr[data-entity-id]').length === 1);
+	await page.locator('main tbody tr[data-entity-id] [data-column="name"]').getByRole('button').click();
+	await page.waitForURL(/\/school\/staff\/[^/?]+/, { timeout: 30_000 });
+	await waitForPageQuery(page);
+	await page.getByRole('dialog').getByText(email, { exact: true }).first().waitFor();
+}
+
 export async function readStaffInviteTokenFromList(
 	page: Page,
 	base: string,
 	email: string,
 ): Promise<string> {
-	await page.goto(`${stripTrailingSlash(base)}/school/staff`, { waitUntil: 'domcontentloaded' });
-	await page.locator('aside#app-sidebar').waitFor({ state: 'visible', timeout: 30_000 });
-	await waitForPageQuery(page);
-	const row = page.locator('main').getByText(email, { exact: false }).first();
-	await row.waitFor({ state: 'visible', timeout: 20_000 });
-	await row.click();
-	await page.waitForURL(/\/school\/staff\/[^/?]+/, { timeout: 30_000 });
-	await waitForPageQuery(page);
+	await openStaffProfileByEmail(page, base, email);
 	return sendOrReadInvitationToken(page);
 }
 
@@ -256,24 +265,11 @@ export async function assertWizardStaffInviteSent(
 	email: string,
 	provisionedInviteCount: number,
 ): Promise<void> {
-	await page.goto(`${stripTrailingSlash(base)}/school/staff`, { waitUntil: 'domcontentloaded' });
-	await page.locator('aside#app-sidebar').waitFor({ state: 'visible', timeout: 30_000 });
-	await waitForPageQuery(page);
-	const row = page.locator('main').getByText(email, { exact: false }).first();
-	const visible = await row.waitFor({ state: 'visible', timeout: 20_000 }).then(() => true).catch(() => false);
-	if (visible) {
-		if (provisionedInviteCount >= 1) {
-			return;
-		}
-		await row.click();
-		await page.waitForURL(/\/school\/staff\/[^/?]+/, { timeout: 30_000 });
-		await waitForPageQuery(page);
-		await sendOrReadInvitationToken(page);
-		return;
+	if (provisionedInviteCount < 1) {
+		throw new Error('Wizard provisioning did not report a staff invitation');
 	}
-	throw new Error(
-		`Wizard staff invite for ${email} was not sent (provision invitedCount=${provisionedInviteCount})`,
-	);
+	await openStaffProfileByEmail(page, base, email);
+	await page.getByRole('button', { name: /resend|renvoyer/i }).waitFor();
 }
 
 async function expectStaffLanding(page: Page): Promise<void> {

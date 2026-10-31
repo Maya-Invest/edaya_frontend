@@ -11,12 +11,13 @@
 	import { AccountLinkingState } from './account-linking-state.svelte';
 
 	type InvitationKind = components['schemas']['SendAccountInvitationCommand']['kind'];
-	const { kind, targetId, subjectId = null, contactEmail = '', displayName }: {
+	const { kind, targetId, subjectId = null, contactEmail = '', displayName, flat = false }: {
 		kind: InvitationKind;
 		targetId: string;
 		subjectId?: string | null;
 		contactEmail?: string;
 		displayName: string;
+		flat?: boolean;
 	} = $props();
 	const state = new AccountLinkingState(() => ({ kind, targetId, subjectId, contactEmail, displayName }));
 	const linkStatus = $derived(state.linkStatus);
@@ -51,15 +52,15 @@
 	}
 </script>
 
-<div class="space-y-3 rounded-collection border border-border bg-card px-4 py-3">
+<div class={flat ? 'space-y-4' : 'space-y-3 rounded-collection border border-border bg-card px-4 py-3'}>
 	<div class="flex items-start justify-between gap-3">
 		<div class="space-y-1">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			{#if !flat}<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('invitation.accountSection')}
-			</Label>
+			</Label>{/if}
 			<p class="text-sm text-muted-foreground">{$t('invitation.accountHint')}</p>
 		</div>
-		<span class={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusTone}`}>
+		<span class={`inline-flex items-center gap-1 ${flat ? 'rounded' : 'rounded-full'} border px-2.5 py-1 text-[11px] font-medium ${statusTone}`}>
 			{#if linkStatus === 'linked'}
 				<ShieldCheck class="h-3.5 w-3.5" />
 			{:else if linkStatus === 'pending'}

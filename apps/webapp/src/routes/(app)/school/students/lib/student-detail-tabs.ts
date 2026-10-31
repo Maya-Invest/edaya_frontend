@@ -5,7 +5,6 @@ export const STUDENT_DETAIL_TABS = [
 	{ key: 'incidents', segment: 'incidents', labelKey: 'drawer.tab.incidents' },
 	{ key: 'finances', segment: 'finances', labelKey: 'drawer.tab.finances' },
 	{ key: 'reportCard', segment: 'report-card', labelKey: 'drawer.tab.reportCard' },
-	{ key: 'enrollments', segment: 'enrollments', labelKey: 'drawer.tab.enrollments' },
 	{ key: 'documents', segment: 'documents', labelKey: 'drawer.tab.documents' },
 ] as const;
 

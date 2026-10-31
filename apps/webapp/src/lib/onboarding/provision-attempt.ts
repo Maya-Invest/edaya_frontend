@@ -72,8 +72,25 @@ function parseAttempt(raw: string | null): ProvisionAttemptIdentity | null {
 	}
 }
 
+/** Normalize v7 payloads to their effective backend semantics, including the implicit CI dataset. */
+export function normalizeProvisionFingerprint(fingerprint: string): string {
+	try {
+		const payload = JSON.parse(fingerprint);
+		if (payload.structure && !payload.structure.datasetSnapshot && !payload.structure.templateSnapshots) {
+			delete payload.structure.disciplineMappings;
+			payload.structure.dataset ??= { id: 'ci-general-secondary', version: '1.0.0' };
+		}
+		const stable = (value: unknown): unknown => Array.isArray(value) ? value.map(stable) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, stable(item)])) : value;
+		return JSON.stringify(stable(payload));
+	}
+	catch { return fingerprint; }
+}
 export function fingerprintProvisionDraft(draft: OnboardingDraft): string {
-	return JSON.stringify(buildProvisionPayload(draft));
+	return normalizeProvisionFingerprint(JSON.stringify(buildProvisionPayload(draft)));
+}
+export function provisionAttemptNeedsReconciliation(authUserId: string, draft: OnboardingDraft): boolean {
+	const existing = loadProvisionAttempt(authUserId);
+	return Boolean(existing && !existing.committed && normalizeProvisionFingerprint(existing.fingerprint) !== fingerprintProvisionDraft(draft));
 }
 
 export function loadProvisionAttempt(authUserId: string | null | undefined): ProvisionAttemptIdentity | null {
@@ -107,17 +124,21 @@ export function isProvisionAttemptCommitted(authUserId: string | null | undefine
 export function resolveProvisionAttempt(
 	authUserId: string,
 	draft: OnboardingDraft,
+	reconciled = false,
 ): ProvisionAttemptIdentity {
 	const fingerprint = fingerprintProvisionDraft(draft);
 	const existing = loadProvisionAttempt(authUserId);
-	if (existing && (existing.committed || existing.fingerprint === fingerprint)) {
-		return existing.fingerprint === fingerprint
-			? existing
-			: { ...existing, fingerprint };
+	if (existing && (existing.committed || normalizeProvisionFingerprint(existing.fingerprint) === fingerprint)) {
+		const normalized = { ...existing, fingerprint: existing.committed ? existing.fingerprint : fingerprint };
+		saveProvisionAttempt(authUserId, normalized);
+		return normalized;
 	}
 
+	if (existing && !reconciled)
+		throw new Error('ONBOARDING_ATTEMPT_RECONCILIATION_REQUIRED');
 	const next: ProvisionAttemptIdentity = {
-		schoolId: crypto.randomUUID(),
+		// A late commit must never create a second school after reconciliation.
+		schoolId: existing?.schoolId ?? crypto.randomUUID(),
 		requestId: crypto.randomUUID(),
 		fingerprint,
 		committed: false,

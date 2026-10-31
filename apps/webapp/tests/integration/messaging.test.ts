@@ -17,7 +17,7 @@ const sent: Record<string, unknown>[] = [];
 const detail = () => ({ conversation: { id: 'thread', version, unread: true, allowedActions: { reply: allowed, resolve: allowed } }, messages: [{ id: 'one', sequence: 1, body: 'Opening hours?' }], hasMore: false });
 interface ListRow { id: string }
 interface ListResponse { items: ListRow[]; total: number; unreadCount: number }
-interface ListRequest { destination?: string; status?: string; order: string; offset: number; limit: number }
+interface ListRequest { search?: string; destination?: string; status?: string; order: string; offset: number; limit: number }
 let listHandler = async (_input: ListRequest): Promise<ListResponse> => ({ items: [], total: 0, unreadCount: 1 });
 const listCalls: ListRequest[] = [];
 const client = { queries: {
@@ -138,6 +138,20 @@ describe('conversation infinite loading', () => {
 		expect(state.items).toHaveLength(2);
 		expect(state.total).toBe(2);
 	});
+ test('sends search with facets to every page and resets matching state when search changes', async () => {
+  pagedRoster(60);
+  let url = new URL('http://local/school/messages?search=office&type=school&status=awaiting_school');
+  const state = new MessagesPageState(() => url);
+  await state.load();
+  await state.loadMore();
+  expect(listCalls.map(call => call.search)).toEqual(['office', 'office']);
+  expect(listCalls.at(-1)).toMatchObject({ destination: 'school', status: 'awaiting_school', search: 'office', offset: 25 });
+  url = new URL('http://local/school/messages?search=homework&type=school&status=awaiting_school');
+  await state.load();
+  expect(listCalls.at(-1)).toMatchObject({ search: 'homework', offset: 0 });
+  expect(state.items).toHaveLength(25);
+ });
+
 	test('stops refreshing further batches after the account changes', async () => {
 		pagedRoster(60);
 		const state = new MessagesPageState(() => new URL('http://local/school/messages'));
@@ -182,7 +196,7 @@ describe('conversation infinite loading', () => {
 		expect(state.items).toHaveLength(40);
 		expect(state.loadMoreError).toBe(false);
 	});
-	for (const change of ['status', 'order', 'type', 'view', 'identity', 'clear']) {
+	for (const change of ['search', 'status', 'order', 'type', 'view', 'identity', 'clear']) {
 		test(`discards pending batches after ${change} changes`, async () => {
 			pagedRoster(60);
 			let url = new URL('http://local/school/messages?offset=25');

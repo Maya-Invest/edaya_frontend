@@ -1016,13 +1016,6 @@ export async function fillPersonCreateDialogWithInvite(
 		}
 	}
 
-	// Guardians use a collection editor; create an explicit email contact.
-	// Never infer contact fields from their position among identity inputs.
-	if (await dialog.locator('#guardian-send-invite').count()) {
-		const contacts = dialog.getByRole('group', { name: /contact methods|coordonnées/i });
-		await contacts.getByRole('button', { name: /^(add|ajouter)$/i }).click();
-		await chooseOption(contacts.locator('select').last(), 'email');
-	}
 	await dialog.locator('input[type="email"]').first().fill(options.email);
 
 	const submit = dialog.getByTestId('form-modal-submit')

@@ -13,6 +13,7 @@
 		emptyTitle,
 		emptyDescription,
 		preserveShell = false,
+		compact = false,
 		children,
 		onRetry,
 	}: {
@@ -22,6 +23,7 @@
 		emptyDescription?: string;
 		/** Keep list shell (header + CTA) visible when the collection is empty. */
 		preserveShell?: boolean;
+		compact?: boolean;
 		children?: Snippet;
 		onRetry?: () => void;
 	} = $props();
@@ -30,7 +32,9 @@
 	const retry = $derived(onRetry ?? inheritedRetry);
 </script>
 
-{#if status === 'denied' || status === 'unavailable'}
+{#if compact && ['loading', 'error', 'denied', 'unavailable', 'empty', 'no-match'].includes(status)}
+	<div class="space-y-3 text-sm" role={status === 'error' ? 'alert' : 'status'}><p class="text-muted-foreground">{status === 'error' ? errorMessage ?? $t('dataState.errorDefault') : $t(status === 'empty' ? 'dataState.emptyDescription' : status === 'no-match' ? 'dataState.noMatch' : `dataState.${status}`)}</p>{#if retry && status === 'error'}<Button variant="outline" onclick={retry}>{$t('dataState.retry')}</Button>{/if}</div>
+{:else if status === 'denied' || status === 'unavailable'}
 	<div role="status" class="space-y-4 p-6"><h2 class="text-xl font-semibold">{$t(`dataState.${status}`)}</h2><p>{$t(`dataState.${status}Description`)}</p>{#if retry}<Button variant="outline" onclick={retry}>{$t('dataState.retry')}</Button>{/if}</div>
 {:else if status === 'loading'}
 	<p role="status" class="p-6">{$t('dataState.loading')}</p>

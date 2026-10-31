@@ -20,7 +20,8 @@ export class MessagesPageState {
     total = $state(0);
     unreadCount = $state(0);
     private offset = 0;
-    private listKey = '';
+    private listKey = $state('');
+    get hasLoadedList() { return this.listKey === this.currentListKey; }
     loadingMore = $state(false);
     loadMoreError = $state(false);
     private exhausted = $state(false);
@@ -64,6 +65,7 @@ export class MessagesPageState {
         return {
             ...(this.destination !== 'all' ? { destination: this.destination } : {}),
             ...(status === 'awaiting_school' || status === 'awaiting_guardian' || status === 'resolved' ? { status } : {}),
+            ...(url.searchParams.get('search')?.trim() ? { search: url.searchParams.get('search')!.trim().slice(0, 200) } : {}),
             order: url.searchParams.get('order') === 'oldest_awaiting' ? 'oldest_awaiting' : 'latest',
         };
     }

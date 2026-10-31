@@ -2,7 +2,8 @@
 	import type { ResolvedPathname } from '$app/types';
 	import type { SchoolOverviewResponse } from '$lib/api/dashboard-data';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { t } from '$lib/i18n';
+	import { formatLocaleDate } from '$lib/date/format';
+	import { locale, t } from '$lib/i18n';
 	import {
 		AlertTriangle,
 		BookOpen,
@@ -98,10 +99,6 @@
 		});
 	}
 
-	function upcomingDayLabel(date: string): string {
-		return new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric' }).format(new Date(`${date}T12:00:00`));
-	}
-
 	function classHref(classGroupId: string): ResolvedPathname {
 		return dashboardClassStudentsHref(classGroupId, academicContext.classes);
 	}
@@ -111,9 +108,9 @@
 	}
 </script>
 
-<div class="animate-fade-in mx-auto max-w-[1400px] space-y-6 overflow-y-auto p-6">
+<div class="animate-fade-in mx-auto w-full max-w-[1400px] space-y-6 overflow-y-auto p-4 md:p-6">
 	<!-- Top KPIs -->
-	<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
 		<a
 			href={appPath('/(app)/school/students/[[id]]')}
 			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
@@ -189,8 +186,8 @@
 	</div>
 
 	<!-- Priority actions + Next 7 days -->
-	<div class="grid gap-4 lg:grid-cols-12">
-		<section class="rounded-collection border border-border bg-card p-5 shadow-soft lg:col-span-7">
+	<div class="grid gap-4 lg:grid-cols-2">
+		<section class="min-w-0 rounded-collection border border-border bg-card p-5 shadow-soft">
 			<header class="mb-4">
 				<h2 class="font-display text-base font-semibold">{$t('dashboard.actions.title')}</h2>
 			</header>
@@ -218,7 +215,7 @@
 			{/if}
 		</section>
 
-		<section class="rounded-collection border border-border bg-card p-5 shadow-soft lg:col-span-5">
+		<section class="min-w-0 rounded-collection border border-border bg-card p-5 shadow-soft">
 			<header class="mb-4 flex items-center justify-between gap-3">
 				<h2 class="font-display text-base font-semibold">{$t('dashboard.upcoming.title')}</h2>
 				<a
@@ -228,14 +225,14 @@
 					{$t('dashboard.upcoming.viewCalendar')}
 				</a>
 			</header>
-			<ul class="space-y-3">
-				{#each overview.upcoming as item (item.id)}
-					<li class="flex items-start gap-3 text-sm">
-						<span class="w-14 shrink-0 font-sans tabular-nums text-[11px] uppercase text-muted-foreground">
-							{upcomingDayLabel(item.date)}
-						</span>
+			<ul class="divide-y divide-border">
+				{#each overview.upcoming as item (`${item.kind}:${item.id}:${item.date}`)}
+					<li class="flex items-start gap-3 py-3.5 text-sm">
+						<time datetime={item.date} class="w-20 shrink-0 font-sans tabular-nums text-[11px] text-muted-foreground">
+							{formatLocaleDate(item.date, $locale, { weekday: 'short', day: 'numeric', month: 'short' })}
+						</time>
 						<div class="min-w-0 flex-1">
-							<p class="truncate font-medium">{item.title}</p>
+							<p class="break-words font-medium">{item.title}</p>
 							<p class="text-xs text-muted-foreground">{$t(upcomingKindLabel[item.kind])}</p>
 						</div>
 						<span
@@ -255,16 +252,18 @@
 	</div>
 
 	<!-- School health by area -->
-	<section>
-		<h2 class="mb-3 font-display text-base font-semibold">{$t('dashboard.health.title')}</h2>
-		<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+	<section aria-labelledby="school-health-title" class="overflow-hidden rounded-collection border border-border bg-card">
+		<header class="border-b border-border px-5 py-4">
+			<h2 id="school-health-title" class="font-display text-base font-semibold">{$t('dashboard.health.title')}</h2>
+		</header>
+		<div class="grid sm:grid-cols-2 xl:grid-cols-4">
 			<a
 				href={appPath('/(app)/school/students/[[id]]')}
-				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="min-w-0 p-4 transition hover:bg-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
 					<Users class="h-4 w-4" />
-					<span class="text-xs font-medium">{$t('dashboard.health.students')}</span>
+					<h3 class="text-xs font-medium">{$t('dashboard.health.students')}</h3>
 				</div>
 				<dl class="space-y-2 text-sm">
 					<div class="flex items-baseline justify-between gap-2">
@@ -290,11 +289,11 @@
 
 			<a
 				href={appPath('/(app)/configuration/structure/details')}
-				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="min-w-0 border-t border-border p-4 transition hover:bg-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary sm:border-l sm:border-t-0"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
 					<BookOpen class="h-4 w-4" />
-					<span class="text-xs font-medium">{$t('dashboard.health.academics')}</span>
+					<h3 class="text-xs font-medium">{$t('dashboard.health.academics')}</h3>
 				</div>
 				<dl class="space-y-2 text-sm">
 					<div class="flex items-baseline justify-between gap-2">
@@ -324,11 +323,11 @@
 
 			<a
 				href={appPath('/(app)/finance/billing/[[id]]')}
-				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="min-w-0 border-t border-border p-4 transition hover:bg-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary xl:border-l xl:border-t-0"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
 					<Wallet class="h-4 w-4" />
-					<span class="text-xs font-medium">{$t('dashboard.health.finance')}</span>
+					<h3 class="text-xs font-medium">{$t('dashboard.health.finance')}</h3>
 				</div>
 				<dl class="space-y-2 text-sm">
 					<div class="flex items-baseline justify-between gap-2">
@@ -354,11 +353,11 @@
 
 			<a
 				href={appPath('/(app)/school/events/[[id]]')}
-				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="min-w-0 border-t border-border p-4 transition hover:bg-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary sm:border-l xl:border-t-0"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
 					<Sparkle class="h-4 w-4" />
-					<span class="text-xs font-medium">{$t('dashboard.health.schoolLife')}</span>
+					<h3 class="text-xs font-medium">{$t('dashboard.health.schoolLife')}</h3>
 				</div>
 				<dl class="space-y-2 text-sm">
 					<div class="flex items-baseline justify-between gap-2">

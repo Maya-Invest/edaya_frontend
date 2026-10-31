@@ -62,3 +62,15 @@ describe('validateSchoolStep', () => {
 		expect(isSchoolStepValid(draft)).toBe(false);
 	});
 });
+
+it('rejects impossible dates, duplicate names, overlap and dates outside the academic year', () => {
+ const school = createEmptyDraft().school;
+ school.name = 'École'; school.city = 'Abidjan'; school.financeCurrency = 'XOF';
+ school.academicYearStart = '2026-09-01'; school.academicYearEnd = '2027-07-03';
+ school.periods = [{id: '1', label: 'S1', start: '2026-09-01', end: '2027-01-31'}, {id: '2', label: 'S2', start: '2027-02-01', end: '2027-07-03'}];
+ expect(isSchoolStepValid(school)).toBe(true);
+ school.periods[1]!.start = '2027-02-30'; expect(isSchoolStepValid(school)).toBe(false);
+ school.periods[1]!.start = '2027-01-31'; expect(isSchoolStepValid(school)).toBe(false);
+ school.periods[1]!.start = '2027-02-01'; school.periods[1]!.label = 'S1'; expect(isSchoolStepValid(school)).toBe(false);
+ school.periods[1]!.label = 'S2'; school.periods[1]!.end = '2027-07-04'; expect(isSchoolStepValid(school)).toBe(false);
+});

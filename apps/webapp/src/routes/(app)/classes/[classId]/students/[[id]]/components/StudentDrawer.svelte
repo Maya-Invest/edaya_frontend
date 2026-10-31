@@ -3,6 +3,8 @@
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
 	import { kindStyle, kindLabelKey } from '$lib/components/school/shared/drawer-constants';
+	import StudentDrawerBody from '$lib/components/school/shared/StudentDrawerBody.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import DrawerFrame from '$lib/components/ui/DrawerFrame.svelte';
 	import { t } from '$lib/i18n';
@@ -22,7 +24,8 @@
 	import ClassStudentDetailTabBar from './ClassStudentDetailTabBar.svelte';
 
 	type StudentDrawerModal
-		= | 'edit-profile'
+		= | 'change-status'
+			| 'edit-profile'
 			| 'edit-health'
 			| 'change-class'
 			| 'link-guardian'
@@ -49,6 +52,7 @@
 
 	const modals = createUrlSyncedModals<StudentDrawerModal>({
 		allowed: [
+			'change-status',
 			'edit-profile',
 			'edit-health',
 			'change-class',
@@ -94,11 +98,17 @@
 		if (!modals.ready || !student) {
 			return;
 		}
+		const scope = { classId: student.classId, studentId: student.id };
+		const action = modals.active;
+		if ((['change-status', 'edit-profile', 'note', 'edit-note'].includes(action ?? '') && !hasPermission('STUDENT_MANAGE', scope)) || (action === 'change-class' && !hasPermission('ENROLLMENT_MANAGE', scope)) || (action === 'link-guardian' && !hasPermission('PARENT_MANAGE', scope))) {
+			modals.close();
+			return;
+		}
 		if (closeHealthModal) {
 			modals.close();
 			return;
 		}
-		if ((modals.active === 'approve-photo' || modals.active === 'reject-photo') && !pendingPhoto) {
+		if ((modals.active === 'approve-photo' || modals.active === 'reject-photo') && (!pendingPhoto || !hasPermission('STUDENT_MANAGE', { studentId: student.id, classId: student.classId }))) {
 			modals.close();
 			return;
 		}
@@ -167,31 +177,19 @@
 		>
 			{$t(kindLabelKey.student)}
 		</span>
-		<button
-			type="button"
-			onclick={onClose}
-			aria-label={$t('common.close')}
-			class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-		>
-			<X class="h-4 w-4" />
-		</button>
+		<Button variant="ghost" size="icon" onclick={onClose} aria-label={$t('common.close')}><X class="h-4 w-4" /></Button>
 	</header>
 
-	<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+	<div class="min-h-0 flex-1 flex flex-col">
 		{#if loading || !student}
 			<div class="flex min-h-[12rem] items-center justify-center" role="status" aria-live="polite">
 				<LoaderCircle class="h-6 w-6 animate-spin text-primary" />
 			</div>
 		{:else}
-			<div class="space-y-5">
-				<StudentDetailHeader
-					{student}
-					editProfileOpen={editProfileOpen}
-					changeClassOpen={changeClassOpen}
-				/>
-				<ClassStudentDetailTabBar {student} />
+			<StudentDrawerBody>
+				{#snippet context()}<StudentDetailHeader {student} editProfileOpen={editProfileOpen} changeClassOpen={changeClassOpen} /><ClassStudentDetailTabBar {student} />{/snippet}
 				{@render children()}
-			</div>
+			</StudentDrawerBody>
 			<StudentGuardianLinkModal s={student} bind:open={linkGuardianOpen.open} showTrigger={false} />
 			<StudentNoteModal s={student} bind:open={noteOpen.open} showTrigger={false} />
 			{#if editingNote}

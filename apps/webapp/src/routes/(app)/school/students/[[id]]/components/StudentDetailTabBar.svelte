@@ -22,23 +22,24 @@
 	}
 </script>
 
-<div
+<nav
 	data-testid="drawer-tab-bar"
-	class="flex items-center gap-1 overflow-x-auto rounded-full border border-border bg-secondary/40 p-1 text-xs"
+	class="ui-drawer-tabs" aria-label={$t('student.profile.sections')}
 >
 	{#each STUDENT_DETAIL_TABS as tab (tab.key)}
 		<a
 			href={tabHref(tab.segment)}
+			aria-current={activeTab === tab.key ? 'page' : undefined}
 			data-sveltekit-noscroll
 			onclick={event => followDrawerTabLink(event, tabHref(tab.segment))}
 			class={cn(
-				'whitespace-nowrap rounded-full px-2.5 py-1.5 font-medium transition',
+				'ui-section-tab control-focus shrink-0',
 				activeTab === tab.key
-					? 'bg-card text-foreground shadow-soft'
+					? 'ui-drawer-tab-active'
 					: 'text-muted-foreground hover:text-foreground',
 			)}
 		>
 			{$t(tab.labelKey)}
 		</a>
 	{/each}
-</div>
+</nav>

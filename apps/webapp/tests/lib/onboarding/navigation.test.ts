@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { createEmptyDraft } from '$lib/onboarding/draft-storage';
+import { createDatasetDraft as createEmptyDraft, catalog } from './dataset-fixture';
 import {
 	canVisitOnboardingStep,
 	clampOnboardingStep,
@@ -52,11 +52,10 @@ describe('canAdvanceFromStep', () => {
 
 	it('requires structure configuration on step 2', () => {
 		const draft = createEmptyDraft();
-		expect(canAdvanceFromStep(2, draft)).toBe(false);
-		draft.structure.models = ['college'];
-		draft.structure.disciplineMappings = [{ subjectCode: 'FR', disciplineCode: 'TEST', disciplineName: 'Reviewed test discipline' }];
+		expect(canAdvanceFromStep(2, draft, undefined, catalog)).toBe(false);
+		draft.structure.templates = ['ci-college'];
 		draft.structure.levels = [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30, classNamingMode: 'numerical' }];
-		expect(canAdvanceFromStep(2, draft)).toBe(true);
+		expect(canAdvanceFromStep(2, draft, undefined, catalog)).toBe(true);
 	});
 });
 
@@ -68,16 +67,15 @@ describe('canFinishOnboarding', () => {
 		draft.school.financeCurrency = 'EUR';
 		draft.schoolStepSubmitted = true;
 		draft.structureStepSubmitted = true;
-		expect(canFinishOnboarding(draft)).toBe(false);
-		draft.structure.models = ['college'];
-		draft.structure.disciplineMappings = [{ subjectCode: 'FR', disciplineCode: 'TEST', disciplineName: 'Reviewed test discipline' }];
+		expect(canFinishOnboarding(draft, undefined, catalog)).toBe(false);
+		draft.structure.templates = ['ci-college'];
 		draft.structure.levels = [{
 			gradeLevelId: 'ci-college:6EME',
 			classCount: 1,
 			capacity: 30,
 			classNamingMode: 'numerical',
 		}];
-		expect(canFinishOnboarding(draft)).toBe(true);
+		expect(canFinishOnboarding(draft, undefined, catalog)).toBe(true);
 	});
 
 	it('blocks finish when a staff invite email is invalid', () => {
@@ -87,8 +85,7 @@ describe('canFinishOnboarding', () => {
 		draft.school.financeCurrency = 'EUR';
 		draft.schoolStepSubmitted = true;
 		draft.structureStepSubmitted = true;
-		draft.structure.models = ['college'];
-		draft.structure.disciplineMappings = [{ subjectCode: 'FR', disciplineCode: 'TEST', disciplineName: 'Reviewed test discipline' }];
+		draft.structure.templates = ['ci-college'];
 		draft.structure.levels = [{
 			gradeLevelId: 'ci-college:6EME',
 			classCount: 1,
@@ -96,9 +93,9 @@ describe('canFinishOnboarding', () => {
 			classNamingMode: 'numerical',
 		}];
 		draft.staffInvites = [{ id: '1', email: 'not-an-email', role: 'secretary' }];
-		expect(canFinishOnboarding(draft)).toBe(false);
+		expect(canFinishOnboarding(draft, undefined, catalog)).toBe(false);
 		draft.staffInvites = [{ id: '1', email: 'secretary@school.fr', role: 'secretary' }];
-		expect(canFinishOnboarding(draft)).toBe(true);
+		expect(canFinishOnboarding(draft, undefined, catalog)).toBe(true);
 	});
 });
 

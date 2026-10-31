@@ -26,6 +26,7 @@
 		hasMore = false,
 		total = 0,
 		visibleCount = 0,
+		showEndSummary = true,
 		onLoadMore,
 		cardClass,
 		onRowClick,
@@ -48,6 +49,7 @@
 		hasMore?: boolean;
 		total?: number;
 		visibleCount?: number;
+		showEndSummary?: boolean;
 		onLoadMore?: () => void;
 		cardClass?: (row: TRow, ctx: ListEntityTableRowContext) => string | false | undefined;
 		onRowClick?: (row: TRow) => void;
@@ -83,6 +85,7 @@
 		{hasMore}
 		{total}
 		{visibleCount}
+		{showEndSummary}
 		loading={loading || loadingMore}
 		{onLoadMore}
 	>

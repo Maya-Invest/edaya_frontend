@@ -121,7 +121,7 @@ describe('draft-storage', () => {
 
 		try {
 			const loaded = loadDraft('user-legacy');
-			expect(loaded?.version).toBe(7);
+			expect(loaded?.version).toBe(8);
 			expect(loaded?.structure.levels).toEqual([
 				{ gradeLevelId: 'ci-lycee:1ERC', classCount: 2, capacity: 30, classNamingMode: 'numerical' },
 				{ gradeLevelId: 'ci-lycee:TLEC', classCount: 0, capacity: 30, classNamingMode: 'numerical' },
@@ -135,7 +135,22 @@ describe('draft-storage', () => {
 		}
 	});
 
-	it('resets non structure-ready countries to Côte d\'Ivoire on load', () => {
+ it('migrates a v7 review draft without requiring obsolete mappings', () => {
+  const draft = createEmptyDraft();
+  const legacy = {...draft, version: 7, maxReachedStep: 4, structureStepSubmitted: true,
+   structure: {models: ['college'], disciplineMappings: [], levels: [{gradeLevelId: 'ci-college:6EME', classCount: 2, capacity: 35, classNamingMode: 'alphabetical' as const}]}};
+  const original = globalThis.sessionStorage;
+  Object.defineProperty(globalThis, 'sessionStorage', {configurable: true, value: {getItem: () => JSON.stringify(legacy)}});
+  try {
+   const loaded = loadDraft('legacy-user')!;
+   expect(loaded.version).toBe(8);
+   expect(loaded.maxReachedStep).toBe(4);
+   expect(loaded.structureStepSubmitted).toBe(true);
+   expect(loaded.structure).toEqual({dataset: {id: 'ci-general-secondary', version: '1.0.0'}, templates: ['ci-college'], levels: legacy.structure.levels});
+  } finally { Object.defineProperty(globalThis, 'sessionStorage', {configurable: true, value: original}); }
+ });
+
+	it('preserves unsupported countries without substituting another country', () => {
 		const storage = new Map<string, string>([
 			[draftStorageKey('user-fr'), JSON.stringify({
 				version: 4,
@@ -175,8 +190,8 @@ describe('draft-storage', () => {
 
 		try {
 			const loaded = loadDraft('user-fr');
-			expect(loaded?.school.country).toBe("Côte d'Ivoire");
-			expect(loaded?.school.timezone).toBe('Africa/Abidjan');
+			expect(loaded?.school.country).toBe("France");
+			expect(loaded?.school.timezone).toBe('Europe/Paris');
 		}
 		finally {
 			Object.defineProperty(globalThis, 'sessionStorage', {

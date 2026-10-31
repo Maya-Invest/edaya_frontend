@@ -20,6 +20,7 @@ try {
   let destination = 'school';
   let status = 'awaiting_school';
   const sent: Record<string, unknown>[] = [];
+ const searched: Record<string, unknown>[] = [];
   const summary = () => ({ id: 'thread', schoolId: 'school', guardianId: 'guardian', destination,
     studentName: 'Robin', guardianName: 'Sam Parent', schoolName: 'Oak School', teacherName: 'Ada Teacher',
     subject: 'Opening hours', status, version, lastSequence: version, unread: true, lastMessage: 'When do you open?',
@@ -47,7 +48,10 @@ try {
     if (url.endsWith('/onboarding/account-status')) body = { wizardCompleted: true, maxReachedStep: 4, schoolStepSubmitted: true, structureStepSubmitted: true };
  if (url.includes('get-app-shell-counts')) body = { activeEnrollmentCountsByClass: {}, studentCount: 0, guardianCount: 0, staffCount: 0, teacherCount: 0 };
  if (url.endsWith('/schools/school')) body = { id: 'school', name: 'Oak School', shortName: 'Oak', timeZone: 'UTC' };
-    if (url.includes('list-conversations')) body = { items: [summary()], total: 1, unreadCount: 1, offset: 0, limit: 25 };
+    if (url.includes('list-conversations')) {
+ searched.push(input);
+ body = { items: input.search === 'no-matching-conversation' ? [] : [summary()], total: input.search === 'no-matching-conversation' ? 0 : 1, unreadCount: 1, offset: 0, limit: 25 };
+ }
     if (url.includes('get-conversation')) body = detail();
     if (url.includes('mark-conversation-read')) body = { success: true };
     if (url.includes('reply-conversation')) {
@@ -58,7 +62,7 @@ try {
     if (url.includes('resolve-conversation')) { version++; status = 'resolved'; body = summary(); }
     await route.fulfill({ status: code, contentType: 'application/json', headers: { 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type,authorization,accept-language,x-actor-id,x-actor-kind,x-school-id,x-academic-year-id' }, body: JSON.stringify(body) });
   });
-  await page.addInitScript(() => sessionStorage.setItem('edaya:auth-gate', '1'));
+  await page.addInitScript(() => { sessionStorage.setItem('edaya:auth-gate', '1'); if (!localStorage.getItem('lang')) localStorage.setItem('lang', 'en'); });
   await page.goto(`${origin}/school/messages/thread`);
   await page.evaluate(async () => {
     const modules = (path: string) => import(/* @vite-ignore */ path);
@@ -67,6 +71,28 @@ try {
   });
  const drawer = page.getByRole('dialog').filter({ has: page.getByText('Opening hours', { exact: true }) });
   await drawer.waitFor();
+
+ await page.keyboard.press('Escape');
+ await drawer.waitFor({ state: 'hidden' });
+ const search = page.getByTestId('list-search');
+ await search.fill('office 100%_');
+ await search.press('Enter');
+ await page.waitForURL(url => url.searchParams.get('search') === 'office 100%_');
+ await page.waitForTimeout(300);
+ assert(searched.some(input => input.search === 'office 100%_' && input.offset === 0), 'Search is sent to the complete server query');
+ await page.locator('.ui-record-target').first().click();
+ await drawer.waitFor();
+ assert.equal(new URL(page.url()).searchParams.get('search'), 'office 100%_', 'Inspection retains search');
+ await page.keyboard.press('Escape');
+ await drawer.waitFor({ state: 'hidden' });
+ assert.equal(new URL(page.url()).searchParams.get('search'), 'office 100%_', 'Close returns to the searched queue');
+ await search.fill('no-matching-conversation');
+ await search.press('Enter');
+ await page.getByText('No matching records', { exact: true }).waitFor();
+ await search.fill('');
+ await page.waitForURL(url => !url.searchParams.has('search'));
+ await page.locator('.ui-record-target').first().click();
+ await drawer.waitFor();
   const palettes = JSON.parse(await readFile(new URL('../../../../design-system/tokens.json', import.meta.url), 'utf8')).colors;
   async function captureThread(view: string) {
     const output = process.env.EDAYA_MESSAGE_CAPTURES;
@@ -141,9 +167,10 @@ try {
   await drawer.getByRole('button', { name: 'Reply', exact: true }).click();
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   
- await drawer.getByRole('button', { name: 'Mark resolved', exact: true }).waitFor();
+ await drawer.getByRole('button', { name: 'More actions', exact: true }).click();
+ await page.getByRole('button', { name: 'Mark resolved', exact: true }).waitFor();
   assert.equal(sent[1].expectedVersion, 2);
-  await drawer.getByRole('button', { name: 'Mark resolved', exact: true }).click();
+  await page.getByRole('button', { name: 'Mark resolved', exact: true }).click();
   await drawer.getByText('Resolved', { exact: true }).first().waitFor();
   await captureThread('school');
   destination = 'teacher';

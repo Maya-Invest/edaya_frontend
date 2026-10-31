@@ -19,7 +19,7 @@
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Mail, Pencil, Plus, Trash2 } from '$lib/icons';
+	import { Pencil, Plus, Trash2 } from '$lib/icons';
 	import { loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
@@ -215,10 +215,6 @@
 					/>
 					<div class="min-w-0">
 						<p class="truncate text-sm font-medium">{teacher.name}</p>
-						<p class="flex items-center gap-1 truncate text-xs text-muted-foreground">
-							<Mail class="h-3 w-3" />
-							{teacher.email || '—'}
-						</p>
 					</div>
 				</div>
 			{:else if column.key === 'assignments'}

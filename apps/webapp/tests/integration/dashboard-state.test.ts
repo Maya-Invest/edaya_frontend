@@ -1,6 +1,12 @@
 import type { DashboardPageState } from '../../src/routes/(app)/dashboard/dashboard-page.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
+import { plugin } from 'bun';
 import { beforeEach, expect, mock, test } from 'bun:test';
+import { compileModule } from 'svelte/compiler';
+
+plugin({ name: 'dashboard-runes', setup(build) {
+	build.onLoad({ filter: /dashboard-page\.svelte\.ts$/ }, async ({ path }) => ({ contents: compileModule(new Bun.Transpiler({ loader: 'ts' }).transformSync(await Bun.file(path).text()), { filename: path, generate: 'client' }).js.code, loader: 'js' }));
+} });
 
 let year: string | null = 'year';
 let period: string | null = null;
@@ -8,6 +14,10 @@ let error: Error | undefined;
 let delay: Promise<void> | undefined;
 const requests: unknown[] = [];
 const response = { academicYearId: 'year', academicPeriodId: null, kpis: { studentCount: 1144 } };
+const versions = new Proxy<Record<string, number>>({}, {
+	get: (target, key) => typeof key === 'string' ? target[key] ?? 0 : undefined,
+});
+mock.module('$lib/entity-versions.svelte', () => ({ entityVersions: versions }));
 mock.module('$lib/academic/context.svelte', () => ({ academicContext: {
 	resolveAcademicYearIdForApi: () => year,
 	resolveSelectionForApi: () => year && period ? { academicYearId: year, academicPeriodId: period } : null,
@@ -23,13 +33,30 @@ mock.module('$lib/queries/client', () => ({ queryClient: () => ({ queries: {
 } }) }));
 mock.module('$lib/auth/bootstrap-app', () => ({ bootstrapAppShell: async () => {} }));
 const { queryDashboardListPage } = await import('../../src/routes/(app)/dashboard/lib/dashboard-queries');
+const { DashboardPageState: DashboardState } = await import('../../src/routes/(app)/dashboard/dashboard-page.svelte');
 const url = new URL('http://localhost/dashboard');
 function owner() {
 	const applySlice = mock(() => {});
 	const clear = mock(() => {});
 	return { applySlice, clear, query: queryDashboardListPage({ applySlice, clear } as unknown as DashboardPageState) };
 }
-beforeEach(() => { year = 'year'; period = null; error = undefined; delay = undefined; requests.length = 0; });
+beforeEach(() => {
+	year = 'year'; period = null; error = undefined; delay = undefined; requests.length = 0;
+	for (const key of Object.keys(versions)) delete versions[key];
+});
+
+test.each(['schoolYearEvents', 'billing', 'fees', 'payments', 'evaluations', 'reportCards'])('dashboard refreshes after %s changes and does not refetch unchanged data', async (family) => {
+	const state = new DashboardState();
+	await state.refreshSlice();
+	expect(requests).toHaveLength(1);
+	await state.invalidateIfStale();
+	expect(requests).toHaveLength(1);
+	versions[family] = 1;
+	await state.invalidateIfStale();
+	expect(requests).toHaveLength(2);
+	await state.invalidateIfStale();
+	expect(requests).toHaveLength(2);
+});
 
 test('a year without periods requests the overview and preserves its real counts', async () => {
 	const state = owner();

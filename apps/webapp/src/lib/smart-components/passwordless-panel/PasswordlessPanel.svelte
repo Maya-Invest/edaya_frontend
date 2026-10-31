@@ -9,12 +9,15 @@
 	import { onMount, onDestroy, untrack } from 'svelte';
 	import { PasswordlessPanelState, completePasswordlessSignIn } from './passwordless-panel-state.svelte';
 
-	let { email = $bindable(''), apiConnected = true, onComplete = completePasswordlessSignIn, enroll = false, link = false, guard = false }:
-		{ email?: string; apiConnected?: boolean; onComplete?: () => Promise<unknown>; enroll?: boolean; link?: boolean; guard?: boolean } = $props();
-	let recoveryEligible = $state(false);
+	let { email = $bindable(''), recoveryEligible = $bindable(false), apiConnected = true, onComplete = completePasswordlessSignIn, enroll = false, link = false, guard = false, onReauthenticationRequired }:
+		{ email?: string; recoveryEligible?: boolean; apiConnected?: boolean; onComplete?: () => Promise<unknown>; enroll?: boolean; link?: boolean; guard?: boolean; onReauthenticationRequired?: () => void } = $props();
 	const phoneInput = $derived(/^[+\d(]/.test(email.trim()) && !email.includes('@'));
 	let container: HTMLDivElement;
 	const flow = new PasswordlessPanelState();
+	$effect(() => {
+		if (flow.reauthenticationRequired && onReauthenticationRequired)
+			untrack(onReauthenticationRequired);
+	});
 	const uid = $props.id();
 	$effect(() => {
 		flow.setIdentity(email);
@@ -28,10 +31,11 @@
 		}
 	});
 	const unregister = getDirtyWork()?.register({
-		isDirty: () => guard && (email.length > 0 || flow.state !== 'form'),
+		isDirty: () => guard && (email.length > 0 || recoveryEligible || flow.state !== 'form'),
 		discard: () => {
 			flow.reset();
 			email = '';
+			recoveryEligible = false;
 		},
 	});
 	onDestroy(() => unregister?.());

@@ -6,6 +6,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { requestDocumentIssuanceMutation, requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
 import { fetchStudentById } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 import { readClassStudentListFilters, writeClassStudentListFilters } from '$lib/list/list-url-filters';
@@ -83,11 +84,14 @@ export class ClassStudentsPageState {
 		return this.students.find(student => student.id === id);
 	}
 
-	async ensureSelectedStudent(id: string): Promise<boolean> {
-		if (this.findStudent(id)) {
+	async ensureSelectedStudent(id: string, force = false): Promise<boolean> {
+		const identity = JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]);
+		if (!force && this.findStudent(id)) {
 			return true;
 		}
 		const student = await fetchStudentById(getBrowserSchoolClient(), id);
+		if (identity !== JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]))
+return true;
 		if (!student) {
 			return false;
 		}
@@ -129,9 +133,14 @@ export class ClassStudentsPageState {
 		return pendingStudentPhotoFor(this.pendingPhotoSubmissions, studentId);
 	}
 
-	async loadPendingPhotoReviews() {
-		this.pendingPhotoSubmissions = await loadPendingStudentPhotoReviews();
-	}
+	private photoReadVersion = 0;
+ async loadPendingPhotoReviews() {
+  const version = ++this.photoReadVersion;
+  const scope = JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]);
+  const rows = await loadPendingStudentPhotoReviews();
+  if (version === this.photoReadVersion && scope === JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]))
+this.pendingPhotoSubmissions = rows;
+ }
 
 	async refreshList(classId: string) {
 		const data = await loadClassStudentsSlice(classId);

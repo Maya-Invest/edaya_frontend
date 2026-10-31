@@ -1,22 +1,27 @@
+import type { PageLoadMeta } from '$lib/page/load-state';
 import type { Guardian, HealthRecord, PedagogicalNote, StaffMember } from '$lib/types/school';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
+import { recordsForStudent, listAllEntityPages, listAllEntityPagesByIds, uniqueIds } from '$lib/api/entity-list-filters';
 import { updateStudentStatusMutation, upsertStudentHealthProfileMutation } from '$lib/api/mutations/student-ops.mutations';
-import { loadGuardiansPeopleData } from '$lib/api/people-data';
+import { mapGuardians } from '$lib/api/people-data';
 import { stableRequestId, studentPhotoCommandStorageKey } from '$lib/api/profile-photo-request';
 import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
-import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMembers } from '$lib/api/staff-data';
-import { loadStudent360Data, mapNoteCategory } from '$lib/api/student-360-data';
+import { mapHealthProfiles, mapPedagogicalNotes, mapNoteCategory } from '$lib/api/student-360-data';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { authSession } from '$lib/auth/session.svelte';
 import { dateInputToIso, formatDateInput, nowIso, todayDateInput } from '$lib/date/format';
+import { t } from '$lib/i18n';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { studentIdentityPayload } from '$lib/people-profile-fields';
+import { hasPermission } from '$lib/permissions';
 import { getContext, setContext } from 'svelte';
+import { get } from 'svelte/store';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
 
@@ -31,6 +36,7 @@ export const pedagogicalNoteToneByCategory: Record<PedagogicalNote['category'], 
     Progression: 'bg-secondary text-foreground/80',
     Encouragement: 'bg-secondary text-foreground/80',
 };
+export const pedagogicalNoteCategoryKeys: Record<PedagogicalNote['category'], string> = { Comportement: 'behavior', Travail: 'work', Progression: 'progress', Encouragement: 'encouragement' };
 const STUDENT_PROFILE_TAB_KEY = Symbol('student-profile-tab');
 type StudentNoteCategory = 'behavior' | 'work' | 'progress' | 'encouragement';
 type StudentNoteVisibility = 'staff' | 'admin_only' | 'guardian_visible';
@@ -56,9 +62,18 @@ function schoolId(): string {
 function studentInitials(firstName: string, lastName: string): string {
     return `${firstName.trim()[0] ?? ''}${lastName.trim()[0] ?? ''}`;
 }
+export type StudentProfileSection = 'portrait' | 'health' | 'guardians' | 'notes';
 export class StudentProfileTabState {
-    private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['students', 'guardians', 'enrollments', 'staff', 'documents']));
-    invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+    private readonly queries = Object.fromEntries(['portrait', 'health', 'guardians', 'notes'].map(section => [section, new VersionedRouteQuery(new RouteVersionSnapshot(['students', 'guardians', 'enrollments', 'staff', 'documents']))])) as Record<StudentProfileSection, VersionedRouteQuery>;
+    invalidateIfStale = async () => { await Promise.all(Object.values(this.queries).map(query => query.invalidateIfStale())); };
+    private generation = 0;
+    private metadata = $state<Partial<Record<StudentProfileSection, PageLoadMeta & { identity: string }>>>({});
+    statusFor(section: StudentProfileSection, studentId: string) {
+ const value = this.metadata[section];
+        return value?.identity === this.identity(studentId) ? value : undefined;
+}
+
+    identity(studentId: string) { return JSON.stringify([this.generation, academicContext.scopeGeneration, authSession.authUserId, authSession.schoolId, academicContext.yearId, studentId, authSession.grants]); }
     performUpsertStudentHealthProfile = (...args: Parameters<typeof upsertStudentHealthProfileMutation>) => upsertStudentHealthProfileMutation(...args);
     performUpdateStudentStatus = (...args: Parameters<typeof updateStudentStatusMutation>) => updateStudentStatusMutation(...args);
     slice = $state<StudentProfileTabSlice | null>(null);
@@ -70,7 +85,9 @@ export class StudentProfileTabState {
     }
 
     clear() {
-        this.versionedQuery.clear();
+        this.generation++;
+        this.metadata = {};
+        Object.values(this.queries).forEach(query => query.clear());
         this.slice = null;
     }
 
@@ -149,42 +166,66 @@ export class StudentProfileTabState {
         };
     }
 
-    query() {
-        return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
-            empty: () => ({}),
-            load: async (signal) => {
-                const studentId = studentDetailIdFromPathname(url.pathname);
-                if (!studentId) {
+    query(section: StudentProfileSection = 'notes') {
+        return this.queries[section].track(async (url: URL, request?: PageQueryRequest) => {
+            const studentId = studentDetailIdFromPathname(url.pathname);
+            const student = studentId ? this.host.findStudent(studentId) : undefined;
+            const permission = section === 'health' ? 'STUDENT_HEALTH_READ' : section === 'guardians' ? 'PARENT_READ' : 'STUDENT_READ';
+            if (!hasPermission(permission, { classId: student?.classId, studentId: studentId ?? undefined }))
+                return { status: 'denied' as const };
+            const identity = this.identity(studentId ?? '');
+            this.metadata[section] = { identity, status: 'loading' };
+            const result = await resolveStudentPageLoad(url, {
+                empty: () => ({}),
+                errorMessage: get(t)('dataState.errorDefault'),
+                load: async (signal) => {
+                    if (!studentId)
+return {};
+                    const captured = this.identity(studentId);
+                    const client = getBrowserSchoolClient();
+                    let data: StudentProfileTabSeed = {};
+                    if (section === 'health') {
+                        const rows = await client.entities.studentHealthProfiles.list(recordsForStudent(studentId));
+                        data = { health: mapHealthProfiles(rows)[studentId] };
+                    }
+                    else if (section === 'notes') {
+                        const [notes, staff] = await Promise.all([
+                            client.entities.studentNotes.list(recordsForStudent(studentId)),
+                            hasPermission('STAFF_READ') && schoolId() && academicContext.yearId ? safeOptionalEntityList(() => fetchStaffMembers(client, { schoolId: schoolId(), academicYearId: academicContext.yearId })) : Promise.resolve([]),
+                        ]);
+                        data = { pedagogicalNotes: mapPedagogicalNotes(notes), staff };
+                    }
+                    else if (section === 'guardians') {
+                        const links = await listAllEntityPages(query => client.entities.guardianLinks.list(query), { baseQuery: recordsForStudent(studentId) });
+                        const guardians = await listAllEntityPagesByIds(query => client.entities.guardians.list(query), uniqueIds(links.map(link => link.guardianId)));
+                        data = { guardians: mapGuardians(guardians, links) };
+                    }
+                    else {
+ await this.host.loadPendingPhotoReviews();
+}
+                    signal.throwIfAborted();
+                    if (captured !== this.identity(studentId))
+throw new DOMException('Context changed', 'AbortError');
+                    this.seed(studentId, data);
                     return {};
-                }
-                const client = getBrowserSchoolClient();
-                const scope = {
-                    schoolId: schoolId(),
-                    academicYearId: academicContext.yearId,
-                };
-                const [{ healthRecord, pedagogicalNotes }, guardiansData, staff] = await Promise.all([
-                    safeOptionalFetch(() => loadStudent360Data(client, studentId), { healthRecord: undefined, pedagogicalNotes: [] }),
-                    loadGuardiansPeopleData(client, scope.schoolId).catch(() => ({
-                        guardians: [],
-                        students: [],
-                        totalGuardians: 0,
-                    })),
-                    scope.schoolId && scope.academicYearId
-                        ? safeOptionalEntityList(() => fetchStaffMembers(client, scope))
-                        : Promise.resolve([]),
-                    this.getPage().loadPendingPhotoReviews(),
-                ]);
-                signal.throwIfAborted();
-                this.seed(studentId, {
-                    health: healthRecord,
-                    pedagogicalNotes,
-                    guardians: guardiansData.guardians,
-                    staff,
-                });
-                return {};
-            },
-            hasItems: () => true,
-        }, request));
+                },
+                hasItems: () => true,
+            }, request);
+            if (identity === this.identity(studentId ?? ''))
+this.metadata[section] = { ...result, identity };
+            return result;
+        });
+    }
+
+    async updateStatus(studentId: string, status: 'active' | 'inactive' | 'archived') {
+        const captured = this.identity(studentId);
+        const student = this.host.findStudent(studentId);
+        if (!student || !hasPermission('STUDENT_MANAGE', { classId: student.classId, studentId }))
+return false;
+        const ok = await this.performUpdateStudentStatus({ studentId, status, successMessage: get(t)('student.statusUpdated') });
+        if (ok && captured === this.identity(studentId))
+this.host.patchStudent(studentId, { status });
+        return ok;
     }
 
     async updateProfile(input: {

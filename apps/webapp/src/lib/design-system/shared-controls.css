@@ -53,7 +53,7 @@
 @media (max-width:767px) { .ui-dialog-footer.ui-dialog-footer { flex-direction:column; } .ui-dialog-footer > button { width:100%; } }
 .ui-collection-header { container-type:inline-size; min-width:0; }
 .ui-collection-header-layout { display:flex; flex-direction:column; gap:16px; }
-.ui-collection-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
+.ui-collection-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; min-width:0; }
 .ui-collection-search { flex:1 1 192px; min-width:min(192px,100%); }
 .ui-collection-toolbar > :not(.ui-collection-search) { flex-shrink:0; }
 @container (min-width:768px) { .ui-collection-header-layout { flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; } .ui-collection-toolbar { flex:1 1 296px; max-width:36rem; } }
@@ -101,3 +101,59 @@ tr.ui-collection-row[data-open-record=true] > td:first-child { box-shadow:inset 
 .ui-filter-controls .ui-field.ui-field,
 .ui-query-control.ui-field,
 .ui-field.ui-field[type=search] { border-radius:var(--radius-action); }
+
+.ui-section-tabs { display:flex; flex-shrink:0; gap:16px; padding:0 16px; border-bottom:1px solid hsl(var(--border)); }
+.ui-section-tab { min-width:0; min-height:48px; padding:10px 0; border-bottom:2px solid transparent; font-size:.875rem; font-weight:500; color:hsl(var(--muted-foreground)); overflow-wrap:anywhere; }
+.ui-section-tab[aria-selected=true] { color:hsl(var(--primary)); border-bottom-color:hsl(var(--primary)); }
+@media(min-width:768px) { .ui-section-tabs { padding:0 24px; gap:24px; } .ui-dialog.ui-account-dialog { border-radius:var(--radius-dialog); } }
+
+/* X-SCHOOL-YEAR-SWITCHER: a workspace link, without field or action-face chrome. */
+.ui-action.ui-workspace-year-link { justify-content:flex-start; padding:0; border-radius:0; text-align:start; }
+
+/* Shell identity stays left; language and account share the rightmost grid cell at every size. */
+.ui-app-header { container:app-header / inline-size; display:grid; grid-template-columns:44px minmax(0,1fr) auto; align-items:center; gap:8px; min-height:56px; flex-shrink:0; padding:8px 12px; border-bottom:1px solid hsl(var(--border)); background:hsl(var(--card)); }
+.ui-app-header-navigation { grid-column:1; grid-row:1; }
+.ui-app-header-school { grid-column:2; grid-row:1; min-width:0; overflow-wrap:anywhere; }
+.ui-app-header-actions { grid-column:3; grid-row:1; display:flex; flex-wrap:nowrap; align-items:center; justify-content:flex-end; gap:8px; justify-self:end; }
+.ui-app-header-profile { display:flex; flex-shrink:0; align-items:center; gap:8px; min-height:44px; padding:2px 4px; border:1px solid hsl(var(--border)); border-radius:var(--radius-action); background:hsl(var(--card)); text-align:start; }
+.ui-app-header-profile:hover { background:hsl(var(--secondary)); }
+.ui-app-header-profile-label { display:none; min-width:0; max-width:14rem; flex-direction:column; padding-right:8px; overflow-wrap:anywhere; }
+.ui-workspace-year-label { margin-bottom:4px; font-size:.75rem; line-height:1.5; color:hsl(var(--muted-foreground)); }
+@media(min-width:1024px) { .ui-app-header { padding:0 24px; } }
+@container app-header (max-width:32rem) { .ui-app-header-school { grid-column:1 / -1; grid-row:2; } }
+@container app-header (min-width:48rem) { .ui-app-header-profile-label { display:flex; } }
+
+.ui-language-menu { max-width:calc(100vw - 32px); max-height:calc(100dvh - 32px); overflow-y:auto; }
+
+/* Student inspection: one identity summary, flat sections and one body scroller. */
+.ui-student-drawer-body { min-height:0; flex:1; overflow-y:auto; scroll-padding-top:var(--student-context-height,0px); container:student-drawer / inline-size; }
+.ui-student-drawer-context { padding:16px 16px 0; background:hsl(var(--card)); }
+.ui-student-drawer-context[data-sticky=true] { position:sticky; top:0; z-index:10; }
+.ui-student-drawer-content { padding:24px 16px; }
+.ui-drawer-tabs { display:flex; min-width:0; align-items:stretch; gap:16px; overflow-x:auto; border-bottom:1px solid hsl(var(--border)); }
+.ui-drawer-tabs .ui-section-tab { white-space:nowrap; }
+.ui-drawer-tab-active { color:hsl(var(--primary)); border-bottom-color:hsl(var(--primary)); }
+.ui-student-profile { min-width:0; container:student-profile / inline-size; }
+.ui-student-profile > section { min-width:0; padding-block:24px; border-bottom:1px solid hsl(var(--border)); display:flex; flex-direction:column; gap:16px; scroll-margin-top:16px; }
+.ui-student-profile > section:first-child { padding-top:0; }
+.ui-student-profile > section:last-child { border-bottom:0; padding-bottom:0; }
+.ui-student-profile h3 { font-family:var(--font-display); font-size:1.25rem; font-weight:600; line-height:1.3; overflow-wrap:anywhere; }
+.ui-student-section-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.ui-student-profile :is(p,dd,h4,span) { overflow-wrap:anywhere; }
+.ui-student-profile p { white-space:pre-wrap; }
+.ui-student-facts,.ui-student-profile .ui-person-facts { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+.ui-student-full-fact { grid-column:1 / -1; }
+.ui-student-facts p { font-size:.875rem; }
+.ui-student-audit > summary { min-height:44px; display:list-item; align-content:center; cursor:pointer; overflow-wrap:anywhere; }
+.ui-student-audit > summary:focus-visible { outline:2px solid hsl(var(--primary)); outline-offset:2px; }
+@container student-profile (min-width:480px) { .ui-student-facts,.ui-student-profile .ui-person-facts { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(min-width:768px) { .ui-student-drawer-context { padding:24px 24px 0; } .ui-student-drawer-content { padding:24px; } }
+
+@container student-drawer (max-width:32rem) { .ui-student-identity > header > div { flex-direction:column; align-items:stretch; } }
+
+/* Related guardians: identity/badge and menu above one aligned contact row. */
+.ui-student-guardian { display:grid; min-width:0; gap:8px; }
+.ui-student-guardian-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.ui-student-guardian-identity { display:flex; min-width:0; flex:1; flex-wrap:wrap; align-items:center; gap:4px 8px; }
+.ui-student-guardian-badge { max-width:100%; overflow-wrap:anywhere; border-radius:var(--radius-badge); padding:4px 8px; }
+.ui-student-guardian-contacts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; overflow-wrap:anywhere; }

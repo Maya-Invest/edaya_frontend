@@ -764,13 +764,14 @@ export async function fetchStudentById(
 			return null;
 		}
 
+		// Placement/relationships are independent drawer sections; their failures cannot erase student identity.
 		const [enrollmentsRaw, linksRaw] = await Promise.all([
-			client.entities.enrollments.list(enrollmentsForStudents([studentId])),
-			client.entities.guardianLinks.list(guardianLinksForStudents([studentId])),
+			client.entities.enrollments.list(enrollmentsForStudents([studentId])).catch(() => []),
+			client.entities.guardianLinks.list(guardianLinksForStudents([studentId])).catch(() => []),
 		]);
 		const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
 		const guardiansRaw = guardianIds.length > 0
-			? await client.entities.guardians.list(guardiansByIds(guardianIds))
+			? await client.entities.guardians.list(guardiansByIds(guardianIds)).catch(() => [])
 			: [];
 		let metrics: StudentMetricsSources = {
 			attendanceRaw: [],

@@ -16,11 +16,12 @@
 	import { hasAnyPermission } from '$lib/permissions';
 	import { AnnualProfileState } from './annual-profile-state.svelte';
 
-	const { kind, personId, classId, name }: {
+	const { kind, personId, classId, name, flat = false }: {
 		kind: 'student' | 'teacher';
 		personId: string;
 		classId?: string;
 		name: string;
+		flat?: boolean;
 	} = $props();
 	const profileState = $derived(new AnnualProfileState(kind, () => personId));
 	const modals = createUrlSyncedModals({ allowed: ['edit-annual-profile', 'remove-annual-profile'], getUrl: () => $page.url });
@@ -80,10 +81,10 @@
 	}
 </script>
 {#if canRead && academicContext.yearId}
-	<section class="space-y-3 rounded-collection border border-border p-4">
-		<div class="flex flex-wrap items-center justify-between gap-2"><h3 class="text-sm font-semibold">{$t('profile.yearInformation')} · {yearLabel}</h3>{#if canManage}<div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => modals.open('edit-annual-profile')}>{$t('common.edit')}</Button>{#if profileState.student || profileState.teacher}<Button variant="ghost" size="sm" onclick={() => modals.open('remove-annual-profile')}>{$t('common.delete')}</Button>{/if}</div>{/if}</div>
-		<PageQuery cache={false} query={profileState.query} cacheKey={() => profileState.identity()} loadingTitle={$t('profile.yearInformation')}>
-			{#snippet children(data)}<DataState status={data.status} errorMessage={data.errorMessage} preserveShell>
+	<section class={flat ? 'space-y-4' : 'space-y-3 rounded-collection border border-border p-4'}>
+		<div class="flex flex-wrap items-center justify-between gap-2"><svelte:element this={flat ? 'h4' : 'h3'} class="text-sm font-semibold">{$t('profile.yearInformation')} · {yearLabel}</svelte:element>{#if canManage}<div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => modals.open('edit-annual-profile')}>{$t('common.edit')}</Button>{#if profileState.student || profileState.teacher}<Button variant="ghost" size="sm" onclick={() => modals.open('remove-annual-profile')}>{$t('common.delete')}</Button>{/if}</div>{/if}</div>
+		<PageQuery compactLoading={flat} cache={false} query={profileState.query} cacheKey={() => profileState.identity()} loadingTitle={$t('profile.yearInformation')}>
+			{#snippet children(data)}<DataState compact={flat} status={data.status} errorMessage={data.errorMessage} preserveShell>
 				{#if kind === 'student'}
 					<p class="text-sm">{$t('profile.placementStatuses')}: {profileState.options.find(option => option.id === profileState.student?.placementStatusId)?.label ?? $t('profile.notProvided')}</p>
 					<p class="text-sm">{$t('profile.repeating')}: {profileState.student?.isRepeating == null ? $t('profile.notProvided') : $t(profileState.student.isRepeating ? 'common.yes' : 'common.no')}</p>

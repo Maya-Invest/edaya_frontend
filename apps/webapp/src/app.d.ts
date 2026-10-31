@@ -6,6 +6,8 @@ declare global {
 		// interface Locals {}
 		// interface PageData {}
 		interface PageState {
+			studentGuardianOrigin?: import('./routes/(app)/school/students/lib/student-guardian-navigation').StudentGuardianOrigin;
+			studentGuardianReturn?: import('./routes/(app)/school/students/lib/student-guardian-navigation').StudentGuardianOrigin;
 			/** Non-authoritative parent URL used for history-aware drawer/modal close behavior. */
 			routeSurfaceParent?: string;
 			/** Number of history entries in the current routed overlay/workflow. */

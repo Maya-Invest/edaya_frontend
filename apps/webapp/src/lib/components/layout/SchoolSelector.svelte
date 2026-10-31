@@ -17,4 +17,4 @@
 		<Select.Trigger data-testid="school-selector-menu" aria-label={$t('sidebar.switchSchool')}><span>{#if collapsed}<Building2 class="h-4 w-4" />{:else}{name}{/if}</span></Select.Trigger>
 		<Select.Content align="start" side={collapsed ? 'right' : 'bottom'}>{#each memberships as membership (membership.actorId)}<Select.Item value={membership.schoolId} label={membership.schoolName} data-testid="school-selector-option" data-school-id={membership.schoolId}>{membership.schoolName}</Select.Item>{/each}</Select.Content>
 	</Select.Root></div>
-{:else if !collapsed}<p class="break-words text-xs text-muted-foreground" data-testid="school-selector">{name}</p>{/if}
+{:else if !collapsed}<p class="break-words text-sm font-semibold" data-testid="school-selector">{name}</p>{/if}

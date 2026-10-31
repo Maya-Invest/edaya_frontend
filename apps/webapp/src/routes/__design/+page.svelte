@@ -30,7 +30,7 @@
 	});
 </script>
 
-<div data-design-reference class="mx-auto max-w-[1400px] space-y-6 p-4 md:p-6">
+<div data-design-reference class="reference-page mx-auto max-w-[1400px] space-y-6 p-4 md:p-6">
 	<header class="flex flex-wrap items-center justify-between gap-4"><BrandLogo width={144} /><ReferenceSelect label={$lang === 'fr' ? 'Langue' : 'Language'} data-testid="reference-language" value={$lang} onValueChange={setLang} options={[{ value: 'en', label: 'English' }, { value: 'fr', label: 'Français' }]} /></header>
 	<ListPageHeader title={copy.title} description={copy.intro} />
 	{#if !framed}
@@ -49,7 +49,7 @@
 		<ReferenceCollections {copy} />
 		<ReferenceTasks {copy} />
 		<ReferenceFoundations {copy} />
-		<section id="coverage" class="space-y-4 border bg-card p-4 md:p-6">
+		<section id="coverage" class="reference-section space-y-4 border bg-card p-4 md:p-6">
 			<h2 class="font-display text-xl font-semibold">{copy.coverage}</h2>
 			<p class="text-sm">{copy.featureCoverage}</p>
 			<h3 class="font-display text-xl font-semibold">{copy.remaining}</h3>

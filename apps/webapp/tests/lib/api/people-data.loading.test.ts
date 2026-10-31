@@ -1,7 +1,9 @@
+import { createSchoolClient } from '@maya-invest/edaya-api-client';
+import type { components } from '$lib/api/schema';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { CATALOG_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
-import { loadClassPeopleData, loadGuardiansPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
+import { fetchStudentById, loadClassPeopleData, loadGuardiansPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
 import { createRecordingSchoolClient, entityCountRequests, entityListRequests } from '$tests/support/recording-school-client';
 
 const classGroupId = 'class-7a';
@@ -310,4 +312,15 @@ describe('people data loading', () => {
 			$offset: 0,
 		});
 	});
+});
+
+it('resolves student identity even when placement and guardian enrichment fail', async () => {
+ const client = createSchoolClient<components['schemas']>({ request: async <T>(_method: string, path: string): Promise<T> => {
+  if (path.includes('/enrollments/') || path.includes('/guardian-links/') || path.includes('/guardians/')) throw new Error('Optional section unavailable');
+  return (path.endsWith('/students/list') ? [{ data: student }] : []) as T;
+ } });
+ const resolved = await fetchStudentById(client, student.id);
+ expect(resolved?.id).toBe(student.id);
+ expect(resolved?.name).toBe('Ada Lovelace');
+ expect(resolved?.classId).toBe('');
 });

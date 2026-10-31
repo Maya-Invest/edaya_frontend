@@ -31,7 +31,7 @@
 
 <section id="foundations" class="reference-section space-y-6 bg-card p-4 md:p-6">
 	<h2 class="font-display text-xl font-semibold">{copy.foundations}</h2>
-	<div class="grid gap-6 md:grid-cols-2">
+	<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 		<div class="space-y-4"><h3 class="font-display text-xl font-semibold">{copy.palette}</h3>
 			<div class="flex flex-wrap gap-4">
 				{#each [[copy.primary, 'bg-primary text-primary-foreground'], [copy.canvas, 'bg-background text-foreground'], [copy.surface, 'border bg-card text-foreground'], [copy.foreground, 'bg-foreground text-background'], [copy.muted, 'bg-muted text-muted-foreground']] as [label, tone] (label)}
@@ -49,7 +49,7 @@
 	</div>
 	<p class="text-sm">{copy.spacing}</p>
 	<div class="space-y-4"><h3 class="font-display text-xl font-semibold">{copy.values}</h3>
-		<dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<dl class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each [[copy.zero, new Intl.NumberFormat($locale, { style: 'currency', currency: 'XOF' }).format(0)], [copy.falseValue, copy.no], [copy.absent, copy.absent], [copy.unavailable, copy.unavailable], [copy.restricted, copy.restricted], [copy.notRecorded, copy.notRecorded]] as [label, value] (label)}
 				<div><dt class="text-xs text-muted-foreground">{label}</dt><dd class="break-words text-sm tabular-nums">{value}</dd></div>
 			{/each}

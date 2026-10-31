@@ -51,6 +51,7 @@
 		rowPaddingClass?: string;
 		onVisibleColumnsChange?: (keys: string[]) => void;
 	} = $props();
+	let viewportWidth = $state(0);
 	let savedKeys = $state<string[] | null>(null);
 	let preferenceIdentity = $state('');
 	let query = $state('');
@@ -65,6 +66,7 @@
 	const dataColumns = $derived(visibleColumns.filter(column => column.key !== 'actions'));
 	const actionColumn = $derived(available.find(column => column.key === 'actions'));
 	const minimumWidth = $derived(dataColumns.reduce((sum, column) => sum + (column.minWidth ?? Math.max(100, column.span * 48)), 64));
+	const renderedWidth = $derived(Math.max(minimumWidth, viewportWidth));
 	const totalWeight = $derived(dataColumns.reduce((sum, column) => sum + Math.max(1, column.span), 0));
 	const selectable = $derived(rows.filter(isRowSelectable));
 	const selectedLoaded = $derived(selectable.filter(row => selectedIds.includes(row.id)).length);
@@ -110,9 +112,10 @@
 <div class="ui-collection ui-table-container" aria-busy={loading}>
 	<InfiniteList {hasMore} {total} {visibleCount} loading={loading || loadingMore} {onLoadMore}>
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-		<div class="overflow-x-auto control-focus" role="region" aria-label={$t('list.tableRegion')} tabindex="0">
+		<div bind:clientWidth={viewportWidth} class="overflow-x-auto control-focus" role="region" aria-label={$t('list.tableRegion')} tabindex="0">
 			<table class="ui-table" style:min-width="{minimumWidth}px">
-				<colgroup>{#each dataColumns as column (column.key)}<col style:width="calc({Math.max(1, column.span) / totalWeight * 100}% - {Math.max(1, column.span) / totalWeight * 64}px)" />{/each}<col style:width="64px" /></colgroup>
+				<!-- Fixed-layout tables ignore mixed percentage/length calc() column widths. -->
+				<colgroup>{#each dataColumns as column (column.key)}<col style:width="{Math.max(1, column.span) / totalWeight * (renderedWidth - 64)}px" />{/each}<col style:width="64px" /></colgroup>
 				<thead><tr>
 					{#each dataColumns as column (column.key)}<th scope="col" class={column.class} aria-sort={column.sortable && sort ? listSortAriaValue(sort.column, sort.dir, column.key) : undefined}>
 						{#if column.sortable && onSort && sort}<button type="button" data-testid="list-sort" class="ui-table-sort control-focus" aria-label={listSortButtonLabel(sort.column, sort.dir, column.key, column.label)} onclick={() => onSort(column.key)}>{column.label}{#if sort.column === column.key}{#if sort.dir === 'asc'}<ChevronUp class="h-4 w-4" />{:else}<ChevronDown class="h-4 w-4" />{/if}{/if}</button>{:else}{column.label}{/if}

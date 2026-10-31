@@ -61,6 +61,20 @@ export async function runOwnerWizardResume(ctx: OnboardingRunContext): Promise<v
 	await skip.click();
 	await expectOnboardingStep(page, 4);
 
+ // Restore a v7 Review draft with obsolete/empty mappings and preserve class settings.
+ await page.evaluate(() => {
+  for (const store of [sessionStorage, localStorage]) for (let i = 0; i < store.length; i++) {
+   const key = store.key(i)!;
+   if (!key.startsWith('edaya:onboarding:draft:')) continue;
+   const draft = JSON.parse(store.getItem(key)!);
+   draft.version = 7; draft.structure.models = ['college']; draft.structure.disciplineMappings = [];
+   delete draft.structure.dataset; delete draft.structure.templates;
+   store.setItem(key, JSON.stringify(draft));
+  }
+ });
+ await page.reload({waitUntil: 'domcontentloaded'});
+ await expectOnboardingStep(page, 4);
+
 	await clickCreateSchoolAndWaitForProvision(page);
 	await expectBackLocked(page);
 

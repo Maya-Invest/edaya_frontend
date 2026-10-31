@@ -6,7 +6,7 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
@@ -14,7 +14,9 @@
 		s: Student;
 		open?: boolean;
 	} = $props();
+	const uid = $props.id();
 	const profileTab = getStudentProfileTabState();
+	const captured = untrack(() => profileTab.identity(s.id));
 	const health = $derived(profileTab.healthFor(s.id));
 	let busy = $state(false);
 	let bloodType = $state('');
@@ -35,7 +37,7 @@
 	}
 	onMount(resetForm);
 	async function submit() {
-		if (busy) {
+		if (busy || captured !== profileTab.identity(s.id)) {
 			return;
 		}
 		busy = true;
@@ -52,7 +54,7 @@
 				emergencyProtocols: emergencyProtocols.trim() || null,
 				successMessage: get(t)('student.healthSaved'),
 			});
-			if (!saved) {
+			if (!saved || captured !== profileTab.identity(s.id)) {
 				return;
 			}
 			profileTab.seed(s.id, {
@@ -93,26 +95,26 @@
 >
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
-			<Label>{$t('student.bloodType')}</Label>
-			<Input bind:value={bloodType} />
+			<Label for={`${uid}-bloodType`}>{$t('student.bloodType')}</Label>
+			<Input id={`${uid}-bloodType`} bind:value={bloodType} />
 		</div>
 		<div class="space-y-1.5">
-			<Label>{$t('student.allergies')}</Label>
-			<Input bind:value={allergiesText} />
+			<Label for={`${uid}-allergiesText`}>{$t('student.allergies')}</Label>
+			<Textarea id={`${uid}-allergiesText`} bind:value={allergiesText} rows={3} />
 		</div>
 		<div class="space-y-1.5">
-			<Label>{$t('student.medications')}</Label>
-			<Input bind:value={medicationsText} />
+			<Label for={`${uid}-medicationsText`}>{$t('student.medications')}</Label>
+			<Textarea id={`${uid}-medicationsText`} bind:value={medicationsText} rows={3} />
 		</div>
 		<div class="space-y-1.5">
-			<Label>{$t('student.conditions')}</Label>
-			<Input bind:value={conditionsText} />
+			<Label for={`${uid}-conditionsText`}>{$t('student.conditions')}</Label>
+			<Textarea id={`${uid}-conditionsText`} bind:value={conditionsText} rows={3} />
 		</div>
 	</div>
 	<div class="space-y-1.5">
-		<Label>{$t('student.healthNotes')}</Label>
-		<Textarea bind:value={notesText} rows={3} />
+		<Label for={`${uid}-notesText`}>{$t('student.healthNotes')}</Label>
+		<Textarea id={`${uid}-notesText`} bind:value={notesText} rows={3} />
 	</div>
-	<div class="space-y-1.5"><Label>{$t('profile.emergencyProtocols')}</Label><Textarea bind:value={emergencyProtocols} rows={3} /></div>
-	<div class="space-y-1.5"><Label>{$t('profile.lastVisit')}</Label><Input type="date" bind:value={lastVisit} /></div>
+	<div class="space-y-1.5"><Label for={`${uid}-emergencyProtocols`}>{$t('profile.emergencyProtocols')}</Label><Textarea id={`${uid}-emergencyProtocols`} bind:value={emergencyProtocols} rows={3} /></div>
+	<div class="space-y-1.5"><Label for={`${uid}-lastVisit`}>{$t('profile.lastVisit')}</Label><Input id={`${uid}-lastVisit`} type="date" bind:value={lastVisit} /></div>
 </FormModal>

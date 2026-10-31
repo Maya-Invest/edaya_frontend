@@ -129,7 +129,8 @@
 					modals.open('create');
 				}}
 			/>
-			{@render pageChildren()}
 		</DataState>
 	{/snippet}
 </PageQuery>
+
+{@render pageChildren()}

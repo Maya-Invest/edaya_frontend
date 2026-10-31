@@ -7,6 +7,7 @@
 		loading = false,
 		total = 0,
 		visibleCount = 0,
+		showEndSummary = true,
 		onLoadMore,
 		children,
 	}: {
@@ -14,6 +15,7 @@
 		loading?: boolean;
 		total?: number;
 		visibleCount?: number;
+		showEndSummary?: boolean;
 		onLoadMore?: () => void;
 		children?: Snippet;
 	} = $props();
@@ -45,7 +47,7 @@
 		<p class="py-4 text-center text-xs text-muted-foreground" aria-live="polite">
 			{$t('list.loadingMore')}
 		</p>
-	{:else if total > 0 && visibleCount >= total}
+	{:else if showEndSummary && total > 0 && visibleCount >= total}
 		<p class="py-3 text-center text-xs text-muted-foreground" aria-live="polite">
 			{$t('list.endOfList', { n: total })}
 		</p>

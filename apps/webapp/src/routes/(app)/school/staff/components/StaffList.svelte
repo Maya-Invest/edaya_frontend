@@ -15,7 +15,7 @@
 	import ListSelectionBar from '$lib/components/ui/ListSelectionBar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Mail, Plus } from '$lib/icons';
+	import { Plus } from '$lib/icons';
 	import { loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
@@ -183,10 +183,6 @@
 					/>
 					<div class="min-w-0">
 						<p class="truncate text-sm font-medium">{member.name}</p>
-						<p class="flex items-center gap-1 truncate text-xs text-muted-foreground">
-							<Mail class="h-3 w-3" />
-							{member.email}
-						</p>
 					</div>
 				</div>
 			{:else if column.key === 'role'}

@@ -18,16 +18,18 @@ export class NotificationSettingsPageState {
 
 	slice = $state<NotificationSettingsPageSlice | null>(null);
 	private generation = 0;
+	private loadedIdentity = $state('');
 	identity() { return JSON.stringify([authSession.authUserId, authSession.schoolId, authSession.sessionKind, authSession.userId]); }
 	dispose() {
-this.generation += 1;
-this.slice = null;
-}
+		this.generation += 1;
+		this.slice = null;
+	}
 
 	private readonly versions = new RouteVersionSnapshot(NOTIFICATION_SETTINGS_VERSION_FAMILIES);
 
 	applySlice(data: NotificationSettingsPageSlice) {
 		this.slice = data;
+		this.loadedIdentity = this.identity();
 		this.versions.markLoaded();
 	}
 
@@ -36,7 +38,7 @@ this.slice = null;
 	}
 
 	get data() {
-		return this.slice;
+		return this.loadedIdentity === this.identity() ? this.slice : null;
 	}
 
 	queryListPage() {
@@ -48,7 +50,7 @@ this.slice = null;
 		const identity = this.identity();
 		const data = await loadNotificationSettingsSlice();
 		if (generation === this.generation && identity === this.identity())
-this.applySlice(data);
+			this.applySlice(data);
 	}
 
 	async invalidateIfStale() {

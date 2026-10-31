@@ -20,7 +20,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Mail, Plus } from '$lib/icons';
+	import { Plus } from '$lib/icons';
 	import { readClassStudentListFilters } from '$lib/list/list-url-filters';
 	import { readListView, writeListView } from '$lib/list/list-view-url';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
@@ -205,7 +205,7 @@
 		{#if key === 'name'}
 			<div class="flex min-w-0 items-center gap-3">
 				<PersonAvatar name={student.name} initials={student.initials} photoUrl={student.photoUrl} size="list" />
-				<div class="min-w-0"><p class="truncate text-sm font-medium">{student.name}</p><p class="flex items-center gap-1 truncate text-xs text-muted-foreground"><Mail class="h-3 w-3" />{student.email}</p></div>
+				<div class="min-w-0"><p class="truncate text-sm font-medium">{student.name}</p></div>
 			</div>
 		{:else if key === 'average'}
 			<span class="font-sans font-semibold tabular-nums">{student.average.toFixed(2)} <span class="text-xs text-muted-foreground">/ 20</span></span>

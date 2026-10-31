@@ -8,7 +8,8 @@ function hasText(value: string): boolean {
 	return value.trim().length > 0;
 }
 function isValidDate(value: string): boolean {
-	return /^\d{4}-\d{2}-\d{2}$/.test(value);
+	const date = new Date(`${value}T00:00:00.000Z`);
+	return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 function isValidDateRange(start: string, end: string): boolean {
 	return isValidDate(start) && isValidDate(end) && start <= end;
@@ -65,6 +66,9 @@ export function validateSchoolStep(draft: OnboardingSchoolDraft): SchoolStepVali
 			missingFields.push('periods');
 		}
 	}
+	const ordered = [...draft.periods].sort((a, b) => a.start.localeCompare(b.start));
+	if (new Set(ordered.map(row => row.label.trim())).size !== ordered.length || ordered.some((row, i) => i > 0 && ordered[i - 1]!.end >= row.start))
+		missingFields.push('periods');
 	if (!periodFitsInAcademicYear(draft)) {
 		missingFields.push('periods', 'academicYearStart', 'academicYearEnd');
 	}

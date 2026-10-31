@@ -14,7 +14,7 @@
 	import ListSelectionBar from '$lib/components/ui/ListSelectionBar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Mail, Phone, Plus, Users } from '$lib/icons';
+	import { Phone, Plus, Users } from '$lib/icons';
 	import { loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
@@ -54,7 +54,6 @@
 	const directoryColumns = new DirectoryColumnsState('guardian');
 	const columns = $derived<ListEntityTableColumn[]>([
 		{ key: 'name', label: $t('people.name'), span: 4, sortable: true },
-		{ key: 'relation', label: $t('guardian.relationLabel'), span: 2, sortable: true },
 		{ key: 'phone', label: $t('common.phone'), span: 3, spanInSelectionMode: 2, sortable: true },
 		{ key: 'students', label: $t('students.student'), span: 2, sortable: true },
 		{ key: 'actions', label: '', span: 1, required: true },
@@ -76,7 +75,7 @@
 		return { ...row, studentNames: Object.fromEntries(guardiansPage.linkedStudents(row).map(student => [student.id, student.name])) };
 	}
 	function exportValue(row: Guardian, key: string) {
-		return key === 'students' ? guardiansPage.linkedStudents(row).map(student => student.name).join('; ') : key === 'relation' || key === 'relationshipSummary' ? directoryColumns.value(namedGuardian(row), key) : undefined;
+		return key === 'students' ? guardiansPage.linkedStudents(row).map(student => student.name).join('; ') : key === 'relationshipSummary' ? directoryColumns.value(namedGuardian(row), key) : undefined;
 	}
 	async function exportSelected() {
 		const rows = selection.resolveSelected(selectionPool);
@@ -182,13 +181,8 @@
 					</div>
 					<div class="min-w-0">
 						<p class="truncate text-sm font-medium">{guardian.name}</p>
-						<p class="flex items-center gap-1 truncate text-xs text-muted-foreground">
-							<Mail class="h-3 w-3" />
-							{guardian.email}
-						</p>
 					</div>
 				</div>
-			{:else if column.key === 'relation'}<details><summary class="cursor-pointer truncate text-xs">{directoryColumns.value(namedGuardian(guardian), 'relation').split('; ')[0]}</summary><p class="text-xs">{directoryColumns.value(namedGuardian(guardian), 'relation')}</p></details>
 			{:else if column.key === 'phone'}
 				<div class={cn(ctx.selectionMode ? 'col-span-2' : 'col-span-3')}>
 					<p class="flex items-center gap-1 text-xs text-muted-foreground">

@@ -122,3 +122,10 @@ describe('terms acceptance before authentication', () => {
 		expect(calls[1]!.args[0]).toEqual(first); expect(state.termsAccepted).toBe(true);
 	});
 });
+
+test('discarding account verification clears transient secrets and recovery codes', () => {
+ const state = new PasswordlessPanelState();
+ state.state = 'recovery_codes'; state.secret = 'synthetic-secret'; state.code = 'synthetic-code'; state.recoveryCodes = ['synthetic-recovery']; state.reauthenticationRequired = true;
+ state.reset();
+ expect(state.secret).toBe(''); expect(state.code).toBe(''); expect(state.recoveryCodes).toEqual([]); expect(state.reauthenticationRequired).toBe(false);
+});

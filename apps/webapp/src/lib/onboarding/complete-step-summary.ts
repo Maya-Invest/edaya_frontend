@@ -1,40 +1,33 @@
+import type { CatalogSubject, DatasetCatalog, DatasetLevel, OnboardingDataset } from '$lib/onboarding/dataset-model';
 import type { OnboardingStaffInviteProfile } from '$lib/onboarding/staff-invite-profiles';
-import type { CatalogSubject, StructureTemplateCatalog } from '$lib/onboarding/structure-template-model';
-import type { StructureModel } from '$lib/onboarding/structure-templates';
 import type { OnboardingDraft, OnboardingStaffInviteRole } from '$lib/onboarding/types';
 import {
 	previewClassNamesFromCatalog,
 } from '$lib/onboarding/class-naming';
+import {
+	getCatalogGradeLevel,
+} from '$lib/onboarding/dataset-model';
 import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 import {
 	ONBOARDING_STAFF_INVITE_PROFILES,
 } from '$lib/onboarding/staff-invite-profiles';
 import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
-import {
-	getCatalogGradeLevel,
-} from '$lib/onboarding/structure-template-model';
-
-const MATTER_PREVIEW_COUNT = 2;
-const MATTER_TRUNCATE_AT = 40;
 
 export interface CompleteSummaryLevelRow {
 	gradeLevelId: string;
 	code: string;
-	model: StructureModel;
+	templateId: string;
 	classCount: number;
 	classNames: string[];
 	subjects: CatalogSubject[];
+	modules: Array<{ code: string; name: string; subjects: CatalogSubject[] }>;
+	grading?: { policy: DatasetLevel['gradingPolicy']; scale: OnboardingDataset['gradeScales'][number] };
 }
 
 export interface CompleteSummaryStaffInviteRow {
 	email: string;
 	role: OnboardingStaffInviteRole;
 	roleLabelKey: OnboardingStaffInviteProfile['labelKey'];
-}
-
-export interface MatterPreview {
-	preview: string[];
-	more: number;
 }
 
 export interface CompleteStepSummary {
@@ -87,33 +80,13 @@ function buildPeriodRows(
 	}));
 }
 
-function truncateMatter(value: string, max = MATTER_TRUNCATE_AT): string {
-	const trimmed = value.trim();
-	if (trimmed.length <= max) {
-		return trimmed;
-	}
-	return `${trimmed.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
-}
-
-export function previewMatters(
-	matters: readonly string[],
-	limit = MATTER_PREVIEW_COUNT,
-): MatterPreview {
-	const cleaned = matters.map(entry => entry.trim()).filter(Boolean);
-	const preview = cleaned.slice(0, limit).map(entry => truncateMatter(entry));
-	return {
-		preview,
-		more: Math.max(0, cleaned.length - preview.length),
-	};
-}
-
 export function buildCompleteStepSummary(
 	draft: Pick<OnboardingDraft, 'school' | 'structure' | 'staffInvites'>,
-	catalog: StructureTemplateCatalog | null,
+	catalog: DatasetCatalog | null,
 ): CompleteStepSummary {
 	const configuredLevels = draft.structure.levels.filter(level => level.classCount >= 1);
 	const levels: CompleteSummaryLevelRow[] = [];
-	const subjectCodes = new Set<string>();
+	let subjectCount = 0;
 	let classCount = 0;
 
 	for (const level of configuredLevels) {
@@ -129,18 +102,18 @@ export function buildCompleteStepSummary(
 			? [...(catalog.subjectsByGradeLevelId.get(level.gradeLevelId) ?? [])]
 			: [];
 
-		for (const subject of subjects) {
-			subjectCodes.add(subject.code);
-		}
+		subjectCount += subjects.length;
 		classCount += classNames.length;
 
 		levels.push({
 			gradeLevelId: level.gradeLevelId,
 			code: catalogLevel?.code ?? level.gradeLevelId,
-			model: catalogLevel?.model ?? (level.gradeLevelId.includes('lycee') ? 'lycee' : 'college'),
+			templateId: catalogLevel?.templateId ?? '',
 			classCount: level.classCount,
 			classNames,
 			subjects,
+			modules: [...(catalogLevel?.reportModules ?? [])].sort((a, b) => a.order - b.order).map(module => ({ code: module.code, name: module.name, subjects: subjects.filter(row => row.reportModuleCode === module.code).sort((a, b) => a.reportOrder - b.reportOrder) })).concat(subjects.some(row => !row.reportModuleCode) ? [{ code: '__ungrouped', name: '', subjects: subjects.filter(row => !row.reportModuleCode).sort((a, b) => a.reportOrder - b.reportOrder) }] : []),
+			grading: catalogLevel && catalog ? { policy: catalogLevel.gradingPolicy, scale: catalog.dataset.gradeScales.find(row => row.code === catalogLevel.gradingPolicy.gradeScaleCode)! } : undefined,
 		});
 	}
 
@@ -164,7 +137,7 @@ export function buildCompleteStepSummary(
 		staffInvites,
 		levelCount: levels.length,
 		classCount,
-		subjectCount: subjectCodes.size,
+		subjectCount,
 		inviteCount: staffInvites.length,
 	};
 }

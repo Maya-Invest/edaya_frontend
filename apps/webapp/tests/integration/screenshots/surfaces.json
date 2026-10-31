@@ -216,14 +216,6 @@
     "identity": "owner"
   },
   {
-    "id": "view.classes.class.students.record.enrollments",
-    "feature": "classes",
-    "path": "/classes/[classId]/students/[id]/enrollments",
-    "title": "/classes/[classId]/students/[id]/enrollments",
-    "kind": "page",
-    "identity": "owner"
-  },
-  {
     "id": "view.classes.class.students.record.report-card",
     "feature": "classes",
     "path": "/classes/[classId]/students/[id]/report-card",
@@ -532,14 +524,6 @@
     "feature": "school",
     "path": "/school/students/[id]/grades",
     "title": "/school/students/[id]/grades",
-    "kind": "page",
-    "identity": "owner"
-  },
-  {
-    "id": "view.school.students.record.enrollments",
-    "feature": "school",
-    "path": "/school/students/[id]/enrollments",
-    "title": "/school/students/[id]/enrollments",
     "kind": "page",
     "identity": "owner"
   },
@@ -1528,6 +1512,22 @@
     "feature": "configuration",
     "path": "/configuration/structure/subjects?modal=report-settings",
     "title": "report-settings",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.student-profile.modal.change-status",
+    "feature": "school",
+    "path": "/school/students/[id]/profile?modal=change-status",
+    "title": "change-status · /school/students/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.student-profile.modal.change-status",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/profile?modal=change-status",
+    "title": "change-status · /classes/[classId]/students/[id]/profile",
     "kind": "modal",
     "identity": "owner"
   }

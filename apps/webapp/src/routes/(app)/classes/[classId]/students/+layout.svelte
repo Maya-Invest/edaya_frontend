@@ -60,7 +60,8 @@
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
 			<ClassStudentsList {classId} {selectedId} onSelect={selectStudent} />
-			{@render pageChildren()}
 		</DataState>
 	{/snippet}
 </PageQuery>
+
+{@render pageChildren()}

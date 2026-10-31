@@ -1,7 +1,5 @@
-import { selectControl } from '../../support/custom-select';
 import type { Page } from 'playwright';
-import { selectComboboxOption } from '../../../../scripts/qa-harness-ui';
-import { expectOnboardingStep, signUpThroughUi, waitForEnabled } from '../support/auth';
+import { expectOnboardingStep, signUpThroughUi } from '../support/auth';
 import { fillSchoolIdentity } from '../support/wizard';
 import type { OnboardingRunContext } from '../types';
 
@@ -35,6 +33,23 @@ async function expectFilledDates(page: Page): Promise<void> {
 	}
 }
 
+async function expectPeriodFieldsUncovered(page: Page): Promise<void> {
+	const inputs = periodDateInputs(page);
+	for (let index = 0; index < await inputs.count(); index++) {
+		const field = inputs.nth(index);
+		await field.scrollIntoViewIfNeeded();
+		const uncovered = await field.evaluate(element => {
+			const bounds = element.getBoundingClientRect();
+			return document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2) === element;
+		});
+		if (!uncovered) throw new Error('The onboarding footer covers a period date field');
+	}
+	const lastPeriod = await inputs.last().boundingBox();
+	const footer = await page.locator('[data-onboarding-step] footer').boundingBox();
+	if (!lastPeriod || !footer || footer.y < lastPeriod.y + lastPeriod.height)
+		throw new Error('The onboarding actions must follow the period fields');
+}
+
 export async function runSchoolPeriodDates(ctx: OnboardingRunContext): Promise<void> {
 	const { page, base, credentials } = ctx;
 	await signUpThroughUi(page, base, {
@@ -45,32 +60,32 @@ export async function runSchoolPeriodDates(ctx: OnboardingRunContext): Promise<v
 	await expectOnboardingStep(page, 1);
 	await fillSchoolIdentity(page, credentials.schoolName, credentials.city);
 
-	await expectPeriodDateCount(page, 2);
+	await expectPeriodDateCount(page, 6);
 	await expectFilledDates(page);
 
-	const addTrimester = page.getByRole('button', { name: /add trimester|ajouter le trimestre/i });
-	await waitForEnabled(addTrimester);
-	await addTrimester.click();
-	await expectPeriodDateCount(page, 4);
-	await page.getByRole('button', { name: /remove|supprimer/i }).first().click();
-	await expectPeriodDateCount(page, 2);
+	await page.getByRole('radio', { name: /trimester|trimestre/i }).waitFor({ state: 'visible' });
+	if (await page.getByRole('button', { name: /add trimester|ajouter le trimestre|add semester|ajouter le semestre|remove|supprimer/i }).count())
+		throw new Error('Period count must be controlled only by its type');
+	await expectPeriodFieldsUncovered(page);
+	await page.screenshot({ path: `${ctx.outDir}/wizard-school-periods-desktop-fr.png`, fullPage: true });
+	await page.setViewportSize({ width: 390, height: 600 });
+	await expectPeriodFieldsUncovered(page);
+	await page.screenshot({ path: `${ctx.outDir}/wizard-school-periods-mobile-fr.png`, fullPage: true });
+	await page.setViewportSize({ width: 1440, height: 900 });
 
-	const periodSection = page.locator('section').filter({ hasText: /active period|période active/i });
-	const periodTypeTrigger = selectControl(periodSection).or(
-		periodSection.getByRole('button').filter({ hasText: /trimester|trimestre|semester|semestre/i }),
-	).first();
-	await selectComboboxOption(page, periodTypeTrigger, {
-		value: 'semester',
-		name: /semester|semestre/i,
-	});
-	await expectPeriodDateCount(page, 2);
-	await expectFilledDates(page);
-
-	const addSemester = page.getByRole('button', { name: /add semester|ajouter le semestre/i });
-	await waitForEnabled(addSemester);
-	await addSemester.click();
+	const semester = page.getByRole('radio', { name: /semester|semestre/i });
+	await semester.check();
 	await expectPeriodDateCount(page, 4);
 	await expectFilledDates(page);
-	await page.getByRole('button', { name: /remove|supprimer/i }).first().click();
-	await expectPeriodDateCount(page, 2);
+	await page.screenshot({ path: `${ctx.outDir}/wizard-school-semesters-desktop-fr.png`, fullPage: true });
+	await page.reload({ waitUntil: 'domcontentloaded' });
+	await expectOnboardingStep(page, 1);
+	await expectPeriodDateCount(page, 4);
+	if (!await semester.isChecked()) throw new Error('Semester selection must survive reload');
+	await semester.focus();
+	await page.keyboard.press('ArrowLeft');
+	await expectPeriodDateCount(page, 6);
+	if (!await page.getByRole('radio', { name: /trimester|trimestre/i }).isChecked())
+		throw new Error('Arrow keys must select the trimester radio');
+	await expectFilledDates(page);
 }

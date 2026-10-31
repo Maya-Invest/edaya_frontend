@@ -111,6 +111,7 @@ export class PasswordlessPanelState {
   recoveryCodes = $state<string[]>([]);
   busy = $state(false);
   error = $state('');
+  reauthenticationRequired = $state(false);
   phoneAvailable = $state(false);
   primary = $state<PrimaryStatus | null>(null);
   now = $state(Date.now());
@@ -200,6 +201,7 @@ export class PasswordlessPanelState {
     try {
       const { data, error } = await action();
       if (error || !data) {
+        this.reauthenticationRequired = error?.code === 'reauthentication_required';
         this.error = error?.code?.startsWith('terms_')
           ? get(t)(error.code === 'terms_version_changed' ? 'auth.termsChanged' : error.code === 'terms_acceptance_required' ? 'auth.termsRequired' : 'auth.termsUnavailable')
           : error?.message ?? 'Authentication failed';
@@ -274,7 +276,10 @@ export class PasswordlessPanelState {
     this.secret = '';
     this.primary = null;
     this.recovery = false;
+    this.recoveryCodes = [];
+    this.complete = undefined;
     this.error = '';
+    this.reauthenticationRequired = false;
     this.pendingRequests.clear();
     this.retryRequest = null;
   }

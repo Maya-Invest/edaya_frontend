@@ -6,72 +6,24 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import { canUploadProfilePhoto } from '$lib/permissions';
+	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
 	const { s }: { s: Student } = $props();
-
-	const profileTab = getStudentProfileTabState();
-	const studentsPage = profileTab.host;
+	const owner = getStudentProfileTabState();
 	const modals = getDrawerUrlModals();
-	const pending = $derived(studentsPage?.pendingPhotoFor(s.id));
-	const canReview = $derived(canUploadProfilePhoto('STUDENT_MANAGE'));
+	const pending = $derived(owner.host.pendingPhotoFor(s.id));
+	const canReview = $derived(hasPermission('STUDENT_MANAGE', { classId: s.classId, studentId: s.id }));
 	const proposedUrl = $derived(pending ? buildProfilePhotoContentUrl(pending.attachmentId) : null);
-
-	async function handleReplace(file: File) {
-		return profileTab.updateProfilePhoto({
-			studentId: s.id,
-			file,
-			successMessage: get(t)('student.photo.replacedToast'),
-		});
-	}
 </script>
-
-<div class="grid gap-3 sm:grid-cols-2">
-	<div class="rounded-collection border border-border bg-secondary/30 p-3">
-		<p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">{$t('student.photo.current')}</p>
-		<div class="mt-3 flex items-center gap-3">
-			{#if canReview}
-				<ProfilePhotoPicker
-					name={s.name}
-					initials={s.initials}
-					photoUrl={s.photoUrl}
-					size="lg"
-					onChange={handleReplace}
-				/>
-			{:else}
-				<PersonAvatar name={s.name} initials={s.initials} photoUrl={s.photoUrl} size="lg" />
-			{/if}
-			<div class="min-w-0">
-				<p class="text-sm font-medium">{s.photoUrl ? s.name : $t('student.photo.none')}</p>
-				{#if canReview}
-					<p class="text-xs text-muted-foreground">{$t('student.photo.replace')}</p>
-				{/if}
-			</div>
+<div class="flex flex-wrap items-center justify-between gap-4">
+	<div class="flex min-w-0 items-start gap-4">
+		{#if pending && proposedUrl}<PersonAvatar name={s.name} initials={s.initials} photoUrl={proposedUrl} size="lg" class="rounded-full" />{/if}
+		<div class="min-w-0 space-y-3">
+			<p class="text-sm text-muted-foreground">{$t(pending ? 'student.photo.pending' : 'student.profile.noProposal')}</p>
+			{#if pending && canReview}<div class="flex flex-wrap gap-2"><Button onclick={() => modals?.open('approve-photo')}>{$t('student.photo.approve')}</Button><Button variant="destructive" onclick={() => modals?.open('reject-photo')}>{$t('student.photo.reject')}</Button></div>{/if}
 		</div>
 	</div>
-	<div class="rounded-collection border border-border bg-secondary/30 p-3">
-		<p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">{$t('student.photo.proposed')}</p>
-		{#if pending && proposedUrl}
-			<div class="mt-3 flex items-center gap-3">
-				<PersonAvatar name={s.name} initials={s.initials} photoUrl={proposedUrl} size="lg" />
-				<div class="min-w-0 space-y-2">
-					<p class="text-sm font-medium">{$t('student.photo.pending')}</p>
-					{#if canReview}
-						<div class="flex flex-wrap gap-2">
-							<Button size="sm" onclick={() => modals?.open('approve-photo')}>
-								{$t('student.photo.approve')}
-							</Button>
-							<Button size="sm" variant="destructive" onclick={() => modals?.open('reject-photo')}>
-								{$t('student.photo.reject')}
-							</Button>
-						</div>
-					{/if}
-				</div>
-			</div>
-		{:else}
-			<p class="mt-3 text-sm text-muted-foreground">{$t('common.none')}</p>
-		{/if}
-	</div>
+	{#if canReview}<ProfilePhotoPicker name={s.name} initials={s.initials} trigger="button" label={$t('student.photo.replace')} onChange={file => owner.updateProfilePhoto({ studentId: s.id, file, successMessage: get(t)('student.photo.replacedToast') })} />{/if}
 </div>

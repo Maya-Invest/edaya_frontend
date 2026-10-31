@@ -26,6 +26,8 @@
 		cacheKey = listRouteCacheKey,
 		cache = true,
 		preserveWhileLoading = false,
+		compactLoading = false,
+		loadingSurfaceKey = (url: URL) => url.pathname,
 		loadingTitle,
 		children,
 	}: {
@@ -34,6 +36,9 @@
 		cache?: boolean;
 		/** Keep mounted forms during a refresh of the same route and account scope. */
 		preserveWhileLoading?: boolean;
+		compactLoading?: boolean;
+		/** Shared list/detail owners can preserve their collection while selection changes. */
+		loadingSurfaceKey?: (url: URL) => string;
 		loadingTitle?: string;
 		children: Snippet<[T]>;
 	} = $props();
@@ -55,7 +60,7 @@
 		const resolveKey = untrack(() => cacheKey);
 		const key = resolveKey(url);
 		const identity = composePageQueryIdentity(key, generation);
-		const surface = `${url.pathname}|${generation}`;
+		const surface = `${untrack(() => loadingSurfaceKey)(url)}|${generation}`;
 		instanceCacheKey = key;
 
 		const controller = new AbortController();
@@ -84,7 +89,7 @@
 		pageQueryStatus.markPending(key);
 
 		const runQuery = untrack(() => bindPageQuery(query));
-		void runQuery(url, { signal: controller.signal })
+		void untrack(() => runQuery(url, { signal: controller.signal }))
 			.then((data) => {
 				if (version !== loadVersion || controller.signal.aborted) {
 					return;
@@ -131,7 +136,7 @@
 	{@render children(result)}
 {:else}
 	<div
-		class="flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8 animate-fade-in"
+		class={compactLoading ? 'flex items-center gap-3 py-4' : 'flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8 animate-fade-in'}
 		role="status"
 		aria-live="polite"
 	>

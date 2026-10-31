@@ -51,25 +51,27 @@ export async function runInvitedStaffSecondSchool(
 				throw new Error(`Expected two staff schools in the sidebar popup, found ${await options.count()}`);
 			}
 
-			const other = page.locator('[data-testid="school-selector-option"]:not([aria-current="true"])').first();
+			const currentSchoolId = await page.getByTestId('app-shell').getAttribute('data-school-id');
+			const other = page.getByRole('option', { selected: false }).first();
 			const targetSchoolId = await other.getAttribute('data-school-id');
-			if (!targetSchoolId) throw new Error('School switch option has no school identity');
-			const grants = page.waitForResponse(response =>
-				response.url().endsWith('/core/authorization/effective-grants')
-				&& response.request().headers()['x-school-id'] === targetSchoolId, { timeout: 30_000 });
-			await other.click();
-			const grantsResponse = await grants;
+			if (!targetSchoolId || targetSchoolId === currentSchoolId) throw new Error('School switch must select a different school');
+			const [grantsResponse] = await Promise.all([
+				page.waitForResponse(response =>
+					response.url().endsWith('/core/authorization/effective-grants')
+					&& response.request().headers()['x-school-id'] === targetSchoolId, { timeout: 30_000 }),
+				other.click(),
+			]);
 			if (!grantsResponse.ok()) {
 				const yearId = grantsResponse.request().headers()['x-academic-year-id'] ?? 'none';
 				throw new Error(`School switch grants failed: HTTP ${grantsResponse.status()}, school=${targetSchoolId}, year=${yearId}`);
 			}
 			await page.waitForFunction(schoolId =>
-				document.querySelector('[data-testid="academic-year-trigger"]')?.getAttribute('data-school-id') === schoolId,
+				document.querySelector('[data-testid="app-shell"]')?.getAttribute('data-school-id') === schoolId,
 				targetSchoolId, { timeout: 30_000 });
 			await page.reload({ waitUntil: 'domcontentloaded' });
 			await expectAppDashboard(page);
 			await page.waitForFunction(schoolId =>
-				document.querySelector('[data-testid="academic-year-trigger"]')?.getAttribute('data-school-id') === schoolId,
+				document.querySelector('[data-testid="app-shell"]')?.getAttribute('data-school-id') === schoolId,
 				targetSchoolId, { timeout: 30_000 });
 		});
 	});

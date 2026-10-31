@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { authSession } from '$lib/auth/session.svelte';
 	import { t } from '$lib/i18n';
+	import { onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
 	import OnboardingShell from './components/OnboardingShell.svelte';
 	import OnboardingStepContent from './components/OnboardingStepContent.svelte';
@@ -13,6 +14,11 @@
 
 	const wizard = new OnboardingWizardState(() => $page.url);
 	setOnboardingWizardState(wizard);
+	onDestroy(() => wizard.dispose());
+	$effect(() => {
+		if (onboardingContext.initialized)
+			wizard.loadDataset(authSession.authUserId, onboardingContext.draft.school.country, onboardingContext.draft.structure.dataset);
+	});
 
 	const busyMessage = $derived.by(() => {
 		if (!wizard.busy) {

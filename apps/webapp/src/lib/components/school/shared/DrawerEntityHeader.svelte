@@ -10,6 +10,7 @@
 		summary,
 		avatar,
 		chips,
+		facts,
 		actions,
 		overflow,
 	}: {
@@ -17,6 +18,7 @@
 		summary?: string;
 		avatar?: Snippet;
 		chips?: Snippet;
+		facts?: Snippet;
 		actions?: Snippet;
 		overflow?: Snippet;
 	} = $props();
@@ -41,6 +43,7 @@
 				{#if name}
 					<h3 class="font-display text-xl font-semibold leading-tight">{name}</h3>
 				{/if}
+				{#if facts}<div class="mt-3 space-y-2">{@render facts()}</div>{/if}
 				{#if summary}
 					<p class={['text-sm text-muted-foreground', name ? 'mt-1' : '']}>{summary}</p>
 				{/if}
@@ -65,7 +68,7 @@
 							{/snippet}
 						</Popover.PopoverTrigger>
 						<Popover.PopoverContent class="w-44 p-1" align="end">
-							<div class="p-1">
+							<div class="p-1" role="presentation" onclick={() => overflowOpen = false}>
 								{@render overflow()}
 							</div>
 						</Popover.PopoverContent>

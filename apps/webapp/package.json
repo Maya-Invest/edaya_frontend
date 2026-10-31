@@ -13,7 +13,7 @@
 		"check": "bun x --bun svelte-check --tsconfig ./tsconfig.json && bun x --bun tsc --project tsconfig.test.json --noEmit",
 		"check:watch": "bun x --bun svelte-check --tsconfig ./tsconfig.json --watch",
 		"quality": "bun run lint && bun run check",
-		"test": "bun test tests/lib tests/integration/setup/journey-ledger.test.ts && bun test tests/integration/messaging.test.ts && bun test tests/integration/family-feedback-mutations.test.ts && bun test tests/integration/account-linking.test.ts && bun test tests/integration/timetable-state.test.ts && bun test tests/integration/passwordless-state.test.ts && bun test tests/integration/permission-form-state.test.ts && bun test tests/integration/attendance-creation.test.ts && bun test tests/integration/session-attendance.test.ts && bun test tests/integration/grading-state.test.ts && bun test tests/integration/teacher-timetable-state.test.ts && bun test tests/integration/finance-payment-draft.test.ts && bun test tests/integration/directory-columns.test.ts && bun test tests/integration/shell-bootstrap.test.ts && bun test tests/integration/catalog-mutations.test.ts && bun test tests/integration/subject-enrollment-state.test.ts && bun test tests/integration/dashboard-state.test.ts",
+		"test": "bun test tests/lib tests/integration/setup/journey-ledger.test.ts && bun test tests/integration/messaging.test.ts && bun test tests/integration/family-feedback-mutations.test.ts && bun test tests/integration/account-linking.test.ts && bun test tests/integration/timetable-state.test.ts && bun test tests/integration/account-security-state.test.ts && bun test tests/integration/passwordless-state.test.ts && bun test tests/integration/permission-form-state.test.ts && bun test tests/integration/attendance-creation.test.ts && bun test tests/integration/session-attendance.test.ts && bun test tests/integration/grading-state.test.ts && bun test tests/integration/teacher-timetable-state.test.ts && bun test tests/integration/finance-payment-draft.test.ts && bun test tests/integration/directory-columns.test.ts && bun test tests/integration/shell-bootstrap.test.ts && bun test tests/integration/catalog-mutations.test.ts && bun test tests/integration/subject-enrollment-state.test.ts && bun test tests/integration/dashboard-state.test.ts",
 		"demo:e2e": "bun scripts/demo-dry-run.ts",
 		"qa:checklist": "bun scripts/qa-checklist-run.ts",
 		"qa:template": "bun scripts/generate-qa-template.ts",
@@ -29,6 +29,7 @@
 		"test:integration:webadmin": "bun scripts/webadmin-integration.ts",
 		"test:integration:availability": "bun scripts/phone-availability-browser.ts",
 		"test:integration:attendance-ui": "bun scripts/focused-integration-run.ts attendance-ui",
+		"test:integration:inbox-pages-ui": "bun scripts/focused-integration-run.ts inbox-pages-ui",
 		"test:integration:messaging-ui": "bun scripts/focused-integration-run.ts messaging-ui",
 		"test:integration:family-feedback-ui": "bun scripts/focused-integration-run.ts family-feedback-ui",
 		"test:integration:permission-profiles": "bun scripts/focused-integration-run.ts permission-profiles",
@@ -41,7 +42,10 @@
 		"test:integration:subject-enrollment": "bun scripts/focused-integration-run.ts subject-enrollment",
 		"test:integration:guardian-profile": "bun scripts/focused-integration-run.ts guardian-profile",
 		"test:integration:shared-design": "bun scripts/focused-integration-run.ts shared-design",
-		"test:integration:grading-entry": "bun scripts/focused-integration-run.ts grading-entry"
+		"test:integration:grading-entry": "bun scripts/focused-integration-run.ts grading-entry",
+		"test:integration:account-settings-ui": "bun scripts/focused-integration-run.ts account-settings-ui",
+		"test:integration:student-profile": "bun scripts/focused-integration-run.ts student-profile",
+		"test:integration:school-year-switcher": "bun scripts/focused-integration-run.ts school-year-switcher"
 	},
 	"dependencies": {
 		"@internationalized/date": "^3.12.2",

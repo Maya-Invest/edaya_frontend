@@ -135,8 +135,8 @@ export async function runAccountSecurity(page: Page, base: string) {
   await verifyOtpThroughUi(page, email);
   await page.waitForURL(/\/onboarding/);
   await page.goto(`${base}/account/security`);
-  await page.getByRole('button', { name: /show|afficher/i }).click();
   await page.getByTestId('account-identifier').filter({ hasText: email }).waitFor();
+  await page.getByRole('button', { name: /add sign-in method|ajouter un moyen de connexion/i }).click();
   const link = panel(page, 'link');
   await link.getByTestId('auth-identifier').fill(alias);
   await link.locator('input[type="checkbox"]').check();
@@ -144,6 +144,7 @@ export async function runAccountSecurity(page: Page, base: string) {
   await link.getByTestId('auth-code').waitFor();
   await verify(link, await revealTestCode(page, 'link'), 'otp/verify');
   await page.getByTestId('account-identifier').filter({ hasText: alias }).waitFor();
+  await page.getByRole('button', { name: /set up authenticator|configurer l.application/i }).click();
   const enrollment = panel(page, 'enroll');
   await enrollment.getByTestId('auth-submit').click();
   await enrollment.getByTestId('auth-totp-secret').waitFor();
@@ -154,7 +155,7 @@ export async function runAccountSecurity(page: Page, base: string) {
   const codes = (await recovery.innerText()).trim().split(/\s+/);
   if (codes.length !== 10 || new Set(codes).size !== 10) throw new Error('Expected ten distinct recovery codes');
   await enrollment.getByRole('button').click();
-  await page.getByTestId('totp-enabled').waitFor();
+  await page.getByTestId('authenticator-state').filter({ hasText: /authenticator enabled|application d.authentification activée/i }).waitFor();
   await withIsolatedPage(page.context().browser()!, async login => {
     await login.goto(`${base}/login`);
     await sendOtpThroughUi(login, alias);
@@ -164,11 +165,11 @@ export async function runAccountSecurity(page: Page, base: string) {
     await login.waitForURL(/\/onboarding/);
   });
   await page.reload();
-  await page.getByRole('button', { name: /show|afficher/i }).click();
-  await page.getByTestId('totp-enabled').waitFor();
+  await page.getByTestId('authenticator-state').filter({ hasText: /authenticator enabled|application d.authentification activée/i }).waitFor();
   await page.getByTestId('account-identifier').filter({ hasText: alias }).waitFor();
   // Unlinking revokes the session. The surviving alias must require OTP + TOTP.
   await page.getByTestId('account-identifier').filter({ hasText: email }).getByRole('button').click();
+  await page.getByRole('menuitem', { name: /remove sign-in method|retirer ce moyen de connexion/i }).click();
   await page.getByRole('dialog').getByRole('button', { name: /unlink|dissocier/i }).click();
   await page.waitForURL(/\/login/);
   await sendOtpThroughUi(page, alias);

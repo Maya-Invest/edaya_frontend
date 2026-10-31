@@ -1,42 +1,35 @@
 <script lang="ts">
-	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
 	import { catalogPeriodLabel, toCanonicalCatalogText } from '$lib/i18n/catalog-label';
-	import { Plus, Trash2 } from '$lib/icons';
 	import {
-		addPeriod,
-		canAddPeriod,
-		maxPeriodCount,
-		removePeriod,
+		normalizePeriodCount,
+		periodCount,
 		setPeriodType,
 	} from '$lib/onboarding/school-periods';
 	import {
 		COMMON_TIMEZONES,
 		ONBOARDING_COUNTRIES,
-		isStructureReadyCountry,
 		optionsWithCurrent,
 		timezoneForCountry,
 	} from '$lib/onboarding/school-step-defaults';
 	import { periodFitsInAcademicYear } from '$lib/onboarding/school-step-validation';
 	import { onboardingContext } from '../context.svelte';
+	import { getOnboardingWizardState } from '../onboarding-wizard-state.svelte';
 
 	interface Props {
 		disabled?: boolean;
 	}
 
 	const { disabled = false }: Props = $props();
+	const wizard = getOnboardingWizardState();
 
 	const periodTypes = [
 		{ value: 'trimester', labelKey: 'onboarding.periodType.trimester' as const },
 		{ value: 'semester', labelKey: 'onboarding.periodType.semester' as const },
 	];
-
-	const periodTypeLabel = $derived(
-		periodTypes.find(entry => entry.value === onboardingContext.draft.school.periodType)?.labelKey	?? 'onboarding.periodType.trimester',
-	);
 
 	const countryOptions = $derived(
 		optionsWithCurrent(ONBOARDING_COUNTRIES, onboardingContext.draft.school.country),
@@ -52,13 +45,16 @@
 		periodFitsInAcademicYear(onboardingContext.draft.school),
 	);
 
-	const showAddPeriod = $derived(canAddPeriod(onboardingContext.draft.school));
-
-	const addPeriodLabelKey = $derived(
-		onboardingContext.draft.school.periodType === 'trimester'
-			? 'onboarding.periods.addTrimester'
-			: 'onboarding.periods.addSemester',
-	);
+	$effect(() => {
+		if (disabled)
+			return;
+		const school = onboardingContext.draft.school;
+		const normalized = normalizePeriodCount(school);
+		if (normalized !== school) {
+			onboardingContext.draft.school = normalized;
+			persistDraft();
+		}
+	});
 
 	function persistDraft() {
 		onboardingContext.persist();
@@ -73,7 +69,7 @@
 	}
 
 	function handleCountryChange(value: string | undefined) {
-		if (!value || !isStructureReadyCountry(value)) {
+		if (!value || !wizard.isCountryAvailable(value)) {
 			return;
 		}
 
@@ -94,22 +90,13 @@
 		persistDraft();
 	}
 
-	function handleAddPeriod() {
-		onboardingContext.draft.school = addPeriod(onboardingContext.draft.school);
-		persistDraft();
-	}
-
-	function handleRemovePeriod(periodId: string) {
-		onboardingContext.draft.school = removePeriod(onboardingContext.draft.school, periodId);
-		persistDraft();
-	}
 </script>
 
 <div class="space-y-3">
 	<section class="space-y-2">
 		<h2 class="text-sm font-medium text-foreground">{$t('onboarding.schoolSection.identity')}</h2>
-		<div class="grid gap-2 sm:grid-cols-3">
-			<div class="space-y-1 sm:col-span-3">
+		<div class="grid gap-2 sm:grid-cols-2">
+			<div class="grid content-start gap-1 sm:col-span-2">
 				<Label for="onboarding-school-name">{$t('onboarding.schoolNameLabel')}</Label>
 				<Input
 					id="onboarding-school-name"
@@ -119,7 +106,7 @@
 					oninput={persistDraft}
 				/>
 			</div>
-			<div class="space-y-1">
+			<div class="grid content-start gap-1">
 				<Label for="onboarding-school-city">{$t('onboarding.cityLabel')}</Label>
 				<Input
 					id="onboarding-school-city"
@@ -129,7 +116,7 @@
 					oninput={persistDraft}
 				/>
 			</div>
-			<div class="space-y-1">
+			<div class="grid content-start gap-1">
 				<Label for="onboarding-school-country">{$t('onboarding.countryLabel')}</Label>
 				<Select.Root
 					type="single"
@@ -143,7 +130,7 @@
 					</Select.Trigger>
 					<Select.Content class="z-[100]">
 						{#each countryOptions as country (country)}
-							{@const ready = isStructureReadyCountry(country)}
+							{@const ready = wizard.isCountryAvailable(country)}
 							<Select.Item
 								value={country}
 								label={country}
@@ -163,9 +150,11 @@
 					</Select.Content>
 				</Select.Root>
 			</div>
-			<div class="space-y-1">
+			<div class="grid content-start gap-1">
 				<Label for="onboarding-finance-currency">Devise financière (ISO 4217)</Label>
 				<Input id="onboarding-finance-currency" bind:value={onboardingContext.draft.school.financeCurrency} maxlength={3} placeholder="EUR / XOF / USD" required {disabled} />
+			</div>
+			<div class="grid content-start gap-1">
 				<Label for="onboarding-school-timezone">{$t('onboarding.timezoneLabel')}</Label>
 				<Select.Root
 					type="single"
@@ -196,7 +185,7 @@
 	<section class="space-y-2">
 		<h2 class="text-sm font-medium text-foreground">{$t('onboarding.schoolSection.academicYear')}</h2>
 		<div class="grid gap-2 sm:grid-cols-2">
-			<div class="space-y-1">
+			<div class="grid content-start gap-1">
 				<Label for="onboarding-year-start">{$t('onboarding.startDateLabel')}</Label>
 				<Input
 					id="onboarding-year-start"
@@ -206,7 +195,7 @@
 					oninput={persistDraft}
 				/>
 			</div>
-			<div class="space-y-1">
+			<div class="grid content-start gap-1">
 				<Label for="onboarding-year-end">{$t('onboarding.endDateLabel')}</Label>
 				<Input
 					id="onboarding-year-end"
@@ -220,34 +209,29 @@
 	</section>
 
 	<section class="space-y-2">
-		<div class="flex flex-wrap items-center justify-between gap-2">
-			<h2 class="text-sm font-medium text-foreground">{$t('onboarding.schoolSection.period')}</h2>
-			<div class="min-w-[10rem] space-y-1">
-				<Label class="sr-only">{$t('onboarding.periodTypeLabel')}</Label>
-				<Select.Root
-					type="single"
-					value={onboardingContext.draft.school.periodType}
-					onValueChange={handlePeriodTypeChange}
-				>
-					<Select.Trigger class="w-full" {disabled}>
-						<Select.Value placeholder={$t('onboarding.periodTypeLabel')}>
-							{$t(periodTypeLabel)}
-						</Select.Value>
-					</Select.Trigger>
-					<Select.Content class="z-[100]">
-						{#each periodTypes as entry (entry.value)}
-							<Select.Item value={entry.value} label={$t(entry.labelKey)}>
-								{$t(entry.labelKey)}
-							</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
+		<h2 class="text-sm font-medium text-foreground">{$t('onboarding.schoolSection.period')}</h2>
+		<fieldset disabled={disabled} aria-labelledby="onboarding-period-type-label">
+			<legend id="onboarding-period-type-label" class="mb-1 text-sm font-medium">{$t('onboarding.periodTypeLabel')}</legend>
+			<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+				{#each periodTypes as entry (entry.value)}
+					<label class="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm has-disabled:cursor-not-allowed has-disabled:opacity-50">
+						<input
+							type="radio"
+							name="onboarding-period-type"
+							value={entry.value}
+							checked={onboardingContext.draft.school.periodType === entry.value}
+							class="control-focus size-4 accent-primary"
+							onchange={() => handlePeriodTypeChange(entry.value)}
+						/>
+						{$t(entry.labelKey)}
+					</label>
+				{/each}
 			</div>
-		</div>
+		</fieldset>
 
 		<p class="text-xs text-muted-foreground">
 			{$t('onboarding.periods.hint', {
-				max: maxPeriodCount(onboardingContext.draft.school.periodType),
+				max: periodCount(onboardingContext.draft.school.periodType),
 			})}
 		</p>
 
@@ -258,22 +242,9 @@
 						<p class="text-sm font-medium text-foreground">
 							{$t('onboarding.periods.itemTitle', { index: index + 1 })}
 						</p>
-						{#if index > 0}
-							<Button
-								type="button"
-								variant="ghost"
-								size="sm"
-								class="text-destructive hover:text-destructive"
-								{disabled}
-								onclick={() => handleRemovePeriod(period.id)}
-							>
-								<Trash2 class="mr-1 h-3.5 w-3.5" />
-								{$t('onboarding.periods.remove')}
-							</Button>
-						{/if}
 					</div>
 					<div class="grid gap-2 sm:grid-cols-3">
-						<div class="space-y-1">
+						<div class="grid content-start gap-1">
 							<Label for={`onboarding-period-label-${period.id}`}>{$t('onboarding.periodLabel')}</Label>
 							<Input
 								id={`onboarding-period-label-${period.id}`}
@@ -286,7 +257,7 @@
 								}}
 							/>
 						</div>
-						<div class="space-y-1">
+						<div class="grid content-start gap-1">
 							<Label for={`onboarding-period-start-${period.id}`}>{$t('onboarding.startDateLabel')}</Label>
 							<Input
 								id={`onboarding-period-start-${period.id}`}
@@ -296,7 +267,7 @@
 								oninput={persistDraft}
 							/>
 						</div>
-						<div class="space-y-1">
+						<div class="grid content-start gap-1">
 							<Label for={`onboarding-period-end-${period.id}`}>{$t('onboarding.endDateLabel')}</Label>
 							<Input
 								id={`onboarding-period-end-${period.id}`}
@@ -310,13 +281,6 @@
 				</article>
 			{/each}
 		</div>
-
-		{#if showAddPeriod}
-			<Button type="button" variant="outline" class="w-full sm:w-auto" {disabled} onclick={handleAddPeriod}>
-				<Plus class="mr-2 h-4 w-4" />
-				{$t(addPeriodLabelKey, { number: onboardingContext.draft.school.periods.length + 1 })}
-			</Button>
-		{/if}
 
 		{#if !periodDatesValid}
 			<p class="text-xs text-destructive">

@@ -342,7 +342,6 @@
 						/>
 						<div class="min-w-0">
 							<p class="truncate text-sm font-medium">{student.name}</p>
-							<p class="truncate text-xs text-muted-foreground">{student.email || '—'}</p>
 						</div>
 					</div>
 				{:else if column.key === 'class'}

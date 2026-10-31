@@ -1,3 +1,10 @@
 /* Development fixture layout only. All controls, collections and dialogs use production styles. */
-.reference-section { border:1px solid hsl(var(--border)); border-radius:var(--radius-collection); }
+.reference-page { min-width:0; overflow-wrap:anywhere; }
+.reference-page.reference-page,
+.reference-section.reference-section { padding:16px; }
+.reference-section { min-width:0; border:1px solid hsl(var(--border)); border-radius:var(--radius-collection); }
 .reference-number { font-variant-numeric:tabular-nums; text-align:right; }
+@media(min-width:768px) {
+  .reference-page.reference-page,
+  .reference-section.reference-section { padding:24px; }
+}

@@ -1,43 +1,19 @@
-import type { StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
+import type { DatasetCatalog } from '$lib/onboarding/dataset-model';
 import type { OnboardingStructureDraft } from '$lib/onboarding/types';
-import { subjectsForGradeLevelIds } from '$lib/onboarding/structure-template-model';
+import { sameDataset } from '$lib/onboarding/dataset-model';
 
-export function isStructureStepValid(
-	structure: OnboardingStructureDraft,
-	catalog?: StructureTemplateCatalog | null,
-): boolean {
-	if (structure.models.length === 0) {
+export function isStructureStepValid(structure: OnboardingStructureDraft, catalog?: DatasetCatalog | null): boolean {
+	if (!catalog || !sameDataset(structure.dataset, catalog.dataset) || !structure.templates.length)
 		return false;
-	}
-
-	const configuredLevels = structure.levels.filter(level => level.classCount >= 1);
-	if (configuredLevels.length === 0) {
+	if (new Set(structure.templates).size !== structure.templates.length || structure.templates.some(id => !catalog.dataset.templates.some(template => template.id === id)))
 		return false;
-	}
-
-	const mappings = structure.disciplineMappings ?? [];
-	if (!mappings.length || mappings.some(mapping => !mapping.disciplineCode.trim() || !mapping.disciplineName.trim()))
+	if (new Set(structure.levels.map(row => row.gradeLevelId)).size !== structure.levels.length)
 		return false;
-	const namesByCode = new Map<string, string>();
-	for (const mapping of mappings) {
-		const code = mapping.disciplineCode.trim().toUpperCase();
-		const name = mapping.disciplineName.trim();
-		if (namesByCode.has(code) && namesByCode.get(code) !== name)
-			return false;
-		namesByCode.set(code, name);
-	}
-	if (catalog && subjectsForGradeLevelIds(catalog, configuredLevels.map(level => level.gradeLevelId)).some(subject => !mappings.some(mapping => mapping.subjectCode === subject.code)))
+	if (structure.levels.some(row => !Number.isInteger(row.classCount) || row.classCount < 0))
 		return false;
-	return configuredLevels.every((level) => {
-		if (!level.gradeLevelId.trim()) {
-			return false;
-		}
-		if (catalog && !catalog.byId.has(level.gradeLevelId)) {
-			return false;
-		}
-		return Number.isInteger(level.classCount)
-			&& level.classCount >= 1
-			&& Number.isInteger(level.capacity)
-			&& level.capacity >= 1;
+	const levels = structure.levels.filter(level => level.classCount > 0);
+	return levels.length > 0 && levels.every((level) => {
+		const definition = catalog.byId.get(level.gradeLevelId);
+		return definition && structure.templates.includes(definition.templateId) && Number.isInteger(level.capacity) && level.capacity > 0 && ['numerical', 'alphabetical'].includes(level.classNamingMode);
 	});
 }

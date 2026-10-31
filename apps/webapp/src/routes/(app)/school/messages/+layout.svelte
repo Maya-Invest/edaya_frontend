@@ -1,10 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
-	import DataState from '$lib/components/ui/DataState.svelte';
-	import PageQuery from '$lib/components/ui/PageQuery.svelte';
+	import { appGoto } from '$lib/navigation/app-navigation';
+	import { closeDetailDrawer, listSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 
 	import { onMount } from 'svelte';
 	import { SvelteURL } from 'svelte/reactivity';
@@ -40,16 +38,15 @@
 			else url.searchParams.delete(key);
 		}
 		const destination = id ? `/school/messages/${encodeURIComponent(id)}${url.search}` : `/school/messages${url.search}`;
-		void goto(resolve(destination as `/school/messages${string}`));
+		if (id && id !== state.selectedId)
+			openDetailDrawer(destination, listSurfaceHref('/school/messages', $page.url));
+		else if (!id && state.selectedId)
+			closeDetailDrawer(destination);
+		else
+			void appGoto(destination, { keepFocus: true, noScroll: true });
 	}
 </script>
 {#key state.identity}
-	<PageQuery query={state.query} cache={false} cacheKey={state.queryKey} loadingTitle="Messages">
-		{#snippet children(data)}
-			<DataState status={data.status} errorMessage={data.errorMessage}>
-				<MessagesView {state} {navigate} />
-				{@render pageChildren()}
-			</DataState>
-		{/snippet}
-	</PageQuery>
+	<MessagesView {state} {navigate} />
+	{@render pageChildren()}
 {/key}

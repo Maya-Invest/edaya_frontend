@@ -4,10 +4,8 @@ import {
 	COUNTRY_DEFAULT_TIMEZONE,
 	DEFAULT_ONBOARDING_COUNTRY,
 	ONBOARDING_COUNTRIES,
-	STRUCTURE_READY_COUNTRIES,
 	academicYearLabelFromDates,
 	defaultAcademicYearPreset,
-	isStructureReadyCountry,
 	optionsWithCurrent,
 	timezoneForCountry,
 } from '$lib/onboarding/school-step-defaults';
@@ -79,15 +77,5 @@ describe('defaultAcademicYearPreset', () => {
 		expect(preset.start).toBe('2026-09-01');
 		expect(preset.end).toBe('2027-07-03');
 		expect(preset.label).toBe('2026-2027');
-	});
-});
-
-describe('isStructureReadyCountry', () => {
-	it('marks only Côte d\'Ivoire as structure-ready', () => {
-		expect(DEFAULT_ONBOARDING_COUNTRY).toBe("Côte d'Ivoire");
-		expect(STRUCTURE_READY_COUNTRIES).toEqual(["Côte d'Ivoire"]);
-		expect(isStructureReadyCountry("Côte d'Ivoire")).toBe(true);
-		expect(isStructureReadyCountry('France')).toBe(false);
-		expect(isStructureReadyCountry('Sénégal')).toBe(false);
 	});
 });

@@ -1,10 +1,13 @@
 <script lang="ts">
 	import type { Guardian } from '$lib/types/school';
 	import type { Snippet } from 'svelte';
+	import { page } from '$app/stores';
 	import { kindLabelKey, kindStyle } from '$lib/components/school/shared/drawer-constants';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import DrawerFrame from '$lib/components/ui/DrawerFrame.svelte';
 	import { t } from '$lib/i18n';
-	import { LoaderCircle, X } from '$lib/icons';
+	import { LoaderCircle, X, ArrowLeft } from '$lib/icons';
+	import { returnToStudent } from '../../../students/lib/student-guardian-navigation';
 
 	const {
 		guardian,
@@ -21,7 +24,8 @@
 </script>
 
 <DrawerFrame {onClose} label={$t(kindLabelKey.guardian)}>
-	<header class="flex items-center justify-between border-b border-border px-6 py-4">
+	<header class="flex items-center justify-between gap-3 border-b border-border px-6 py-4">
+		{#if $page.state.studentGuardianOrigin}<Button variant="ghost" size="icon" aria-label={$t('common.back')} onclick={() => returnToStudent($page.state.studentGuardianOrigin!)}><ArrowLeft class="h-4 w-4" /></Button>{/if}
 		<span
 			class="rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wider {kindStyle.guardian}"
 		>

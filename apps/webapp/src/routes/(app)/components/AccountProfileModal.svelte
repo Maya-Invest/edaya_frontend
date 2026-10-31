@@ -1,88 +1,42 @@
 <script lang="ts">
 	import type { AccountActor } from '$lib/auth/account-actor';
-
 	import { authSession } from '$lib/auth/session.svelte';
-
-	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
+	import AccountSettingsSection from '$lib/components/ui/AccountSettingsSection.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import SectionTabs from '$lib/components/ui/SectionTabs.svelte';
 	import { t } from '$lib/i18n';
-	import { LogOut, Mail, X } from '$lib/icons';
+	import { X } from '$lib/icons';
 	import { getDirtyWork } from '$lib/interaction/dirty-work.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import NotificationSettings from '$lib/smart-components/account-notifications/NotificationSettings.svelte';
 	import SecuritySettings from '$lib/smart-components/account-security/SecuritySettings.svelte';
-	import { cn } from '$lib/utils';
+	import { tick } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getAccountState } from '../account-state.svelte';
 
 	const actionState = getAccountState();
-
-	let {
-		open = $bindable(false),
-		actor,
-		onLogout,
-		section = 'profile',
-		onSectionChange,
-	}: {
+	let { open = $bindable(false), actor, onLogout, section = 'profile', onSectionChange }: {
 		open?: boolean;
 		actor: AccountActor;
+		onLogout: () => void | Promise<void>;
 		section?: string;
 		onSectionChange: (section: 'profile' | 'notifications' | 'security') => void;
-		onLogout: () => void | Promise<void>;
 	} = $props();
-
+	const uid = $props.id();
+	const sections = ['profile', 'notifications', 'security'] as const;
+	const activeSection = $derived(sections.find(item => item === section) ?? 'profile');
+	const tabs = $derived(sections.map(value => ({ value, label: $t(`account.settings.tab.${value}`) })));
 	const staffProfile = $derived(authSession.userProfile);
-	const loginEmail = $derived(authSession.loginEmail?.trim() || '—');
-
-	const workEmail = $derived.by(() => {
-		const notification = authSession.notificationEmail?.trim() || '';
-		if (notification) {
-			return notification;
-		}
-		if (actor.kind === 'staff') {
-			return staffProfile?.email?.trim() || '';
-		}
-		return '';
-	});
-
-	const showWorkEmail = $derived.by(() => {
-		const normalizedLogin = loginEmail.toLowerCase();
-		return workEmail.length > 0
-			&& workEmail.toLowerCase() !== normalizedLogin
-			&& loginEmail !== '—';
-	});
-
-	const canChangePhoto = $derived(
-		actor.kind === 'staff' && Boolean(staffProfile?.id) && canUploadProfilePhoto('STAFF_MANAGE'),
-	);
-
-	const staffPhotoUrl = $derived(staffProfile?.photoUrl ?? actor.photoUrl ?? null);
-
-	async function handlePhotoChange(file: File) {
-		if (!staffProfile?.id) {
-			return false;
-		}
-		return actionState.performUpdateStaffProfilePhoto({
-			staffId: staffProfile.id,
-			file,
-			successMessage: get(t)('profilePhoto.updateSuccess'),
-		});
-	}
-
-	const readOnlyFieldClass = 'break-words text-sm';
-	const loginEmailFieldClass = cn(
-		readOnlyFieldClass,
-		'bg-secondary/30 text-muted-foreground',
-	);
-
+	const canChangePhoto = $derived(actor.kind === 'staff' && Boolean(staffProfile?.id) && canUploadProfilePhoto('STAFF_MANAGE'));
 	const dirtyWork = getDirtyWork();
 	function guarded(proceed: () => void) {
 		if (dirtyWork)
 			dirtyWork.request(proceed);
-		else proceed();
+		else
+			proceed();
 	}
 	function close() {
 		guarded(() => {
@@ -95,9 +49,26 @@
 			void onLogout();
 		});
 	}
-	const sections = ['profile', 'notifications', 'security'] as const;
-	const sectionKeys = { profile: 'account.profile.sectionProfile', notifications: 'account.notifications.title', security: 'auth.accountSecurity' };
-
+	function selectSection(value: string) {
+		const selected = sections.find(item => item === value);
+		if (selected && selected !== activeSection)
+			guarded(() => onSectionChange(selected));
+	}
+	async function handlePhotoChange(file: File) {
+		if (!staffProfile?.id)
+			return false;
+		return actionState.performUpdateStaffProfilePhoto({ staffId: staffProfile.id, file, successMessage: get(t)('profilePhoto.updateSuccess') });
+	}
+	$effect(() => {
+		const selected = activeSection;
+		if (!open)
+			return;
+		void tick().then(() => {
+			const panel = document.getElementById(`${uid}-panel-${selected}`);
+			panel?.querySelector<HTMLElement>('[data-account-heading]')?.focus({ preventScroll: true });
+			panel?.closest('[data-account-scroll]')?.scrollTo({ top: 0 });
+		});
+	});
 </script>
 
 <Dialog.Root {open} onOpenChange={(next) => {
@@ -105,101 +76,38 @@
 		close();
 	else open = true;
 }}>
-	<Dialog.Content class="ui-account-dialog flex h-dvh max-h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 shadow-panel lg:h-[min(48rem,calc(100dvh-2rem))] lg:max-h-[calc(100dvh-2rem)] lg:w-[calc(100%-3rem)] lg:max-w-5xl lg:rounded-collection">
-		<div class="shrink-0 border-b border-border bg-secondary/30 px-6 py-5">
-			<div class="flex items-center gap-4">
-				<Button class="ml-auto order-last shrink-0" variant="ghost" size="icon" aria-label={$t('common.close')} onclick={close}><X /></Button>
-				{#if canChangePhoto}
-					<ProfilePhotoPicker
-						name={actor.name}
-						initials={actor.initials}
-						photoUrl={staffPhotoUrl}
-						size="lg"
-						onChange={handlePhotoChange}
-					/>
-				{:else}
-					<PersonAvatar
-						name={actor.name}
-						initials={actor.initials}
-						photoUrl={actor.photoUrl}
-						size="lg"
-					/>
-				{/if}
-				<div class="min-w-0">
-					<Dialog.Title class="font-display text-xl font-semibold leading-tight">
-						{actor.name}
-					</Dialog.Title>
-					<Dialog.Description class="mt-1 text-sm text-muted-foreground">
-						{$t(actor.subtitleKey)}
-					</Dialog.Description>
-				</div>
-			</div>
-		</div>
-
-		<div class="flex min-h-0 flex-1 flex-col lg:flex-row-reverse">
-			<nav aria-label={$t('account.profile.sectionProfile')} class="flex shrink-0 flex-wrap gap-2 border-b border-border p-4 lg:w-56 lg:flex-col lg:justify-start lg:border-b-0 lg:border-l">
-				{#each sections as item (item)}
-					<button type="button" aria-current={section === item ? 'page' : undefined} class={cn('ui-nav-target', section === item && 'bg-sky-soft text-primary')} onclick={() => {
-						if (item !== section)
-							guarded(() => onSectionChange(item));
-					}}>{$t(sectionKeys[item])}</button>
-				{/each}
-			</nav>
-			<div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
-				{#if section === 'notifications'}<NotificationSettings />
-				{:else if section === 'security'}<SecuritySettings />
-				{:else}
-
-					<div class="mx-auto w-full max-w-lg space-y-6 p-4 md:p-6">
-						<section class="space-y-4">
-							<h3 class="font-sans text-xs uppercase tracking-widest text-muted-foreground">
-								{$t('account.profile.sectionProfile')}
-							</h3>
-
-							{#if actor.kind === 'staff' && staffProfile}
-								<DrawerField label={$t('guardian.fullName')}>
-									<div class={readOnlyFieldClass}>{staffProfile.name}</div>
-								</DrawerField>
-								<DrawerField label={$t('people.role')}>
-									<div class={readOnlyFieldClass}>{$t(`staff.role.${staffProfile.role}`)}</div>
-								</DrawerField>
-								<DrawerField label={$t('people.department')}>
-									<div class={readOnlyFieldClass}>{staffProfile.department || '—'}</div>
-								</DrawerField>
-							{/if}
-
-							<DrawerField label={$t('account.notifications.loginEmail')}>
-								<div class={loginEmailFieldClass}>
-									<span class="flex items-center gap-2">
-										<Mail class="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-										{loginEmail}
-									</span>
+	<Dialog.Content onOpenAutoFocus={(event) => {
+		event.preventDefault();
+		void tick().then(() => document.getElementById(`${uid}-panel-${activeSection}`)?.querySelector<HTMLElement>('[data-account-heading]')?.focus({ preventScroll: true }));
+	}} data-testid="account-profile-dialog" class="ui-account-dialog flex h-dvh max-h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 shadow-panel md:h-[min(40rem,80dvh)] md:max-h-[80dvh] md:w-[calc(100%-3rem)] md:max-w-[52rem]">
+		<header class="flex shrink-0 items-center justify-between gap-4 border-b border-border p-4 md:px-6">
+			<div class="min-w-0"><Dialog.Title class="font-display text-xl font-semibold">{$t('account.settings.title')}</Dialog.Title><Dialog.Description class="mt-1 text-sm text-muted-foreground">{$t('account.settings.description')}</Dialog.Description></div>
+			<Button variant="ghost" size="icon" aria-label={$t('common.close')} onclick={close}><X class="h-4 w-4" /></Button>
+		</header>
+		<SectionTabs id={uid} label={$t('account.settings.title')} items={tabs} value={activeSection} onSelect={selectSection} />
+		<div data-account-scroll class="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
+			{#each sections as item (item)}
+				<div id={`${uid}-panel-${item}`} role="tabpanel" aria-labelledby={`${uid}-tab-${item}`} hidden={activeSection !== item}>
+					{#if activeSection === item}
+						<AccountSettingsSection inset title={$t(`account.settings.tab.${item}`)} description={$t(`account.settings.description.${item}`)}>
+							{#if item === 'notifications'}<NotificationSettings embedded />
+							{:else if item === 'security'}<SecuritySettings embedded onSignOut={handleLogout} />
+							{:else}
+								<div class="flex flex-wrap items-center gap-4">
+									{#if canChangePhoto}<ProfilePhotoPicker name={actor.name} initials={actor.initials} photoUrl={staffProfile?.photoUrl ?? actor.photoUrl ?? null} size="lg" onChange={handlePhotoChange} />
+									{:else}<PersonAvatar name={actor.name} initials={actor.initials} photoUrl={actor.photoUrl} size="lg" />{/if}
+									<div class="min-w-0"><p class="break-words font-display text-lg font-semibold">{staffProfile?.name || actor.name}</p>{#if canChangePhoto}<p class="mt-1 text-xs text-muted-foreground">{$t('account.settings.photoHint')}</p>{/if}</div>
 								</div>
-							</DrawerField>
-
-							{#if showWorkEmail}
-								<DrawerField label={$t('account.profile.workEmail')}>
-									<div class={readOnlyFieldClass}>
-										<span class="flex items-center gap-2">
-											<Mail class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-											{workEmail}
-										</span>
-									</div>
-								</DrawerField>
+								<dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+									<div><dt class="text-xs text-muted-foreground">{$t('people.role')}</dt><dd class="mt-1 break-words text-sm">{$t(actor.subtitleKey)}</dd></div>
+									{#if actor.kind === 'staff'}<div><dt class="text-xs text-muted-foreground">{$t('people.department')}</dt><dd class="mt-1 break-words text-sm">{staffProfile?.department || $t('value.notProvided')}</dd></div>{/if}
+								</dl>
+								<p class="border-t border-border pt-4 text-sm text-muted-foreground">{$t('account.settings.profileManaged')}</p>
 							{/if}
-						</section>
-
-					</div>
-				{/if}
-			</div>
+						</AccountSettingsSection>
+					{/if}
+				</div>
+			{/each}
 		</div>
-
-		<Dialog.Footer class="shrink-0 border-t border-border bg-secondary/20 px-6 py-4 sm:justify-between">
-
-			<Button variant="outline" onclick={handleLogout}>
-				<LogOut class="mr-2 h-4 w-4" />
-				{$t('auth.signOut')}
-			</Button>
-		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

@@ -1562,13 +1562,6 @@
     "action": "Navigation directe — contenu visible"
   },
   {
-    "id": "web.scenario.0226",
-    "feature": "web.classes.classId.students.id.enrollments",
-    "module": "Classes",
-    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/enrollments",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
     "id": "web.scenario.0227",
     "feature": "web.classes.classId.students.id.report.card",
     "module": "Classes",
@@ -1846,13 +1839,6 @@
     "feature": "web.school.students.id.grades",
     "module": "École",
     "endpoint": "http://localhost:5173/school/students/[id]/grades",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
-    "id": "web.scenario.0268",
-    "feature": "web.school.students.id.enrollments",
-    "module": "École",
-    "endpoint": "http://localhost:5173/school/students/[id]/enrollments",
     "action": "Navigation directe — contenu visible"
   },
   {
@@ -2918,5 +2904,33 @@
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/structure/subjects?modal=report-settings",
     "action": "Modal deep-link ?modal=report-settings"
+  },
+  {
+    "id": "web.student-profile.school.legacy-enrollments",
+    "feature": "web.student-profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/enrollments",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.student-profile.class.legacy-enrollments",
+    "feature": "web.student-profile",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/enrollments",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.student-profile.school.status",
+    "feature": "web.student-profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile?modal=change-status",
+    "action": "Modal deep-link ?modal=change-status"
+  },
+  {
+    "id": "web.student-profile.class.status",
+    "feature": "web.student-profile",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/profile?modal=change-status",
+    "action": "Modal deep-link ?modal=change-status"
   }
 ]

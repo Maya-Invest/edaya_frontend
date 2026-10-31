@@ -11,7 +11,7 @@
 	}: {
 		open?: boolean;
 		source: Blob | null;
-		onConfirm: (file: File) => Promise<void> | void;
+		onConfirm: (file: File) => Promise<boolean | void> | boolean | void;
 	} = $props();
 
 	let busy = $state(false);
@@ -24,8 +24,9 @@
 	}
 
 	async function confirm(file: File) {
-		await onConfirm(file);
-		open = false;
+		const saved = await onConfirm(file);
+		if (saved !== false)
+			open = false;
 	}
 </script>
 

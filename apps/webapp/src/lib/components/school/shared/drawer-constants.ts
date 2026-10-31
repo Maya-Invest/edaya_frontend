@@ -59,7 +59,8 @@ export const relationKey: Partial<Record<string, string>> = {
 
 /** Known relations → i18n key; otherwise return the raw API string for display. */
 export function guardianRelationLabel(relation: string): string {
-	return relationKey[relation] ?? relation;
+	const knownRelation = Object.keys(relationKey).find(value => value.toLocaleLowerCase() === relation.trim().toLocaleLowerCase());
+	return (knownRelation && relationKey[knownRelation]) || relation;
 }
 
 export const dotByColor: Record<Subject['color'], string> = {

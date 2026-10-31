@@ -2,16 +2,15 @@ import type { OnboardingClassNamingMode, OnboardingDraft, OnboardingPeriodDraft,
 import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
 import {
-	DEFAULT_ONBOARDING_COUNTRY,
 	academicYearLabelFromDates,
+	DEFAULT_ONBOARDING_COUNTRY,
 	defaultAcademicYearPreset,
-	isStructureReadyCountry,
 	timezoneForCountry,
 } from '$lib/onboarding/school-step-defaults';
 import { ONBOARDING_DRAFT_VERSION } from '$lib/onboarding/types';
 
 const STORAGE_PREFIX = 'edaya:onboarding:draft';
-const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4, 5, 6, 7]);
+const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4, 5, 6, 7, 8]);
 
 function isOnboardingStaffInviteRole(value: unknown): value is OnboardingStaffInviteRole {
 	return value === 'deputy_director'
@@ -55,8 +54,8 @@ export function createEmptyDraft(): OnboardingDraft {
 			periods: createInitialPeriods('trimester', yearPreset.start, yearPreset.end),
 		},
 		structure: {
-			disciplineMappings: [],
-			models: [],
+			dataset: null,
+			templates: [],
 			levels: [],
 		},
 		staffInvites: [],
@@ -110,11 +109,9 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 	const periodType = candidate.periodType === 'semester' ? 'semester' : 'trimester';
 
 	const rawCountry = typeof candidate.country === 'string' ? candidate.country : empty.country;
-	const country = isStructureReadyCountry(rawCountry) ? rawCountry.trim() : empty.country;
+	const country = rawCountry.trim();
 	const rawTimezone = typeof candidate.timezone === 'string' ? candidate.timezone : empty.timezone;
-	const timezone = isStructureReadyCountry(rawCountry)
-		? rawTimezone
-		: (timezoneForCountry(country) ?? empty.timezone);
+	const timezone = rawTimezone;
 	const yearDates = resolveAcademicYearDates(candidate, empty);
 
 	if (Array.isArray(candidate.periods) && candidate.periods.length > 0) {
@@ -173,6 +170,20 @@ function normalizeClassNamingMode(value: unknown): OnboardingClassNamingMode {
 	return value === 'alphabetical' ? 'alphabetical' : 'numerical';
 }
 
+function normalizeDatasetReference(value: unknown): OnboardingDraft['structure']['dataset'] {
+	if (!value || typeof value !== 'object')
+		return null;
+	const reference = value as { id?: unknown; version?: unknown };
+	return typeof reference.id === 'string' && reference.id.trim() && typeof reference.version === 'string' && /^\d+\.\d+\.\d+$/.test(reference.version)
+		? { id: reference.id, version: reference.version }
+		: null;
+}
+
+function legacyTemplateIds(structure: unknown): unknown[] {
+	const models = (structure as { models?: unknown } | undefined)?.models;
+	return Array.isArray(models) ? models : [];
+}
+
 function normalizeDraft(raw: unknown): OnboardingDraft | null {
 	if (!raw || typeof raw !== 'object') {
 		return null;
@@ -202,10 +213,10 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 			: empty.registeredSchoolId,
 		school: normalizeSchoolDraft(candidate.school ?? {}, empty.school),
 		structure: {
-			disciplineMappings: Array.isArray(candidate.structure?.disciplineMappings) ? candidate.structure.disciplineMappings.filter(mapping => mapping && typeof mapping.subjectCode === 'string').map(mapping => ({ subjectCode: mapping.subjectCode, disciplineCode: typeof mapping.disciplineCode === 'string' ? mapping.disciplineCode : '', disciplineName: typeof mapping.disciplineName === 'string' ? mapping.disciplineName : '' })) : [],
-			models: Array.isArray(candidate.structure?.models)
-				? candidate.structure.models.filter((entry): entry is 'college' | 'lycee' => entry === 'college' || entry === 'lycee')
-				: empty.structure.models,
+			dataset: version < 8 ? { id: 'ci-general-secondary', version: '1.0.0' } : normalizeDatasetReference(candidate.structure?.dataset),
+			templates: version < 8
+				? legacyTemplateIds(candidate.structure).flatMap(model => model === 'college' ? ['ci-college'] : model === 'lycee' ? ['ci-lycee'] : [])
+				: Array.isArray(candidate.structure?.templates) ? candidate.structure.templates.filter((id): id is string => typeof id === 'string' && Boolean(id.trim())) : [],
 			levels: Array.isArray(candidate.structure?.levels)
 				? candidate.structure.levels.map(level => ({
 						gradeLevelId: typeof level.gradeLevelId === 'string'

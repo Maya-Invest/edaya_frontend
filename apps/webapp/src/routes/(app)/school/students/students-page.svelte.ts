@@ -86,11 +86,14 @@ export class StudentsPageState {
 			?? this.fullRosterStudents.find(student => student.id === id);
 	}
 
-	async ensureSelectedStudent(id: string): Promise<boolean> {
-		if (this.findStudent(id)) {
+	async ensureSelectedStudent(id: string, force = false): Promise<boolean> {
+		const identity = JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]);
+		if (!force && this.findStudent(id)) {
 			return true;
 		}
 		const student = await fetchStudentById(getBrowserSchoolClient(), id);
+		if (identity !== JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]))
+return true;
 		if (!student) {
 			return false;
 		}
@@ -178,9 +181,14 @@ export class StudentsPageState {
 		this.loadingFullRoster = false;
 	}
 
-	async loadPendingPhotoReviews() {
-		this.pendingPhotoSubmissions = await loadPendingStudentPhotoReviews();
-	}
+	private photoReadVersion = 0;
+ async loadPendingPhotoReviews() {
+  const version = ++this.photoReadVersion;
+  const scope = JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]);
+  const rows = await loadPendingStudentPhotoReviews();
+  if (version === this.photoReadVersion && scope === JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]))
+this.pendingPhotoSubmissions = rows;
+ }
 
 	async loadFirstPage() {
 		const version = ++this.listRequestVersion;

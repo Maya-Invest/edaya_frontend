@@ -55,7 +55,8 @@ const enrollments: ReadScenario = async ctx => {
   assert(enrollment, 'Required active enrollment missing');
   const classroom = await entity(ctx, 'class-groups', enrollment.classGroupId);
   await shown(ctx, classroom.name, 'aside[aria-label]');
-  await shown(ctx, enrollment.academicYearId, 'aside[aria-label]');
+  const year = await entity(ctx, 'academic-years', enrollment.academicYearId);
+  await shown(ctx, year.name, 'aside[aria-label]');
 };
 const finance: ReadScenario = async ctx => {
   const charges = await list(ctx, 'student-charges', {studentId:ctx.entities.studentId});
@@ -197,7 +198,27 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     await input.waitFor();
     assert.equal(await input.inputValue(),staff.notificationEmail ?? '');
   },
-  'web.scenario.0017': async ctx => { await inbox(ctx); const d = await entity(ctx,'message-deliveries',ctx.entities.deliveryId); await shown(ctx,d.body,'main aside'); },
+  'web.scenario.0017': async ctx => {
+    await inbox(ctx);
+    const d = await entity(ctx,'message-deliveries',ctx.entities.deliveryId);
+    const drawer = ctx.page.getByTestId('inbox-message-drawer');
+    await drawer.waitFor({state:'visible'});
+    await shown(ctx,d.body,'[data-testid="inbox-message-drawer"]');
+    const bounds = await drawer.boundingBox();
+    const viewport = ctx.page.viewportSize();
+    assert(bounds && viewport, 'Inbox drawer geometry unavailable');
+    assert(Math.abs(bounds.y) <= 1 && Math.abs(bounds.height - viewport.height) <= 1, 'Inbox drawer must fill the viewport height');
+    assert(Math.abs(bounds.x + bounds.width - viewport.width) <= 1, 'Inbox drawer must meet the right viewport edge');
+    assert(Math.abs(bounds.width - (viewport.width >= 1024 ? viewport.width / 2 : viewport.width)) <= 1, 'Inbox drawer must use the shared responsive width');
+    await ctx.page.keyboard.press('Escape');
+    await drawer.waitFor({state:'hidden'});
+    await ctx.page.waitForURL(url => /\/account\/inbox\/?$/.test(url.pathname));
+    const focusedRow = ctx.page.locator('main button:focus');
+    await focusedRow.waitFor({state:'visible'});
+    assert((await focusedRow.innerText()).includes(d.title), 'Closing the inbox drawer must restore focus to its message row');
+    await focusedRow.click();
+    await drawer.waitFor({state:'visible'});
+  },
   'web.scenario.0020': fixtureName('students','studentId','lastName'),
   'web.scenario.0028': studentProfile,
   'web.scenario.0034': grades,

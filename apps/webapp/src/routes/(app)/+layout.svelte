@@ -10,14 +10,13 @@
 	import { leaveStaffWebappForSessionKind } from '$lib/auth/leave-staff-webapp';
 	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
 	import { authSession } from '$lib/auth/session.svelte';
+	import AppHeader from '$lib/components/layout/AppHeader.svelte';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
-	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
-	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import { Dialog, DialogContent, DialogTitle, Close as DialogClose } from '$lib/components/ui/dialog';
 	import { entityVersions } from '$lib/entity-versions.svelte';
 	import { t } from '$lib/i18n';
-	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
+	import { LoaderCircle, PanelLeftClose } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import {
 		MODAL_QUERY_KEY,
@@ -207,53 +206,9 @@
 		{/if}
 
 		<div class="flex min-w-0 flex-1 flex-col">
-			<div
-				class="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 lg:h-14 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-0"
-			>
-				<button
-					type="button"
-					onclick={() => desktop.current ? shellContext.toggleSidebar() : mobileSidebarOpen = !mobileSidebarOpen}
-					class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground/80 transition hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:h-9 lg:w-9"
-					aria-label={navigationOpen ? $t('sidebar.hide') : $t('sidebar.show')}
-					aria-expanded={navigationOpen}
-					aria-controls="app-sidebar"
-				>
-					{#if navigationOpen}
-						<PanelLeftClose class="h-4 w-4" />
-					{:else}
-						<PanelLeft class="h-4 w-4" />
-					{/if}
-				</button>
-
-				<div class="contents lg:flex lg:items-center lg:gap-3">
-					<LanguageSelector />
-					<div class="flex items-center gap-1.5">
-						<button
-							type="button"
-							data-testid="user-menu"
-							onclick={() => (profileOpen.open = true)}
-							class="flex h-11 items-center gap-2 rounded-full border border-border bg-card px-1 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:pr-3 lg:h-9"
-							title={`${me.name} · ${$t(me.subtitleKey)}`}
-							aria-label={$t('account.profile.openProfile')}
-							aria-haspopup="dialog"
-							aria-expanded={profileOpen.open}
-						>
-							<PersonAvatar
-								name={me.name}
-								initials={me.initials}
-								photoUrl={me.photoUrl}
-								size="md"
-							/>
-							<span class="hidden flex-col items-start leading-tight sm:flex">
-								<span class="text-[11px] font-semibold">{me.name}</span>
-								<span class="font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
-									{$t(me.subtitleKey)}
-								</span>
-							</span>
-						</button>
-					</div>
-				</div>
-			</div>
+			<AppHeader actor={me} {navigationOpen} profileOpen={profileOpen.open}
+				onToggleNavigation={() => desktop.current ? shellContext.toggleSidebar() : mobileSidebarOpen = !mobileSidebarOpen}
+				onOpenProfile={() => (profileOpen.open = true)} />
 
 			{#if pathAllowed}
 				{@render children()}

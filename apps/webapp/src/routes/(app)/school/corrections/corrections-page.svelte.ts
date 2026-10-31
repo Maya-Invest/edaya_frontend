@@ -18,7 +18,8 @@ export class CorrectionsPageState {
   loadingMore = $state(false);
   loadMoreError = $state(false);
   private offset = $state(0);
-  private listKey: string | null = null;
+  private listKey = $state<string | null>(null);
+  get hasLoadedList() { return this.listKey !== null; }
   private listInput: Omit<components['schemas']['ListTeacherCorrectionsQuery'], 'offset' | 'limit'> | null = null;
   private listGeneration = 0;
   get hasMore() {
@@ -59,7 +60,7 @@ export class CorrectionsPageState {
     return await runRouteMutation({ request: () => getBrowserSchoolClient().commands.retryDocumentIssuance({ requestId: crypto.randomUUID(), issuanceId }), versionKeys: ['documents', 'reportCards'] }) !== null;
   }
 
-  async decide(decision: 'approve' | 'reject' | 'publish', reason: string, confirmed: boolean, translate: (key: string) => string): Promise<boolean> {
+  async decide(decision: 'approve' | 'reject' | 'publish' | 'withdraw', reason: string, confirmed: boolean, translate: (key: string) => string): Promise<boolean> {
     const detail = this.detail;
     if (!detail)
       return false;
@@ -73,12 +74,16 @@ export class CorrectionsPageState {
           await commands.publishReportCommentCorrection({ ...input, confirmConsequences: confirmed });
         }
         else if (detail.correction.workflow === 'grades') {
-          if (decision === 'approve')
+          if (decision === 'withdraw')
+            await commands.withdrawAssessmentMarksCorrection(input);
+          else if (decision === 'approve')
             await commands.approveAssessmentMarksCorrection(input);
           else await commands.rejectAssessmentMarksCorrection({ ...input, reason: reason.trim() });
         }
         else {
-          if (decision === 'approve')
+          if (decision === 'withdraw')
+            await commands.withdrawTeacherCorrection({ ...input, confirmConsequences: confirmed });
+          else if (decision === 'approve')
             await commands.approveTeacherCorrection({ ...input, confirmConsequences: confirmed });
           else await commands.rejectTeacherCorrection({ ...input, reason: reason.trim(), confirmConsequences: false });
         }
@@ -93,7 +98,7 @@ export class CorrectionsPageState {
         this.total = total;
       },
       versionKeys: ['evaluations', 'attendance', 'reportCards', 'planning', 'subjects', 'incidents', 'documents', 'inbox'],
-      successMessage: translate(`marks.${decision === 'publish' ? 'published' : decision === 'approve' && detail.correction.workflow === 'report_comments' ? 'approved_pending_publication' : decision === 'approve' ? 'approved' : 'rejected'}`),
+      successMessage: translate(`marks.${decision === 'withdraw' ? 'withdrawn' : decision === 'publish' ? 'published' : decision === 'approve' && detail.correction.workflow === 'report_comments' ? 'approved_pending_publication' : decision === 'approve' ? 'approved' : 'rejected'}`),
     });
     return result !== null;
   }

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'bun:test';
-import { clampDateInput } from '$lib/date/format';
+import { clampDateInput, formatLocaleDate } from '$lib/date/format';
+
+it('formats upcoming civil dates with the interface language and month', () => {
+	const options = { weekday: 'short', day: 'numeric', month: 'short' } as const;
+	expect(formatLocaleDate('2026-11-02', 'fr-FR', options)).toBe('lun. 2 nov.');
+	expect(formatLocaleDate('2026-11-02', 'en-US', options)).toBe('Mon, Nov 2');
+});
 
 describe('clampDateInput', () => {
 	it('keeps today when it already sits in the academic year', () => {

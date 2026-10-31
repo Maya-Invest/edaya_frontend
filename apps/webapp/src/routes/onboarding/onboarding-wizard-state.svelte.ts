@@ -1,3 +1,4 @@
+import type { DatasetCatalog, DatasetChoice, DatasetReference } from '$lib/onboarding/dataset-model';
 import type { ProvisionProgressStep } from '$lib/onboarding/provision-progress';
 import type { OnboardingStep } from '$lib/onboarding/types';
 import { academicContext } from '$lib/academic/context.svelte';
@@ -37,6 +38,8 @@ import {
   nextOnboardingStep,
   previousOnboardingStep,
 } from '$lib/onboarding/steps';
+import { syncStructureLevels } from '$lib/onboarding/structure-step-helpers';
+import { isStructureStepValid } from '$lib/onboarding/structure-step-validation';
 import { submitCompleteOnboardingStep } from '$lib/onboarding/submit-complete-step';
 import { refreshSessionAfterProvision, submitProvisionOnboarding } from '$lib/onboarding/submit-provision-step';
 import { fetchServerOnboardingAccountStatus } from '$lib/onboarding/sync-account-status';
@@ -50,10 +53,91 @@ import { flushSync, getContext, setContext } from 'svelte';
 import { SvelteURL } from 'svelte/reactivity';
 import { get } from 'svelte/store';
 import { onboardingContext } from './context.svelte';
+import { DatasetLoader } from './lib/dataset-loader';
+import { datasetReadPort } from './lib/dataset-queries';
 
 const ONBOARDING_WIZARD_STATE_KEY = Symbol('onboarding-wizard-state');
 
 export class OnboardingWizardState {
+  catalog = $state<DatasetCatalog | null>(null);
+  datasetStatus = $state<'loading' | 'ready' | 'empty' | 'error'>('loading');
+  datasetChoices = $state<DatasetChoice[]>([]);
+  allDatasetChoices = $state<DatasetChoice[]>([]);
+  datasetUnavailable = $state(false);
+  datasetSelectionChanged = $state(false);
+  private datasetKey = '';
+  private datasetCountry: string | null = null;
+  private datasetAccount: string | null = null;
+  private datasetLoader = new DatasetLoader(datasetReadPort, (state) => {
+    this.catalog = state.catalog;
+    this.datasetStatus = state.status;
+    this.datasetChoices = state.choices;
+    this.allDatasetChoices = state.allChoices;
+    this.datasetUnavailable = state.unavailableVersion;
+    if (state.catalog) {
+      const draft = onboardingContext.draft;
+      const reference = { id: state.catalog.dataset.id, version: state.catalog.dataset.version };
+      this.datasetKey = JSON.stringify([this.datasetAccount, draft.school.country, reference]);
+      draft.structure.dataset = reference;
+      const valid = isStructureStepValid(draft.structure, state.catalog);
+      draft.structure.templates = draft.structure.templates.filter(id => state.catalog!.dataset.templates.some(template => template.id === id));
+      draft.structure = syncStructureLevels(draft.structure, state.catalog);
+      if ((draft.structureStepSubmitted || draft.maxReachedStep > 2) && !valid && !this.provisionSucceeded && !this.bootstrapRecoveryNeeded) {
+        this.invalidateStructure();
+      }
+      onboardingContext.persist();
+    }
+  });
+
+  private invalidateStructure() {
+    const draft = onboardingContext.draft;
+    draft.structureStepSubmitted = false;
+    draft.maxReachedStep = Math.min(draft.maxReachedStep, 2) as OnboardingStep;
+    this.datasetSelectionChanged = true;
+    if (this.currentStep > 2)
+      this.gotoStep(2);
+  }
+
+  loadDataset = (account: string | null, country: string, reference: DatasetReference | null) => {
+    if (!account || !onboardingContext.initialized)
+      return;
+    const key = JSON.stringify([account, country, reference]);
+    if (key === this.datasetKey)
+      return;
+    const countryChanged = this.datasetAccount === account && this.datasetCountry !== null && this.datasetCountry !== country;
+    this.datasetAccount = account;
+    this.datasetCountry = country;
+    if (countryChanged && !this.provisionSucceeded && !this.bootstrapRecoveryNeeded) {
+      onboardingContext.draft.structure = { dataset: null, templates: [], levels: [] };
+      this.invalidateStructure();
+      reference = null;
+    }
+    this.datasetKey = JSON.stringify([account, country, reference]);
+    void this.datasetLoader.load(country, reference);
+  };
+
+  retryDataset = () => {
+    this.datasetKey = '';
+    this.loadDataset(authSession.authUserId, onboardingContext.draft.school.country, onboardingContext.draft.structure.dataset);
+  };
+
+  selectDataset = (key: string) => {
+    const choice = this.datasetChoices.find(row => `${row.id}@${row.version}` === key);
+    if (!choice || this.busy || this.provisionSucceeded || this.bootstrapRecoveryNeeded)
+      return;
+    onboardingContext.draft.structure = { dataset: { id: choice.id, version: choice.version }, templates: [], levels: [] };
+    this.invalidateStructure();
+    onboardingContext.persist();
+    this.retryDataset();
+  };
+
+  isCountryAvailable(country: string): boolean {
+    const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').replace(/’/g, '\'').toLowerCase();
+    const names = new Intl.DisplayNames(['fr'], { type: 'region' });
+    return this.allDatasetChoices.some(row => normalize(names.of(row.countryCode) ?? row.countryCode) === normalize(country) || row.countryCode === country);
+  }
+
+  dispose() { this.datasetLoader.dispose(); }
   busy = $state(false);
   syncedServerStatus = $state(false);
   /** Last wizard-owned step. Survives a delayed post-auth goto back to step 1. */
@@ -123,6 +207,7 @@ export class OnboardingWizardState {
       this.currentStep,
       onboardingContext.draft,
       authSession.loginEmail,
+      this.catalog,
     );
   }
 
@@ -142,11 +227,9 @@ export class OnboardingWizardState {
     return this.currentStep === 4;
   }
 
-	get canFinish(): boolean {
-		return this.provisionSucceeded
-			|| this.bootstrapRecoveryNeeded
-			|| canFinishOnboarding(onboardingContext.draft, authSession.loginEmail);
-	}
+  get canFinish(): boolean {
+    return this.provisionSucceeded || this.bootstrapRecoveryNeeded || canFinishOnboarding(onboardingContext.draft, authSession.loginEmail, this.catalog);
+  }
 
   get showSkip(): boolean {
     return Boolean(this.stepDefinition.optional && this.nextStep !== null);
@@ -468,7 +551,7 @@ export class OnboardingWizardState {
       provision?: boolean;
     } = {},
   ): Promise<boolean> {
-    const shouldProvision = options.provision !== false && canFinishOnboarding(onboardingContext.draft, authSession.loginEmail);
+    const shouldProvision = options.provision !== false && canFinishOnboarding(onboardingContext.draft, authSession.loginEmail, this.catalog);
 
     if (shouldProvision) {
       const ok = await this.runProvision({ successMessageKey: options.successMessageKey });
@@ -539,7 +622,7 @@ export class OnboardingWizardState {
       return;
     }
 
-    const blockKey = finishOnboardingBlockKey(onboardingContext.draft, authSession.loginEmail);
+    const blockKey = finishOnboardingBlockKey(onboardingContext.draft, authSession.loginEmail, this.catalog);
     if (blockKey) {
       this.reportActionError(get(t)(blockKey));
       return;

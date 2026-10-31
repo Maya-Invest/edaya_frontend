@@ -94,64 +94,64 @@
 		</div>
 
 		{@render children()}
+		<footer class="mt-5 border-t border-border/60 pt-4">
+			{#if showProvisionProgress}
+				<div class="mb-3">
+					<OnboardingProvisionProgress
+						percent={provisionPercent}
+						activeStepId={provisionActiveStepId}
+						completedStepIds={provisionCompletedIds}
+						steps={provisionSteps}
+						visible={true}
+					/>
+				</div>
+			{:else if busy && busyMessage}
+				<p class="mb-3 text-xs text-muted-foreground" aria-live="polite">
+					{busyMessage}
+				</p>
+			{/if}
+			{#if actionError}
+				<p
+					class="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+					role="alert"
+				>
+					{actionError}
+				</p>
+			{/if}
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<div class="flex shrink-0 items-center gap-2">
+					{#if canGoBack}
+						<Button variant="outline" type="button" disabled={busy} onclick={onBack}>
+							<ArrowLeft class="h-4 w-4" />
+							{$t('onboarding.back')}
+						</Button>
+					{/if}
+				</div>
+
+				<div class="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
+					{#if showSkip && onSkip}
+						<Button variant="ghost" type="button" disabled={busy} onclick={onSkip}>
+							{$t('onboarding.skip')}
+						</Button>
+					{/if}
+
+					{#if showContinue}
+						<Button type="button" disabled={busy || !canAdvance} onclick={onContinue}>
+							{$t('onboarding.continue')}
+						</Button>
+					{/if}
+
+					{#if showFinish && onFinish}
+						<Button type="button" disabled={busy || !canFinish} onclick={onFinish}>
+							{$t(finishCtaKey)}
+						</Button>
+					{/if}
+				</div>
+			</div>
+		</footer>
 	</section>
 
-	<a href="/account/security" target="_blank" rel="noopener" class="mt-4 text-sm text-primary">{$t('auth.accountSecurity')}</a>
-	<footer class="sticky bottom-0 mt-4 border-t border-border/60 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-		{#if showProvisionProgress}
-			<div class="mb-3">
-				<OnboardingProvisionProgress
-					percent={provisionPercent}
-					activeStepId={provisionActiveStepId}
-					completedStepIds={provisionCompletedIds}
-					steps={provisionSteps}
-					visible={true}
-				/>
-			</div>
-		{:else if busy && busyMessage}
-			<p class="mb-3 text-xs text-muted-foreground" aria-live="polite">
-				{busyMessage}
-			</p>
-		{/if}
-		{#if actionError}
-			<p
-				class="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
-				role="alert"
-			>
-				{actionError}
-			</p>
-		{/if}
-		<div class="flex flex-wrap items-center justify-between gap-3">
-			<div class="flex items-center gap-2">
-				{#if canGoBack}
-					<Button variant="outline" type="button" disabled={busy} onclick={onBack}>
-						<ArrowLeft class="mr-2 h-4 w-4" />
-						{$t('onboarding.back')}
-					</Button>
-				{/if}
-			</div>
-
-			<div class="flex flex-wrap items-center justify-end gap-2">
-				{#if showSkip && onSkip}
-					<Button variant="ghost" type="button" disabled={busy} onclick={onSkip}>
-						{$t('onboarding.skip')}
-					</Button>
-				{/if}
-
-				{#if showContinue}
-					<Button type="button" disabled={busy || !canAdvance} onclick={onContinue}>
-						{$t('onboarding.continue')}
-					</Button>
-				{/if}
-
-				{#if showFinish && onFinish}
-					<Button type="button" disabled={busy || !canFinish} onclick={onFinish}>
-						{$t(finishCtaKey)}
-					</Button>
-				{/if}
-			</div>
-		</div>
-	</footer>
+	<a href="/account/security" target="_blank" rel="noopener" class="mt-4 px-5 text-sm text-primary sm:px-6">{$t('auth.accountSecurity')}</a>
 
 	<div class="mt-4 flex flex-col items-center gap-2 pb-4 text-center">
 		{#if authSession.loginEmail}

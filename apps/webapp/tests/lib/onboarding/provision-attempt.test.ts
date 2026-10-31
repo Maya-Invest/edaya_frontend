@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { createEmptyDraft } from '$lib/onboarding/draft-storage';
+import { createDatasetDraft as createEmptyDraft } from './dataset-fixture';
 import {
 	clearProvisionAttempt,
 	isProvisionAttemptCommitted,
 	loadProvisionAttempt,
 	markProvisionAttemptCommitted,
 	resolveProvisionAttempt,
+ saveProvisionAttempt,
 } from '$lib/onboarding/provision-attempt';
 
 function mockWebStorage() {
@@ -51,15 +52,27 @@ describe('provision attempt identity', () => {
 		expect(second.requestId).toBe(first.requestId);
 	});
 
-	it('rotates ids when the draft changes before commit', () => {
+	it('requires reconciliation before replacing a changed attempt and retains the school identity', () => {
 		const draft = createEmptyDraft();
 		draft.school.name = 'School A';
 		const first = resolveProvisionAttempt('user-1', draft);
 		draft.school.name = 'School B';
-		const second = resolveProvisionAttempt('user-1', draft);
-		expect(second.schoolId).not.toBe(first.schoolId);
+		expect(() => resolveProvisionAttempt('user-1', draft)).toThrow('RECONCILIATION_REQUIRED');
+ const second = resolveProvisionAttempt('user-1', draft, true);
+		expect(second.schoolId).toBe(first.schoolId);
 		expect(second.requestId).not.toBe(first.requestId);
 	});
+
+ it('retains a v7 attempt after dropping obsolete mappings and pinning the implicit dataset', () => {
+  const draft = createEmptyDraft();
+  const original = resolveProvisionAttempt('user-1', draft);
+  const legacy = JSON.parse(original.fingerprint);
+  delete legacy.structure.dataset;
+  legacy.structure.disciplineMappings = [{subjectCode: 'FR', disciplineCode: '', disciplineName: ''}];
+  saveProvisionAttempt('user-1', {...original, fingerprint: JSON.stringify(legacy)});
+  expect(resolveProvisionAttempt('user-1', draft)).toMatchObject({schoolId: original.schoolId, requestId: original.requestId});
+  expect(JSON.parse(loadProvisionAttempt('user-1')!.fingerprint).structure).not.toHaveProperty('disciplineMappings');
+ });
 
 	it('keeps committed ids after a later draft edit', () => {
 		const draft = createEmptyDraft();

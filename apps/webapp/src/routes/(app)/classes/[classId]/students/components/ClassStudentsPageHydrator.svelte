@@ -14,7 +14,7 @@
 
 	$effect(() => {
 		const classId = data.classId;
-		if (!classId) {
+		if (!classId || !['ready', 'empty', 'no-match'].includes(data.status)) {
 			return;
 		}
 		untrack(() => {

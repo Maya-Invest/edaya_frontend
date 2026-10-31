@@ -6,5 +6,5 @@ export function messagePresentation(destination: string, authorKind: string): { 
 }
 
 export function messageTimestamp(value: string, locale: string): string {
-	return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+	return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }).format(new Date(value));
 }

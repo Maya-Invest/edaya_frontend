@@ -140,10 +140,7 @@ export async function selectCollegeAndOneClass(page: Page): Promise<void> {
 	const plus = firstRow.getByRole('button').nth(1);
 	await waitForEnabled(plus);
 	await plus.click();
-    const codes = page.locator('[data-testid^="discipline-code-"]');
-    await codes.first().waitFor({ state: 'visible' });
-    for (const input of await codes.all()) await input.fill('TEST');
-    for (const input of await page.locator('[data-testid^="discipline-name-"]').all()) await input.fill('Reviewed test discipline');
+
 }
 
 async function waitForOnboardingShell(page: Page): Promise<void> {
@@ -154,7 +151,7 @@ async function waitForOnboardingShell(page: Page): Promise<void> {
 export async function clickCreateSchoolAndWaitForProvision(page: Page): Promise<{ invitedCount: number }> {
 	const createSchool = createSchoolButton(page);
 	await waitForEnabled(createSchool);
-	const provisionResponse = page.waitForResponse(
+ const provisionResponse = page.waitForResponse(
 		response => response.request().method() === 'POST'
 			&& response.url().includes('/core/onboarding/provision'),
 		{ timeout: 120_000 },
@@ -162,6 +159,8 @@ export async function clickCreateSchoolAndWaitForProvision(page: Page): Promise<
 	await createSchool.click();
 	await createSchool.click({ timeout: 750 }).catch(() => undefined);
 	const response = await provisionResponse;
+ const structure = response.request().postDataJSON().structure;
+ if (!structure.dataset?.id || !structure.dataset?.version || 'disciplineMappings' in structure || 'templateSnapshots' in structure || 'datasetSnapshot' in structure) throw new Error('Wizard must provision a pinned dataset reference only');
 	if (!response.ok()) {
 		throw new Error(`Onboarding provision failed: ${response.status()} ${page.url()}`);
 	}
