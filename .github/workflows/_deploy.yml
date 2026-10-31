@@ -5,6 +5,9 @@ on:
       target:
         required: true
         type: string
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: false
 permissions:
   contents: read
   actions: read

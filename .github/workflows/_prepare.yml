@@ -1,4 +1,4 @@
-name: Qualification
+name: Preparation
 on:
   workflow_call:
     inputs:
@@ -8,22 +8,24 @@ on:
       source_ref:
         type: string
         required: true
+      release_mode:
+        type: boolean
+        default: false
       backend_ref:
         type: string
         default: ''
       match_backend_branch:
         type: boolean
         default: false
-      full:
-        type: boolean
-        default: true
-      baseline_sha:
-        type: string
-        default: ''
     secrets:
       BACKEND_CHECKOUT_TOKEN:
         description: Read-only contents access to the private backend repository
         required: true
+    outputs:
+      source_sha:
+        value: ${{ jobs.preparation.outputs.source_sha }}
+      backend_sha:
+        value: ${{ jobs.preparation.outputs.backend_sha }}
 permissions:
   contents: read
   actions: read
@@ -40,6 +42,27 @@ jobs:
       CI: 'true'
       CI_TARGET: ${{ inputs.target }}
     steps:
+      - name: Validate release destination
+        env:
+          RELEASE_MODE: ${{ inputs.release_mode }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          if [ "$RELEASE_MODE" != "true" ]; then exit 0; fi
+          if [ "$REF_TYPE" != "branch" ]; then
+            echo "::error::Deploy must run from the staging or main workflow branch, not a tag."
+            exit 1
+          fi
+          case "$REF_NAME" in
+            staging) expected=staging ;;
+            main) expected=production ;;
+            *) echo "::error::Deploy must run from the staging or main workflow branch."; exit 1 ;;
+          esac
+          if [ "$TARGET" != "$expected" ]; then
+            echo "::error::Deployment target does not match the selected workflow branch."
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ inputs.source_ref }}
@@ -107,64 +130,3 @@ jobs:
           if [ -n "$STARTED" ]; then
             echo "Preparation: $(( $(date +%s) - STARTED ))s" >> "$GITHUB_STEP_SUMMARY"
           fi
-  quality:
-    needs: preparation
-    uses: ./.github/workflows/_quality-check.yml
-    with:
-      source_ref: ${{ needs.preparation.outputs.source_sha }}
-      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
-      target: ${{ inputs.target }}
-  unit:
-    needs: preparation
-    uses: ./.github/workflows/_unit-test.yml
-    with:
-      source_ref: ${{ needs.preparation.outputs.source_sha }}
-      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
-      target: ${{ inputs.target }}
-  build:
-    if: inputs.full
-    needs: preparation
-    uses: ./.github/workflows/_build.yml
-    with:
-      source_ref: ${{ needs.preparation.outputs.source_sha }}
-      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
-      target: ${{ inputs.target }}
-  integration:
-    if: inputs.full
-    needs: [preparation, quality, unit]
-    uses: ./.github/workflows/_integration-test.yml
-    with:
-      source_ref: ${{ needs.preparation.outputs.source_sha }}
-      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
-      target: ${{ inputs.target }}
-      baseline_sha: ${{ inputs.baseline_sha }}
-    secrets:
-      BACKEND_CHECKOUT_TOKEN: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
-  qualification:
-    name: Full validation
-    if: ${{ always() && inputs.full }}
-    needs: [preparation, quality, unit, build, integration]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    env:
-      CI: 'true'
-      CI_SOURCE_SHA: ${{ needs.preparation.outputs.source_sha }}
-      CI_BACKEND_SHA: ${{ needs.preparation.outputs.backend_sha }}
-      CI_TARGET: ${{ inputs.target }}
-    steps:
-      - name: Require every task to succeed
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: echo "$RESULTS" | jq -e 'all(.[]; .result == "success")'
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ needs.preparation.outputs.source_sha }}
-          persist-credentials: false
-      - uses: ./.github/actions/setup
-        with:
-          source_sha: ${{ needs.preparation.outputs.source_sha }}
-          backend_sha: ${{ needs.preparation.outputs.backend_sha }}
-          target: ${{ inputs.target }}
-      - uses: ./.github/actions/finalize
-        with:
-          target: ${{ inputs.target }}

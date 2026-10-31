@@ -1,0 +1,35 @@
+name: branche_check
+on:
+  push:
+    branches-ignore: [main, staging]
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+concurrency:
+  group: branch-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  preparation:
+    uses: ./.github/workflows/_prepare.yml
+    with:
+      target: staging
+      source_ref: ${{ github.sha }}
+      backend_ref: ${{ github.ref_name }}
+      match_backend_branch: true
+    secrets:
+      BACKEND_CHECKOUT_TOKEN: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+  quality:
+    needs: preparation
+    uses: ./.github/workflows/_quality_check.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: staging
+  unit:
+    needs: preparation
+    uses: ./.github/workflows/_unit_test.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: staging

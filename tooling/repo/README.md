@@ -32,26 +32,37 @@ Bun is pinned in the root package manifest. Node.js 22+ runs the third-party Wra
 | --- | --- |
 | PR into `main` or `staging` | Full qualification and integration; no deployment |
 | Push to another branch | Preparation, then parallel quality and unit/tooling tests; no build, browser qualification or deployment |
-| Push to `staging` / `main` | Qualify that revision, then deploy to staging / production when enabled |
-| Manual deployment | Select a source revision in the environment workflow; same qualification and deployment jobs |
-| Manual validation | Select environment, source revision and optional backend override; never deploy |
+| Push to `staging` / `main` | Qualify that revision, then deploy to staging / production subject to configured environment approvals |
+| Manual deployment | Run `deploy.yml` on workflow branch `staging` or `main`; optionally override the source revision |
+| Manual validation | Run `pr_validation.yml`; select target (default `staging`), source revision and optional backend override; never deploy |
 
-`_qualify.yml` owns the job graph. Preparation resolves the frontend and backend commits once, builds or restores the checked API client, resolves dependencies, and uploads `prepared-<run>-<attempt>` with `.generated/` and the frozen lockfile. Shared setup restores that snapshot, checks its identity, installs frozen dependencies with a forced local-package refresh, validates both installed clients, and synchronizes SvelteKit. Only preparation and integration check out backend source.
+Entry points expose the graph directly, with every job calling a reusable workflow and no inline execution jobs:
 
-Quality and unit tests run in parallel. Unit packages execute sequentially within their runner, matching the backend and keeping process-timing tests from competing with application suites. Full qualification also builds both destination applications in parallel; browser integration starts after quality and unit pass. Integration retains one owned fixture and all existing suites and coverage checks. Its local-API/test-login build is separate from the deployable destination build. The final **Full validation** job runs even after upstream failures and publishes a qualified artifact only when all mandatory jobs and stage evidence pass. Branch runs skip build, integration and finalization.
+| File / workflow name | Reusable jobs |
+| --- | --- |
+| `branche_check.yml` / `branche_check` | `_prepare` → `_quality_check` + `_unit_test` |
+| `pr_validation.yml` / `pr_validation` | `_prepare` → quality + unit + build → integration → `_finalize` |
+| `deploy.yml` / `deploy` | Full qualification → `_deploy` (both applications) |
+
+`pr_validation.yml` combines PR and manual validation; there is no dedicated manual-validation workflow or frontend maintenance workflow. PRs use their merge SHA and base-branch target (`main` → production, `staging` → staging). Manual validation accepts `target`, `source_ref` and `backend_ref`. Branch and PR runs cancel superseded runs; manual validation uses its own `validation-<workflow-ref>-<target>` cancellation group.
+
+Deployment has no environment selector. The selected workflow branch fixes the destination: `staging` → staging and `main` → production. A `source_ref` override changes the tested revision, not the destination. In release mode, `_prepare.yml` rejects tags, other branches and mismatched targets before source checkout or backend acquisition. Deployment retains the `deploy-staging` and `deploy-production` concurrency groups with cancellation disabled.
+
+`_prepare.yml` resolves the frontend and backend commits once, builds or restores the checked API client, resolves dependencies, and uploads `prepared-<run>-<attempt>` with `.generated/` and the frozen lockfile. Shared setup restores that snapshot, checks its identity, installs frozen dependencies with a forced local-package refresh, validates both installed clients, and synchronizes SvelteKit. Only preparation and integration receive the backend checkout token and check out backend source; deployment receives only its Cloudflare credential.
+
+Quality and unit tests run in parallel. Unit packages execute sequentially within their runner, matching the backend and keeping process-timing tests from competing with application suites. Full qualification also builds both destination applications in parallel; browser integration starts after quality and unit pass. Integration retains one owned fixture and all existing suites and coverage checks. Its local-API/test-login build is separate from the deployable destination build. Caller `qualification` invokes `_finalize.yml` with `always()`, even after upstream failures. Its inner **Full validation** job explicitly requires every mandatory prerequisite to exist and succeed before checkout or artifact restoration, then checks all stage evidence before publishing the qualified artifact. Failed, cancelled, skipped or missing jobs cannot qualify. Branch graphs contain no build, integration or finalization jobs.
 
 Stage evidence binds frontend SHA, backend SHA, client and resolved-lockfile checksums, environment, run ID and attempt. Missing, duplicate, incomplete, stale or mismatched stages fail finalization. Browser evidence must additionally contain every required successful suite. Finalization and deployment consume the existing release build; neither regenerates clients nor rebuilds applications. Local `ci qualify` uses a fresh attempt identity and clears older qualification success before starting. Run `ci quality [checks|lint|types|finalize]`, `test unit`, `test integration`, `ci build <environment>`, and `ci finalize <environment>` for stage-level diagnosis; use `ci qualify` for a complete local candidate.
 
 Bun downloads, immutable generated clients and quality/tool caches are acceleration only. Prepared inputs, stage evidence and builds cross jobs as run-attempt-specific artifacts. Release builds and browser results are not shared caches. Preparation and stage durations appear in job summaries; quality details and sanitized browser diagnostics upload on failure. Re-running only failed jobs in a new attempt cannot borrow older artifacts: rerun all jobs to produce a complete matching candidate.
 
-Deployment is serialized per environment without cancelling active deployments. Failure, cancellation or skipped qualification cannot deploy. Restoration selects the unique qualified artifact from the same run and attempt, checks out its recorded source commit, restores frozen dependencies and verifies checksums. Deployment uses the existing build; it never resolves another backend branch or generates another client.
+Deployment proceeds automatically after successful qualification, subject to configured GitHub environment approvals and protections. No additional repository opt-in variable is required. Deployment is serialized per environment without cancelling active deployments. Failure, cancellation or skipped qualification cannot deploy. Restoration selects the unique qualified artifact from the same run and attempt, checks out its recorded source commit, restores frozen dependencies and verifies checksums. Deployment uses the existing build; it never resolves another backend branch or generates another client.
 
 Configuration required in GitHub:
 
 - `BACKEND_CHECKOUT_TOKEN`: required repository or organization Actions secret with read-only contents access to `Maya-Invest/edaya_backend`; used solely for checkout.
 - `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`: environment deployment credentials/configuration.
-- `ENABLE_INDEPENDENT_RELEASES=true`: repository adoption gate. Enable only after local verification, both environment builds, integration, artifact handoff and non-deploying GitHub rehearsals have passed.
-- Branch protection: require the PR workflow's `qualification / Full validation` check, confirming its exact displayed name in GitHub. Replace obsolete coordinator/publication requirements only after the replacement succeeds.
+- Branch protection: caller ID `qualification` and inner name **Full validation** are retained. Extraction can change the displayed required-check context (for example `qualification / Full validation`). Confirm it on a non-deploying PR/manual rehearsal before any separately authorized required-check update. This consolidation does not change branch protection.
 
 Development pushes use the matching backend branch; PRs use their source branch while testing the frontend merge commit. If that backend branch is absent, CI selects backend `dev`. Authentication and network errors never trigger fallback. Missing `dev` fails. Manual validation overrides never fall back. Staging and production releases always use backend `staging` and `main`, respectively. The job summary records the requested ref, selected ref, fallback reason and immutable commit. Every selected backend must have completed the in-repository identity migration; retired sibling identity dependencies fail before installation or cache restoration.
 
