@@ -6,6 +6,7 @@ import { describe, expect, it } from 'bun:test';
 
 const STUDENT_DETAIL_MODALS = [
 	'create',
+	'change-status',
 	'edit-profile',
 	'edit-annual-profile',
 	'remove-annual-profile',
@@ -240,6 +241,13 @@ describe('route modal catalog', () => {
 	it('does not expose a student grades editor modal', () => {
 		expect(isKnownModalForPathname('/school/students/student-1/grades', 'add-grade')).toBeFalse();
 		expect(isKnownModalForPathname('/classes/class-1/students/student-1/grades', 'add-grade')).toBeFalse();
+	});
+
+	it('retains status deep links only for student detail routes', () => {
+		for (const pathname of ['/school/students/student-1/profile', '/classes/class-1/students/student-1/profile'])
+			expect(isKnownModalForPathname(pathname, 'change-status')).toBeTrue();
+		for (const pathname of ['/school/students', '/classes/class-1/students', '/school/staff/staff-1/profile'])
+			expect(isKnownModalForPathname(pathname, 'change-status')).toBeFalse();
 	});
 
 	it('does not expose route-local names to sibling routes', () => {

@@ -7,6 +7,7 @@ export interface RouteModalCatalogEntry {
 }
 
 const STUDENT_DETAIL_MODALS = [
+	'change-status',
 	'edit-profile',
 	'edit-annual-profile',
 	'remove-annual-profile',

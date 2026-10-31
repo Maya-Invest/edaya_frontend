@@ -255,3 +255,5 @@ The provisioned school journey checks incident resolution through the mutation r
 Note edit deep links wait for the notes section to finish loading before rejecting a missing target; readiness of another profile section is insufficient. Fee confirmations wait for the inspected fee surface to mount so that the drawer cannot cover the confirmation. Browser regressions must use normal clicks and preserve cancellation and academic-scope guards. Timetable tests exercise range, selection, review, and generation separately. Session-attendance scenarios explicitly configure session mode and restore the original mode after verifying persisted marks.
 
 Completion-filter fixtures derive all three dates from the recorded complete day, and assertions use that same fixture identity. The final logout scenario opens account Security, checks the sign-out response, then revisits a protected page to verify the session is gone.
+
+Student status deep links must remain registered for both school and class detail routes; the shell canonicalizer must not erase them on cold loads. The drawer still owns permission checks and the status form still requires an explicit save.
