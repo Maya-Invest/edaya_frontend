@@ -66,6 +66,12 @@ See the [webapp README](apps/webapp/README.md#local-demo-access) for passwordles
 
 The [tooling README](tooling/repo/README.md) owns the complete generated command reference and CI/release procedure. The [webapp tests README](apps/webapp/tests/README.md) explains test authoring, local prerequisites and screenshot evidence.
 
+## Test lanes
+
+`bun repo test unit` runs workspace unit tests, including tooling once, with Turbo test caching bypassed. Webapp logic tests live in `tests/lib`; state suites in `tests/unit` run in separate Bun processes so module mocks and rune compiler plugins stay isolated. Ordinary `bun run test` retains Turbo caching for local iteration.
+
+`bun repo test integration --suite onboarding` runs one supervised browser suite against the prepared backend revision. Use `bun repo test integration --help` to list suite IDs. Selected runs invalidate previous qualification success and do not produce a qualifying integration stage. Run the full command without `--suite` for qualification.
+
 ## Deployment
 
 Both apps deploy static assets on Cloudflare Workers. Set `PUBLIC_API_URL` at build time.
