@@ -17,6 +17,7 @@ export function completePasswordlessSignIn() {
 export class PasswordlessPanelState {
   terms = $state<AuthTerms | null>(null);
   termsAccepted = $state(false);
+  renewRegistrationConsent = $state(false);
   termsDialogOpen = $state(false);
   termsLoading = $state(false);
   termsLoadError = $state(false);
@@ -273,6 +274,7 @@ export class PasswordlessPanelState {
           ? get(t)(error.code === 'terms_version_changed' ? 'auth.termsChanged' : error.code === 'terms_acceptance_required' ? 'auth.termsRequired' : 'auth.termsUnavailable')
           : error?.message ?? 'Authentication failed';
         if (error?.code === 'terms_version_changed' || error?.code === 'terms_acceptance_required') {
+          this.renewRegistrationConsent = !!this.registration;
           this.termsAccepted = false;
           await this.loadTerms(this.termsLocale);
         }
@@ -338,6 +340,7 @@ export class PasswordlessPanelState {
   reset() {
     this.generation++;
     this.registration = null;
+    this.renewRegistrationConsent = false;
     this.cooldownUntil = 0;
     this.termsAccepted = false;
     this.termsDialogOpen = false;
