@@ -328,11 +328,11 @@ async function fillInviteForm(
 	options: { name: string; email: string; password: string; mode: 'signUp' | 'signIn' },
 ): Promise<void> {
 	const accept = page.getByRole('button', { name: ACCEPT_INVITE });
-	await accept.waitFor({ state: 'visible', timeout: 20_000 });
+	await page.getByTestId('auth-identifier').waitFor({ state: 'visible', timeout: 20_000 });
 
 	await sendOtpThroughUi(page, options.email);
-	if (await accept.isEnabled())
-		throw new Error('Invitation acceptance enabled before contact proof');
+	if (await accept.isVisible())
+		throw new Error('Invitation acceptance visible before contact proof');
 	await verifyOtpThroughUi(page, options.email);
 	await waitForEnabled(accept);
 }
