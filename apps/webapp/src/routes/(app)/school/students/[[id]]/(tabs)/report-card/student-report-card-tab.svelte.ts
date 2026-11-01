@@ -1,200 +1,185 @@
-import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { GradeScale, ReportCardResult } from '$lib/types/report-cards';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+import { writeHomeroomReportCommentMutation, writeReportSectionCommentsMutation } from '$lib/api/mutations/student-ops.mutations';
+import { loadClassReportCardResultsData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
-import { authSession } from '$lib/auth/session.svelte';
 import { nowIso } from '$lib/date/format';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
+import { AnnualReportCardState } from '../../annual-report-card-state.svelte';
 
 const STUDENT_REPORT_CARD_TAB_KEY = Symbol('student-report-card-tab');
 
 export interface StudentReportCardTabSlice {
-	studentId: string;
-	reportCardResults: ReportCardResult[];
-	gradeScales: GradeScale[];
-	reportCardDefinitions: ReportCardDefinition[];
+  studentId: string;
+  reportCardResults: ReportCardResult[];
+  gradeScales: GradeScale[];
 }
 
 export type StudentReportCardTabSeed = Partial<Omit<StudentReportCardTabSlice, 'studentId'>>;
 
 function emptySlice(studentId: string): StudentReportCardTabSlice {
-	return {
-		studentId,
-		reportCardResults: [],
-		gradeScales: [],
-		reportCardDefinitions: [],
-	};
-}
-
-function resolveReportCardDefinitionId(
-	slice: StudentReportCardTabSlice,
-	studentClassId: string,
-): string | undefined {
-	const cls = academicContext.classes.find(entry => entry.id === studentClassId);
-	if (!cls) {
-		return undefined;
-	}
-
-	const definition = slice.reportCardDefinitions.find(
-		entry =>
-			entry.gradeLevelId === cls.gradeLevelId
-			&& entry.academicYearId === academicContext.yearId
-			&& entry.status === 'published',
-	) ?? slice.reportCardDefinitions.find(
-		entry => entry.gradeLevelId === cls.gradeLevelId && entry.status === 'published',
-	);
-
-	return definition?.id;
+  return {
+    studentId,
+    reportCardResults: [],
+    gradeScales: [],
+  };
 }
 
 export class StudentReportCardTabState {
-	slice = $state<StudentReportCardTabSlice | null>(null);
+  private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['students', 'reportCards', 'evaluations', 'subjects', 'documents']));
+  invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+  performWriteReportSectionComments = (...args: Parameters<typeof writeReportSectionCommentsMutation>) => writeReportSectionCommentsMutation(...args);
 
-	clear() {
-		this.slice = null;
-	}
+  performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
 
-	seed(studentId: string, data: StudentReportCardTabSeed) {
-		if (!this.slice || this.slice.studentId !== studentId) {
-			this.slice = { ...emptySlice(studentId), ...data, studentId };
-			return;
-		}
-		this.slice = { ...this.slice, ...data, studentId };
-	}
+  performWriteHomeroomReportComment = (...args: Parameters<typeof writeHomeroomReportCommentMutation>) => writeHomeroomReportCommentMutation(...args);
 
-	private forStudent(studentId: string) {
-		return this.slice?.studentId === studentId ? this.slice : null;
-	}
+  slice = $state<StudentReportCardTabSlice | null>(null);
 
-	reportCardResultsFor(studentId: string) {
-		return this.forStudent(studentId)?.reportCardResults ?? [];
-	}
+  constructor(private readonly getPage: () => StudentDetailHost, readonly annual = new AnnualReportCardState(getPage)) {}
 
-	reportCardScalesFor(studentId: string) {
-		return this.forStudent(studentId)?.gradeScales ?? [];
-	}
+  clear() {
+    this.versionedQuery.clear();
+    this.annual.clear();
+    this.slice = null;
+  }
 
-	async loadCatalog(studentId: string) {
-		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-		const catalog = schoolId
-			? await loadReportCardCatalogData(getBrowserSchoolClient(), schoolId)
-			: { gradeScales: [], definitions: [] };
-		this.seed(studentId, {
-			gradeScales: catalog.gradeScales,
-			reportCardDefinitions: catalog.definitions,
-		});
-	}
+  seed(studentId: string, data: StudentReportCardTabSeed) {
+    if (!this.slice || this.slice.studentId !== studentId) {
+      this.slice = { ...emptySlice(studentId), ...data, studentId };
+      return;
+    }
+    this.slice = { ...this.slice, ...data, studentId };
+  }
 
-	async refreshResults(studentId: string) {
-		const page = this.getPage();
-		const student = page.findStudent(studentId);
-		const slice = this.forStudent(studentId);
-		if (!student || !slice) {
-			return;
-		}
+  private forStudent(studentId: string) {
+    return this.slice?.studentId === studentId ? this.slice : null;
+  }
 
-		const results = await loadClassReportCardResultsData(
-			getBrowserSchoolClient(),
-			student.classId,
-			academicContext.periodId,
-			slice.reportCardDefinitions,
-		);
-		this.seed(studentId, {
-			reportCardResults: results.filter(result => result.studentId === studentId),
-		});
-	}
+  reportCardResultsFor(studentId: string) {
+    return this.forStudent(studentId)?.reportCardResults ?? [];
+  }
 
-	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
-			empty: () => ({}),
-			load: async () => {
-				const studentId = studentDetailIdFromPathname(url.pathname);
-				const page = this.getPage();
-				const student = studentId ? page.findStudent(studentId) : undefined;
-				if (!studentId || !student) {
-					return {};
-				}
+  reportCardScalesFor(studentId: string) {
+    return this.forStudent(studentId)?.gradeScales ?? [];
+  }
 
-				await this.loadCatalog(studentId);
-				await this.refreshResults(studentId);
-				return {};
-			},
-			hasItems: () => true,
-		});
-	}
+  async loadCatalog(studentId: string, signal?: AbortSignal) {
+ signal?.throwIfAborted();
+  this.seed(studentId, {});
+  }
 
-	async generateReportCard(studentId: string): Promise<boolean> {
-		const page = this.getPage();
-		const student = page.findStudent(studentId);
-		const slice = this.forStudent(studentId);
-		const periodId = academicContext.periodId;
-		const definitionId = slice && student
-			? resolveReportCardDefinitionId(slice, student.classId)
-			: undefined;
-		if (!definitionId) {
-			return false;
-		}
+  async refreshResults(studentId: string, signal?: AbortSignal) {
+    const page = this.getPage();
+    const student = page.findStudent(studentId);
+    const slice = this.forStudent(studentId);
+    if (!student || !slice || !academicContext.periodId) {
+      this.seed(studentId, { reportCardResults: [] });
+      return;
+    }
 
-		const client = getBrowserSchoolClient();
-		const id = `rcr-${studentId}-${periodId}`;
+    const results = await loadClassReportCardResultsData(
+      getBrowserSchoolClient(),
+      student.classId,
+      academicContext.periodId,
+    );
+    signal?.throwIfAborted();
+    this.seed(studentId, {
+      reportCardResults: results.filter(result => result.studentId === studentId),
+    });
+  }
 
-		const result = await runStudentRouteMutation({
-			request: async () => {
-				await client.commands.generateReportCardResult({
-					id,
-					studentId,
-					periodId,
-					reportCardDefinitionId: definitionId,
-					generatedAt: nowIso(),
-				});
-				return true;
-			},
-			errorMessage: 'Impossible de générer le bulletin.',
-			versionKeys: ['students', 'reportCards'],
-			onSuccess: async () => {
-				await this.refreshResults(studentId);
-			},
-		});
-		return result !== null;
-	}
+  query() {
+    return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
+      empty: () => ({}),
+      load: async (signal) => {
+        const studentId = studentDetailIdFromPathname(url.pathname);
+        const page = this.getPage();
+        const student = studentId ? page.findStudent(studentId) : undefined;
+        if (!studentId || !student) {
+          return {};
+        }
 
-	async publishReportCard(input: {
-		resultId: string;
-		studentId: string;
-		periodId: string;
-		definitionId?: string;
-	}): Promise<boolean> {
-		const client = getBrowserSchoolClient();
-		const existing = this.forStudent(input.studentId)?.reportCardResults.find(r => r.id === input.resultId);
-		const resolvedDefinitionId = input.definitionId ?? existing?.definitionId;
+        await Promise.all([this.loadCatalog(studentId, signal), this.annual.refresh(studentId, signal)]);
+        await this.refreshResults(studentId, signal);
+        return {};
+      },
+      hasItems: () => true,
+    }, request));
+  }
 
-		const result = await runStudentRouteMutation({
-			request: () => client.commands.publishReportCardResult({
-				id: input.resultId,
-				studentId: input.studentId,
-				periodId: input.periodId,
-				reportCardDefinitionId: resolvedDefinitionId,
-				publishedAt: nowIso(),
-			}),
-			versionKeys: ['students', 'reportCards'],
-			onSuccess: async () => {
-				await this.refreshResults(input.studentId);
-			},
-		});
-		return result !== null;
-	}
+  async generateReportCard(studentId: string): Promise<boolean> {
+    const page = this.getPage();
+    const student = page.findStudent(studentId);
+    const slice = this.forStudent(studentId);
+    const periodId = academicContext.periodId;
+    if (!periodId || !student || !slice)
+      return false;
+
+    const client = getBrowserSchoolClient();
+    const id = `rcr-${studentId}-${periodId}`;
+
+    const result = await runStudentRouteMutation({
+      request: async () => {
+        await client.commands.generateReportCardResult({
+          id,
+          studentId,
+          periodId,
+          generatedAt: nowIso(),
+        });
+        return true;
+      },
+      errorMessage: 'Impossible de générer le bulletin.',
+      versionKeys: ['students', 'reportCards'],
+      onSuccess: async () => {
+        await this.refreshResults(studentId);
+      },
+    });
+    return result !== null;
+  }
+
+  async publishReportCard(input: {
+    resultId: string;
+    studentId: string;
+    periodId: string;
+  }): Promise<boolean> {
+    const client = getBrowserSchoolClient();
+    const existing = this.forStudent(input.studentId)?.reportCardResults.find(r => r.id === input.resultId);
+    if (!existing || existing.revisedDraft)
+      return false;
+
+    const result = await runStudentRouteMutation({
+      request: () => client.commands.publishReportCardResult({
+        id: input.resultId,
+        studentId: input.studentId,
+        periodId: input.periodId,
+        publishedAt: nowIso(),
+        reviewedDraftVersion: existing.version!,
+        reviewedGradingRevision: existing.gradingPolicyRevision!,
+        reviewedReportConfigurationRevision: existing.reportConfigurationRevision,
+      }),
+      versionKeys: ['students', 'reportCards'],
+      onSuccess: async () => {
+        await this.refreshResults(input.studentId);
+      },
+    });
+    return result !== null;
+  }
 }
 
 export function setStudentReportCardTabState(state: StudentReportCardTabState) {
-	setContext(STUDENT_REPORT_CARD_TAB_KEY, state);
+  setContext(STUDENT_REPORT_CARD_TAB_KEY, state);
 }
 
 export function getStudentReportCardTabState() {
-	return getContext<StudentReportCardTabState>(STUDENT_REPORT_CARD_TAB_KEY);
+  return getContext<StudentReportCardTabState>(STUDENT_REPORT_CARD_TAB_KEY);
 }

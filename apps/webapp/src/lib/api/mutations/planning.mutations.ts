@@ -1,15 +1,16 @@
 import type { components } from '$lib/api/schema';
-import type { ScheduleDayOfWeek } from '$lib/components/school/scheduling/planning-calendar';
+import type { ScheduleDayOfWeek } from '$lib/scheduling/planning-calendar';
 import type { PlanningEvent } from '$lib/types/school';
+import type { MutationOptions } from './execute-mutation';
 import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { t } from '$lib/i18n';
 import {
 	mondayOfWeekUtc,
 	sessionInstantsForSlot,
-} from '$lib/components/school/scheduling/planning-calendar';
-import { t } from '$lib/i18n';
+} from '$lib/scheduling/planning-calendar';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
@@ -33,7 +34,7 @@ function sessionInstantsForExistingWeek(
 function specificDateForWeek(weekStart: Date, day: PlanningEvent['day']): string {
 	const weekAnchor = mondayOfWeekUtc(weekStart);
 	const date = new Date(weekAnchor);
-	const offset = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4 }[day] ?? 0;
+	const offset = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }[day] ?? 0;
 	date.setUTCDate(date.getUTCDate() + offset);
 	return date.toISOString().slice(0, 10);
 }
@@ -260,7 +261,7 @@ export async function reschedulePlanningSlotMutation(input: {
 
 export async function cancelPlanningEventMutation(
 	event: Pick<PlanningEvent, 'id' | 'kind' | 'title'>,
-	opts?: { successMessage?: string },
+	opts?: Pick<MutationOptions<void>, 'successMessage' | 'apply' | 'rollback' | 'onSuccess'>,
 ): Promise<boolean> {
 	if (event.kind !== 'lesson' && event.kind !== 'activity') {
 		return false;
@@ -274,7 +275,7 @@ export async function cancelPlanningEventMutation(
 		}
 		await client.commands.cancelLessonSession({ lessonSessionId: event.id });
 	}, {
-		successMessage: opts?.successMessage,
+		...opts,
 		versionKeys: ['planning'],
 	});
 	return result !== null;

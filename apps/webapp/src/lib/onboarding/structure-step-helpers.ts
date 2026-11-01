@@ -1,6 +1,5 @@
 import type { Lang } from '$lib/i18n/dictionaries';
-import type { StructureTemplateCatalog } from '$lib/onboarding/structure-template-model';
-import type { StructureModel } from '$lib/onboarding/structure-templates';
+import type { DatasetCatalog } from '$lib/onboarding/dataset-model';
 import type {
 	OnboardingClassNamingMode,
 	OnboardingStructureDraft,
@@ -9,8 +8,8 @@ import type {
 import { catalogGradeName } from '$lib/i18n/catalog-label';
 import {
 	getCatalogGradeLevel,
-	gradeLevelsForModels,
-} from '$lib/onboarding/structure-template-model';
+	gradeLevelsForTemplates,
+} from '$lib/onboarding/dataset-model';
 
 const DEFAULT_CLASS_COUNT = 0;
 const DEFAULT_CAPACITY = 30;
@@ -27,9 +26,9 @@ function defaultLevel(gradeLevelId: string): OnboardingStructureLevelDraft {
 
 export function syncStructureLevels(
 	structure: OnboardingStructureDraft,
-	catalog: StructureTemplateCatalog,
+	catalog: DatasetCatalog,
 ): OnboardingStructureDraft {
-	const catalogLevels = gradeLevelsForModels(catalog, structure.models);
+	const catalogLevels = gradeLevelsForTemplates(catalog, structure.templates);
 	const allowedIds = new Set(catalogLevels.map(level => level.id));
 	const existingById = new Map(
 		structure.levels
@@ -51,28 +50,29 @@ export function syncStructureLevels(
 	});
 
 	return {
-		models: [...structure.models],
+		dataset: structure.dataset,
+		templates: [...structure.templates],
 		levels,
 	};
 }
 
-export function toggleStructureModel(
+export function toggleStructureTemplate(
 	structure: OnboardingStructureDraft,
-	model: StructureModel,
+	templateId: string,
 	enabled: boolean,
-	catalog: StructureTemplateCatalog,
+	catalog: DatasetCatalog,
 ): OnboardingStructureDraft {
-	const models = new Set(structure.models);
+	const templateIds = new Set(structure.templates);
 	if (enabled) {
-		models.add(model);
+		templateIds.add(templateId);
 	}
 	else {
-		models.delete(model);
+		templateIds.delete(templateId);
 	}
 
 	return syncStructureLevels({
 		...structure,
-		models: [...models],
+		templates: [...templateIds],
 	}, catalog);
 }
 
@@ -107,10 +107,10 @@ export function structureSummary(structure: OnboardingStructureDraft): {
 	return { levelCount, classCount };
 }
 
-/** Prefer fixture `name` for the structure row title. */
+/** Prefer the dataset level `name` for the structure row title. */
 export function gradeLevelLabel(
 	gradeLevelId: string,
-	catalog: StructureTemplateCatalog,
+	catalog: DatasetCatalog,
 	lang: Lang = 'fr',
 ): string {
 	const level = getCatalogGradeLevel(catalog, gradeLevelId);

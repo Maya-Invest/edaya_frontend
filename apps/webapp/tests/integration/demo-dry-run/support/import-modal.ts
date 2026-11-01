@@ -31,19 +31,9 @@ export async function waitForImportModal(ctx: DemoContext, timeoutMs = 15_000): 
 export async function uploadStudentImportFile(ctx: DemoContext): Promise<boolean> {
 	const input = ctx.page.getByTestId('import-file-input');
 	await input.setInputFiles(studentImportFixturePath());
-	const parsed = await ctx.page
-		.getByTestId('student-import-parse-success')
-		.waitFor({ state: 'visible', timeout: 30_000 })
-		.then(() => true)
-		.catch(() => false);
-	if (parsed) {
-		return true;
-	}
-	return ctx.page
-		.getByTestId('import-selected-file')
-		.waitFor({ state: 'visible', timeout: 5_000 })
-		.then(() => true)
-		.catch(() => false);
+  const uploaded = ctx.page.waitForResponse(response => response.url().includes('/imports/submit') && response.request().method() === 'POST');
+  await ctx.page.getByTestId('import-upload').click();
+  return (await uploaded).ok();
 }
 
 export async function closeImportModal(ctx: DemoContext): Promise<boolean> {

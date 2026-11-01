@@ -14,10 +14,21 @@ export function emptyAttendanceSlice(classId: string): AttendancePageSlice {
 
 export function attendanceDayDetailIdFromUrl(url: URL): string | undefined {
 	const match = url.pathname.match(/\/classes\/([^/]+)\/attendance\/([^/]+)/);
-	return match?.[2];
+	return decodeSegment(match?.[2]);
 }
 
 export function attendanceClassIdFromUrl(url: URL): string | undefined {
 	const match = url.pathname.match(/\/classes\/([^/]+)\/attendance/);
-	return match?.[1];
+	return decodeSegment(match?.[1]);
+}
+
+function decodeSegment(value: string | undefined): string | undefined {
+	if (!value)
+		return undefined;
+	try {
+		return decodeURIComponent(value);
+	}
+	catch {
+		return undefined;
+	}
 }

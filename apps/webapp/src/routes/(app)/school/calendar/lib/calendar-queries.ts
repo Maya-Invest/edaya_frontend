@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { CalendarPageState } from '../calendar-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadAbsences, loadCalendarEvents } from '$lib/api/school-life-data';
@@ -7,9 +8,9 @@ import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
 export function querySchoolCalendarPage(state: CalendarPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => ({}),
-		load: async () => {
+		load: async (signal) => {
 			const client = queryClient();
 			const classIds = academicContext.classes.map(entry => entry.id);
 			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
@@ -27,9 +28,10 @@ export function querySchoolCalendarPage(state: CalendarPageState) {
 					throw error;
 				}),
 			]);
+			signal.throwIfAborted();
 			state.seed(events, absences);
 			return {};
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

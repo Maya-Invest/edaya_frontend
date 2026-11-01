@@ -1,4 +1,3 @@
-import type { PeriodDefinition } from '$lib/types/school';
 import type { AcademicPageSlice } from './lib/academic-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
@@ -18,7 +17,6 @@ import {
 	writeExpandedAcademicYear,
 } from './lib/academic-expanded-year';
 import { loadAcademicSlice, queryAcademicListPage } from './lib/academic-queries';
-import { deletePeriodDefinitionMutation } from './lib/academic-route-mutation';
 
 const ACADEMIC_VERSION_FAMILIES = [] as const;
 
@@ -147,20 +145,6 @@ export class AcademicPageState {
 			return false;
 		}
 		await refreshAppShellData();
-		await this.refreshSlice();
-		return true;
-	}
-
-	async deletePeriodDefinition(input: {
-		periodDefinition: PeriodDefinition;
-		successMessage?: string;
-	}): Promise<boolean> {
-		const ok = await deletePeriodDefinitionMutation(input.periodDefinition.id, {
-			successMessage: input.successMessage,
-		});
-		if (!ok) {
-			return false;
-		}
 		await this.refreshSlice();
 		return true;
 	}

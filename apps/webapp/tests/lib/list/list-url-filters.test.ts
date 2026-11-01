@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'bun:test';
 import {
 	readAcademicAdminListFilters,
 	readActivityListFilters,
@@ -8,10 +7,10 @@ import {
 	readClassStudentListFilters,
 	readConfigSubjectListFilters,
 	readEducatorDashboardListFilters,
+	readFeeListFilters,
 	readGradeScaleListFilters,
 	readPaymentListFilters,
 	readPlanningListFilters,
-	readReportCardDefinitionListFilters,
 	readResourceListFilters,
 	readRoleListFilters,
 	readStudentListFilters,
@@ -24,15 +23,16 @@ import {
 	writeClassStudentListFilters,
 	writeConfigSubjectListFilters,
 	writeEducatorDashboardListFilters,
+	writeFeeListFilters,
 	writeGradeScaleListFilters,
 	writePaymentListFilters,
 	writePlanningListFilters,
-	writeReportCardDefinitionListFilters,
 	writeResourceListFilters,
 	writeRoleListFilters,
 	writeStudentListFilters,
 	writeTeachingListFilters,
 } from '$lib/list/list-url-filters';
+import { describe, expect, it } from 'bun:test';
 
 interface FilterCase {
 	name: string;
@@ -50,6 +50,13 @@ function writeWith<T extends Record<string, string>>(
 }
 
 const cases: FilterCase[] = [
+	{
+		name: 'fees',
+		read: readFeeListFilters,
+		write: writeWith(writeFeeListFilters),
+		defaults: { q: '', category: 'all', status: 'all' },
+		nonDefault: { q: 'tuition', category: 'tuition', status: 'active' },
+	},
 	{
 		name: 'calendar',
 		read: readCalendarListFilters,
@@ -96,8 +103,8 @@ const cases: FilterCase[] = [
 		name: 'school students',
 		read: readStudentListFilters,
 		write: writeWith(writeStudentListFilters),
-		defaults: { q: '', class: 'all', status: 'all', sort: 'roster', sortDir: 'asc' },
-		nonDefault: { q: 'lee', class: 'class-1', status: 'warning', sort: 'name', sortDir: 'desc' },
+		defaults: { q: '', class: 'all', status: 'all', photoReview: 'all', sort: 'roster', sortDir: 'asc' },
+		nonDefault: { q: 'lee', class: 'class-1', status: 'warning', photoReview: 'pending', sort: 'name', sortDir: 'desc' },
 	},
 	{
 		name: 'class report cards',
@@ -112,13 +119,6 @@ const cases: FilterCase[] = [
 		write: writeWith(writePaymentListFilters),
 		defaults: { q: '', status: 'all', class: 'all' },
 		nonDefault: { q: 'fee', status: 'overdue', class: 'class-2' },
-	},
-	{
-		name: 'report card definitions',
-		read: readReportCardDefinitionListFilters,
-		write: writeWith(writeReportCardDefinitionListFilters),
-		defaults: { q: '', status: 'all' },
-		nonDefault: { q: 'trimester', status: 'draft' },
 	},
 	{
 		name: 'roles',

@@ -1,5 +1,5 @@
 import type { components } from '$lib/api/schema';
-import { pendingAccountInvitationForTarget } from '$lib/api/entity-list-filters';
+import { listAllEntityPages, pendingAccountInvitationForTarget } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 
 export type InvitationPreview = components['schemas']['InvitationPreviewResponse'];
@@ -23,4 +23,10 @@ export async function fetchInvitationPreview(token: string): Promise<InvitationP
 
 export async function acceptInvitation(token: string): Promise<AcceptInvitationResult> {
 	return getBrowserSchoolClient().public.acceptInvitation({ token });
+}
+
+export type InvitationHistoryEntry = Pick<AccountInvitation, 'id' | 'status' | 'contactChannel' | 'contactValue' | 'createdAt' | 'expiresAt' | 'acceptedAt' | 'createdByStaffId' | 'lastSentAt'>;
+export async function fetchAccountInvitationHistory(kind: 'staff' | 'guardian' | 'student' | 'teacher', targetId: string): Promise<InvitationHistoryEntry[]> {
+	const rows = await listAllEntityPages(query => getBrowserSchoolClient().entities.accountInvitations.list(query), { baseQuery: { kind, targetId } });
+	return rows.map(({ id, status, contactChannel, contactValue, createdAt, expiresAt, acceptedAt, createdByStaffId, lastSentAt }) => ({ id, status, contactChannel, contactValue, createdAt, expiresAt, acceptedAt, createdByStaffId, lastSentAt }));
 }

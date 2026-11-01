@@ -7,6 +7,7 @@ describe('demo dry-run', () => {
 		async () => {
 			const summary = await runDemoDryRun();
 			expect(summary.failed).toBe(0);
+			expect(summary.skipped).toBe(0);
 		},
 		{ timeout: 1_200_000 },
 	);

@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "ZZRPX6RMZ7.ca.mayainvest.edaya.guardian"
+        ],
+        "components": [
+          {
+            "/": "/invite/*"
+          }
+        ]
+      }
+    ]
+  }
+}

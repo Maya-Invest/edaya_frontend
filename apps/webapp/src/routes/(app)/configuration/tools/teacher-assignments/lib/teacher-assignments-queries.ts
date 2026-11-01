@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { TeacherAssignmentsPageState } from '../teacher-assignments-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -16,18 +17,20 @@ function hubScopeFromContext() {
 }
 
 export function querySchoolTeacherAssignmentsPage(state: TeacherAssignmentsPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => ({}),
-		load: async () => {
+		load: async (signal) => {
 			const scope = hubScopeFromContext();
 			if (!scope.schoolId) {
+				signal.throwIfAborted();
 				state.seed([], [], []);
 				return {};
 			}
 			const data = await fetchTeacherAssignmentsHubData(getBrowserSchoolClient(), scope);
+			signal.throwIfAborted();
 			state.seed(data.teachers, data.assignments, data.classSubjects);
 			return {};
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

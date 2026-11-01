@@ -1,3 +1,4 @@
+import { chooseOption } from '../../support/custom-select';
 import {
 	closeImportModal,
 	openImportModal,
@@ -28,46 +29,14 @@ export async function runImportScene(ctx: DemoContext): Promise<void> {
 		return;
 	}
 
-	const nextBtn = ctx.page.getByTestId('data-import-next');
-	if (await nextBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-		await nextBtn.click();
-		await ctx.page.waitForTimeout(300);
-	}
-
-	const uploadStep = ctx.page.getByTestId('student-import-step-upload');
-	if (await uploadStep.waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false)) {
-		reporter.log(scene, '3 Upload step', 'pass');
-	}
-	else {
-		reporter.log(scene, '3 Upload step', 'fail', 'student-import-step-upload not visible');
-		await shot('DI-3-upload-step');
-		await closeImportModal(ctx);
-		return;
-	}
-
-	if (await uploadStudentImportFile(ctx)) {
-		reporter.log(scene, '4 CSV parse success', 'pass');
-	}
-	else {
-		reporter.log(scene, '4 CSV parse success', 'fail', 'Parse success indicator missing');
-		await shot('DI-4-parse');
-		await closeImportModal(ctx);
-		return;
-	}
-
-	const validateNext = ctx.page.getByTestId('data-import-next');
-	if (await validateNext.isVisible({ timeout: 5_000 }).catch(() => false)) {
-		await validateNext.click();
-	}
-
-	const validateStep = ctx.page.getByTestId('student-import-step-validate');
-	if (await validateStep.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)) {
-		reporter.log(scene, '5 Validate step', 'pass');
-	}
-	else {
-		reporter.log(scene, '5 Validate step', 'fail', 'student-import-step-validate not visible');
-		await shot('DI-5-validate');
-	}
+  await ctx.page.getByTestId('import-create').click();
+  await chooseOption(ctx.page.getByTestId('data-import-type-select'), 'students');
+  await ctx.page.getByTestId('import-file-input').waitFor({ state: 'visible' });
+  if (!await uploadStudentImportFile(ctx)) throw new Error('Server upload failed');
+  await ctx.page.getByTestId('task-step-preview').click();
+  await ctx.page.getByTestId('import-validate').click();
+  await ctx.page.locator('[data-testid="import-progress"][data-state="validated"]').waitFor({ state: 'visible', timeout: 30000 });
+  reporter.log(scene, '5 Server preview available; no live execution', 'pass');
 
 	if (await closeImportModal(ctx) && !(await waitForImportModal(ctx, 2_000))) {
 		reporter.log(scene, '6 Close modal', 'pass');

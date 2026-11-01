@@ -1,26 +1,21 @@
-# Webadmin
+# Edaya Webadmin
 
-SvelteKit platform operator UI for Edaya.
+SvelteKit platform operator UI. Tenant, user and billing routes currently remain placeholders; browser coverage verifies registered navigation and those placeholders, not completed business workflows.
 
 ## Local development
 
-```sh
-cp .env.example .env   # from apps/webadmin
-bun dev                # http://localhost:5174
-```
+Complete [repository setup](../../README.MD#prerequisites-and-first-time-setup) before installing or starting the app. Both web applications consume the same prepared `.generated/api-client`.
 
-Requires identity at `AUTH_URL` (default `http://localhost:9900`) and the school API at `API_URL` (default `http://localhost:9999`) via the Vite proxy.
+Copy this app's `.env.example` to `.env` when overrides are needed. `API_URL` and `PUBLIC_API_URL` identify the same unified API origin (default `http://localhost:9999`). The development server proxies API requests there.
 
-## Quality gates
-
-From the repo root:
+From the frontend root:
 
 ```sh
-bun run quality
+bun run dev:webadmin
 ```
 
-App-only:
+The application listens at http://localhost:5174. `bun repo dev` starts both frontends.
 
-```sh
-bun run --cwd apps/webadmin quality
-```
+## Verification and release
+
+`bun run --cwd apps/webadmin quality` checks this application. Root `bun run verify` includes both apps; `bun repo test integration` includes the webadmin navigation suite. See [tooling](../../tooling/repo/README.md) for qualification and deployment, and [webapp testing](../webapp/tests/README.md) for the shared browser harness.

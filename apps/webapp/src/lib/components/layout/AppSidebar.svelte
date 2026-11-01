@@ -5,9 +5,11 @@
 	import { resolveActiveClassId } from '$lib/academic/class-selection';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { authSession } from '$lib/auth/session.svelte';
+	import AcademicYearSelector from '$lib/components/layout/AcademicYearSelector.svelte';
 	import ClassSelector from '$lib/components/layout/ClassSelector.svelte';
+	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
 	import { t } from '$lib/i18n';
-	import { Crown, GraduationCap, ChevronDown } from '$lib/icons';
+	import { Crown, ChevronDown } from '$lib/icons';
 	import {
 		DASHBOARD_HREF,
 		MODULES,
@@ -19,6 +21,7 @@
 	} from '$lib/navigation';
 	import { filterNavItems, visibleNavModuleKeys } from '$lib/navigation/nav-permissions';
 	import { shellContext } from '$lib/shell/context.svelte';
+	import { getMessageCount } from '$lib/shell/message-count.svelte';
 	import { cn } from '$lib/utils';
 
 	const {
@@ -26,28 +29,34 @@
 		studentCount,
 		guardianCount,
 		staffCount,
+		teacherCount,
+		forceExpanded = false,
 	}: {
 		hierarchy: HierarchyGroup[];
 		studentCount: number;
 		guardianCount: number;
 		staffCount: number;
+		teacherCount: number;
+		forceExpanded?: boolean;
 	} = $props();
 
+	const messageCount = getMessageCount();
 	const schoolBadges = $derived<Record<string, number>>({
+		...(messageCount?.count != null ? { messages: messageCount.count } : {}),
 		students: studentCount,
 		guardians: guardianCount,
 		staff: staffCount,
+		teachers: teacherCount,
 	});
 
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
-	const brandEyebrow = $derived(authSession.school?.shortName ?? $t('sidebar.module'));
-	const brandTitle = 'EDAYA';
 	let hoverExpanded = $state(false);
+	let yearDialogExpanded = $state(false);
 
-	const collapsed = $derived(!shellContext.sidebarOpen);
-	const showExpanded = $derived(!collapsed || hoverExpanded);
+	const collapsed = $derived(!forceExpanded && !shellContext.sidebarOpen);
+	const showExpanded = $derived(!collapsed || hoverExpanded || yearDialogExpanded);
 	const expanded = $state<Partial<Record<Exclude<ModuleKey, 'dashboard'>, boolean>>>({});
 
 	const visibleModules = $derived(
@@ -79,7 +88,7 @@
 			label: $t(it.labelKey),
 			icon: it.icon,
 			href: key === 'classes' ? classItemHref(classId, it.href) : it.href,
-			badge: key === 'school' ? schoolBadges[it.key] : it.badge,
+			badge: key === 'school' ? schoolBadges[it.key] : key === 'inbox' && it.key === 'messages' ? messageCount?.count ?? undefined : it.badge,
 		}));
 	}
 
@@ -106,30 +115,14 @@
 	onmouseenter={onSidebarEnter}
 	onmouseleave={onSidebarLeave}
 	class={cn(
-		'flex h-full flex-col border-r border-border bg-card/60 backdrop-blur transition-[width] duration-200 ease-in-out',
-		showExpanded ? 'w-64' : 'w-14',
-		collapsed && hoverExpanded && 'absolute left-0 top-0 z-50 shadow-panel',
+		'flex h-full flex-col border-r border-border bg-card transition-[width] duration-200 ease-in-out',
+		forceExpanded ? 'w-full' : showExpanded ? 'w-64' : 'w-14',
+		collapsed && (hoverExpanded || yearDialogExpanded) && 'absolute left-0 top-0 z-50 shadow-panel',
 	)}
 >
-	<div
-		class={cn(
-			'flex items-center border-b border-border',
-			showExpanded ? 'gap-3 px-5 py-5' : 'justify-center px-2 py-4',
-		)}
-	>
-		<div
-			class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft"
-		>
-			<GraduationCap class="h-5 w-5" />
-		</div>
-		{#if showExpanded}
-			<div class="min-w-0">
-				<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-					{brandEyebrow}
-				</p>
-				<h2 class="truncate font-display text-sm font-semibold leading-tight">{brandTitle}</h2>
-			</div>
-		{/if}
+	<div class={cn('flex flex-col border-b border-border', showExpanded ? 'items-start px-4 py-3' : 'items-center py-3')}>
+		<BrandLogo variant={showExpanded ? 'horizontal' : 'symbol'} width={showExpanded ? 144 : 32} />
+		<AcademicYearSelector collapsed={!showExpanded} onOpenChange={open => yearDialogExpanded = open && hoverExpanded} />
 	</div>
 
 	<nav class={cn('scrollbar-thin flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>
@@ -139,7 +132,7 @@
 					href={DASHBOARD_HREF}
 					title={$t('dashboard.nav')}
 					class={cn(
-						'group flex w-full items-center rounded-lg py-2 text-sm font-medium transition-colors',
+						'group flex w-full items-center rounded-collection py-2 text-sm font-medium transition-colors',
 						showExpanded ? 'gap-2.5 px-3' : 'justify-center px-2',
 						isDashboardPath($page.url.pathname)
 							? 'bg-primary/10 text-primary'
@@ -170,7 +163,7 @@
 							aria-expanded={open}
 							onclick={() => toggleModule(mod.key)}
 							class={cn(
-								'group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+								'group flex w-full items-center gap-2.5 rounded-collection px-3 py-2 text-sm font-medium transition-colors',
 								moduleActive
 									? 'bg-primary/10 text-primary'
 									: 'text-foreground/80 hover:bg-secondary',
@@ -206,7 +199,7 @@
 										<a
 											href={it.href}
 											class={cn(
-												'group flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-sm transition-colors',
+												'group flex w-full items-center justify-between rounded-collection px-3 py-1.5 text-sm transition-colors',
 												active
 													? 'bg-primary text-primary-foreground'
 													: 'text-foreground/75 hover:bg-secondary',
@@ -235,7 +228,7 @@
 											{#if it.badge !== undefined}
 												<span
 													class={cn(
-														'rounded-md px-1.5 py-0.5 font-mono text-[10px]',
+														'rounded-md px-1.5 py-0.5 font-sans tabular-nums text-[10px]',
 														active
 															? 'bg-primary-foreground/15 text-primary-foreground'
 															: 'bg-secondary text-muted-foreground',
@@ -254,7 +247,7 @@
 							href={moduleHref(mod.key)}
 							title={$t(mod.tKey)}
 							class={cn(
-								'group flex w-full items-center justify-center rounded-lg px-2 py-2 text-sm font-medium transition-colors',
+								'group flex w-full items-center justify-center rounded-collection px-2 py-2 text-sm font-medium transition-colors',
 								moduleActive
 									? 'bg-primary/10 text-primary'
 									: 'text-foreground/80 hover:bg-secondary',

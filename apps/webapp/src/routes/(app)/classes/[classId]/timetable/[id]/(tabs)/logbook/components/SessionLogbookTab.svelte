@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
-	import PlanningSessionLogbookModal from '$lib/components/school/scheduling/PlanningSessionLogbookModal.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -8,7 +7,8 @@
 	import { t } from '$lib/i18n';
 	import { FileText } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
-	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
+	import PlanningSessionLogbookModal from '../../../../components/PlanningSessionLogbookModal.svelte';
+	import { getPlanningState } from '../../../../planning-state.svelte';
 	import { getSessionLogbookTabState } from '../session-logbook-tab.svelte';
 
 	const { s }: { s: PlanningEvent } = $props();
@@ -51,8 +51,9 @@
 				{$t('subjects.tab.logbook')}
 			</Label>
 			{#if isLesson}
+				<PermissionGate permission="CLASS_LOGBOOK_VALIDATE" classId={s.classId}><Button variant="outline" size="sm" onclick={() => logbookTab.validateLogbook([s.id])}>{$t('corrections.validateLogbook')}</Button></PermissionGate>
 				<PermissionGate
-					permission={detail.logbook ? 'CLASS_LOGBOOK_UPDATE' : 'CLASS_LOGBOOK_CREATE'}
+					permission={detail.logbook ? 'CLASS_LOGBOOK_MANAGE' : 'CLASS_LOGBOOK_MANAGE'}
 					classId={s.classId}
 					mode="disable"
 					tooltip="Droit cahier de texte requis."
@@ -61,9 +62,10 @@
 						<Button
 							variant="outline"
 							size="sm"
-							class="h-7 rounded-full text-xs"
+							class="text-xs"
 							{disabled}
 							{title}
+							data-testid="session-logbook-edit"
 							onclick={() => modals.open('session-logbook')}
 						>
 							{detail.logbook ? $t('common.edit') : $t('planning.session.addLogbook')}
@@ -73,11 +75,11 @@
 			{/if}
 		</div>
 		{#if detail.logbook}
-			<article class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+			<article class="rounded-collection border border-border bg-card p-4 shadow-soft">
 				<div class="flex items-start justify-between gap-2">
 					<h4 class="font-display text-sm font-semibold">{detail.logbook.chapter}</h4>
 					{#if isLesson}
-						<span class="font-mono text-[10px] text-muted-foreground">{detail.logbook.progress}%</span>
+						<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{detail.logbook.progress}%</span>
 					{/if}
 				</div>
 				<p class="mt-2 text-xs leading-relaxed text-foreground/80">{detail.logbook.content}</p>
@@ -96,18 +98,19 @@
 			</DrawerEmptyState>
 			{#if isLesson}
 				<PermissionGate
-					permission="CLASS_LOGBOOK_CREATE"
+					permission="CLASS_LOGBOOK_MANAGE"
 					classId={s.classId}
 					mode="disable"
-					tooltip="Droit CLASS_LOGBOOK_CREATE requis."
+					tooltip="Droit CLASS_LOGBOOK_MANAGE requis."
 				>
 					{#snippet children({ disabled, title })}
 						<Button
 							variant="outline"
 							size="sm"
-							class="rounded-full"
+
 							{disabled}
 							{title}
+							data-testid="session-logbook-edit"
 							onclick={() => modals.open('session-logbook')}
 						>
 							{$t('planning.session.addLogbook')}

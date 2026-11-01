@@ -1,4 +1,4 @@
-/** Known setup blockers — product issues, not harness gaps. Do not patch src/ to green tests. */
+/** Describe missing setup prerequisites without attributing unrelated failures to students. */
 import type { BlockerReport } from '../../../scripts/integration-report';
 
 export const STUDENT_SETUP_BLOCKER = {
@@ -7,7 +7,7 @@ export const STUDENT_SETUP_BLOCKER = {
 	endpoint: 'http://localhost:5173/school/students',
 	action: 'Create student via UI (web tenant setup)',
 	detail:
-		'BLOCKED: students.list() is called without schoolId; on a shared dev DB the API returns cross-tenant rows and ensureEntitiesTenant returns 403. Owner is elevated with QUERY_STUDENT_DIRECTORY_READ. Fix: pass schoolId in the students page loader (people-data.ts).',
+		'Required student setup did not complete. Inspect the current student setup failure before running dependent scenarios.',
 } as const;
 
 export function isStudentBlockedScenario(endpoint: string, action: string): boolean {

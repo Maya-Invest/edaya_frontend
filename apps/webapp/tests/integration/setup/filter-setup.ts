@@ -1,8 +1,10 @@
+import { selectTrigger, chooseOption, selectControl } from '../support/custom-select';
+import type { FilterFixtures, MatrixEntities } from '../../../scripts/qa-matrix-support';
 /**
  * Provisioned filter + modal entity setup — creates fixtures before matrix filter tests.
  */
 import type { DemoContext } from '../demo-dry-run/support/types';
-import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
+import type { SetupStepResult } from './journey-context';
 import {
 	assertListContains,
 	clickCreateButton,
@@ -12,6 +14,7 @@ import {
 	fillGradeLevelCreateDialog,
 	fillStudentCreateDialog,
 	openDialogButton,
+	openUrlModal,
 	selectComboboxOption,
 	submitDialog,
 	waitForDialogClosed,
@@ -22,10 +25,11 @@ import {
 	configEntityIdByName,
 	firstIdFromLinks,
 	waitForAppShell,
-	type FilterFixtures,
-	type MatrixEntities,
+
 } from '../../../scripts/qa-matrix-support';
-import type { SetupStepResult } from './journey-context';
+import { apiFetch } from './journey-api';
+import { uiCommand, waitForMutationDialog } from '../support/ui-command';
+import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
 
 async function gotoAppPage(ctx: DemoContext, routePath: string): Promise<void> {
 	await ctx.page.goto(`${ctx.base}${routePath}`, { waitUntil: 'domcontentloaded' });
@@ -78,8 +82,8 @@ export async function setupCalendarEvent(
 		await dialog.locator('input').first().fill(eventTitle);
 		await fillDateInputsInRange(dialog);
 		const typeSelect = dialog.locator('select').first();
-		if (await typeSelect.isVisible().catch(() => false)) {
-			await typeSelect.selectOption(type).catch(() => {});
+		if (await selectTrigger(typeSelect).isVisible().catch(() => false)) {
+			await chooseOption(typeSelect, type).catch(() => {});
 		}
 		await submitDialog(page);
 		if (!(await waitForDialogClosed(page))) {
@@ -194,7 +198,7 @@ export async function setupSchoolEvent(
 		}
 
 		const dialog = page.getByRole('dialog');
-		const studentCombo = dialog.getByRole('combobox').first();
+		const studentCombo = selectControl(dialog).first();
 		if (await studentCombo.isVisible().catch(() => false)) {
 			await studentCombo.click();
 			await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
@@ -244,35 +248,18 @@ export async function setStudentStatus(
 	status: 'inactive' | 'archived',
 ): Promise<boolean> {
 	const { page, base } = ctx;
-	await page.goto(`${base}/school/students/${studentId}/profile`, { waitUntil: 'domcontentloaded' });
-	await waitForAppShell(page);
-	await waitForPageQuery(page);
-
-	const select = page.locator('select').filter({ has: page.locator('option[value="inactive"]') }).last();
-	await select.waitFor({ state: 'attached', timeout: 20_000 }).catch(() => {});
-	await select.scrollIntoViewIfNeeded().catch(() => {});
-	const mutation = page.waitForResponse(
-		res => res.request().method() === 'POST' && res.url().includes('/core/commands/update-student-status'),
-		{ timeout: 20_000 },
-	).catch(() => null);
 	try {
-		await select.selectOption(status);
-		await select.evaluate((el, next) => {
-			if (!(el instanceof HTMLSelectElement)) {
-				return;
-			}
-			el.value = next;
-			el.dispatchEvent(new Event('input', { bubbles: true }));
-			el.dispatchEvent(new Event('change', { bubbles: true }));
-		}, status);
-	}
-	catch {
+		if (!await openUrlModal(page, `/school/students/${studentId}/profile`, 'change-status', { base })) return false;
+		const modal = page.getByTestId('form-modal');
+		await chooseOption(modal.locator('#student-status'), status);
+		await uiCommand(page, '/commands/update-student-status', () => modal.getByTestId('form-modal-submit').click());
+		await waitForMutationDialog(page);
+		const response = await apiFetch(page, base, `/core/entities/students/${studentId}`);
+		return response.ok() && (await response.json() as { status?: string }).status === status;
+	} catch (error) {
+		console.log(`Student status ${status} failed: ${error instanceof Error ? error.message : String(error)}`);
 		return false;
 	}
-	await mutation;
-	await waitForPageQuery(page);
-	await page.waitForTimeout(1_000);
-	return true;
 }
 
 async function createFilterStudent(ctx: DemoContext, lastName: string): Promise<string | null> {
@@ -393,7 +380,7 @@ export async function setupSecondClass(
 	const { page } = ctx;
 	try {
 		await waitForResolvedAcademicYearId(page);
-		await gotoAppPage(ctx, '/configuration/classes');
+		await gotoAppPage(ctx, '/configuration/structure/classes');
 		await waitForPageQuery(page);
 
 		const className = `E2E-6B-${Date.now()}`;
@@ -406,7 +393,7 @@ export async function setupSecondClass(
 			return { step: 'second-class', ok: false, detail: 'Second class modal still open' };
 		}
 
-		await gotoAppPage(ctx, '/configuration/classes');
+		await gotoAppPage(ctx, '/configuration/structure/classes');
 		const entityId = await configEntityIdByName(page, className);
 		if (entityId) {
 			entities.secondClassId = entityId;
@@ -470,32 +457,33 @@ export async function setupFilterSubjects(
 	}
 
 	try {
-		await gotoAppPage(ctx, '/configuration/subjects');
+		await gotoAppPage(ctx, '/configuration/structure/subjects');
 		await waitForPageQuery(page);
 
 		const subjectName = `E2E-Subject-${Date.now()}`;
-		const opened = await clickCreateButton(page, 'Créer matière', '/configuration/subjects');
+		const opened = await clickCreateButton(page, 'Créer matière', '/configuration/structure/subjects');
 		if (!opened) {
 			return { step: 'filter-subjects', ok: false, detail: 'Subject create modal not found' };
 		}
 		const dialog = page.getByRole('dialog');
 		await dialog.locator('input').first().fill(subjectName);
+		await chooseOption(selectControl(dialog, { name: /discipline/i }), { index: 1 });
 
-		const gradeCombobox = dialog.getByRole('combobox').first();
+		const gradeCombobox = selectControl(dialog).first();
 		if (await gradeCombobox.isVisible().catch(() => false)) {
 			await selectComboboxOption(page, gradeCombobox, { value: gradeLevelId });
 		}
 		else {
 			const gradeSelect = dialog.locator('select').first();
-			if (await gradeSelect.isVisible().catch(() => false)) {
-				await gradeSelect.selectOption(gradeLevelId).catch(() => gradeSelect.selectOption({ index: 0 }));
+			if (await selectTrigger(gradeSelect).isVisible().catch(() => false)) {
+				await chooseOption(gradeSelect, gradeLevelId).catch(() => chooseOption(gradeSelect, { index: 0 }));
 			}
 		}
 
 		const subjectCommandResponse = page.waitForResponse(
 			res => res.request().method() === 'POST'
 				&& res.url().includes('/core/commands/')
-				&& (res.url().includes('configure-subject') || res.url().includes('offer-subject')),
+				&& res.url().includes('configure-subject'),
 			{ timeout: 45_000 },
 		);
 
@@ -509,8 +497,8 @@ export async function setupFilterSubjects(
 			const response = await subjectCommandResponse;
 			const postData = response.request().postData();
 			if (postData) {
-				const parsed = JSON.parse(postData) as { gradeLevelSubjectId?: string; id?: string };
-				subjectId = parsed.gradeLevelSubjectId ?? parsed.id ?? null;
+				const parsed = JSON.parse(postData) as { id?: string };
+				subjectId = parsed.id ?? null;
 			}
 		}
 		catch {
@@ -520,17 +508,17 @@ export async function setupFilterSubjects(
 		await waitForPageQuery(page);
 
 		if (!subjectId) {
-			await gotoAppPage(ctx, `/configuration/subjects?gradeLevel=${gradeLevelId}`);
+			await gotoAppPage(ctx, `/configuration/structure/subjects?gradeLevel=${gradeLevelId}`);
 			await waitForPageQuery(page);
 
 			const subjectButton = page.locator('main button').filter({ hasText: subjectName }).first();
 			if (await subjectButton.isVisible({ timeout: 10_000 }).catch(() => false)) {
 				await subjectButton.click();
 				await page.waitForTimeout(800);
-				subjectId = page.url().match(/\/configuration\/subjects\/([^/?]+)/)?.[1] ?? null;
+				subjectId = page.url().match(/\/configuration\/structure\/subjects\/([^/?]+)/)?.[1] ?? null;
 			}
 			if (!subjectId) {
-				subjectId = await firstIdFromLinks(page, /\/configuration\/subjects\/([^/?]+)/);
+				subjectId = await firstIdFromLinks(page, /\/configuration\/structure\/subjects\/([^/?]+)/);
 			}
 		}
 
@@ -559,11 +547,11 @@ export async function setupFilterDiscipline(
 ): Promise<SetupStepResult> {
 	const { page } = ctx;
 	try {
-		await gotoAppPage(ctx, '/configuration/discipline');
+		await gotoAppPage(ctx, '/configuration/other/discipline');
 		await waitForPageQuery(page);
 
 		const name = `E2E-Discipline-${Date.now()}`;
-		const opened = await clickCreateButton(page, 'CRUD entrée', '/configuration/discipline');
+		const opened = await clickCreateButton(page, 'CRUD entrée', '/configuration/other/discipline');
 		if (!opened) {
 			return { step: 'filter-discipline', ok: false, detail: 'Discipline create modal not found' };
 		}
@@ -651,7 +639,9 @@ export async function runFilterEntitySetup(
 
 export function filterFixturesReady(fixtures: FilterFixtures, key: keyof FilterFixtures): boolean {
 	const value = fixtures[key];
-	if (!value) return false;
-	if (typeof value === 'string') return value.length > 0;
+	if (!value)
+		return false;
+	if (typeof value === 'string')
+		return value.length > 0;
 	return Object.keys(value).length > 0;
 }

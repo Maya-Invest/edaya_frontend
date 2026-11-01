@@ -1,44 +1,38 @@
 <script lang="ts">
-	import type { PlanningEvent, Subject, SubjectCategory } from '$lib/types/school';
-	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
-	import { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
+	import type { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+	import type { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
+	import type { SubjectCategoryOption } from '$lib/api/subject-categories-data';
+	import type { PlanningEvent, Subject } from '$lib/types/school';
+	import { defaultSubjectCategoryId } from '$lib/api/subject-categories-data';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogCategory } from '$lib/i18n/catalog-label';
+	import AcademicDisciplinePicker from '$lib/smart-components/reference-catalog/AcademicDisciplinePicker.svelte';
+	import { parseSubjectWorkload } from '$lib/subjects/subject-workload';
 	import { get } from 'svelte/store';
 
 	const PLANNING_DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-
-	const CATEGORIES: SubjectCategory[] = [
-		'Scientifique',
-		'Littéraire',
-		'Langues',
-		'Sciences humaines',
-		'Sport',
-		'Arts',
-	];
 	const COLORS: Subject['color'][] = ['mint', 'sky', 'warm'];
-
 	const COLOR_LABELS: Record<Subject['color'], string> = {
 		mint: 'Mint',
 		sky: 'Sky',
 		warm: 'Warm',
 	};
-
-	let {
-		subject,
-		classId,
-		weekStart = new Date(),
-		open = $bindable(false),
-		onCreated,
-		disabled = false,
-		title,
-		showTrigger = true,
-	}: {
+	let { reportModules = [], canConfigureModule = false, reportConfigurationRevision, onLoadParticipationRevisions, onLoadCategories, onCreateSchedule, onCreateSubjectForClass, onUpdateSubject, subject, classId, weekStart = new Date(), open = $bindable(false), onCreated, disabled = false, title, showTrigger = true }: {
+		reportModules?: { id: string; name: string }[];
+		canConfigureModule?: boolean;
+		reportConfigurationRevision?: number;
+		onLoadParticipationRevisions: (subjectId: string) => Promise<Record<string, number>>;
+		onLoadCategories: (schoolId: string) => Promise<SubjectCategoryOption[]>;
+		onCreateSchedule: typeof createScheduleMutation;
+		onCreateSubjectForClass: typeof createSubjectForClassMutation;
+		onUpdateSubject: typeof updateSubjectMutation;
 		subject?: Subject;
 		classId?: string;
 		weekStart?: Date;
@@ -48,30 +42,67 @@
 		title?: string;
 		showTrigger?: boolean;
 	} = $props();
-
+	let expectedParticipationRevisions = $state<Record<string, number> | undefined>();
+	let policyLoadError = $state('');
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let name = $state('');
-	let category = $state<SubjectCategory>('Scientifique');
+	let disciplineId = $state('');
+	let code = $state('');
+	let shortName = $state('');
+	let coefficient = $state('');
+	let reportModuleId = $state('ungrouped');
+	let capturedReportRevision: number | undefined;
+	let isOptional = $state(false);
+	let periodsPerWeek = $state('');
+	let minPeriodSpan = $state('');
+	let maxPeriodSpan = $state('');
+	let workloadError = $state('');
+	let categories = $state<SubjectCategoryOption[]>([]);
+	let categoryId = $state('');
 	let color = $state<Subject['color']>('mint');
 	let addToTimetable = $state(false);
 	let scheduleDay = $state<PlanningEvent['day']>('Mon');
 	let scheduleStart = $state('08:00');
 	let scheduleEnd = $state('09:00');
-
 	const isEdit = $derived(subject !== undefined);
+	const hasSharedWorkload = $derived(Boolean(subject?.gradeLevelId));
 	const colorLabel = $derived(COLOR_LABELS[color]);
-	const canSubmit = $derived(name.trim().length > 0 && (isEdit || (classId?.length ?? 0) > 0));
-
+	const canSubmit = $derived.by(() => {
+		return (!isEdit || expectedParticipationRevisions !== undefined) && ((isEdit && !subject?.disciplineId) || disciplineId.length > 0) && (coefficient === '' || (Number.isFinite(Number(coefficient)) && Number(coefficient) > 0)) && name.trim().length > 0 && categoryId.length > 0 && (isEdit || (classId?.length ?? 0) > 0);
+	});
+	const selectedCategoryName = $derived(categories.find(category => category.id === categoryId)?.name ?? '');
+	async function loadCategories() {
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			categories = [];
+			return;
+		}
+		categories = await onLoadCategories(schoolId);
+		if (!categories.some(category => category.id === categoryId)) {
+			categoryId = subject?.categoryId || defaultSubjectCategoryId(categories);
+		}
+	}
 	function resetForm() {
+		workloadError = '';
+		disciplineId = subject?.disciplineId ?? '';
+		code = subject?.code ?? '';
+		shortName = subject?.shortName ?? '';
+		coefficient = subject?.coefficient == null ? '' : String(subject.coefficient);
+		reportModuleId = subject?.reportModuleId ?? 'ungrouped';
+		capturedReportRevision = reportConfigurationRevision;
+		isOptional = subject?.isOptional ?? false;
+		periodsPerWeek = subject?.periodsPerWeek != null ? String(subject.periodsPerWeek) : '';
+		minPeriodSpan = subject?.minPeriodSpan != null ? String(subject.minPeriodSpan) : '';
+		maxPeriodSpan = subject?.maxPeriodSpan != null ? String(subject.maxPeriodSpan) : '';
 		if (subject) {
 			name = subject.name;
-			category = subject.category;
+			categoryId = subject.categoryId;
 			color = subject.color;
 		}
 		else {
 			name = '';
-			category = 'Scientifique';
+			categoryId = defaultSubjectCategoryId(categories);
 			color = 'mint';
 			addToTimetable = false;
 			scheduleDay = 'Mon';
@@ -79,59 +110,85 @@
 			scheduleEnd = '09:00';
 		}
 	}
-
 	$effect(() => {
-		if (open && !wasOpen)
+		if (open && !wasOpen) {
 			resetForm();
+			void loadCategories();
+			expectedParticipationRevisions = undefined;
+			policyLoadError = '';
+			if (subject) {
+				void onLoadParticipationRevisions(subject.subjectId ?? subject.id).then((value) => {
+					expectedParticipationRevisions = value;
+				}).catch((error) => {
+					policyLoadError = error instanceof Error ? error.message : String(error);
+				});
+			}
+		}
 		wasOpen = open;
 	});
-
 	async function submit() {
-		if (!canSubmit)
+		if (!canSubmit || busy)
 			return;
-
+		const workload = hasSharedWorkload ? parseSubjectWorkload({ periodsPerWeek, minPeriodSpan, maxPeriodSpan }) : undefined;
+		workloadError = workload?.error ? get(t)(workload.error) : '';
+		if (workloadError)
+			return;
 		busy = true;
-		if (subject) {
-			const ok = await updateSubjectMutation({
-				classSubjectId: subject.id,
-				name,
-				category,
-				color,
-				successMessage: get(t)('subjects.updateSuccess', { name: name.trim() }),
-			});
-			busy = false;
-			if (ok) {
-				open = false;
-			}
-		}
-		else if (classId) {
-			const classSubjectId = await createSubjectForClassMutation({
-				classGroupId: classId,
-				name,
-				category,
-				color,
-				successMessage: get(t)('subjects.createSuccess', { name: name.trim() }),
-			});
-			busy = false;
-			if (classSubjectId) {
-				if (addToTimetable) {
-					await createScheduleMutation({
-						classGroupId: classId,
-						scheduleKind: 'lesson',
-						title: name.trim(),
-						classSubjectId,
-						day: scheduleDay,
-						startTime: scheduleStart,
-						endTime: scheduleEnd,
-						weekStart,
-					});
+		try {
+			if (subject) {
+				const ok = await onUpdateSubject({
+					classSubjectId: subject.id,
+					expectedParticipationRevisions,
+					...(canConfigureModule ? { reportModuleId: reportModuleId === 'ungrouped' ? null : reportModuleId, expectedReportConfigurationRevision: capturedReportRevision } : {}),
+					subjectId: hasSharedWorkload ? subject.id : undefined,
+					...workload?.value,
+					name,
+					disciplineId: disciplineId || null,
+					code: code.trim() || null,
+					shortName: shortName.trim() || null,
+					coefficient: coefficient ? Number(coefficient) : null,
+					isOptional,
+					categoryId,
+					color,
+					successMessage: get(t)('subjects.updateSuccess', { name: name.trim() }),
+				});
+				if (ok) {
+					open = false;
 				}
-				open = false;
-				resetForm();
-				onCreated?.(classSubjectId);
+			}
+			else if (classId) {
+				const classSubjectId = await onCreateSubjectForClass({
+					classGroupId: classId,
+					name,
+					disciplineId: disciplineId || null,
+					code: code.trim() || null,
+					shortName: shortName.trim() || null,
+					coefficient: coefficient ? Number(coefficient) : null,
+					isOptional,
+					categoryId,
+					color,
+					successMessage: get(t)('subjects.createSuccess', { name: name.trim() }),
+				});
+				if (classSubjectId) {
+					if (addToTimetable) {
+						await onCreateSchedule({
+							classGroupId: classId,
+							scheduleKind: 'lesson',
+							title: name.trim(),
+							classSubjectId,
+							day: scheduleDay,
+							startTime: scheduleStart,
+							endTime: scheduleEnd,
+							weekStart,
+						});
+					}
+					open = false;
+					resetForm();
+					onCreated?.(classSubjectId);
+				}
 			}
 		}
-		else {
+		finally {
 			busy = false;
 		}
 	}
@@ -141,7 +198,7 @@
 	<Button
 		variant="outline"
 		size="sm"
-		class="rounded-full"
+
 		{disabled}
 		{title}
 		onclick={() => (open = true)}
@@ -150,7 +207,7 @@
 	</Button>
 {/if}
 
-<FormModal
+<FormModal contentClass="max-w-3xl"
 	bind:open
 	title={isEdit ? $t('subjects.editTitle') : $t('subjects.createTitle')}
 	description={isEdit ? subject?.name : $t('subjects.createDescription')}
@@ -160,6 +217,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	{#if policyLoadError}<p class="text-destructive">{policyLoadError}</p>{/if}
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('subjects.name')}
@@ -171,15 +229,17 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('subjects.category')}
 			</Label>
-			<Select.Root type="single" value={category} onValueChange={v => v && (category = v as SubjectCategory)}>
+			<Select.Root type="single" value={categoryId} onValueChange={value => value && (categoryId = value)}>
 				<Select.Trigger>
 					<Select.Value placeholder={$t('subjects.category')}>
-						{category}
+						{catalogCategory(selectedCategoryName, $lang)}
 					</Select.Value>
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
-					{#each CATEGORIES as cat (cat)}
-						<Select.Item value={cat} label={cat}>{cat}</Select.Item>
+					{#each categories as category (category.id)}
+						<Select.Item value={category.id} label={catalogCategory(category.name, $lang)}>
+							{catalogCategory(category.name, $lang)}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>
@@ -202,8 +262,32 @@
 			</Select.Root>
 		</div>
 	</div>
+	{#if hasSharedWorkload}
+		<fieldset class="space-y-3">
+			<legend class="text-sm font-medium">{$t('timetable.classSubjectTimetableTitle')}</legend>
+			<p class="text-xs text-muted-foreground">{$t('subjects.workload.sharedHint')}</p>
+			<div class="grid gap-3 sm:grid-cols-3">
+				<label class="space-y-1.5 text-xs">
+					<span>{$t('timetable.periodsPerWeek')}</span>
+					<Input type="number" min="1" step="1" bind:value={periodsPerWeek} placeholder="—" />
+				</label>
+				<label class="space-y-1.5 text-xs">
+					<span>{$t('timetable.minPeriodSpan')}</span>
+					<Input type="number" min="1" step="1" bind:value={minPeriodSpan} placeholder="—" />
+				</label>
+				<label class="space-y-1.5 text-xs">
+					<span>{$t('timetable.maxPeriodSpan')}</span>
+					<Input type="number" min="1" step="1" bind:value={maxPeriodSpan} placeholder="—" />
+				</label>
+			</div>
+			<p class="text-xs text-muted-foreground">{$t('subjects.workload.defaultsHint')}</p>
+			{#if workloadError}
+				<p class="text-xs text-destructive" role="alert">{workloadError}</p>
+			{/if}
+		</fieldset>
+	{/if}
 	{#if !isEdit && classId}
-		<div class="space-y-3 rounded-xl border border-border bg-secondary/20 p-4">
+		<div class="space-y-3 rounded-collection border border-border bg-secondary/20 p-4">
 			<label class="flex items-center gap-2 text-sm">
 				<Checkbox bind:checked={addToTimetable} />
 				{$t('eval.addToTimetable')}
@@ -243,4 +327,11 @@
 			{/if}
 		</div>
 	{/if}
+	<Label class="block space-y-2"><span>{$t('profile.discipline')}</span><AcademicDisciplinePicker bind:value={disciplineId} active={open} /></Label>
+	<Label class="block space-y-2"><span>{$t('common.code')}</span><Input bind:value={code} /></Label>
+	<Label class="block space-y-2"><span>{$t('profile.shortName')}</span><Input bind:value={shortName} /></Label>
+	{#if canConfigureModule}<Label class="block space-y-2"><span>{$t('modules.module')}</span><Select.Root type="single" bind:value={reportModuleId}><Select.Trigger><Select.Value>{reportModules.find(module => module.id === reportModuleId)?.name ?? $t('modules.ungrouped')}</Select.Value></Select.Trigger><Select.Content><Select.Item value="ungrouped">{$t('modules.ungrouped')}</Select.Item>{#each reportModules as module (module.id)}<Select.Item value={module.id}>{module.name}</Select.Item>{/each}</Select.Content></Select.Root></Label>{/if}
+
+	<Label class="block space-y-2"><span>{$t('eval.coefficient')}</span><Input type="number" min="0" step="any" bind:value={coefficient} /></Label>
+	<Label class="flex items-center gap-2"><Checkbox bind:checked={isOptional} />{$t('profile.isOptional')}</Label>
 </FormModal>

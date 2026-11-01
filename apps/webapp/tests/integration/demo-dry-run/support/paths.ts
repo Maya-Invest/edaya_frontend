@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-export const DEMO_DRY_RUN_OUT_DIR = path.join(
+export const DEMO_DRY_RUN_OUT_DIR = process.env.DEMO_DRY_RUN_OUT_DIR ?? path.join(
 	import.meta.dirname,
 	'../../../../.demo-dry-run',
 );
@@ -34,6 +34,29 @@ export function pathMatchesPrefix(pathname: string, prefix: string): boolean {
 	return normalizeIntegrationPathname(pathname).startsWith(normalizeIntegrationPathname(prefix));
 }
 
+const STAFF_APP_PATH = /\/(dashboard|school|classes|configuration|onboarding|finance)(\/|$)/;
+
+/** True when a URL is already inside the staff app (not `/login`). */
+export function isSignedInStaffUrl(url: string): boolean {
+	try {
+		const pathname = new URL(url, 'http://localhost').pathname;
+		if (pathname === '/login' || pathname.startsWith('/login/')) {
+			return false;
+		}
+		return STAFF_APP_PATH.test(pathname);
+	}
+	catch {
+		return false;
+	}
+}
+
+/** Sidebar smoke: current path is the target or a nested drawer under it. */
+export function pathnameReachedSidebarTarget(pathname: string, resolvedPath: string): boolean {
+	const current = normalizeIntegrationPathname(pathname);
+	const target = normalizeIntegrationPathname(resolvedPath);
+	return current === target || current.startsWith(`${target}/`);
+}
+
 const SCHOOL_DRAWER_PREFIXES = [
 	'/school/students/',
 	'/school/teachers/',
@@ -42,8 +65,8 @@ const SCHOOL_DRAWER_PREFIXES = [
 ] as const;
 
 const CONFIG_DRAWER_PREFIXES = [
-	'/configuration/classes/',
-	'/configuration/subjects/',
+	'/configuration/structure/classes/',
+	'/configuration/structure/subjects/',
 ] as const;
 
 export function schoolStudentPath(id: string, tab = 'profile'): string {
@@ -71,11 +94,11 @@ export function financeBillingPath(id: string): string {
 }
 
 export function configClassGroupPath(id: string, tab: 'profile' | 'assignments' = 'profile'): string {
-	return `/configuration/classes/${id}/${tab}`;
+	return `/configuration/structure/classes/${id}/${tab}`;
 }
 
 export function configSubjectPath(id: string, tab: 'progression' | 'logbook' = 'progression'): string {
-	return `/configuration/subjects/${id}/${tab}`;
+	return `/configuration/structure/subjects/${id}/${tab}`;
 }
 
 export function classStudentsPath(classId: string, studentId: string, tab = 'profile'): string {

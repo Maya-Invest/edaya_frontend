@@ -1,18 +1,20 @@
-import { signIn } from '../support/auth';
+import type { DemoContext } from '../support/types';
 import { selectAcademicPeriod } from '../support/academic-period';
+import { signIn } from '../support/auth';
 import {
-	APP_SHELL_SELECTOR,
 	ACTIVITY_ID,
+	APP_SHELL_SELECTOR,
 	CLASS_6A,
 	CLASS_6B,
 	DEMO_ACTIVITY_NAME,
+	FAMILY_FEEDBACK_CAMPAIGN,
 	SEEDED_TIMETABLE_WEEK,
+	STUDENT_NAME,
 } from '../support/constants';
+import { waitForDrawerAside } from '../support/drawer';
 import { configClassGroupPath, schoolStudentPath, schoolTeacherPath } from '../support/paths';
 import { assertClassAttendanceNav, ensureDailyAttendanceMode } from '../support/setup';
 import { pickTimetableSessionIdFromPage } from '../support/timetable-session';
-import { waitForDrawerAside } from '../support/drawer';
-import type { DemoContext } from '../support/types';
 import { assertNoFatalError, visit } from '../support/visit';
 
 export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
@@ -58,9 +60,9 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 		reporter.log('D2', '2.1 Student list', 'fail', err instanceof Error ? err.message : String(err));
 		await shot('D2-2.1-Student-list-exception').catch(() => {});
 	}
-	await visit(ctx, `${base}${schoolStudentPath('ci-s1')}`, 'D2', '2.2 Student drawer Kouamé Aya', {
+	await visit(ctx, `${base}${schoolStudentPath('ci-s1')}`, 'D2', '2.2 Student drawer Aminata Koné', {
 		pathPrefix: schoolStudentPath('ci-s1'),
-		expectText: /Kouamé|Aya|ci-s1/i,
+		expectText: STUDENT_NAME,
 	});
 	await visit(ctx, `${base}/school/guardians`, 'D2', '2.4 Guardians list', { selector: 'main' });
 
@@ -119,7 +121,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	await selectAcademicPeriod(ctx);
 	await visit(ctx, `${base}/classes/${CLASS_6A}/evaluations?kind=homework`, 'D6', '6.1 Evaluations list', {
 		pathPrefix: `/classes/${CLASS_6A}/evaluations`,
-		selector: 'select[aria-label="Filter"]',
+		selector: '[data-testid="collection-filter"]',
 		selectorTimeoutMs: 20_000,
 	});
 	try {
@@ -148,7 +150,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 			'D7',
 			'7.0 Ensure 6ème 2 daily mode',
 			'skip',
-			'Could not configure daily mode — check SCHOOL_STRUCTURE_CONFIGURE',
+			'Could not configure daily mode — check SCHOOL_CONFIGURE',
 		);
 	}
 	await assertClassAttendanceNav(ctx, CLASS_6B, 'D7', '7.1 Attendance nav on 6ème 2');
@@ -169,6 +171,26 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	);
 	await visit(ctx, `${base}/school/announcements`, 'D8', '8.3 Announcements', { selector: 'main' });
 	await visit(ctx, `${base}/school/events`, 'D8', '8.4 Incidents/events', { selector: 'main' });
+	await visit(ctx, `${base}/school/family-feedback`, 'D8', '8.5 Family feedback list', { selector: 'main' });
+	const loading = page.locator('[role="status"][aria-live="polite"]');
+	if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
+		await loading.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
+	}
+	const hasSeededCampaign = await page
+		.locator('main ul li button')
+		.first()
+		.isVisible({ timeout: 15_000 })
+		.catch(() => false)
+		|| await page.getByText(FAMILY_FEEDBACK_CAMPAIGN).first().isVisible({ timeout: 2_000 }).catch(() => false);
+	if (!hasSeededCampaign) {
+		await shot('D8-8.5-family-feedback');
+	}
+	reporter.log(
+		'D8',
+		'8.5 Family feedback list',
+		hasSeededCampaign ? 'pass' : 'fail',
+		hasSeededCampaign ? undefined : 'Seeded campaign row not visible — verify family-feedback seed after access',
+	);
 
 	await visit(ctx, `${base}/finance/fees`, 'D9', '9.1 Fees list', { pathPrefix: '/finance/fees', selector: APP_SHELL_SELECTOR });
 	await visit(ctx, `${base}/finance/payment`, 'D9', '9.2 Payments', { pathPrefix: '/finance/payment', selector: APP_SHELL_SELECTOR });
@@ -176,25 +198,16 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 
 	await visit(ctx, `${base}/classes/${CLASS_6A}/report-cards`, 'D10', '10.1 Report cards list', { selector: 'main' });
 	try {
-		const viewBtn = page.getByRole('button', { name: /view|voir|consulter/i }).first();
-		const studentLink = page.locator('main tbody tr button.font-medium').first();
-		if (await viewBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
-			await viewBtn.click();
-		}
-		else if (await studentLink.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await studentLink.click();
-		}
-		else {
-			reporter.log('D10', '10.2 Open bulletin drawer', 'skip', 'No report card rows in list');
-			return;
-		}
+		const studentTarget = page.locator('main tbody tr[data-entity-id] button.ui-record-target').first();
+		await studentTarget.waitFor({ state: 'visible', timeout: 20_000 });
+		await studentTarget.click();
 
 		const drawer = await waitForDrawerAside(ctx, 15_000);
 		if (drawer) {
 			reporter.log('D10', '10.2 Open bulletin drawer', 'pass');
 		}
 		else {
-			reporter.log('D10', '10.2 Open bulletin drawer', 'skip', 'Drawer did not open — verify report card seed');
+			reporter.log('D10', '10.2 Open bulletin drawer', 'fail', 'Drawer did not open for the persisted report card');
 			await shot('D10-10.2-bulletin-drawer');
 		}
 	}
@@ -203,10 +216,11 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	}
 
 	await visit(ctx, `${base}${configClassGroupPath(CLASS_6A, 'profile')}`, 'D11', '11.1 Class config drawer', {
-		pathPrefix: `/configuration/classes/${CLASS_6A}`,
+		pathPrefix: `/configuration/structure/classes/${CLASS_6A}`,
 		selector: 'main',
 	});
-	await visit(ctx, `${base}/configuration/grade-levels`, 'D11', '11.2 Grade levels', { selector: 'main' });
+	await visit(ctx, `${base}/configuration/structure/details`, 'D11', '11.2 Grade levels', { selector: 'main' });
 	await visit(ctx, `${base}/configuration/academic`, 'D11', '11.3 Academic calendar', { selector: 'main' });
-	await visit(ctx, `${base}/configuration/discipline`, 'D11', '11.4 Disciplinary catalog', { selector: 'main' });
+	await visit(ctx, `${base}/configuration/other/discipline`, 'D11', '11.4 Disciplinary catalog', { selector: 'main' });
+	await visit(ctx, `${base}/configuration/permission-profiles`, 'D11', '11.5 Permission profiles', { selector: 'main' });
 }

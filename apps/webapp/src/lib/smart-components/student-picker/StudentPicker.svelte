@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { PersonPickerItem } from '$lib/smart-components/person-picker/person-picker-types';
+	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import { t } from '$lib/i18n';
-	import { Check, LoaderCircle, Search } from '$lib/icons';
+	import { Check, LoaderCircle } from '$lib/icons';
 	import { filterPersonPickerItems } from '$lib/smart-components/person-picker/filter-person-picker-items';
 	import PersonPicker from '$lib/smart-components/person-picker/PersonPicker.svelte';
 	import { studentPickerSearchText, studentPickerSubtitle } from '$lib/students/format-student-picker-subtitle';
@@ -13,6 +14,7 @@
 	import { StudentPickerState } from './student-picker-state.svelte';
 
 	let {
+		students,
 		value = $bindable(''),
 		values = $bindable<string[]>([]),
 		mode = 'single',
@@ -26,7 +28,10 @@
 		active = false,
 		class: className,
 		onValueChange,
+		isSelectable,
 	}: {
+		/** Optional bounded workflow projection; disables directory loading. */
+		students?: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'matricule' | 'email' | 'photoUrl'>[];
 		value?: string;
 		values?: string[];
 		mode?: 'single' | 'multi';
@@ -40,7 +45,8 @@
 		variant?: 'popover' | 'panel';
 		active?: boolean;
 		class?: string;
-		onValueChange?: (next: string) => void;
+		isSelectable?: (student: Pick<Student, 'id' | 'classId'>) => boolean;
+		onValueChange?: (next: string, student?: Pick<Student, 'id' | 'classId'>) => void;
 	} = $props();
 
 	const pickerState = new StudentPickerState();
@@ -48,10 +54,12 @@
 	let query = $state('');
 
 	$effect(() => {
-		if (active || variant === 'panel') {
+		if (students === undefined && (active || variant === 'panel')) {
 			void pickerState.ensureLoaded();
 		}
 	});
+
+	const sourceStudents = $derived(students ?? pickerState.students);
 
 	const restrictedClassIds = $derived.by(() => {
 		if (classGroupId) {
@@ -81,7 +89,8 @@
 	const classNameById = $derived(new Map(academicContext.classes.map(entry => [entry.id, entry.name])));
 
 	const availableStudents = $derived(
-		pickerState.students
+		sourceStudents
+			.filter(student => !isSelectable || isSelectable(student))
 			.filter(student => !excludeIds.includes(student.id))
 			.filter(student => !restrictedClassIds || restrictedClassIds.has(student.classId))
 			.filter(student => classFilter === 'all' || student.classId === classFilter)
@@ -133,7 +142,7 @@
 			return;
 		}
 		value = studentId;
-		onValueChange?.(studentId);
+		onValueChange?.(studentId, sourceStudents.find(student => student.id === studentId));
 	}
 
 	function removeChip(studentId: string) {
@@ -149,7 +158,7 @@
 		class={className}
 		placeholder={placeholder ?? $t('events.selectStudent')}
 		searchPlaceholder={$t('common.searchStudent')}
-		onValueChange={onValueChange}
+		onValueChange={id => onValueChange?.(id, sourceStudents.find(student => student.id === id))}
 	>
 		{#snippet filters()}
 			{#if showFilters}
@@ -166,7 +175,7 @@
 		{#if mode === 'multi' && values.length > 0}
 			<div class="flex flex-wrap gap-2">
 				{#each values as studentId (studentId)}
-					{@const student = pickerState.students.find(entry => entry.id === studentId)}
+					{@const student = sourceStudents.find(entry => entry.id === studentId)}
 					<button
 						type="button"
 						class="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs"
@@ -180,7 +189,7 @@
 			</div>
 		{/if}
 
-		<div class={cn('flex h-[min(55vh,28rem)] flex-col overflow-hidden rounded-xl border border-border')}>
+		<div class={cn('flex h-[min(55vh,28rem)] flex-col overflow-hidden rounded-collection border border-border')}>
 			<div class="space-y-2 border-b border-border p-3">
 				{#if showFilters}
 					<FilterSelect
@@ -190,17 +199,16 @@
 					/>
 				{/if}
 				<div class="relative">
-					<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-					<Input
+					<ListSearchField
 						bind:value={query}
 						placeholder={placeholder ?? $t('activities.searchStudent')}
-						class="h-9 rounded-full pl-8 text-sm"
+
 						{disabled}
 					/>
 				</div>
 			</div>
 			<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
-				{#if pickerState.loading}
+				{#if students === undefined && pickerState.loading}
 					<div class="flex items-center justify-center py-10" role="status">
 						<LoaderCircle class="h-5 w-5 animate-spin text-primary" />
 					</div>

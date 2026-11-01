@@ -1,18 +1,24 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { authSession } from '$lib/auth/session.svelte';
-	import OnboardingShell from '$lib/components/onboarding/OnboardingShell.svelte';
-	import OnboardingStepContent from '$lib/components/onboarding/OnboardingStepContent.svelte';
 	import { t } from '$lib/i18n';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
+	import { onDestroy } from 'svelte';
+	import { get } from 'svelte/store';
+	import OnboardingShell from './components/OnboardingShell.svelte';
+	import OnboardingStepContent from './components/OnboardingStepContent.svelte';
+	import { onboardingContext } from './context.svelte';
 	import {
 		OnboardingWizardState,
 		setOnboardingWizardState,
-	} from '$lib/onboarding/onboarding-wizard-state.svelte';
-	import { get } from 'svelte/store';
+	} from './onboarding-wizard-state.svelte';
 
 	const wizard = new OnboardingWizardState(() => $page.url);
 	setOnboardingWizardState(wizard);
+	onDestroy(() => wizard.dispose());
+	$effect(() => {
+		if (onboardingContext.initialized)
+			wizard.loadDataset(authSession.authUserId, onboardingContext.draft.school.country, onboardingContext.draft.structure.dataset);
+	});
 
 	const busyMessage = $derived.by(() => {
 		if (!wizard.busy) {
@@ -32,10 +38,16 @@
 	});
 
 	$effect(() => {
+		void wizard.maxReachedStep;
+		void $page.url;
 		wizard.enforceStepAccess();
+		const timer = setInterval(() => wizard.enforceStepAccess(), 250);
+		return () => clearInterval(timer);
 	});
 
 	$effect(() => {
+		void authSession.isLoggedIn;
+		void authSession.serverOnboardingStatus?.wizardCompleted;
 		void wizard.syncServerStatusOnce();
 	});
 </script>
@@ -60,6 +72,8 @@
 		provisionActiveStepId={wizard.provisionActiveStepId}
 		provisionCompletedIds={wizard.provisionCompletedIds}
 		provisionSteps={wizard.provisionSteps}
+		provisionSucceeded={wizard.provisionSucceeded}
+		bootstrapRecoveryNeeded={wizard.bootstrapRecoveryNeeded}
 		onBack={() => wizard.goBack()}
 		onContinue={() => void wizard.goNext()}
 		onFinish={() => void wizard.finishOnboarding()}

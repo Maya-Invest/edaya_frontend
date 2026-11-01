@@ -1,0 +1,75 @@
+name: pr_validation
+on:
+  pull_request:
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        options: [staging, production]
+        default: staging
+      source_ref:
+        description: Source revision (empty uses selected workflow revision)
+        type: string
+        default: ''
+      backend_ref:
+        description: Explicit backend revision override (empty uses destination branch)
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('validation-{0}-{1}', github.ref, inputs.target) }}
+  cancel-in-progress: true
+jobs:
+  preparation:
+    uses: ./.github/workflows/_prepare.yml
+    with:
+      target: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' && 'production' || 'staging') || inputs.target }}
+      source_ref: ${{ inputs.source_ref || github.sha }}
+      backend_ref: ${{ github.event_name == 'pull_request' && github.head_ref || inputs.backend_ref }}
+      match_backend_branch: ${{ github.event_name == 'pull_request' }}
+    secrets:
+      BACKEND_CHECKOUT_TOKEN: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+  quality:
+    needs: preparation
+    uses: ./.github/workflows/_quality_check.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' && 'production' || 'staging') || inputs.target }}
+  unit:
+    needs: preparation
+    uses: ./.github/workflows/_unit_test.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' && 'production' || 'staging') || inputs.target }}
+  build:
+    needs: preparation
+    uses: ./.github/workflows/_build.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' && 'production' || 'staging') || inputs.target }}
+  integration:
+    needs: [preparation, quality, unit]
+    uses: ./.github/workflows/_integration_test.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' && 'production' || 'staging') || inputs.target }}
+      baseline_sha: ${{ github.event.pull_request.base.sha || '' }}
+    secrets:
+      BACKEND_CHECKOUT_TOKEN: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+  qualification:
+    if: always()
+    needs: [preparation, quality, unit, build, integration]
+    uses: ./.github/workflows/_finalize.yml
+    with:
+      source_sha: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.event_name == 'pull_request' && (github.base_ref == 'main' && 'production' || 'staging') || inputs.target }}
+      job_results: ${{ toJSON(needs) }}

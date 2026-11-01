@@ -1,3 +1,5 @@
+import type { components } from '@maya-invest/edaya-api-client/schema';
+
 export type ClassAttendanceMode = 'daily' | 'session';
 
 export interface ClassNode {
@@ -16,16 +18,25 @@ export interface ClassNode {
 
 export interface HierarchyGroup { level: string; classes: ClassNode[] }
 
-export type StudentApiStatus = 'active' | 'inactive' | 'archived';
+export type StudentApiStatus = 'active' | 'inactive' | 'graduated' | 'archived';
 export type StudentAcademicBadge = 'honor' | 'warning';
 
 export interface Student {
+	firstName?: string | null;
+	lastName?: string | null;
+	sourceFullName?: string | null;
+	nationalMatricule?: string | null;
+	placeOfBirth?: string | null;
+	nationality?: string | null;
+	enrollmentDate?: string | null;
+
 	id: string;
 	classId: string;
 	enrollmentId?: string;
 	name: string;
 	initials: string;
 	photoUrl?: string | null;
+	photoAttachmentId?: string | null;
 	/** Empty when the student has no linked account / invitation email. */
 	email: string;
 	birthdate: string;
@@ -45,6 +56,9 @@ export interface Student {
 export type SubjectCategory = 'Scientifique' | 'Littéraire' | 'Langues' | 'Sciences humaines' | 'Sport' | 'Arts';
 
 export interface Subject {
+	disciplineId?: string | null;
+	isOptional?: boolean;
+	subjectId?: string;
 	id: string;
 	classId: string;
 	/** Catalogue matières : regroupement par niveau (distinct des matières de classe). */
@@ -55,11 +69,16 @@ export interface Subject {
 	hoursPerWeek: number | null;
 	color: 'mint' | 'sky' | 'warm';
 	description: string;
-	category: SubjectCategory;
+	categoryId: string;
+	/** Catalog name. The six defaults are still translated with catalogCategory(). */
+	category: string;
 	code?: string | null;
 	shortName?: string | null;
-	defaultCoefficient?: number | null;
+	coefficient?: number | null;
+	reportModuleId?: string | null;
+	reportOrder?: number;
 	isOffered?: boolean;
+	participationRevision?: number;
 	completedPercentage?: number | null;
 	periodsPerWeek?: number | null;
 	minPeriodSpan?: number | null;
@@ -87,7 +106,7 @@ export interface PlanningEvent {
 	kind: PlanningEventKind;
 	title: string;
 	subject: string;
-	day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
+	day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 	start: string;
 	end: string;
 	startsAt: string;
@@ -95,7 +114,7 @@ export interface PlanningEvent {
 	room: string;
 	teacher: string;
 	status?: PlanningOccurrenceStatus;
-	timetableGenerated?: 'draft' | 'published' | null;
+	timetableGenerated?: boolean;
 }
 
 export type TimetableScheduleDay
@@ -126,6 +145,9 @@ export interface TimetableSchedule {
 }
 
 export interface AssessmentResultRow {
+	mentionId?: string | null;
+	calculation?: components['schemas']['AssessmentResult']['calculation'];
+	designation?: 'scored' | 'absent' | 'exempt' | null;
 	id: string;
 	studentId: string;
 	assessmentId: string;
@@ -142,6 +164,14 @@ export interface EvaluationSubmission {
 }
 
 export interface Evaluation {
+	completedAt?: string;
+	/** False when marks were not authorized; an empty authorized result set is still available. */
+	marksAvailable?: boolean;
+	averageOutOf?: number;
+	averagePrecision?: number;
+	gradingUpdating?: boolean;
+	marksRevision?: number;
+	marksStatus?: 'draft' | 'submitted';
 	id: string;
 	classId: string;
 	classSubjectId: string;
@@ -166,6 +196,18 @@ export interface Evaluation {
 }
 
 export interface Guardian {
+	alternativePhone?: string | null;
+	emailNotificationsEnabled?: boolean;
+	smsNotificationsEnabled?: boolean;
+	pushNotificationsEnabled?: boolean;
+	hasAccess?: boolean;
+	links?: components['schemas']['GuardianStudentLink'][];
+	firstName?: string | null;
+	lastName?: string | null;
+	sourceFullName?: string | null;
+	occupation?: string | null;
+	code?: string | null;
+
 	id: string;
 	name: string;
 	initials: string;
@@ -192,6 +234,11 @@ export type StaffRole
 		| 'staff';
 
 export interface StaffMember {
+	phone?: string | null;
+	firstName?: string | null;
+	lastName?: string | null;
+	code?: string | null;
+
 	id: string;
 	name: string;
 	initials: string;
@@ -208,19 +255,28 @@ export interface StaffMember {
 }
 
 export interface Teacher {
+	firstName?: string | null;
+	lastName?: string | null;
+	sourceFullName?: string | null;
+
 	id: string;
 	name: string;
 	initials: string;
 	photoUrl?: string | null;
 	email: string;
 	phone: string;
+	code?: string | null;
 	isActive: boolean;
 	subjectId?: string | null;
 }
 
-export type ChronicCondition = 'Asthme' | 'Epilepsie' | 'Diabete';
+export type ChronicCondition = string;
 
 export interface HealthRecord {
+	medicalConditionsText?: string;
+	allergiesText?: string;
+	medicationsText?: string;
+	emergencyProtocols?: string;
 	id?: string;
 	studentId: string;
 	bloodType: string;
@@ -234,6 +290,14 @@ export interface HealthRecord {
 export type IncidentKind = 'positive' | 'minor_infraction' | 'major_infraction' | 'emergency';
 
 export interface Incident {
+	title?: string;
+	description?: string;
+	classGroupId?: string | null;
+	lessonSessionId?: string | null;
+	reporterId?: string | null;
+	resolvedAt?: string | null;
+	resolvedByStaffId?: string | null;
+	resolutionNotes?: string | null;
 	id: string;
 	studentId: string;
 	involvedStudentIds: string[];
@@ -249,6 +313,13 @@ export interface Incident {
 }
 
 export interface StudentEnrollmentHistoryItem {
+	progressionDecision?: 'promoted' | 'retained' | 'graduated' | null;
+	progressionDecidedAt?: string;
+	progressionDecidedBy?: string | null;
+	progressionNotes?: string | null;
+	previousEnrollmentId?: string | null;
+	closedBy?: string | null;
+	enrollmentIndex?: number;
 	id: string;
 	classGroupId: string;
 	className: string;
@@ -321,26 +392,73 @@ export interface Deadline {
 	submissions: { studentId: string; status: 'submitted' | 'late' | 'missing'; date?: string }[];
 }
 
+export type FeeCategory
+	= | 'tuition'
+		| 'transport'
+		| 'meals'
+		| 'activities'
+		| 'materials'
+		| 'other';
+
+export type CatalogServiceStatus = 'draft' | 'active' | 'archived';
+export type AutoBillingConfiguration = { mode: 'off' | 'all' } | { mode: 'matching'; gradeLevelIds: string[] | null; placementStatusIds: string[] | null };
+export type StudentChargeStatus
+	= | 'pending'
+		| 'partial'
+		| 'paid'
+		| 'overdue'
+		| 'cancelled'
+		| 'waived';
+
 export interface Fee {
+	academicYearId?: string;
+	description?: string;
+	billingTerms?: import('$lib/api/finance-types').OneTimeBillingTerms;
+
 	id: string;
 	name: string;
-	/** UI labels aligned 1:1 with API fee.category (no name NLP). */
-	category: 'Tuition' | 'Transport' | 'Materials' | 'Other';
+	category: FeeCategory;
 	amount: number;
-	/** Create-form schedule only; omitted when mapping from API installments. */
-	period?: 'Year' | 'Term' | 'Month';
+	currency: string;
+	status: CatalogServiceStatus;
+	autoBilling: AutoBillingConfiguration;
 	installmentCount?: number;
 }
 
 export interface StudentBilling {
+	classId?: string;
+	studentName?: string;
+	netAmount?: number;
+	adjustmentAmount?: number;
+	waiverAmount?: number;
+	adjustmentReason?: string;
+	adjustedAt?: string;
+	adjustedById?: string;
+	waiverReason?: string;
+	waivedAt?: string;
+	waivedById?: string;
+	cancellationReason?: string;
+	cancelledAt?: string;
+	cancelledById?: string;
+	createdAt?: string;
+	accountId?: string;
+	availableCredit?: number;
+	accountHasOpenCharges?: boolean;
+	overdue?: number;
+
 	id: string;
 	studentId: string;
-	feeId: string;
+	enrollmentId: string;
+	catalogServiceId: string;
+	label: string;
 	total: number;
 	paid: number;
-	status: 'paid' | 'partial' | 'due' | 'overdue';
+	remaining: number;
+	currency: string;
+	status: StudentChargeStatus;
 	dueDate: string;
-	installments: { date: string; amount: number; status: 'paid' | 'pending' }[];
+	academicYearId: string;
+	installments: { id: string; date: string; amount: number; label: string; status: 'paid' | 'partial' | 'pending'; applied?: number; remaining?: number }[];
 }
 
 export type AcademicYearStatus = 'draft' | 'published' | 'archived';
@@ -369,7 +487,10 @@ export interface PeriodDefinition {
 	isTeachingSlot: boolean;
 }
 
+export type GradingPolicy = NonNullable<components['schemas']['GradeLevel']['gradingPolicies']>[number];
+
 export interface GradeLevel {
+	gradingPolicies?: GradingPolicy[];
 	id: string;
 	schoolId: string;
 	name: string;
@@ -399,18 +520,16 @@ export interface AcademicPeriod {
 	status: AcademicYearStatus;
 }
 
-export type SchoolType = 'primary' | 'secondary' | 'k12' | 'vocational' | 'other';
-
 export type TimetableGenerationMode = 'weekly' | 'free';
 
 export interface School {
+	financeCurrency?: string | null;
 	id: string;
 	name: string;
 	shortName: string;
 	city: string;
 	country?: string;
 	timeZone: string;
-	type?: SchoolType | null;
 	timetableEnforceWorkloadFulfillment: boolean;
 	timetableExcludeBreakSlots: boolean;
 	timetableMinDayGapSameSubject: number;
@@ -420,6 +539,17 @@ export interface School {
 	timetableGenerationMode: TimetableGenerationMode;
 	timetableMinPeriodSpan: number;
 	timetableMaxPeriodSpan: number;
+	issuingName?: string | null;
+	postalAddress?: string | null;
+	phone?: string | null;
+	email?: string | null;
+	schoolCode?: string | null;
+	logoAttachmentId?: string | null;
+	crestAttachmentId?: string | null;
+	stampAttachmentId?: string | null;
+	signatureAttachmentId?: string | null;
+	issuanceAssetVersion?: number;
+	publicBrandingPurposes?: Array<'school.logo' | 'school.crest'>;
 }
 
 export interface SchoolYearEvent {
@@ -437,6 +567,8 @@ export interface SchoolYearEvent {
 }
 
 export interface PedagogicalNote {
+	title?: string | null;
+	visibility?: 'staff' | 'admin_only' | 'guardian_visible';
 	id: string;
 	studentId: string;
 	date: string;

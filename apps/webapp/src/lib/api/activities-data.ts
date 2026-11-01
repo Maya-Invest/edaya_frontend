@@ -2,8 +2,8 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Activity } from '$lib/types/school';
 import {
-	activityEnrollmentsForActivities,
-	classActivityEnrollmentsForActivities,
+	listAllEntityPages,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
@@ -52,19 +52,24 @@ export async function fetchActivitySources(
 	schoolId: string,
 ): Promise<ActivitySources> {
 	const activitiesRaw = await safeOptionalEntityList(
-		() => client.entities.activities.list({ schoolId }),
+		() => listAllEntityPages(
+			query => client.entities.activities.list(query),
+			{ baseQuery: { schoolId } },
+		),
 	);
 	const activityIds = uniqueIds(activitiesRaw.map(activity => activity.id));
-	const activityEnrollmentsRaw = activityIds.length > 0
-		? await safeOptionalEntityList(
-				() => client.entities.activityEnrollments.list(activityEnrollmentsForActivities(activityIds)),
-			)
-		: [];
-	const classActivityEnrollmentsRaw = activityIds.length > 0
-		? await safeOptionalEntityList(
-				() => client.entities.classActivityEnrollments.list(classActivityEnrollmentsForActivities(activityIds)),
-			)
-		: [];
+	const activityEnrollmentsRaw = await safeOptionalEntityList(
+		() => listAllEntityPagesForIdFilters(
+			query => client.entities.activityEnrollments.list(query),
+			[{ field: 'activityId', ids: activityIds }],
+		),
+	);
+	const classActivityEnrollmentsRaw = await safeOptionalEntityList(
+		() => listAllEntityPagesForIdFilters(
+			query => client.entities.classActivityEnrollments.list(query),
+			[{ field: 'activityId', ids: activityIds }],
+		),
+	);
 
 	return {
 		activitiesRaw,

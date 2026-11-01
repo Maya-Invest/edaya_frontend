@@ -2,6 +2,7 @@
  * Coverage ledger: journey steps record QA matrix rows as they happen.
  * Leftover unclaimed rows can still run once after the journey.
  */
+import { requiresIndependentScenario } from '../support/independent-scenarios';
 import { rowKey } from '../../../scripts/qa-matrix-support';
 import type { MatrixResult, MatrixStatut } from '../../../scripts/qa-matrix-support';
 import type { QaTemplateRow } from '../../../scripts/qa-template-matrix.manual';
@@ -61,7 +62,8 @@ export class JourneyLedger {
 		actions?: readonly string[],
 	): MatrixResult[] {
 		const recorded: MatrixResult[] = [];
-		const wanted = actions ? new Set(actions) : null;
+		if (!actions?.length) throw new Error('Coverage requires explicit exercised actions');
+		const wanted = new Set(actions);
 		const template = templatePath.includes('?') || templatePath.startsWith('(')
 			? templatePath
 			: templatePath;
@@ -71,7 +73,10 @@ export class JourneyLedger {
 			if (rowPath !== template && pathWithoutQuery(row.endpoint) !== pathWithoutQuery(template)) {
 				continue;
 			}
-			if (wanted && !wanted.has(row.action)) {
+			if (requiresIndependentScenario(row) || !wanted.has(row.action)) {
+				continue;
+			}
+			if (this.has(row)) {
 				continue;
 			}
 			recorded.push(this.record(row, statut, detail));
@@ -89,9 +94,10 @@ export class JourneyLedger {
 			const action = row.action;
 			if (
 				action === ROUTE_SMOKE_ACTION
-				|| action === 'Liste'
-				|| action.startsWith('Liste — affichage')
 			) {
+				if (this.has(row)) {
+					continue;
+				}
 				recorded.push(this.record(row, statut, detail));
 			}
 		}

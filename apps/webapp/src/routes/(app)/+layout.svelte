@@ -1,22 +1,22 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { browser } from '$app/environment';
-	import { replaceState } from '$app/navigation';
+	import { afterNavigate, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
-	import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+	import { bootstrapAppShell, invalidateAppShellBootstrapCache } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
+	import { leaveStaffWebappForSessionKind } from '$lib/auth/leave-staff-webapp';
+	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
 	import { authSession } from '$lib/auth/session.svelte';
-	import AccountProfileModal from '$lib/components/account/AccountProfileModal.svelte';
-	import AcademicHeader from '$lib/components/layout/AcademicHeader.svelte';
+	import AppHeader from '$lib/components/layout/AppHeader.svelte';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
-	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
-	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
-	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
+	import { Dialog, DialogContent, DialogTitle, Close as DialogClose } from '$lib/components/ui/dialog';
+	import { entityVersions } from '$lib/entity-versions.svelte';
 	import { t } from '$lib/i18n';
-	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
+	import { LoaderCircle, PanelLeftClose } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import {
 		MODAL_QUERY_KEY,
@@ -29,9 +29,34 @@
 	import { canAccessPath } from '$lib/navigation/nav-permissions';
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
 	import { shellContext } from '$lib/shell/context.svelte';
+	import { MessageCountState, provideMessageCount } from '$lib/shell/message-count.svelte';
 	import { cn } from '$lib/utils';
+	import { onMount, untrack } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+	import { AccountState, setAccountState } from './account-state.svelte';
+	import AccountProfileModal from './components/AccountProfileModal.svelte';
 
+	const messageCount = new MessageCountState();
+	provideMessageCount(messageCount);
+	$effect(() => {
+		const scope = messageCount.scope;
+		void entityVersions.inbox;
+		if (scope && academicContext.shellReady)
+			return untrack(() => messageCount.start());
+	});
+	const accountState = new AccountState();
+	setAccountState(accountState);
 	const { children }: { children: Snippet } = $props();
+	const desktop = new MediaQuery('(min-width: 1024px)');
+	let mobileSidebarOpen = $state(false);
+	const navigationOpen = $derived(desktop.current ? shellContext.sidebarOpen : mobileSidebarOpen);
+	afterNavigate(() => {
+		mobileSidebarOpen = false;
+	});
+	$effect(() => {
+		if (desktop.current)
+			mobileSidebarOpen = false;
+	});
 
 	const me = $derived(authSession.accountActor);
 	const pathAllowed = $derived(
@@ -46,8 +71,12 @@
 		MODAL_TAB_QUERY_KEY,
 	] as const;
 
-	$effect.pre(() => {
-		if (!browser) {
+	let routerMounted = $state(false);
+	onMount(() => {
+		routerMounted = true;
+	});
+	$effect(() => {
+		if (!browser || !routerMounted) {
 			return;
 		}
 		const url = $page.url;
@@ -69,6 +98,7 @@
 
 	const accountModals = createUrlSyncedModals({
 		allowed: [ACCOUNT_PROFILE_MODAL],
+		allowedTabs: ['profile', 'notifications', 'security'],
 		getUrl: () => $page.url,
 	});
 	$effect(() => {
@@ -82,12 +112,30 @@
 		}
 
 		if (shouldEnforceLoginGate()) {
-			appGoto(appPath('/login'), { replaceState: true });
+			void appGoto(appPath('/login'), { replaceState: true });
 			return;
 		}
 
 		if (authSession.needsOnboarding) {
-			appGoto(appPath('/onboarding'), { replaceState: true });
+			void appGoto(ONBOARDING_PATH, { replaceState: true });
+			return;
+		}
+
+		if (!authSession.isLoggedIn) {
+			void appGoto(appPath('/login'), { replaceState: true });
+			return;
+		}
+
+		if (authSession.sessionKind && authSession.sessionKind !== 'staff') {
+			void leaveStaffWebappForSessionKind(authSession.sessionKind);
+			return;
+		}
+
+		if (authSession.onboardingStatusUnknown) {
+			return;
+		}
+
+		if (authSession.sessionKind !== 'staff') {
 			return;
 		}
 
@@ -98,11 +146,6 @@
 		);
 		if (resumePath) {
 			appGoto(resumePath, { replaceState: true });
-			return;
-		}
-
-		if (!authSession.isLoggedIn) {
-			appGoto(appPath('/login'), { replaceState: true });
 		}
 	});
 
@@ -124,82 +167,48 @@
 		})();
 	});
 
-	function logout() {
-		resetAppShellBootstrap();
-		authSession.logout();
-		appGoto(appPath('/login'), { replaceState: true });
-	}
 </script>
 
 {#if authSession.ready && authSession.isLoggedIn && me}
-	<div class="flex h-screen w-full overflow-hidden bg-background text-foreground">
-		<div
-			class={cn(
-				'relative h-full shrink-0 transition-[width] duration-200 ease-in-out',
-				shellContext.sidebarOpen ? 'w-64' : 'w-14',
-			)}
-		>
-			<AppSidebar
-				hierarchy={academicContext.hierarchy}
-				studentCount={academicContext.studentCount}
-				guardianCount={academicContext.guardianCount}
-				staffCount={academicContext.staffCount}
-			/>
-		</div>
+	<div
+		class="flex h-dvh w-full overflow-hidden bg-background text-foreground"
+		data-testid="app-shell"
+		data-school-id={academicContext.schoolScopeId}
+		data-year-id={academicContext.shellReady ? academicContext.yearId : ''}
+	>
+		{#if desktop.current}
+			<div
+				class={cn(
+					'relative h-full shrink-0 transition-[width] duration-200 ease-in-out',
+					shellContext.sidebarOpen ? 'w-64' : 'w-14',
+				)}
+			>
+				<AppSidebar
+					hierarchy={academicContext.hierarchy}
+					studentCount={academicContext.studentCount}
+					guardianCount={academicContext.guardianCount}
+					staffCount={academicContext.staffCount}
+					teacherCount={academicContext.teacherCount}
+				/>
+			</div>
+		{:else}
+			<Dialog bind:open={mobileSidebarOpen}>
+				<DialogContent class="left-0 top-0 flex h-dvh max-h-none w-[min(85vw,320px)] translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0">
+					<div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-2">
+						<DialogTitle class="text-base">{$t('sidebar.navigationTitle')}</DialogTitle>
+						<DialogClose class="control-focus flex h-11 w-11 items-center justify-center rounded-collection hover:bg-secondary" aria-label={$t('sidebar.hide')}><PanelLeftClose class="h-5 w-5" /></DialogClose>
+					</div>
+					<div class="min-h-0 flex-1">
+						<AppSidebar forceExpanded hierarchy={academicContext.hierarchy} studentCount={academicContext.studentCount} guardianCount={academicContext.guardianCount} staffCount={academicContext.staffCount} teacherCount={academicContext.teacherCount} />
+					</div>
+				</DialogContent>
+			</Dialog>
+		{/if}
 
 		<div class="flex min-w-0 flex-1 flex-col">
-			<div
-				class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-6"
-			>
-				<button
-					type="button"
-					onclick={() => shellContext.toggleSidebar()}
-					class="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground/80 transition hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					aria-label={shellContext.sidebarOpen ? $t('sidebar.hide') : $t('sidebar.show')}
-					aria-expanded={shellContext.sidebarOpen}
-					aria-controls="app-sidebar"
-				>
-					{#if shellContext.sidebarOpen}
-						<PanelLeftClose class="h-4 w-4" />
-					{:else}
-						<PanelLeft class="h-4 w-4" />
-					{/if}
-				</button>
-
-				<div class="flex items-center gap-3">
-					{#if academicContext.shellReady}
-						<SchoolSelector schools={academicContext.schools} />
-						<AcademicHeader />
-					{:else}
-						<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />
-					{/if}
-					<LanguageSelector />
-					<div class="flex items-center gap-1.5">
-						<button
-							type="button"
-							data-testid="user-menu"
-							onclick={() => (profileOpen.open = true)}
-							class="flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							aria-label={$t('account.profile.openProfile')}
-							aria-haspopup="dialog"
-							aria-expanded={profileOpen.open}
-						>
-							<PersonAvatar
-								name={me.name}
-								initials={me.initials}
-								photoUrl={me.photoUrl}
-								size="md"
-							/>
-							<span class="flex flex-col items-start leading-tight">
-								<span class="text-[11px] font-semibold">{me.name}</span>
-								<span class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-									{$t(me.subtitleKey)}
-								</span>
-							</span>
-						</button>
-					</div>
-				</div>
-			</div>
+			<AppHeader actor={me} {navigationOpen} profileOpen={profileOpen.open}
+				onToggleNavigation={() => desktop.current ? shellContext.toggleSidebar() : mobileSidebarOpen = !mobileSidebarOpen}
+				onOpenProfile={() => (profileOpen.open = true)} />
 
 			{#if pathAllowed}
 				{@render children()}
@@ -209,7 +218,7 @@
 		</div>
 	</div>
 
-	<AccountProfileModal bind:open={profileOpen.open} actor={me} onLogout={logout} />
+	<AccountProfileModal bind:open={profileOpen.open} actor={me} section={accountModals.tab ?? 'profile'} onSectionChange={section => accountModals.setTab(section)} onLogout={() => accountState.logout()} />
 {:else}
 	<div
 		class="flex h-screen w-full items-center justify-center bg-background text-foreground"

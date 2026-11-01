@@ -1,13 +1,13 @@
 import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
 
-export type StaffAssignmentTargetKind = 'class_group' | 'class_subject';
+export type StaffAssignmentTargetKind = PermissionCatalogEntry['assignmentTargets'][number];
 
-/** Assignment placements support class and subject scopes. The action stays on the assignment. */
+/** Assignment eligibility comes from the canonical catalog. The action stays on the assignment. */
 export function catalogEntriesForStaffAssignmentTarget(
 	catalog: readonly PermissionCatalogEntry[],
-	_targetKind: StaffAssignmentTargetKind,
+	targetKind: StaffAssignmentTargetKind,
 ): PermissionCatalogEntry[] {
-	return catalog.filter(entry => entry.scope === 'class_group' || entry.scope === 'class_subject');
+	return catalog.filter(entry => entry.staffAssignable && entry.assignmentTargets.includes(targetKind));
 }
 
 export function catalogEntriesForClassGroupStaffAssignment(catalog: readonly PermissionCatalogEntry[]): PermissionCatalogEntry[] {

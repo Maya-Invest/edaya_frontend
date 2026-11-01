@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -9,6 +10,7 @@
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
 	import { get } from 'svelte/store';
+	import { classAttendanceModeForStudent } from '../../../../lib/student-attendance-history';
 	import { getStudentAttendanceTabState } from '../student-attendance-tab.svelte';
 
 	let {
@@ -50,9 +52,12 @@
 	});
 
 	const attendanceTab = getStudentAttendanceTabState();
+	const isDailyAttendance = $derived(
+		classAttendanceModeForStudent(academicContext.classes, s.classId) === 'daily',
+	);
 
 	async function submit() {
-		if (!canSubmit)
+		if (!canSubmit || !isDailyAttendance)
 			return;
 
 		busy = true;
@@ -71,47 +76,49 @@
 	}
 </script>
 
-{#if showTrigger}
+{#if isDailyAttendance && showTrigger}
 	<Button
 		variant="ghost"
-		class="w-full rounded-full border border-dashed border-border"
+		class="w-full border border-dashed border-border"
 		{disabled}
 		{title}
 		onclick={() => (open = true)}
 	>
-		<Plus class="mr-1 h-4 w-4" /> Déclarer une absence
+		<Plus class="mr-1 h-4 w-4" /> {$t('student.declareAbsence')}
 	</Button>
 {/if}
 
-<FormModal
-	bind:open
-	title={`Déclarer une absence pour ${s.name}`}
-	description="La déclaration est enregistrée sur la journée sélectionnée."
-	submitLabel="Enregistrer"
-	busy={busy}
-	submitDisabled={!canSubmit}
-	onCancel={resetForm}
-	onSubmit={submit}
->
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Date</Label>
-		<Input type="date" bind:value={date} />
-	</div>
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Statut</Label>
-		<Select.Root type="single" value={status} onValueChange={v => v && (status = v as AttendanceStatus)}>
-			<Select.Trigger>
-				<Select.Value placeholder={$t('students.status')}>
-					{statusLabel}
-				</Select.Value>
-			</Select.Trigger>
-			<Select.Content class="z-[100]">
-				{#each STATUS_OPTIONS as entry (entry)}
-					<Select.Item value={entry} label={$t(`attendance.${entry}`)}>
-						{$t(`attendance.${entry}`)}
-					</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-	</div>
-</FormModal>
+{#if isDailyAttendance}
+	<FormModal
+		bind:open
+		title={`Déclarer une absence pour ${s.name}`}
+		description="La déclaration est enregistrée sur la journée sélectionnée."
+		submitLabel="Enregistrer"
+		busy={busy}
+		submitDisabled={!canSubmit}
+		onCancel={resetForm}
+		onSubmit={submit}
+	>
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Date</Label>
+			<Input type="date" bind:value={date} />
+		</div>
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Statut</Label>
+			<Select.Root type="single" value={status} onValueChange={v => v && (status = v as AttendanceStatus)}>
+				<Select.Trigger>
+					<Select.Value placeholder={$t('students.status')}>
+						{statusLabel}
+					</Select.Value>
+				</Select.Trigger>
+				<Select.Content class="z-[100]">
+					{#each STATUS_OPTIONS as entry (entry)}
+						<Select.Item value={entry} label={$t(`attendance.${entry}`)}>
+							{$t(`attendance.${entry}`)}
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</div>
+	</FormModal>
+{/if}

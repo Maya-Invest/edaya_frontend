@@ -1,4 +1,5 @@
 import type { components } from '$lib/api/schema';
+import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import {
 	cachePendingInvitation,
 	clearPendingInvitation,
@@ -8,6 +9,10 @@ import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 
 type InvitationKind = components['schemas']['SendAccountInvitationCommand']['kind'];
+
+function invitationVersionKeys(kind: InvitationKind): EntityVersionKey[] {
+	return [kind === 'teacher' ? 'teachers' : kind === 'guardian' ? 'guardians' : kind === 'student' ? 'students' : 'staff'];
+}
 
 export interface InvitationDeliveryResult {
 	invitationId: string;
@@ -28,7 +33,7 @@ export async function sendAccountInvitationMutation(input: {
 			contactChannel: 'email',
 			...(input.contactValue ? { contactValue: input.contactValue } : {}),
 		}),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: invitationVersionKeys(input.kind) },
 	);
 
 	if (!result?.invitation?.id || !result?.token) {
@@ -51,7 +56,7 @@ export async function resendAccountInvitationMutation(input: {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => client.commands.resendAccountInvitation({ invitationId: input.invitationId }),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: invitationVersionKeys(input.kind) },
 	);
 
 	if (!result?.invitation?.id || !result?.token) {
@@ -74,7 +79,7 @@ export async function revokeAccountInvitationMutation(input: {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => client.commands.revokeAccountInvitation({ invitationId: input.invitationId }),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: invitationVersionKeys(input.kind) },
 	);
 
 	if (result !== null) {

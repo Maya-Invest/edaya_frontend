@@ -2,36 +2,18 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
-function buildContactMethods(email: string, phone: string) {
-	return [
-		email
-			? {
-					type: 'email' as const,
-					value: email,
-					label: 'Email',
-					isPrimary: true,
-					allowsNotifications: true,
-				}
-			: null,
-		phone
-			? {
-					type: 'phone' as const,
-					value: phone,
-					label: 'Téléphone',
-					isPrimary: !email,
-					allowsNotifications: true,
-				}
-			: null,
-	].filter((method): method is NonNullable<typeof method> => method !== null);
-}
-
 export interface RegisterGuardianInput {
 	schoolId: string;
 	guardianId: string;
 	firstName: string;
 	lastName: string;
+	code?: string;
 	email?: string;
 	phone?: string;
+	alternativePhone?: string;
+	emailNotificationsEnabled?: boolean;
+	smsNotificationsEnabled?: boolean;
+	pushNotificationsEnabled?: boolean;
 	sendAccountInvitation?: boolean;
 	createdAt?: string;
 }
@@ -53,14 +35,19 @@ export async function registerGuardian(
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 
+	const code = input.code?.trim() || undefined;
 	await client.commands.registerGuardian({
 		id: input.guardianId,
 		schoolId: input.schoolId,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
+		...(code ? { code } : {}),
 		email: email || null,
 		phone: phone || null,
-		contactMethods: buildContactMethods(email, phone),
+		alternativePhone: input.alternativePhone,
+		emailNotificationsEnabled: input.emailNotificationsEnabled,
+		smsNotificationsEnabled: input.smsNotificationsEnabled,
+		pushNotificationsEnabled: input.pushNotificationsEnabled,
 		hasAccess: true,
 		sendAccountInvitation: input.sendAccountInvitation ?? false,
 		createdAt: now,

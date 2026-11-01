@@ -35,6 +35,9 @@
 		],
 		getUrl: () => $page.url,
 	});
+	$effect(() => {
+		modals.hydrate();
+	});
 	afterNavigate(() => {
 		modals.hydrate();
 		validateModal();
@@ -128,9 +131,9 @@
 			<h4 class="text-sm font-semibold">{$t('teacher.availabilityTitle')}</h4>
 			<p class="mt-1 text-xs text-muted-foreground">{$t('teacher.availabilityHint')}</p>
 		</div>
-		<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
+		<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 			{#snippet children({ disabled })}
-				<Button size="sm" class="rounded-full" {disabled} onclick={() => modals.open('add-unavailability')}>
+				<Button size="sm" {disabled} onclick={() => modals.open('add-unavailability')}>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />{$t('teacher.availabilityAdd')}
 				</Button>
 			{/snippet}
@@ -155,11 +158,11 @@
 									{#if rule.recurrence === 'weekly' && rule.reason} · {rule.reason}{/if}
 								</p>
 							</div>
-							<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
+							<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 								{#snippet children({ disabled })}
 									<Button size="sm" variant="ghost" disabled={disabled || busyId === rule.id} onclick={() => toggle(rule)}>{rule.isActive ? $t('common.disable') : $t('common.enable')}</Button>
-									<Button size="icon" variant="ghost" class="h-8 w-8" {disabled} onclick={() => modals.open('edit-unavailability', { target: rule.id })}><Pencil class="h-4 w-4" /></Button>
-									<Button size="icon" variant="ghost" class="h-8 w-8 text-destructive" {disabled} onclick={() => modals.open('delete-unavailability', { target: rule.id })}><Trash2 class="h-4 w-4" /></Button>
+									<Button size="icon" variant="ghost" class="w-8" {disabled} onclick={() => modals.open('edit-unavailability', { target: rule.id })}><Pencil class="h-4 w-4" /></Button>
+									<Button size="icon" variant="ghost" class="w-8 text-destructive" {disabled} onclick={() => modals.open('delete-unavailability', { target: rule.id })}><Trash2 class="h-4 w-4" /></Button>
 								{/snippet}
 							</PermissionGate>
 						</li>
@@ -170,9 +173,7 @@
 	{/each}
 </div>
 
-{#if addOpen.open}
-	<TeacherUnavailabilityFormModal bind:open={addOpen.open} {teacher} onSaved={syncRows} />
-{/if}
+<TeacherUnavailabilityFormModal bind:open={addOpen.open} {teacher} onSaved={syncRows} />
 {#if editOpen.open && editing}
 	<TeacherUnavailabilityFormModal bind:open={editOpen.open} {teacher} rule={editing} onSaved={syncRows} />
 {/if}

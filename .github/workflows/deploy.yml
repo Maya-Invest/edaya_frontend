@@ -1,0 +1,73 @@
+name: deploy
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Source revision (empty uses selected workflow revision)
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
+  deployments: write
+concurrency:
+  group: deploy-${{ github.ref_name == 'main' && 'production' || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  preparation:
+    uses: ./.github/workflows/_prepare.yml
+    with:
+      target: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      source_ref: ${{ inputs.source_ref || github.sha }}
+      release_mode: true
+    secrets:
+      BACKEND_CHECKOUT_TOKEN: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+  quality:
+    needs: preparation
+    uses: ./.github/workflows/_quality_check.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+  unit:
+    needs: preparation
+    uses: ./.github/workflows/_unit_test.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+  build:
+    needs: preparation
+    uses: ./.github/workflows/_build.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+  integration:
+    needs: [preparation, quality, unit]
+    uses: ./.github/workflows/_integration_test.yml
+    with:
+      source_ref: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      baseline_sha: ${{ github.event.pull_request.base.sha || '' }}
+    secrets:
+      BACKEND_CHECKOUT_TOKEN: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+  qualification:
+    if: always()
+    needs: [preparation, quality, unit, build, integration]
+    uses: ./.github/workflows/_finalize.yml
+    with:
+      source_sha: ${{ needs.preparation.outputs.source_sha }}
+      backend_sha: ${{ needs.preparation.outputs.backend_sha }}
+      target: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      job_results: ${{ toJSON(needs) }}
+  deploy:
+    needs: qualification
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      target: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

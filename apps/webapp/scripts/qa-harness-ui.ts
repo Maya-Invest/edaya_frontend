@@ -1,17 +1,19 @@
+import { selectTrigger, chooseOption, selectControl } from '../tests/integration/support/custom-select';
 import type { Locator, Page } from 'playwright';
 import {
 	academicYearLabelFromDates,
 	defaultAcademicYearPreset,
 } from '../src/lib/onboarding/school-step-defaults';
 import { waitForEnabled } from '../tests/integration/demo-dry-run/support/auth';
-import { ensureAcademicYearPublishedViaApi } from '../tests/integration/setup/journey-api';
 import { waitForAppShell } from './qa-matrix-support';
 
 export async function waitForPageQuery(page: Page): Promise<void> {
-	await page
-		.locator('[role="status"] .animate-spin')
-		.waitFor({ state: 'detached', timeout: 30_000 })
-		.catch(() => {});
+	const spinner = page.locator('[role="status"] .animate-spin');
+	const visible = await spinner.first().isVisible().catch(() => false);
+	if (!visible) {
+		return;
+	}
+	await spinner.first().waitFor({ state: 'detached', timeout: 30_000 }).catch(() => {});
 }
 
 const SPA_NAV_TIMEOUT_MS = 15_000;
@@ -77,22 +79,19 @@ export async function setAppLang(page: Page, next: 'en' | 'fr'): Promise<boolean
 /** Clear stale year/period picks from prior tenants in the same browser session. */
 export async function clearAcademicSelectionStorage(page: Page): Promise<void> {
 	await page.evaluate(() => {
-		sessionStorage.removeItem('edaya:yearId');
-		sessionStorage.removeItem('edaya:periodId');
+		for (const key of Object.keys(sessionStorage)) {
+			if (/^edaya:(yearId|periodId)(:|$)/.test(key)) sessionStorage.removeItem(key);
+		}
 	});
 }
 
 export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000): Promise<void> {
-	const started = Date.now();
-	while (Date.now() - started < timeout) {
-		const yearId = await page.evaluate(() => sessionStorage.getItem('edaya:yearId'));
-		if (yearId && yearId.length > 0) {
-			return;
-		}
-		await page.waitForTimeout(250);
-	}
-	// Fallback: shell may show the year before sessionStorage is written on slow boots.
-	await page.getByText(/\b\d{4}-\d{4}\b/).first().waitFor({ state: 'visible', timeout: 5_000 });
+	await page.waitForFunction(() => {
+		const trigger = document.querySelector('[data-testid="app-shell"]') ?? document.querySelector('[data-testid="academic-year-trigger"]');
+		const schoolId = trigger?.getAttribute('data-school-id');
+		const yearId = trigger?.getAttribute('data-year-id');
+		return Boolean(schoolId && yearId && sessionStorage.getItem(`edaya:yearId:${schoolId}`) === yearId);
+	}, undefined, { timeout });
 }
 
 /** Keep date inputs inside their min/max (academic-year bounds on calendar create). */
@@ -130,15 +129,16 @@ export async function dismissOpenDialogs(page: Page): Promise<void> {
 	}
 }
 
+/** Mutation dialogs close back to a still-open inspection drawer. */
 export async function waitForDialogClosed(page: Page, timeout = 15_000): Promise<boolean> {
-	const started = Date.now();
-	while (Date.now() - started < timeout) {
-		if ((await visibleDialogCount(page)) === 0) {
-			return true;
-		}
-		await page.waitForTimeout(120);
+	try {
+		await page.waitForFunction(() => !Array.from(document.querySelectorAll('[role="dialog"]:not(.ui-drawer)'))
+			.some(node => node instanceof HTMLElement && node.checkVisibility()), undefined, { timeout });
+		return true;
 	}
-	return (await visibleDialogCount(page)) === 0;
+	catch {
+		return false;
+	}
 }
 
 function mainContentScope(page: Page): Locator {
@@ -158,12 +158,12 @@ async function ensureTableViewForSort(page: Page): Promise<void> {
 	if (await page.getByTestId(LIST_SORT_TEST_ID).first().isVisible().catch(() => false)) {
 		return;
 	}
-	const more = page.getByTestId('list-more-menu');
+	const more = page.getByTestId('collection-menu');
 	if (!(await more.isVisible().catch(() => false))) {
 		return;
 	}
 	await more.click({ timeout: 3_000 }).catch(() => {});
-	const tableView = page.getByRole('button', { name: /vue tableau|table view/i });
+	const tableView = page.getByRole('menuitem', { name: /vue tableau|table view/i });
 	if (await tableView.isVisible({ timeout: 2_000 }).catch(() => false)) {
 		await tableView.click();
 		return;
@@ -225,14 +225,14 @@ export type ListSelectionExportResult =
  * Product export lives on ListSelectionBar; the More-menu Exporter is list.exportSoon.
  */
 export async function exportSelectedListRows(page: Page): Promise<ListSelectionExportResult> {
-	const more = page.getByTestId('list-more-menu');
+	const more = page.getByTestId('collection-menu');
 	if (!(await more.isVisible({ timeout: 5_000 }).catch(() => false))) {
 		return { status: 'na', detail: 'Menu Plus absent' };
 	}
 
 	await more.click({ timeout: 3_000 });
 
-	const enterSelect = page.getByRole('button', { name: /^(sélectionner|select)$/i });
+	const enterSelect = page.getByRole('menuitem', { name: /^(sélectionner|select)$/i });
 	if (!(await enterSelect.isVisible({ timeout: 3_000 }).catch(() => false))) {
 		await page.keyboard.press('Escape').catch(() => {});
 		return { status: 'na', detail: 'Action Sélectionner absente' };
@@ -312,23 +312,29 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	if (endpointLower.includes('/finance/billing')) {
 		push(/add invoice|ajouter une facture/i);
 	}
-	if (endpointLower.includes('/configuration/subjects')) {
+	if (endpointLower.includes('/configuration/structure/subjects')) {
 		push(/add subject|ajouter une matière/i);
 	}
 	if (endpointLower.includes('/configuration/grade-levels')) {
 		push(/add grade level|ajouter un niveau/i);
 	}
-	if (endpointLower.includes('/configuration/classes')) {
+	if (endpointLower.includes('/configuration/structure/classes')) {
 		push(/add class|ajouter une classe/i);
 	}
 	if (endpointLower.includes('/configuration/academic')) {
 		push(/add academic year|ajouter une année scolaire/i);
 	}
+	if (endpointLower.includes('/configuration/other/subject-categories')) {
+		push(/add category|ajouter une catégorie/i);
+	}
 	if (endpointLower.includes('/configuration/grade-scales')) {
 		push(/add scale|ajouter un barème/i);
 	}
-	if (endpointLower.includes('/configuration/report-cards')) {
+	if (endpointLower.includes('/configuration/structure/details')) {
 		push(/add model|ajouter un modèle/i);
+	}
+	if (endpointLower.includes('/school/family-feedback')) {
+		push(/new campaign|nouvelle campagne|créer campagne|create campaign/i);
 	}
 	if (endpointLower.includes('/planning')) {
 		push(/add session|ajouter une séance|add schedule|ajouter un emploi du temps/i);
@@ -379,6 +385,9 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	if (/modèle|model/.test(actionLower)) {
 		push(/add model|ajouter un modèle/i);
 	}
+	if (/campagne|campaign/.test(actionLower)) {
+		push(/new campaign|nouvelle campagne|créer campagne|create campaign/i);
+	}
 
 	push(/^(add|ajouter)\s/i);
 
@@ -391,13 +400,19 @@ export async function openDialogButton(
 	timeout = 20_000,
 	scope?: Locator,
 ): Promise<boolean> {
-	const root = scope ?? page;
-	const btn = root.getByRole('button', { name }).first();
 	try {
+		const foreground = page.getByRole('dialog').filter({ visible: true }).last();
+		const root = scope ?? (await foreground.count() ? foreground : page);
+		const btn = root.getByRole('button', { name }).or(page.getByRole('menuitem', { name })).filter({ visible: true }).first();
+		const menu = root.getByTestId('collection-menu').first();
+		await btn.or(menu).first().waitFor({ state: 'visible', timeout });
+		if (!await btn.isVisible()) {
+			await menu.click();
+		}
 		await btn.waitFor({ state: 'visible', timeout });
 		await waitForEnabled(btn);
 		await btn.click();
-		await page.getByRole('dialog').waitFor({ state: 'visible', timeout: 10_000 });
+		await page.locator('[role="dialog"]:not(.ui-drawer)').last().waitFor({ state: 'visible', timeout: 10_000 });
 		return true;
 	}
 	catch {
@@ -433,7 +448,7 @@ function formModalSubmit(
 	label: RegExp = /enregistrer|save changes|^save$|add note|ajouter une note|ajouter une facture|add invoice/i,
 ): Locator {
 	const modal = page.getByTestId('form-modal');
-	const dialog = modal.or(page.getByRole('dialog'));
+	const dialog = modal.or(page.locator('[role="dialog"]:not(.ui-drawer)'));
 	return modal.getByTestId('form-modal-submit')
 		.or(dialog.getByRole('button', { name: label }))
 		.last();
@@ -472,8 +487,147 @@ export async function trySubmitDialog(page: Page): Promise<boolean> {
 }
 
 export async function waitForFormModal(page: Page, timeout = 12_000): Promise<boolean> {
-	const dialog = page.locator('[data-testid="form-modal"]').or(page.getByRole('dialog'));
-	return dialog.first().isVisible({ timeout }).catch(() => false);
+	const dialog = page
+		.locator('[data-testid="form-modal"], [data-testid="confirm-modal"], [data-testid="picker-modal"]')
+		.or(page.locator('[role="dialog"]:not(.ui-drawer)'));
+	try {
+		await dialog.first().waitFor({ state: 'visible', timeout });
+		// Let the dialog's scheduled autofocus complete before filling controls.
+		await dialog.first().evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+export async function confirmDialog(
+	page: Page,
+	label: RegExp = /rattacher|confirmer|confirm|ajouter|^add$|^ok$/i,
+): Promise<boolean> {
+	const dialog = page.getByRole('dialog');
+	const submit = dialog.getByTestId('picker-modal').getByRole('button', { name: label })
+		.or(dialog.locator('[data-testid="confirm-modal"] button').filter({ hasText: label }))
+		.or(dialog.getByRole('button', { name: label }).last());
+	if (!(await submit.isVisible({ timeout: 8_000 }).catch(() => false))) {
+		return false;
+	}
+	if (await submit.isDisabled().catch(() => true)) {
+		await waitForEnabled(submit).catch(() => {});
+	}
+	if (await submit.isDisabled().catch(() => true)) {
+		return false;
+	}
+	await submit.click();
+	return true;
+}
+
+export async function fillLabeledInput(
+	page: Page,
+	label: RegExp,
+	value: string,
+): Promise<boolean> {
+	const dialog = page.getByRole('dialog').last();
+	const field = dialog.getByLabel(label).first();
+	if (await field.isVisible({ timeout: 1_500 }).catch(() => false)) {
+		await field.fill(value);
+		return true;
+	}
+	const labelNode = dialog.locator('label').filter({ hasText: label }).first();
+	if (!(await labelNode.isVisible({ timeout: 3_000 }).catch(() => false))) {
+		return false;
+	}
+	const wrapped = labelNode.locator('input, textarea').first();
+	if (await wrapped.isVisible().catch(() => false)) {
+		await wrapped.fill(value);
+		return true;
+	}
+	const following = labelNode.locator('xpath=following::input[1] | following::textarea[1]');
+	if (await following.isVisible().catch(() => false)) {
+		await following.fill(value);
+		return true;
+	}
+	return false;
+}
+
+export async function searchAndSelectPerson(page: Page, name: string): Promise<boolean> {
+	const dialog = page.getByRole('dialog').last();
+	const trigger = dialog.getByTestId('person-picker-trigger').first();
+	if (!(await trigger.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false))) {
+		return false;
+	}
+	await trigger.click();
+	const search = page.locator('[data-person-picker-search] input:visible').last();
+	await search.waitFor({ state: 'visible' });
+	if (name) await search.fill(name);
+	const anyOption = page.getByRole('option').filter({ visible: true }).first();
+	const named = page.getByRole('option', { name: new RegExp(name, 'i') }).filter({ visible: true }).first();
+	if (await named.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false)) {
+		await named.click();
+		return true;
+	}
+	if (name) {
+		await page.keyboard.press('Escape');
+		throw new Error('Required named person fixture was not available in the picker');
+	}
+	if (await search.isVisible().catch(() => false)) {
+		await search.fill('');
+	}
+	if (await anyOption.isVisible({ timeout: 3_000 }).catch(() => false)) {
+		await anyOption.click();
+		return true;
+	}
+	await page.keyboard.press('Escape').catch(() => {});
+	return false;
+}
+
+export async function fillPaymentDialog(page: Page): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	const amount = dialog.getByLabel(/amount|montant/i).or(dialog.locator('input[type="number"]').first());
+	if (await amount.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		const current = await amount.inputValue().catch(() => '');
+		if (!current || current === '0') {
+			await amount.fill('1000');
+		}
+	}
+	const date = dialog.getByLabel(/date|payment date|date de paiement/i).or(dialog.locator('input[type="date"]').first());
+	if (await date.isVisible().catch(() => false)) {
+		const current = await date.inputValue().catch(() => '');
+		if (!current) {
+			await date.fill(new Date().toISOString().slice(0, 10));
+		}
+	}
+	await waitForSubmitEnabled(page);
+}
+
+export async function selectNativeFilter(
+	page: Page,
+	nth: number,
+	option: { value?: string; label?: RegExp } = {},
+): Promise<boolean> {
+	const select = page.getByRole('dialog').locator('select[data-select-value]').nth(nth);
+	if (!(await selectTrigger(select).isVisible({ timeout: 8_000 }).catch(() => false))) {
+		return false;
+	}
+	if (option.value) {
+		await chooseOption(select, option.value);
+		return true;
+	}
+	const values = await select.locator('option').evaluateAll((nodes) => (
+		nodes
+			.map(node => ({
+				value: (node as HTMLOptionElement).value,
+				label: node.textContent ?? '',
+			}))
+			.filter(entry => entry.value.length > 0)
+	));
+	const match = option.label
+		? values.find(entry => option.label?.test(entry.label))
+		: values[0];
+	if (!match) {
+		return false;
+	}
+	await chooseOption(select, match.value);
+	return true;
 }
 
 /** Live input values — Svelte bind:value does not set the HTML value attribute. */
@@ -517,32 +671,79 @@ export async function openUrlModal(
 }
 
 export async function pickFirstPerson(page: Page): Promise<boolean> {
+	return searchAndSelectPerson(page, '');
+}
+
+/** Click every combobox in the open dialog and pick an option (last = newest list item). */
+export async function pickDialogComboboxes(page: Page, preferLast = false): Promise<number> {
 	const dialog = page.getByRole('dialog');
-	const trigger = dialog.locator('button').filter({ has: page.locator('svg') }).first();
-	if (!(await trigger.isVisible().catch(() => false))) {
+	const combos = selectControl(dialog);
+	const count = await combos.count();
+	let picked = 0;
+	for (let i = 0; i < count; i++) {
+		const trigger = combos.nth(i);
+		if (!(await trigger.isVisible().catch(() => false))) {
+			continue;
+		}
+		await trigger.click();
+		const options = page.getByRole('option');
+		const optionCount = await options.count();
+		if (optionCount === 0) {
+			await page.keyboard.press('Escape').catch(() => {});
+			continue;
+		}
+		await (preferLast ? options.nth(optionCount - 1) : options.first()).click();
+		picked += 1;
+	}
+	return picked;
+}
+
+/** Click one dialog select and pick a named option, else the first option. */
+export async function pickDialogComboboxOption(
+	page: Page,
+	optionName?: string | RegExp,
+	nth = 0,
+): Promise<boolean> {
+	const dialog = page.getByRole('dialog');
+	const trigger = dialog.locator('button[role="combobox"], button[aria-haspopup="listbox"]').nth(nth);
+	if (!(await trigger.isVisible({ timeout: 8_000 }).catch(() => false))) {
+		const labels = await dialog.getByRole('button').allTextContents().catch(() => []);
+		console.log(`dialog select missing; buttons: ${labels.join(' | ') || '(none)'}`);
 		return false;
 	}
 	await trigger.click();
-	const option = page.getByRole('option').first();
-	if (!(await option.isVisible({ timeout: 8_000 }).catch(() => false))) {
+	const options = page.locator('[role="option"]:visible');
+	if (!(await options.first().isVisible({ timeout: 8_000 }).catch(() => false))) {
+		const labels = await page.getByRole('option').allTextContents().catch(() => []);
+		console.log(`dialog select options: ${labels.join(' | ') || '(none)'}`);
 		await page.keyboard.press('Escape').catch(() => {});
 		return false;
 	}
-	await option.click();
+	if (optionName) {
+		const named = options.filter({
+			hasText: optionName instanceof RegExp ? optionName : new RegExp(optionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+		}).first();
+		if (await named.isVisible({ timeout: 4_000 }).catch(() => false)) {
+			await named.click();
+			return true;
+		}
+	}
+	await options.first().click();
 	return true;
 }
 
-/** Native `<select>` filter. Do not include `[data-testid="list-filter"]` — that is the FilterPanel button. */
+/** Serialization proxies for custom filter controls; interaction uses their visible triggers. */
 export const LIST_FILTER_NATIVE_LOCATOR
-	= 'select[data-testid="list-filter-select"], select[aria-label="Filter"]';
+	= '[data-select-field]:has([data-testid="list-filter-select"]) select[data-select-value]';
 
 export async function selectListFilter(page: Page, value: string): Promise<boolean> {
 	const native = page.locator(LIST_FILTER_NATIVE_LOCATOR).first();
-	if (await native.isVisible({ timeout: 4_000 }).catch(() => false)) {
-		await native.selectOption(value);
+	if (!await selectTrigger(native).isVisible()) await page.getByTestId('collection-filter').first().click();
+	if (await selectTrigger(native).isVisible({ timeout: 4_000 }).catch(() => false)) {
+		await chooseOption(native, value);
 		return true;
 	}
-	const combobox = page.getByRole('combobox').first();
+	const combobox = selectControl(page).first();
 	if (await combobox.isVisible({ timeout: 4_000 }).catch(() => false)) {
 		await combobox.click();
 		const option = page.getByRole('option', { name: new RegExp(value, 'i') }).first();
@@ -572,11 +773,16 @@ export async function openFilterPanel(page: Page, titlePattern: RegExp): Promise
 export async function assertListContains(page: Page, text: string, visible = true, timeout = 12_000): Promise<boolean> {
 	const inMain = page.locator('main').getByText(text, { exact: false });
 	const anywhere = page.getByText(text, { exact: false });
-	const row = visible
+	const row = (visible
 		? inMain.filter({ visible: true }).first().or(anywhere.filter({ visible: true }).first())
-		: inMain.first().or(anywhere.first());
-	const isVisible = await row.isVisible({ timeout }).catch(() => false);
-	return visible ? isVisible : !isVisible;
+		: inMain.first().or(anywhere.first())).first();
+	try {
+		await row.waitFor({ state: visible ? 'visible' : 'hidden', timeout });
+		return true;
+	}
+	catch {
+		return false;
+	}
 }
 
 export async function assertListCount(page: Page, min: number, max?: number): Promise<boolean> {
@@ -595,7 +801,7 @@ export async function waitForGradeLevelSelectOptions(
 	timeout = 20_000,
 ): Promise<Locator> {
 	const gradeSelect = dialog.locator('select').first();
-	await gradeSelect.waitFor({ state: 'visible', timeout });
+	await selectTrigger(gradeSelect).waitFor({ state: 'visible', timeout });
 	const started = Date.now();
 	while (Date.now() - started < timeout) {
 		const count = await gradeSelect.locator('option').count();
@@ -610,8 +816,8 @@ export async function waitForGradeLevelSelectOptions(
 /** GradeLevelFormModal — name and label are both required (label may mirror name on input). */
 export async function fillGradeLevelCreateDialog(page: Page, levelName: string): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	const nameInput = dialog.locator('input').first();
-	const labelInput = dialog.locator('input').nth(1);
+	const nameInput = dialog.getByRole('textbox', { name: /^(grade level name|nom du niveau)$/i });
+	const labelInput = dialog.getByRole('textbox', { name: /short label|libellé court/i });
 	const submit = dialog.getByRole('button', { name: /enregistrer|save changes|^save$/i }).last();
 
 	await nameInput.waitFor({ state: 'visible', timeout: 15_000 });
@@ -632,7 +838,12 @@ export async function fillGradeLevelCreateDialog(page: Page, levelName: string):
 	while (Date.now() - started < 15_000) {
 		await fillFields();
 		if (!(await submit.isDisabled())) {
+			const responsePromise = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/configure-grade-level'), { timeout: 20_000 });
 			await submit.click();
+			const response = await responsePromise;
+			const body = await response.json().catch(() => null);
+			if (!response.ok() || body?.success === false || body?.error)
+				throw new Error(`Grade level creation rejected (HTTP ${response.status()})`);
 			return;
 		}
 		await page.waitForTimeout(150);
@@ -667,16 +878,23 @@ export async function fillAcademicYearCreateDialog(
 export async function fillClassCreateDialog(
 	page: Page,
 	className: string,
+	expectedGradeLevelId?: string,
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
 	await dialog.locator('input').first().fill(className);
 	const gradeSelect = await waitForGradeLevelSelectOptions(dialog);
-	await gradeSelect.selectOption({ index: 0 });
+	if (await gradeSelect.isEnabled()) {
+		await chooseOption(gradeSelect, expectedGradeLevelId ? { value: expectedGradeLevelId } : { index: 0 });
+	}
+	const selectedGradeLevelId = await gradeSelect.inputValue();
+	if (!selectedGradeLevelId || (expectedGradeLevelId && selectedGradeLevelId !== expectedGradeLevelId)) {
+		throw new Error('Class creation must retain the selected structure grade level');
+	}
 	const attendanceSelect = dialog.locator('select').filter({
 		has: page.locator('option[value="daily"]'),
 	}).last();
-	if (await attendanceSelect.isVisible().catch(() => false)) {
-		await attendanceSelect.selectOption('daily');
+	if (await selectTrigger(attendanceSelect).isVisible().catch(() => false)) {
+		await chooseOption(attendanceSelect, 'daily');
 		await attendanceSelect.evaluate((el) => {
 			if (!(el instanceof HTMLSelectElement)) {
 				return;
@@ -743,7 +961,7 @@ export async function fillStudentCreateDialog(
 		throw new Error('No classes in academicContext.hierarchy — create a class before adding a student');
 	}
 
-	const classTrigger = dialog.getByRole('combobox').first();
+	const classTrigger = selectControl(dialog).first();
 	if (await classTrigger.isVisible().catch(() => false)) {
 		if (options.className) {
 			await selectComboboxOption(page, classTrigger, { name: options.className });
@@ -776,12 +994,10 @@ export async function fillPersonCreateDialog(
 	await dialog.locator('input').nth(1).fill(options.lastName ?? `Person${Date.now()}`);
 
 	const invite = dialog.locator('#staff-send-invite, #teacher-send-invite, #guardian-send-invite, [id$="-send-invite"]');
-	const count = await invite.count();
-	for (let i = 0; i < count; i++) {
-		const box = invite.nth(i);
-		if (await box.isVisible().catch(() => false) && await box.isChecked().catch(() => false)) {
-			await box.click();
-		}
+	await invite.first().waitFor({ state: 'visible', timeout: 15_000 });
+	await invite.first().setChecked(false);
+	if (await invite.first().isChecked()) {
+		throw new Error('Person create invitation toggle did not become unchecked');
 	}
 
 	await submitDialog(page);
@@ -805,17 +1021,7 @@ export async function fillPersonCreateDialogWithInvite(
 		}
 	}
 
-	const emailInput = dialog.locator('input[type="email"]').first();
-	if (await emailInput.isVisible().catch(() => false)) {
-		await emailInput.fill(options.email);
-	}
-	else {
-		const inputs = dialog.locator('input:not([type="checkbox"])');
-		const inputCount = await inputs.count();
-		if (inputCount >= 3) {
-			await inputs.nth(2).fill(options.email);
-		}
-	}
+	await dialog.locator('input[type="email"]').first().fill(options.email);
 
 	const submit = dialog.getByTestId('form-modal-submit')
 		.or(dialog.getByRole('button', { name: /save|enregistrer|add teacher|ajouter|créer|create/i }))
@@ -873,7 +1079,7 @@ export async function fillNewSessionWizard(
 		if (noSubjects) {
 			return null;
 		}
-		const subjectTrigger = dialog.getByRole('combobox').first()
+		const subjectTrigger = selectControl(dialog).first()
 			.or(dialog.locator('button').filter({ hasText: /subject|matière/i }).first());
 		if (await subjectTrigger.isVisible().catch(() => false)) {
 			await selectComboboxOption(page, subjectTrigger);
@@ -934,71 +1140,24 @@ export async function fillNewSessionWizard(
 
 /** Generate a report card for the first student (or named student) on the class report-cards list. */
 export async function generateReportCardForStudent(
-	page: Page,
-	classId: string,
-	studentName?: string,
+ page: Page,
+ _classId: string,
+ studentName?: string,
 ): Promise<string | null> {
-	await waitForPageQuery(page);
-
-	const generateResponse = page.waitForResponse(
-		res => res.request().method() === 'POST'
-			&& res.url().includes('/core/commands/generate-report-card-result')
-			&& res.ok(),
-		{ timeout: 30_000 },
-	).catch(() => null);
-
-	if (studentName) {
-		const row = page.locator('main tr').filter({ hasText: studentName }).first();
-		const generateBtn = row.getByRole('button', { name: /generate|générer/i }).first();
-		if (await generateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
-			await generateBtn.click();
-		}
-	}
-	else {
-		const generateBtn = page.getByRole('button', { name: /generate|générer/i }).first();
-		if (await generateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
-			await generateBtn.click();
-		}
-		else {
-			const generateAll = page.getByRole('button', { name: /generate all|générer tout|tout générer/i }).first();
-			if (await generateAll.isVisible({ timeout: 5_000 }).catch(() => false)) {
-				await generateAll.click();
-			}
-		}
-	}
-
-	const generateResult = await generateResponse;
-	if (generateResult) {
-		try {
-			const body = await generateResult.json() as { id?: string };
-			if (typeof body.id === 'string') {
-				return body.id;
-			}
-		}
-		catch {
-			// scrape from page
-		}
-	}
-
-	await waitForPageQuery(page);
-	await page.waitForTimeout(1_500);
-
-	const match = page.url().match(new RegExp(`/classes/${classId}/report-cards/([^/?]+)`));
-	if (match?.[1]) {
-		return match[1];
-	}
-	const link = page.locator(`main a[href*="/classes/${classId}/report-cards/"]`).first();
-	if (await link.isVisible({ timeout: 8_000 }).catch(() => false)) {
-		const href = await link.getAttribute('href');
-		return href?.match(/\/report-cards\/([^/?]+)/)?.[1] ?? null;
-	}
-	const viewBtn = page.getByRole('button', { name: /view|voir|consulter/i }).first();
-	if (await viewBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-		await viewBtn.click();
-		await page.waitForTimeout(800);
-		return page.url().match(/\/report-cards\/([^/?]+)/)?.[1] ?? null;
-	}
-	return null;
+ const rows = page.locator('main tr');
+ const scope = studentName ? rows.filter({ hasText: studentName }) : rows;
+ const rowMenu = scope.getByRole('button', { name: ACTION_MENU_BUTTON_NAME }).first();
+ await rowMenu.click();
+ const button = page.getByRole('menuitem', { name: /^(generate|générer)$/i }).first();
+ await button.waitFor({ state: 'visible', timeout: 20000 });
+ const response = page.waitForResponse(result => result.request().method() === 'POST' && result.url().includes('/core/commands/generate-report-card-result'), { timeout: 30000 });
+ await button.click();
+ const generated = await response;
+ if (!generated.ok()) throw new Error(`Report generation HTTP ${generated.status()}`);
+ const body = await generated.json() as { id?: string };
+ if (!body.id) throw new Error('Report generation returned no result ID');
+ await scope.locator('.ui-record-target').waitFor({ state: 'visible' });
+ return body.id;
 }
 
 /** GradeScaleFormModal — name is required; min/max/passing already default to 0/20/10. */
@@ -1033,7 +1192,7 @@ async function waitForSelectOptionCount(
 	return false;
 }
 
-/** Report-card model create — name + grade level + grade scale are all required. */
+/** Report-card model creation inherits the grade-level scale. */
 export async function fillReportCardDefinitionDialog(
 	page: Page,
 	options: {
@@ -1051,32 +1210,16 @@ export async function fillReportCardDefinitionDialog(
 
 	const nativeSelects = dialog.locator('select');
 	const gradeSelect = nativeSelects.nth(0);
-	const scaleSelect = nativeSelects.nth(1);
 
-	if (await gradeSelect.isVisible().catch(() => false)) {
+	if (await selectTrigger(gradeSelect).isVisible().catch(() => false)) {
 		if (!(await waitForSelectOptionCount(gradeSelect, 1))) {
 			throw new Error('Report-card grade level select has no options');
 		}
 		if (options.gradeLevelId) {
-			await gradeSelect.selectOption(options.gradeLevelId).catch(() => gradeSelect.selectOption({ index: 0 }));
+			await chooseOption(gradeSelect, options.gradeLevelId).catch(() => chooseOption(gradeSelect, { index: 0 }));
 		}
 		else {
-			await gradeSelect.selectOption({ index: 0 });
-		}
-	}
-
-	if (await scaleSelect.isVisible().catch(() => false)) {
-		if (!(await waitForSelectOptionCount(scaleSelect, 1))) {
-			throw new Error('Report-card scale select has no options — create a grade scale first');
-		}
-		if (options.gradeScaleId) {
-			await scaleSelect.selectOption(options.gradeScaleId).catch(() => scaleSelect.selectOption({ index: 0 }));
-		}
-		else if (options.gradeScaleName) {
-			await scaleSelect.selectOption({ label: options.gradeScaleName }).catch(() => scaleSelect.selectOption({ index: 0 }));
-		}
-		else {
-			await scaleSelect.selectOption({ index: 0 });
+			await chooseOption(gradeSelect, { index: 0 });
 		}
 	}
 
@@ -1103,52 +1246,92 @@ export async function fillActivityCreateDialog(
 	await waitForSubmitEnabled(page);
 }
 
+export async function fillIncidentTitle(page: Page, title: string): Promise<boolean> {
+	const dialog = page.getByRole('dialog').last();
+	const titled = dialog.locator('#incident-title, [data-testid="incident-title-input"]').first();
+	if (await titled.isVisible({ timeout: 3_000 }).catch(() => false)) {
+		await titled.fill(title);
+		await titled.evaluate((element, nextTitle) => {
+			if (!(element instanceof HTMLInputElement)) {
+				return;
+			}
+			element.value = nextTitle;
+			element.dispatchEvent(new Event('input', { bubbles: true }));
+			element.dispatchEvent(new Event('change', { bubbles: true }));
+		}, title);
+		return true;
+	}
+	if (await fillLabeledInput(page, /^title$|^titre$/i, title)) {
+		return true;
+	}
+	const fallback = dialog.locator('input:not([type="date"]):not([type="search"]):not([type="time"]):not([type="number"])').first();
+	if (await fallback.isVisible().catch(() => false)) {
+		await fallback.fill(title);
+		return true;
+	}
+	return false;
+}
+
 export async function fillIncidentCreateDialog(
 	page: Page,
 	options: { title: string; description?: string; studentName?: string } = { title: 'E2E-Incident' },
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	if (!(await waitForSubmitEnabled(page, 2_000))) {
-		if (options.studentName) {
-			const picker = dialog.locator('button').filter({ has: page.locator('svg') }).first();
-			if (await picker.isVisible().catch(() => false)) {
-				await picker.click();
-				const search = page.locator('[role="dialog"] input, [data-state="open"] input').last();
-				await search.fill(options.studentName);
-				const option = page.getByRole('option', { name: new RegExp(options.studentName, 'i') }).first();
-				if (await option.isVisible({ timeout: 8_000 }).catch(() => false)) {
-					await option.click();
-				}
-				else {
-					await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
-				}
-			}
-		}
-		else {
-			await pickFirstPerson(page);
-		}
+	if (!await fillIncidentTitle(page, options.title)) {
+		await dialog.locator('input:not([type="date"]):not([type="search"]):not([type="time"])').first().fill(options.title);
 	}
-	await dialog.locator('input:not([type="date"])').first().fill(options.title);
 	const textarea = dialog.locator('textarea').first();
 	if (await textarea.isVisible().catch(() => false)) {
 		await textarea.fill(options.description ?? 'E2E incident description');
 	}
+	if (options.studentName) {
+		await searchAndSelectPerson(page, options.studentName);
+	}
+	else if (!(await waitForSubmitEnabled(page, 2_000))) {
+		await pickFirstPerson(page);
+	}
 	await waitForSubmitEnabled(page);
 }
 
-export async function fillAssignFeeDialog(page: Page): Promise<boolean> {
+export async function fillFeeCreateDialog(
+	page: Page,
+	feeName: string,
+	amount = '10000',
+): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	const nameInput = dialog.getByLabel(/fee name|nom du frais/i)
+		.or(dialog.getByRole('textbox').first());
+	await nameInput.fill(feeName);
+	const amountInput = dialog.getByLabel(/amount|montant/i)
+		.or(dialog.locator('input[type="number"]').first());
+	await amountInput.fill(amount);
+	await amountInput.evaluate((element, nextAmount) => {
+		if (!(element instanceof HTMLInputElement)) {
+			return;
+		}
+		element.value = nextAmount;
+		element.dispatchEvent(new Event('input', { bubbles: true }));
+		element.dispatchEvent(new Event('change', { bubbles: true }));
+	}, amount);
+}
+
+export async function fillAssignFeeDialog(page: Page, studentName?: string): Promise<boolean> {
+	if (studentName) {
+		if (!await searchAndSelectPerson(page, studentName)) return false;
+		return waitForSubmitEnabled(page);
+	}
 	if (await waitForSubmitEnabled(page, 8_000)) {
 		return true;
 	}
 	await pickFirstPerson(page);
-	const feeCombo = page.getByRole('dialog').getByRole('combobox').first();
+	const feeCombo = selectControl(page.getByRole('dialog')).first();
 	if (await feeCombo.isVisible().catch(() => false)) {
 		await selectComboboxOption(page, feeCombo);
 	}
 	return waitForSubmitEnabled(page);
 }
 
-export async function fillEvaluationCreateDialog(page: Page, title: string): Promise<boolean> {
+export async function fillEvaluationCreateDialog(page: Page, title: string, classSubjectId?: string): Promise<boolean> {
 	const dialog = page.getByRole('dialog');
 	const empty = await dialog.getByText(/aucune|empty|no (subject|matière)/i).isVisible().catch(() => false);
 	if (empty) {
@@ -1156,6 +1339,14 @@ export async function fillEvaluationCreateDialog(page: Page, title: string): Pro
 	}
 	const titleInput = dialog.locator('input:not([type="number"]):not([type="date"])').first();
 	await titleInput.waitFor({ state: 'visible', timeout: 8_000 });
+	// Newly registered students are not eligible for a 09:00 assessment earlier today.
+	// Schedule this mutable fixture after enrollment, inside the current academic period.
+	if (classSubjectId) {
+		await dialog.getByTestId('assessment-subject-select').click();
+		await page.getByTestId(`assessment-subject-${classSubjectId}`).click();
+	}
+	const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+	await dialog.locator('input[type="date"]').fill(tomorrow);
 	const started = Date.now();
 	while (Date.now() - started < 12_000) {
 		await titleInput.fill(title);
@@ -1164,7 +1355,7 @@ export async function fillEvaluationCreateDialog(page: Page, title: string): Pro
 		}
 		await page.waitForTimeout(250);
 	}
-	const subjectCombo = dialog.getByRole('combobox').nth(1);
+	const subjectCombo = selectControl(dialog).nth(1);
 	if (await subjectCombo.isVisible().catch(() => false)) {
 		await selectComboboxOption(page, subjectCombo);
 	}
@@ -1211,7 +1402,7 @@ async function dismissAcademicYearModals(page: Page): Promise<void> {
 	url.searchParams.delete('modal');
 	url.searchParams.delete('modalTarget');
 	url.searchParams.delete('modalStep');
-	await navigateSpaPage(page, `${url.pathname}${url.search}${url.hash}`);
+	await navigateSpaPage(page, url.toString());
 	await waitForPageQuery(page);
 }
 
@@ -1281,21 +1472,6 @@ async function academicYearUiLooksPublished(yearSection: Locator): Promise<boole
 	}
 	const archiveInSection = yearSection.getByRole('button', { name: archiveYearButtonName });
 	return archiveInSection.isVisible({ timeout: 2_000 }).catch(() => false);
-}
-
-async function publishAcademicYearViaApiFallback(page: Page, label: string): Promise<boolean> {
-	const origin = new URL(page.url()).origin;
-	const published = await ensureAcademicYearPublishedViaApi(page, origin, label);
-	if (!published) {
-		return false;
-	}
-	const current = new URL(page.url());
-	current.searchParams.delete('modal');
-	current.searchParams.delete('modalTarget');
-	current.searchParams.delete('modalStep');
-	await navigateSpaPage(page, `${current.pathname}${current.search}${current.hash}`);
-	await waitForPageQuery(page);
-	return true;
 }
 
 /**
@@ -1369,8 +1545,7 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 		return true;
 	}
 
-	console.log(`academic-year UI publish stalled for ${label}; trying API fallback`);
-	return publishAcademicYearViaApiFallback(page, label);
+	throw new Error(`Academic-year UI publication did not persist for ${label}`);
 }
 
 /** @deprecated Use ensureAcademicYearReady */
@@ -1427,7 +1602,7 @@ async function openActionMenusForDelete(page: Page, root: Page | Locator): Promi
 
 /** Provisioned runs assert delete affordance without clicking (no destructive mutation). */
 export async function isDeleteControlVisible(page: Page): Promise<boolean> {
-	const drawer = page.locator('aside[aria-label]').first();
+	const drawer = page.locator('[role="dialog"].ui-drawer').first();
 	const scope = (await drawer.isVisible().catch(() => false)) ? drawer : page;
 
 	if (await isDirectDeleteVisible(scope)) {

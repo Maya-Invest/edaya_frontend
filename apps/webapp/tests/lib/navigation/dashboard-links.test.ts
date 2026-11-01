@@ -15,6 +15,7 @@ describe('dashboardActionHref', () => {
 	it('resolves school-wide action targets', () => {
 		expect(dashboardActionHref('overdue_fees', classes)).toBe('/finance/billing/');
 		expect(dashboardActionHref('pending_justifications', classes)).toBe('/school/students/');
+		expect(dashboardActionHref('pending_student_photos', classes)).toBe('/school/students/?photoReview=pending');
 		expect(dashboardActionHref('high_severity_incidents', classes)).toBe('/school/events/');
 	});
 

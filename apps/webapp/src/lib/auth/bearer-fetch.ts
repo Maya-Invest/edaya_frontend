@@ -1,27 +1,12 @@
-import { PUBLIC_API_URL, PUBLIC_AUTH_URL } from '$env/static/public';
-import { resolveApiUrl } from '$lib/api/http';
-import { ApiError } from '@maya-invest/edaya-api-client';
+import { PUBLIC_API_URL } from '$env/static/public';
+import { createAuthClient } from '@maya-invest/edaya-api-client';
 import { canonicalHttpOrigin, createAccessTokenManager, createBearerFetch } from './access-token';
-
-const authBaseUrl = PUBLIC_AUTH_URL.trim();
-if (!authBaseUrl) {
-	throw new Error('PUBLIC_AUTH_URL is required');
-}
+import { authTransport } from './transport';
 
 const schoolApiOrigin = canonicalHttpOrigin(PUBLIC_API_URL.trim());
 
-export const accessTokens = createAccessTokenManager(async (resource) => {
-	const response = await fetch(resolveApiUrl(authBaseUrl, '/auth/edaya/access-token'), {
-		method: 'POST',
-		credentials: 'include',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ resource }),
-	});
-	if (!response.ok) {
-		throw new ApiError(response.status, await response.json());
-	}
-	return response.json();
-});
+const account = createAuthClient(authTransport);
+export const accessTokens = createAccessTokenManager(resource => account.accessToken({ resource }));
 
 const send = createBearerFetch(accessTokens, schoolApiOrigin);
 

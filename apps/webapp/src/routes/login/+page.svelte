@@ -5,6 +5,16 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { checkBrowserApiHealth } from '$lib/api/check-api-health';
+	import { getAuthenticatedAuthUser } from '$lib/auth/bootstrap';
+	import { completeAuthSignIn } from '$lib/auth/complete-sign-in';
+	import {
+		isGuardianPortalGateUrl,
+		GUARDIAN_PORTAL_GATE_BANNER_TEST_ID,
+	} from '$lib/auth/guardian-portal-gate';
+	import {
+		isStudentPortalGateUrl,
+		STUDENT_PORTAL_GATE_BANNER_TEST_ID,
+	} from '$lib/auth/student-portal-gate';
 	import {
 		isTeacherPortalGateUrl,
 		TEACHER_PORTAL_GATE_BANNER_TEST_ID,
@@ -21,13 +31,19 @@
 	import {
 		canonicalLoginUrlState,
 		isEmailVerifiedRedirect,
+		isInvalidVerificationRedirect,
+		isLoginAutoSignInRoute,
+		isLoginRoute,
 		readLoginUrlState,
 		writeLoginUrlState,
 	} from './login-url-state';
 
 	let apiConnected = $state(false);
+	let apiChecking = $state(true);
 	let email = $state('');
-	let emailVerifiedToastShown = false;
+	let invalidVerificationToastShown = false;
+	let completingAutoSignIn = false;
+	let sessionAutoSignInChecked = false;
 
 	const showDemoLink = $derived(isDemoLoginEnabled());
 	const showSignup = $derived(isPublicSchoolRegistrationEnabled());
@@ -36,21 +52,47 @@
 		hasEmailIdentity: email.trim().length > 0,
 	}));
 	const showTeacherPortalGate = $derived(isTeacherPortalGateUrl($page.url));
+	const showGuardianPortalGate = $derived(isGuardianPortalGateUrl($page.url));
+	const showStudentPortalGate = $derived(isStudentPortalGateUrl($page.url));
 
 	onMount(() => {
 		void (async () => {
 			const health = await checkBrowserApiHealth();
 			apiConnected = health.connected;
+			apiChecking = false;
 		})();
 	});
 
-	afterNavigate(() => {
-		if (isEmailVerifiedRedirect($page.url) && !emailVerifiedToastShown) {
-			emailVerifiedToastShown = true;
-			toast.success($t('auth.emailVerifiedSignIn'));
+	afterNavigate(async (navigation) => {
+		const url = navigation.to?.url ?? $page.url;
+		if (!isLoginRoute(url.pathname)) {
+			return;
 		}
-		const canonicalHref = writeLoginUrlState($page.url, urlState);
-		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+
+		if (isInvalidVerificationRedirect(url) && !invalidVerificationToastShown) {
+			invalidVerificationToastShown = true;
+			toast.error($t('auth.invalidVerificationLink'));
+		}
+
+		if (isLoginAutoSignInRoute(url.pathname) && !completingAutoSignIn) {
+			const verified = isEmailVerifiedRedirect(url);
+			if (verified || !sessionAutoSignInChecked) {
+				sessionAutoSignInChecked = true;
+				if (verified || await getAuthenticatedAuthUser()) {
+					completingAutoSignIn = true;
+					const signedIn = await completeAuthSignIn(
+						verified ? $t('auth.emailVerifiedSignIn') : $t('auth.welcome'),
+					);
+					if (signedIn) {
+						return;
+					}
+					completingAutoSignIn = false;
+				}
+			}
+		}
+
+		const canonicalHref = writeLoginUrlState(url, urlState);
+		if (canonicalHref !== `${url.pathname}${url.search}`) {
 			void appGoto(canonicalHref, {
 				replaceState: true,
 				keepFocus: true,
@@ -81,7 +123,7 @@
 		if (prefillEmail) {
 			email = prefillEmail;
 		}
-		navigateLoginState({ panel: 'signin', method: 'password', stage: 'form' });
+		navigateLoginState({ panel: 'signin', method: 'email-otp', stage: 'form' });
 	}
 </script>
 
@@ -94,6 +136,7 @@
 >
 	{#snippet signup()}
 		{#if showSignup}
+			<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
 			<SignupPanel
 				bind:email
 				{apiConnected}
@@ -109,14 +152,32 @@
 	{#snippet signin()}
 		{#if showTeacherPortalGate}
 			<div
-				class="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
 				role="status"
 				data-testid={TEACHER_PORTAL_GATE_BANNER_TEST_ID}
 			>
 				{$t('auth.teacherPortalGateHint')}
 			</div>
 		{/if}
-		<ApiConnectionBanner connected={apiConnected} />
+		{#if showGuardianPortalGate}
+			<div
+				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				role="status"
+				data-testid={GUARDIAN_PORTAL_GATE_BANNER_TEST_ID}
+			>
+				{$t('auth.guardianPortalGateHint')}
+			</div>
+		{/if}
+		{#if showStudentPortalGate}
+			<div
+				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				role="status"
+				data-testid={STUDENT_PORTAL_GATE_BANNER_TEST_ID}
+			>
+				{$t('auth.studentPortalGateHint')}
+			</div>
+		{/if}
+		<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
 
 		<LoginPanelHost
 			bind:email

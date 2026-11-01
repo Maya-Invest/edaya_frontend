@@ -1,11 +1,13 @@
+import type { DemoContext } from '../support/types';
 import {
 	assertFilterSelectShell,
 	assertFilterSelectShellOrSkip,
 	assertListShell,
 	assertListShellOrSkip,
+	assertReportCardWorkspace,
+	assertStructureListShell,
 } from '../support/assertions';
-import { CLASS_6A, CLASS_6B } from '../support/constants';
-import type { DemoContext } from '../support/types';
+import { ATTENDANCE_EXPORT_NAME, CLASS_6A, CLASS_6B } from '../support/constants';
 import { visit, visitOrSkip } from '../support/visit';
 
 export async function runListShellScenes(ctx: DemoContext): Promise<void> {
@@ -17,10 +19,10 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/finance/payment`, 'DC2', 'Payments list shell', { pathPrefix: '/finance/payment' });
 	await assertListShell(ctx, 'DC2', 'Payments Filter + More menu');
 
-	await visit(ctx, `${base}/configuration/classes`, 'DC3', 'Class groups list shell', {
-		pathPrefix: '/configuration/classes',
+	await visit(ctx, `${base}/configuration/structure/classes`, 'DC3', 'Class groups list shell', {
+		pathPrefix: '/configuration/structure/classes',
 	});
-	await assertListShell(ctx, 'DC3', 'Class groups Filter + More menu');
+	await assertStructureListShell(ctx, 'DC3', 'Class groups level navigation and search');
 
 	await visit(ctx, `${base}/configuration/academic`, 'DC4', 'Academic admin list shell', {
 		pathPrefix: '/configuration/academic',
@@ -30,7 +32,7 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/classes/${CLASS_6B}/attendance`, 'DC5', 'Attendance list shell', {
 		pathPrefix: `/classes/${CLASS_6B}/attendance`,
 	});
-	await assertListShell(ctx, 'DC5', 'Attendance Filter + More menu');
+	await assertListShell(ctx, 'DC5', 'Attendance Filter + More menu', { menuAction: ATTENDANCE_EXPORT_NAME });
 
 	await visit(ctx, `${base}/school/announcements`, 'DC6', 'Announcements list shell', {
 		pathPrefix: '/school/announcements',
@@ -47,21 +49,16 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	});
 	await assertFilterSelectShell(ctx, 'DC8', 'Activities FilterSelect + More menu');
 
-	await visitOrSkip(ctx, `${base}/configuration/report-cards`, 'DC9', 'Report card defs filter select', {
-		pathPrefix: '/configuration/report-cards',
-		skipOnFail: 'Director role may lack REPORT_CARD_CONFIGURE',
+	await visit(ctx, `${base}/configuration/structure/details`, 'DC9', 'Report card models workspace', {
+		pathPrefix: '/configuration/structure/details',
 	});
-	await assertFilterSelectShellOrSkip(
-		ctx,
-		'DC9',
-		'Report card definitions FilterSelect + More menu',
-		'Director role may lack REPORT_CARD_CONFIGURE',
-	);
+	// This seeded director has level access but no REPORT_CARD_CONFIGURE grant.
+	await assertReportCardWorkspace(ctx, 'DC9', 'Level navigation preserves report configuration restrictions', false);
 
-	await visit(ctx, `${base}/configuration/subjects`, 'DC11', 'Subjects list shell', {
-		pathPrefix: '/configuration/subjects',
+	await visit(ctx, `${base}/configuration/structure/subjects`, 'DC11', 'Subjects list shell', {
+		pathPrefix: '/configuration/structure/subjects',
 	});
-	await assertFilterSelectShell(ctx, 'DC11', 'Subjects FilterSelect + More menu');
+	await assertStructureListShell(ctx, 'DC11', 'Subjects level navigation and search', /add subject|ajouter une matière/i);
 
 	await visitOrSkip(ctx, `${base}/configuration/grade-scales`, 'DC12', 'Grade scales list shell', {
 		pathPrefix: '/configuration/grade-scales',

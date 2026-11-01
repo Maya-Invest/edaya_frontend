@@ -13,7 +13,6 @@ function stubSvelteModule(baseSpecifier: string, exports: Record<string, unknown
 }
 
 mock.module('$env/static/public', () => ({
-	PUBLIC_AUTH_URL: 'http://localhost:9900',
 	PUBLIC_API_URL: 'http://localhost:8787',
 	PUBLIC_APP_ENV: 'test',
 	PUBLIC_ALLOW_SCHOOL_REGISTRATION: undefined,
@@ -35,6 +34,33 @@ mock.module('$app/navigation', () => ({
 	disableScrollHandling: () => {},
 }));
 
+function readableStore<T>(value: T) {
+	return {
+		subscribe(run: (next: T) => void) {
+			run(value);
+			return () => {};
+		},
+	};
+}
+
+mock.module('$app/stores', () => ({
+	page: readableStore({
+		url: new URL('http://localhost/'),
+		params: {},
+		route: { id: null },
+		status: 200,
+		error: null,
+		data: {},
+		form: null,
+		state: {},
+	}),
+	navigating: readableStore(null),
+	updated: {
+		...readableStore(false),
+		check: async () => false,
+	},
+}));
+
 mock.module('$app/paths', () => ({
 	base: '',
 	assets: '',
@@ -54,9 +80,13 @@ stubSvelteModule('$lib/auth/session.svelte', {
 		subjectId: null,
 		loginEmail: null,
 		grants: null,
+		staffMemberships: [],
+		activeStaffMembership: null,
 		isLoggedIn: false,
 		ready: true,
 		userProfile: null,
+		setStaffMemberships() {},
+		selectStaffMembership() {},
 		markLoading() {
 			this.ready = false;
 		},
@@ -77,6 +107,17 @@ stubSvelteModule('$lib/entity-versions.svelte', {
 	entityVersions: { bump: () => {} },
 });
 
+stubSvelteModule('$lib/toast.svelte', {
+	toast: {
+		success() {},
+		info() {},
+		error() {},
+		dismiss() {},
+		push() {},
+		items: [],
+	},
+});
+
 stubSvelteModule('$lib/academic/context.svelte', {
 	academicContext: {
 		years: [],
@@ -86,14 +127,28 @@ stubSvelteModule('$lib/academic/context.svelte', {
 		schools: [],
 		yearId: '',
 		periodId: '',
+		schoolScopeId: '',
+		scopeGeneration: 0,
 		shellReady: false,
 		studentCount: 0,
 		guardianCount: 0,
 		staffCount: 0,
+		teacherCount: 0,
+		setSchoolScope() {},
+		setYear() {},
+		setPeriod() {},
+		initFromShell() {},
+		clearShellCatalog() {},
+		reset() {
+			this.yearId = '';
+			this.periodId = '';
+			this.schoolScopeId = '';
+			this.scopeGeneration = 0;
+		},
 	},
 });
 
-stubSvelteModule('$lib/onboarding/context.svelte', {
+stubSvelteModule('../../src/routes/onboarding/context.svelte', {
 	onboardingContext: {
 		draft: {},
 		initialized: false,

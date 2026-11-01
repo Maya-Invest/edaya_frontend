@@ -1,211 +1,256 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { Fee } from '$lib/types/school';
 import type { FeesPageSlice } from './lib/fees-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
+import { catalogServicesEntity } from '$lib/api/finance-client';
+import { mapFees } from '$lib/api/finance-data';
+import { financeReadKey, readFinanceOverview } from '$lib/api/finance-workspace';
+import { enrollStudentInServiceMutation, enrollStudentsInServiceMutation } from '$lib/api/mutations/billing.mutations';
+import { activateCatalogServiceMutation, archiveCatalogServiceMutation, createCatalogServiceMutation, updateCatalogServiceMutation } from '$lib/api/mutations/fee.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { nowIso } from '$lib/date/format';
-import { t } from '$lib/i18n';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
-import { toast } from '$lib/toast.svelte';
+import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
-import { get } from 'svelte/store';
-import {
-	feeSavePayload,
-	installmentsForPeriod,
-	UI_TO_API_CATEGORY,
-} from '../lib/fee-api-helpers';
-import { runFinanceRouteMutation } from '../lib/finance-route-mutation';
+import { FeeAutoBillingState } from './lib/auto-billing-state.svelte';
 import { loadFeesSlice, queryFeesListPage } from './lib/fees-queries';
 
-const FEES_VERSION_FAMILIES = ['fees', 'billing'] as const satisfies readonly EntityVersionKey[];
-
+const FEES_VERSION_FAMILIES = ['fees', 'billing', 'payments'] as const satisfies readonly EntityVersionKey[];
 const FEES_PAGE_STATE_KEY = Symbol('fees-page-state');
-
 export type { FeesPageSlice };
-
 export class FeesPageState {
-	slice = $state<FeesPageSlice | null>(null);
+    drawerReadyId = $state<string | null>(null);
+    readonly autoBilling = new FeeAutoBillingState();
+    autoBillingFeeId = $state<string | null>(null);
+    slice = $state<FeesPageSlice | null>(null);
+    detail = $state<Fee | null>(null);
+    get billing() {
+        return [];
+    }
 
-	private readonly versions = new RouteVersionSnapshot(FEES_VERSION_FAMILIES);
+    studentFor(_id: string): undefined {
+        return undefined;
+    }
 
-	applySlice(data: FeesPageSlice) {
-		this.slice = data;
-		this.versions.markLoaded();
-	}
+    async enrollStudent(input: Parameters<typeof enrollStudentInServiceMutation>[0]) {
+        return enrollStudentInServiceMutation(input);
+    }
 
-	clear() {
-		this.slice = null;
-	}
+    async enrollStudents(input: Parameters<typeof enrollStudentsInServiceMutation>[0]) {
+        return enrollStudentsInServiceMutation(input);
+    }
 
-	get fees() {
-		return this.slice?.fees ?? [];
-	}
+    queryDetail(id: () => string) {
+        return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
+            empty: () => ({ fee: null as Fee | null }),
+            load: async (signal) => {
+                const year = academicContext.yearId;
+                const raw = await catalogServicesEntity(getBrowserSchoolClient()).get(id());
+                signal.throwIfAborted();
+                const fee = mapFees([raw])[0] ?? null;
+                if (fee?.academicYearId !== year)
+                    throw new Error('Fee not found');
+                this.detail = fee;
+                return { fee };
+            },
+            hasItems: data => Boolean(data.fee),
+        }, request);
+    }
 
-	get billing() {
-		return this.slice?.billing ?? [];
-	}
+    private readonly versions = new RouteVersionSnapshot(FEES_VERSION_FAMILIES);
+    applySlice(data: FeesPageSlice) {
+        this.slice = data;
+        this.versions.markLoaded();
+    }
 
-	feeFor(id: string) {
-		return this.fees.find(fee => fee.id === id);
-	}
+    clear() {
+        this.drawerReadyId = null;
+        this.slice = null;
+        this.detail = null;
+        this.autoBillingFeeId = null;
+    }
 
-	usageCount(feeId: string): number {
-		return this.billing.filter(row => row.feeId === feeId).length;
-	}
+    get fees() {
+        const fees = this.slice?.fees ?? [];
+        return this.detail && !fees.some(fee => fee.id === this.detail?.id) ? [...fees, this.detail] : fees;
+    }
 
-	appendFee(fee: Fee) {
-		if (!this.slice) {
-			return;
-		}
-		this.slice = {
-			...this.slice,
-			fees: [fee, ...this.slice.fees.filter(entry => entry.id !== fee.id)],
-		};
-	}
+    feeFor(id: string) {
+        return this.detail?.id === id ? this.detail : this.fees.find(fee => fee.id === id);
+    }
 
-	patchFee(id: string, patch: Partial<Fee>) {
-		if (!this.slice) {
-			return;
-		}
-		this.slice = {
-			...this.slice,
-			fees: this.slice.fees.map(fee => fee.id === id ? { ...fee, ...patch } : fee),
-		};
-	}
+    appendFee(fee: Fee) {
+        if (!this.slice) {
+            return;
+        }
+        this.slice = {
+            ...this.slice,
+            fees: [fee, ...this.slice.fees.filter(entry => entry.id !== fee.id)],
+        };
+    }
 
-	removeFee(id: string) {
-		if (!this.slice) {
-			return;
-		}
-		this.slice = {
-			...this.slice,
-			fees: this.slice.fees.filter(fee => fee.id !== id),
-		};
-	}
+    patchFee(id: string, patch: Partial<Fee>) {
+        if (this.detail?.id === id)
+            this.detail = { ...this.detail, ...patch };
+        if (!this.slice) {
+            return;
+        }
+        this.slice = {
+            ...this.slice,
+            fees: this.slice.fees.map(fee => fee.id === id ? { ...fee, ...patch } : fee),
+        };
+    }
 
-	queryListPage() {
-		return queryFeesListPage(this);
-	}
+    removeFee(id: string) {
+        if (!this.slice) {
+            return;
+        }
+        this.slice = {
+            ...this.slice,
+            fees: this.slice.fees.filter(fee => fee.id !== id),
+        };
+    }
 
-	async refreshSlice() {
-		const data = await loadFeesSlice();
-		this.applySlice(data);
-	}
+    queryOverview(feeId?: string) {
+        return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
+            empty: () => ({ overview: null as Awaited<ReturnType<typeof readFinanceOverview>> | null }),
+            load: async (signal) => {
+                const overview = await readFinanceOverview(feeId);
+                signal.throwIfAborted();
+                return { overview };
+            },
+            hasItems: () => true,
+        }, request);
+    }
 
-	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
-			return;
-		}
-		await this.refreshSlice();
-	}
+    queryListPage() {
+        return queryFeesListPage(this);
+    }
 
-	async createFee(input: {
-		name: string;
-		category: Fee['category'];
-		amount: number;
-		period: Fee['period'];
-		successMessage?: string;
-	}): Promise<string | null> {
-		const client = getBrowserSchoolClient();
-		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-		const academicYearId = academicContext.yearId;
-		if (!schoolId || !academicYearId) {
-			toast.error(get(t)('fee.noContext'));
-			return null;
-		}
+    async refreshSlice() {
+        const key = financeReadKey('fees');
+        const data = await loadFeesSlice();
+        if (key === financeReadKey('fees'))
+            this.applySlice(data);
+    }
 
-		const id = `fee-${Date.now().toString(36)}`;
-		const optimistic: Fee = {
-			id,
-			name: input.name.trim(),
-			category: input.category,
-			amount: input.amount,
-			period: input.period,
-		};
+    async invalidateIfStale() {
+        if (!this.versions.isStale()) {
+            return;
+        }
+        await this.refreshSlice();
+    }
 
-		const result = await runFinanceRouteMutation({
-			request: () => client.commands.createFee({
-				id,
-				schoolId,
-				academicYearId,
-				name: input.name.trim(),
-				category: UI_TO_API_CATEGORY[input.category],
-				defaultAmount: input.amount,
-				currency: 'XOF',
-				installments: installmentsForPeriod(input.period ?? 'Term'),
-				createdAt: nowIso(),
-			}),
-			successMessage: input.successMessage,
-			versionKeys: ['fees'],
-			apply: () => this.appendFee(optimistic),
-			rollback: () => this.removeFee(id),
-		});
-		return result !== null ? id : null;
-	}
+    async createFee(input: {
+        name: string;
+        description?: string | null;
+        billingTerms?: Fee['billingTerms'];
+        category: Fee['category'];
+        amount: number;
+        currency?: string;
+        autoBilling?: Fee['autoBilling'];
+        successMessage?: string;
+    }): Promise<string | null> {
+        const id = await createCatalogServiceMutation({
+            name: input.name,
+            description: input.description,
+            billingTerms: input.billingTerms,
+            category: input.category,
+            amount: input.amount,
+            currency: input.currency,
+            autoBilling: input.autoBilling,
+            status: 'active',
+            successMessage: input.successMessage,
+        });
+        if (id) {
+            if (input.autoBilling && input.autoBilling.mode !== 'off')
+                this.autoBillingFeeId = id;
+            this.appendFee({
+                id,
+                name: input.name.trim(),
+                description: input.description ?? undefined,
+                billingTerms: input.billingTerms,
+                category: input.category,
+                amount: input.amount,
+                currency: input.currency?.trim() || authSession.school?.financeCurrency || '',
+                status: 'active',
+                autoBilling: input.autoBilling ?? { mode: 'off' },
+                installmentCount: input.billingTerms?.installments?.length ?? 0,
+            });
+        }
+        return id;
+    }
 
-	async updateFee(input: {
-		feeId: string;
-		name: string;
-		category: Fee['category'];
-		amount: number;
-		successMessage?: string;
-	}): Promise<boolean> {
-		const client = getBrowserSchoolClient();
-		const previous = this.feeFor(input.feeId);
-		const patch = {
-			name: input.name.trim(),
-			category: input.category,
-			amount: input.amount,
-		};
+    async updateFee(input: {
+        feeId: string;
+        name: string;
+        description?: string | null;
+        billingTerms?: Fee['billingTerms'];
+        category: Fee['category'];
+        amount: number;
+        autoBilling?: Fee['autoBilling'];
+        successMessage?: string;
+    }): Promise<boolean> {
+        const previous = this.feeFor(input.feeId);
+        const ok = await updateCatalogServiceMutation({
+            id: input.feeId,
+            name: input.name,
+            description: input.description,
+            billingTerms: input.billingTerms,
+            category: input.category,
+            amount: input.amount,
+            autoBilling: input.autoBilling,
+            successMessage: input.successMessage,
+        });
+        if (ok) {
+            if ((input.autoBilling ?? previous?.autoBilling)?.mode !== 'off')
+                this.autoBillingFeeId = input.feeId;
+            this.patchFee(input.feeId, {
+                name: input.name.trim(),
+                description: input.description ?? undefined,
+                billingTerms: input.billingTerms,
+                category: input.category,
+                amount: input.amount,
+                autoBilling: input.autoBilling ?? previous?.autoBilling,
+            });
+        }
+        return ok;
+    }
 
-		const result = await runFinanceRouteMutation({
-			request: async () => {
-				const existing = await client.entities.fees.get(input.feeId);
-				return client.entities.fees.save(feeSavePayload(existing, {
-					name: input.name.trim(),
-					category: UI_TO_API_CATEGORY[input.category],
-					amount: input.amount,
-				}));
-			},
-			successMessage: input.successMessage,
-			versionKeys: ['fees'],
-			apply: () => this.patchFee(input.feeId, patch),
-			rollback: () => {
-				if (previous) {
-					this.patchFee(input.feeId, previous);
-				}
-			},
-		});
-		return result !== null;
-	}
+    async activateFee(input: {
+        feeId: string;
+        successMessage?: string;
+    }): Promise<boolean> {
+        const ok = await activateCatalogServiceMutation({
+            id: input.feeId,
+            successMessage: input.successMessage,
+        });
+        if (ok) {
+            this.patchFee(input.feeId, { status: 'active' });
+            if (this.feeFor(input.feeId)?.autoBilling.mode !== 'off')
+                this.autoBillingFeeId = input.feeId;
+        }
+        return ok;
+    }
 
-	async deleteFee(input: {
-		feeId: string;
-		successMessage?: string;
-	}): Promise<boolean> {
-		const client = getBrowserSchoolClient();
-		const previous = this.feeFor(input.feeId);
-
-		const result = await runFinanceRouteMutation({
-			request: () => client.entities.fees.delete({ id: input.feeId }),
-			successMessage: input.successMessage,
-			versionKeys: ['fees', 'billing'],
-			apply: () => this.removeFee(input.feeId),
-			rollback: () => {
-				if (previous) {
-					this.appendFee(previous);
-				}
-			},
-		});
-		return result !== null;
-	}
+    async archiveFee(input: {
+        feeId: string;
+        successMessage?: string;
+    }): Promise<boolean> {
+        const ok = await archiveCatalogServiceMutation({
+            id: input.feeId,
+            successMessage: input.successMessage,
+        });
+        if (ok) {
+            this.patchFee(input.feeId, { status: 'archived' });
+        }
+        return ok;
+    }
 }
-
 export function setFeesPageState(state: FeesPageState) {
-	setContext(FEES_PAGE_STATE_KEY, state);
+    setContext(FEES_PAGE_STATE_KEY, state);
 }
-
 export function getFeesPageState() {
-	return getContext<FeesPageState>(FEES_PAGE_STATE_KEY);
+    return getContext<FeesPageState>(FEES_PAGE_STATE_KEY);
 }

@@ -1,5 +1,5 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { Subject, SubjectCategory } from '$lib/types/school';
+import type { Subject } from '$lib/types/school';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -9,9 +9,13 @@ export interface CreateSubjectForClassInput {
 	subjectId: string;
 	classSubjectId: string;
 	name: string;
+	disciplineId?: string | null;
+	shortName?: string | null;
+	isOptional?: boolean;
+
 	code?: string;
 	coefficient?: number;
-	category?: SubjectCategory;
+	categoryId: string;
 	color?: Subject['color'];
 	createdAt?: string;
 }
@@ -30,25 +34,20 @@ export async function createSubjectForClass(
 	client: SchoolClient,
 	input: CreateSubjectForClassInput,
 ): Promise<void> {
-	const createdAt = input.createdAt ?? new Date().toISOString();
-	const code = input.code?.trim() ?? '';
-
+	const classGroup = await client.entities.classGroups.get(input.classGroupId);
 	await client.commands.configureSubject({
 		id: input.subjectId,
+		gradeLevelId: classGroup.gradeLevelId,
+		academicYearId: classGroup.academicYearId,
 		name: input.name.trim(),
-		category: input.category ?? 'Scientifique',
+		disciplineId: input.disciplineId,
+		shortName: input.shortName,
+		isOptional: input.isOptional,
+		categoryId: input.categoryId,
 		color: input.color ?? 'mint',
-		...(code ? { code } : {}),
-		...(input.coefficient != null ? { defaultCoefficient: input.coefficient } : {}),
-		createdAt,
-	});
-
-	await client.commands.addCustomClassSubject({
-		id: input.classSubjectId,
-		classGroupId: input.classGroupId,
-		subjectId: input.subjectId,
-		isOffered: true,
-		createdAt,
-		...(input.coefficient != null ? { coefficient: input.coefficient } : {}),
+		code: input.code?.trim() || undefined,
+		coefficient: input.coefficient,
+		classSubjectIdsByClassGroupId: { [input.classGroupId]: input.classSubjectId },
+		createdAt: input.createdAt ?? new Date().toISOString(),
 	});
 }

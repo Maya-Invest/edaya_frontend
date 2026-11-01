@@ -10,6 +10,7 @@ import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { queryClient } from '$lib/queries/client';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { getContext, setContext } from 'svelte';
+import { createCalendarEventOnPage, updateCalendarEventOnPage, deleteCalendarEventOnPage } from './lib/calendar-mutations';
 import { querySchoolCalendarPage } from './lib/calendar-queries';
 
 const CALENDAR_VERSION_FAMILIES = ['schoolYearEvents'] as const satisfies readonly EntityVersionKey[];
@@ -17,6 +18,12 @@ const CALENDAR_VERSION_FAMILIES = ['schoolYearEvents'] as const satisfies readon
 const CALENDAR_PAGE_STATE_KEY = Symbol('calendar-page-state');
 
 export class CalendarPageState {
+	createCalendarEvent = (...args: Parameters<typeof createCalendarEventOnPage> extends [unknown, ...infer Rest] ? Rest : never) => createCalendarEventOnPage(this, ...args);
+
+	updateCalendarEvent = (...args: Parameters<typeof updateCalendarEventOnPage> extends [unknown, ...infer Rest] ? Rest : never) => updateCalendarEventOnPage(this, ...args);
+
+	deleteCalendarEvent = (...args: Parameters<typeof deleteCalendarEventOnPage> extends [unknown, ...infer Rest] ? Rest : never) => deleteCalendarEventOnPage(this, ...args);
+
 	events = $state<SchoolYearEvent[]>([]);
 	absences = $state<AbsenceRecord[]>([]);
 	readonly filters: ListFiltersState<{ q: string; type: string }>;

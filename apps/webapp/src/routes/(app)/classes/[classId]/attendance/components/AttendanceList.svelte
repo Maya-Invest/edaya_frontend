@@ -1,16 +1,22 @@
 <script lang="ts">
 	import type { AttendanceDay } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { attendanceSheetSourceId } from '$lib/api/documents-data';
+
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
-	import { CalendarDays, ClipboardCheck } from '$lib/icons';
+	import { CalendarDays, ClipboardCheck, Plus } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readClassAttendanceListFilters, writeClassAttendanceListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import { getAttendancePageState } from '../attendance-page.svelte';
 
 	const {
@@ -61,6 +67,19 @@
 			: days.filter(day => completionOf(day) === completion),
 	);
 
+	async function exportAttendanceSheet() {
+		const day = filteredDays.find(entry => entry.id === selectedId) ?? filteredDays[0];
+		if (!day) {
+			return;
+		}
+		await attendancePage.performRequestDocumentIssuance({
+			templateKey: 'attendance-sheet.v1',
+			sourceId: attendanceSheetSourceId(classId, day.date.slice(0, 10)),
+			classGroupId: classId,
+			successMessage: get(t)('documents.toastRequested'),
+		});
+	}
+
 	const completionFilterActive = $derived(completion !== 'all' ? 1 : 0);
 
 	const completionOptions = $derived([
@@ -89,9 +108,22 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[listFilters.values.completion].filter(value => value !== 'all').length}
+		onResetFilters={() => listFilters.patchImmediate({ completion: 'all' })}
 		eyebrow={$t('attendanceDay.eyebrow')}
 		title={$t('attendanceDay.count', { n: filteredDays.length })}
 	>
+		{#snippet primary()}
+			{#if attendancePage.classNode?.attendanceMode === 'daily'}
+				<PermissionGate permission="ATTENDANCE_RECORD" {classId} mode="disable" tooltip={$t('attendanceDay.permissionRecord')}>
+					{#snippet children({ disabled, title })}
+						<Button {disabled} {title} onclick={() => attendancePage.openCreationTask()}>
+							<Plus class="h-4 w-4" />{$t('attendanceDay.createTitle')}
+						</Button>
+					{/snippet}
+				</PermissionGate>
+			{/if}
+		{/snippet}
 		{#snippet filters()}
 			<FilterPanel activeCount={completionFilterActive} title={$t('attendanceDay.completionFilter')}>
 				<FilterSelect
@@ -102,7 +134,7 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportAttendance')} onExport={() => void exportAttendanceSheet()} />
 		{/snippet}
 	</ListPageHeader>
 
@@ -115,20 +147,21 @@
 			{@const isComplete = day.totalStudents > 0 && day.recordedCount === day.totalStudents}
 			<button
 				type="button"
+				data-attendance-id={day.id}
 				onclick={() => onSelect?.(day)}
 				class={cn(
-					'group grid w-full grid-cols-12 items-center gap-4 rounded-2xl border border-border bg-card p-5 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel',
+					'group grid w-full grid-cols-12 items-center gap-4 rounded-collection border border-border bg-card p-5 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel',
 					active && 'border-primary/40 bg-primary/5',
 				)}
 			>
 				<div class="col-span-7">
-					<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+					<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 						{$t('attendanceDay.dailyRollCall')}
 					</p>
 					<h3 class="mt-1 font-display text-lg font-semibold leading-tight">{day.label}</h3>
 					<p class="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 						<CalendarDays class="h-3 w-3" />
-						{new Date(day.date).toLocaleDateString($locale, {
+						{formatLocaleDate(day.date, $locale, {
 							weekday: 'long',
 							day: 'numeric',
 							month: 'short',
@@ -142,7 +175,7 @@
 							<ClipboardCheck class="h-3 w-3" />
 							{$t('attendanceDay.recorded')}
 						</span>
-						<span class="font-mono">{day.recordedCount}/{day.totalStudents}</span>
+						<span class="font-sans tabular-nums">{day.recordedCount}/{day.totalStudents}</span>
 					</div>
 					<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
 						<div
@@ -155,7 +188,7 @@
 		{/each}
 		{#if filteredDays.length === 0}
 			<p
-				class="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground"
+				class="rounded-collection border border-dashed border-border p-10 text-center text-sm text-muted-foreground"
 			>
 				{$t('attendanceDay.none')}
 			</p>

@@ -5,7 +5,22 @@ import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { loadDashboardSlice, queryDashboardListPage } from './lib/dashboard-queries';
 
-const DASHBOARD_VERSION_FAMILIES = ['attendance'] as const satisfies readonly EntityVersionKey[];
+const DASHBOARD_VERSION_FAMILIES = [
+	'school',
+	'students',
+	'staff',
+	'enrollments',
+	'subjectEnrollments',
+	'attendance',
+	'incidents',
+	'activities',
+	'schoolYearEvents',
+	'billing',
+	'fees',
+	'payments',
+	'evaluations',
+	'reportCards',
+] as const satisfies readonly EntityVersionKey[];
 
 const DASHBOARD_PAGE_STATE_KEY = Symbol('dashboard-page-state');
 

@@ -1,8 +1,18 @@
+import type { components } from '$lib/api/schema';
 import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
+import { runMutation } from '$lib/api/mutations/run-mutation';
+import { createStaffPermissionAssignmentPayload, saveStaffPermissionAssignmentMutation } from '$lib/api/mutations/staff-permission-assignments.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-data';
 
 export class StaffPermissionFormModalState {
+  previewAssignment(input: components['schemas']['StaffPermissionAssignmentConfigCommand']) {
+    return runMutation(() => getBrowserSchoolClient().commands.assignStaffPermission({ ...input, previewOnly: true }));
+  }
+
+	createStaffPermissionAssignmentPayload = (...args: Parameters<typeof createStaffPermissionAssignmentPayload>) => createStaffPermissionAssignmentPayload(...args);
+	saveStaffPermissionAssignmentMutation = (...args: Parameters<typeof saveStaffPermissionAssignmentMutation>) => saveStaffPermissionAssignmentMutation(...args);
+
 	catalog = $state<PermissionCatalogEntry[]>([]);
 	loading = $state(false);
 	loaded = $state(false);

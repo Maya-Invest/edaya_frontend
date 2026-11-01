@@ -1,246 +1,184 @@
-# Shared Components Spec
+# Shared UI component contracts
 
-> **Applies to:** `apps/webapp` — reusable UI building blocks  
-> **Normative:** agents and implementers **must** compose screens from this registry before adding new shared UI.
+Normative for `apps/webapp`. This is a registry of required reusable responsibilities and interfaces, not an implementation inventory. A named role defines required behavior even when a component must be extended to satisfy it. Features must compose these contracts without local styling or interaction forks.
 
-This document defines **which components to reuse**, where they live, and when to extend the registry vs. keep code feature-local.
+## 1. Ownership and reuse
 
----
+| Tier | Location relative to `src/` | Responsibility |
+| --- | --- | --- |
+| T0 | `lib/components/ui/` | Primitives, collections, forms, feedback, gates |
+| T1 | `lib/components/layout/` | Sidebar, header and shared workspace context |
+| T2 | `lib/components/school/shared/` | Domain identity and read-only inspection primitives |
+| T3 | `routes/.../components/` | One route family's content and composition |
+| Smart | `lib/smart-components/` | Reusable self-contained workflow, colocated state and child components |
 
-## 1. Tier model
+Shared presentation must receive typed data, eligibility and action callbacks. It may import API types and pure display/payload helpers, never runtime API clients or mutation adapters. Route/tab state owns domain reads and commands; reusable Smart workflows own only their explicit workflow state. New shared abstractions beyond this registry require stable reuse in at least three features. A single-feature view must stay route-local. Feature components must not import components from another route subtree.
 
-| Tier | Path | Responsibility |
-|------|------|----------------|
-| **T0** | `lib/components/ui/` | App-wide primitives and list/modal/gate patterns |
-| **T1** | `lib/components/layout/` | Authenticated shell chrome (sidebar, header, selectors) |
-| **T2** | `lib/components/school/shared/` | School-domain reusable drawer chrome, avatars, field patterns |
-| **T3** | `routes/.../components/` | Route-local feature screens — list views, modals, drawer bodies for one route subtree |
-| **Smart** | `lib/smart-components/` | Self-contained shared features (pickers, scope builders) — not route-bound; own state class + subcomponents |
+## 2. Collection contract
 
-**Rule:** New list pages, drawers, and modals **must** compose mandatory T0/T2 components. Route-specific views live under the route's `components/` folder (T3), not `lib/components/school/{domain}/`. Add a T0/T2/Smart component only when **three or more** features need the same pattern — justify in PR.
+| Role | Required interface and behavior |
+| --- | --- |
+| `PageQuery` | URL key, scoped query callback and loading metadata; seeds route state, never an entity cache |
+| `DataState` | Explicit initial/refresh/more/empty/no-match/denied/unavailable/error variants; localized recovery callback only when meaningful and accessible announcements; unavailable capability must not masquerade as denied, failed or empty |
+| `ListPageHeader` | Title, meaningful count, page/section heading level, search, one Filter trigger and collection menu; container-aware wrapping from [design-language §2](design-language-spec.md#2-measurable-composition); no separate primary-action slot rendered outside the menu |
+| `ListSearchField` | Labeled controlled text value, clear and submit/flush callbacks; 250ms search debounce belongs to shared filter state |
+| `FilterPanel` | Facet schema, current/default values, eligibility, immediate change callback, reset and active-field count; one icon-only trigger named Filter / Filtrer, with an accessible active-count badge and geometry from [design-language §2](design-language-spec.md#2-measurable-composition); no Apply/Cancel |
+| `FilterSelect` | Labeled custom select inside Filter or a declared specialized query context; capsule geometry from design-language §2–3; must not create a standalone collection facet |
+| `ListMoreMenu` | Ordered scoped actions, primary first, view/sort/export groups; omit empty groups; close after enabled choice |
+| List renderer | Stable identity key, identity/supporting metadata/status, independent open-record and bulk-selected states, optional independent checkbox/menu and navigation callback; Subject-list row anatomy, no card grid |
+| `ListEntityTable` | One ordered authorized column model, proportional column weights across the rendered viewport/minimum width after reserving the shared utility slot, keyed cells, sort/selection, row/menu activation, pinned shared action/selection column and accessible horizontal overflow |
+| `DrawerFrame` | All record-inspection drawers and onboarding subject previews; one modal portal, shared responsive geometry and entry/exit motion, focus containment/restoration, Escape/backdrop dismissal and pending/dirty close guards. Read-only previews which retain the surrounding draft disable the dirty-work guard explicitly. |
+| `TableTimestamp` | Persisted event date over smaller time/timezone in table cells; shared timestamp validation, locale-aware browser timezone and explicit Not provided for absent/invalid values |
+| `InfiniteList` | Loaded items, has-more/pending/error, append/retry callbacks and an optional end summary (enabled by default); fully loaded related collections with a title count may omit that summary through the List renderer; must not own API requests |
+| `ListSelectionBar` | Selected count and eligible selected-record actions, Clear selection and Exit selection; visible only in selection mode and distinct from matching-dataset actions |
+| `RowActionMenu` / item | Scope, label, icon, permission visibility, state eligibility/reason and callback; must not activate the row |
 
----
+Only List and Table are permitted entity collection variants. The List renderer must reproduce the Subject-list anatomy defined by the app-shell spec, not a responsive tile grid. Students, Class Students and Activities expose `list|table` with Table default; feature assignments govern every other collection. The same model must provide equivalent identities, essential information, actions and states in both views.
 
-## 2. Mandatory registry (v1)
+Each action descriptor must supply a stable key, localized label, scope, authorization result, state eligibility/reason, busy state, destructive classification and activation callback. A missing grant hides the action; a blocked state disables it with accessible explanation. The descriptor is shared by any row shortcut and its authoritative menu/header location. Renderers must not infer grants from roles, labels or the presence of a callback.
 
-Status: **Built** = use as-is. No **Planned** registry entries at this time — propose new T0/T2 components via §6 when criteria are met.
+### 2.1 Columns, rows and selection
 
-### 2.1 T0 — List & route
+The identity column is mandatory; selection and actions share the same pinned rightmost structural column, dimensioned by [design-language §2](design-language-spec.md#2-measurable-composition). Its targets render header Customize / Personnaliser and record menus in normal mode, then a loaded-row checkbox and individual checkboxes in selection mode. A feature that forbids row menus, or a row without authorized actions, renders no menu; its utility cell stays empty and aligned. Placeholder ellipses and inspection-only menus are forbidden. Open-record, bulk-selected and keyboard-focus treatments follow [design-language §3.1](design-language-spec.md#31-collection-row-states). No extra checkbox column or separate Columns toolbar is permitted. The header checkbox exposes mixed state and is disabled with no selectable loaded rows; identity inspection stays independent. Optional columns require stable keys, label, minimum width, availability, group, default visibility and whole-dataset sort capability. The header Customize / Personnaliser trigger opens a portaled, viewport-bounded panel with a Columns / Colonnes section, searchable grouped checklist, Show all available and Reset to defaults. This is the sole column-customization location. Both operations preserve search, facets, sorting, selection and loaded position. Hidden active sort fields and direction remain named inline beside the collection title/count without a dedicated toolbar.
 
-| Component | Path | Status | Use for |
-|-----------|------|--------|---------|
-| **PageQuery** | `ui/PageQuery.svelte` | Built | Every list route — loading contract |
-| **DataState** | `ui/DataState.svelte` | Built | Loading · empty · error around collections |
-| **ListPageHeader** | `ui/ListPageHeader.svelte` | Built | Page title + toolbar slots |
-| **ListSearchField** | `ui/ListSearchField.svelte` | Built | Instant text filter pill — **do not** copy inline search markup |
-| **FilterSelect** | `ui/filter-select.svelte` | Built | **Main filter** — always `<select>` |
-| **FilterPanel** | `ui/FilterPanel.svelte` | Built | Secondary facets (status, date range) opened from Filter button |
-| **ListEntityTable** | `ui/ListEntityTable.svelte` | Built | Sortable grid + selection checkboxes + infinite scroll shell |
-| **ListEntityCards** | `ui/ListEntityCards.svelte` · `ListEntityCard.svelte` | Built | Card grid + sort toolbar + labeled fields + column density |
-| **ListSelectionBar** | `ui/ListSelectionBar.svelte` | Built | Bulk selection bar — export + optional `actions` snippet + clear |
-| **RowActionMenu** | `ui/RowActionMenu.svelte` · `RowActionMenuItem.svelte` | Built | Simple-entity row `···` → edit / delete modals |
+Versioned browser preferences contain keys only, scoped by authenticated subject, school and stable collection identifier. Restoration must discard obsolete/unavailable keys; corrupt or denied storage falls back to declared defaults. People-list CSV exports use selected authorized columns across the matching dataset; document generation is a separate action. Optional relationships and annual columns load in batches; sensitive health groups load only when selected and authorized. Partially authorized fields show Restricted, not Not provided. Unknown annual booleans/numbers remain distinct from false/zero.
 
-### 2.2 T0 — Mutations & feedback
+Student school/class drawers share `StudentDrawerBody` and the same Profile section composition. The identity/tab region remains pinned only while it leaves useful body space; otherwise it participates in the single scroller, while Close remains reachable. `ProfilePhotoPicker` supports an explicit button trigger without an avatar and preserves its default avatar trigger for other callers. `AnnualProfile` and `AccountLinkingSection` support an opt-in flat presentation that retains their state and forms. `PersonProfileDetails` can exclude header-owned fields. Student guardian rows use the shared List renderer with one full-width content region: name and a neutral relationship badge in the first row, with email, phone and occupation aligned as three labeled fields in the second row. Values wrap within their field; the collection omits the redundant end-of-list summary while retaining its title count. `GuardianRelationship` supports an opt-in action-only presentation with the shared quiet RowActionMenu containing Edit and no rights disclosure; its default summary and complete bounded editing form remain available to other callers. Embedded reads use scoped PageQuery identities with compact loading and DataState recovery; a failed optional section must not erase identity or another section. Person-directory identity cells in Students (school and class), Staff, Teachers and Guardians show the portrait/initials and name without an email subtitle. Email remains an optional separate directory column and a profile contact field. Canonical first/last names, original supplied names, both student matricules and guardian occupation must remain available. Guardian contact fields expose main phone, alternative phone, email and independent email/SMS/push switches across creation, editing and personal settings. Contact/relationship editors preserve unmodified values; relationship flags stay attached to their respective student. Row activation, checkbox and overflow must have separate keyboard targets. Collections must not make collection-only records look navigable. Header selection means Select loaded rows; all-matching selection needs explicit supported scope/count. Search/facet/workspace changes clear selection; inspection and view switches preserve it.
 
-| Component | Path | Status | Use for |
-|-----------|------|--------|---------|
-| **FormModal** | `ui/FormModal.svelte` | Built | Create / edit — Cancel + Save |
-| **ConfirmModal** | `ui/ConfirmModal.svelte` | Built | Delete / irreversible — Cancel + Confirm |
-| **PickerModal** | `ui/PickerModal.svelte` | Built | Link / assign related entity |
-| **PermissionGate** | `ui/PermissionGate.svelte` | Built | Hide or disable actions by effective grant |
-| **DeleteEntityButton** | `ui/DeleteEntityButton.svelte` | Built | Standard destructive control in modals / overflow |
-| **ToastHost** | `ui/ToastHost.svelte` | Built | Global mutation feedback (via `toast` helper) |
+## 3. Inspection, form and task contracts
 
-Use **Button**, **Input**, **Label**, **Checkbox**, **Select**, **Dialog**, **Popover**, **Textarea** from `ui/` for form fields — not raw unstyled HTML (except inside `FilterSelect`).
+| Role | Required interface and behavior |
+| --- | --- |
+| Detail drawer shell | Entity type, canonical target, contextual Back, Close, current domain tab, scroll/focus restoration; responsive geometry from [design-language §2](design-language-spec.md#2-measurable-composition) |
+| `DrawerEntityHeader` | Identity, status/context, at most two visible non-destructive record actions and overflow; never duplicated in each tab |
+| `DrawerField` | Label, typed read-only value and explicit missing/restricted/unavailable meaning; no disabled input facsimile |
+| Inspection section | Heading, ordered content and scoped menu; essential content expanded, secondary technical facts disclosed |
+| Related collection | Standard collection header at section heading level, assigned List/Table, empty/access/unavailable/error states |
+| History / comparison | Ordered persisted events or current/proposed typed values, actor/time/reason/consequences; no inferred audit facts |
+| `DrawerEmptyState` | Domain-specific empty content; must not conflate denial, unavailable capability or query failure with empty |
+| `FormModal` | Captured target/context/revision, field content, validity/dirty/pending/error, Cancel and action-specific submit; default/wide geometry from [design-language §2](design-language-spec.md#2-measurable-composition), wide assignment owned by app-shell §4.1 |
+| `ConfirmModal` | Captured target/revision, action label, scoped identity/count, consequences, domain-required reason, eligibility, pending/error and explicit confirm/cancel callbacks; follows app-shell §4.1 confirmation contract, Cancel-first focus and design-language §2–3 geometry/treatments |
+| `PickerModal` | Authorized searchable related-target selection and explicit assignment confirmation |
+| Focused task workspace | URL identity/context, return destination, steps/progress when required, working content, persistent actions, save unit and completion/partial-failure state |
+| Account dialog | Account identity, active Profile/Notifications/Security section, guarded section-change/close callbacks, return/focus metadata, section-local pending/error/actions and separate Sign out; X-ACCOUNT container with no global Save |
+| `PermissionGate` | Effective typed grant for the target; hide unauthorized actions, distinguish state-disabled authorized actions |
+| `ToastHost` | Localized outcome without replacing persistent field/task errors; saved/read-refresh-failed distinction |
 
-### 2.3 T1 — Shell
+Shell and content must implement the app-shell's single-drawer, read-only, dirty-discard and return-context rules. Related records replace the current drawer and preserve contextual Back. Tabs are child-route links, not callback-only state or `?tab=`. A single available domain has no tab strip. Subcollection Add belongs first in its scoped menu. Only the named X-REVIEW-DECISION lifecycle decisions and X-PERMISSION-ORDER Move up / Move down on Staff → Permissions profile-binding rows may mutate directly from inspection actions. Both retain their exact app-shell §1.1 scope, eligibility, ordering, pending/error and revision semantics; neither permits general inline editing. Other edits open a form/task.
+
+Forms must use shared Button, Input, Label, Textarea, Select, Checkbox, Dialog and Popover primitives. Icon-only buttons must use the circular treatment outside table headers, related-collection headers and rows and the quiet treatment within those areas, irrespective of whether the action is Back, Close, navigation, a utility or overflow. Every icon button exposes a contextual accessible name; menu triggers additionally expose expanded state and popup relationship, with keyboard opening and focus restoration. Select/combobox primitives own the trailing chevron and reserved text space defined in design-language §2–3; features must not position that adornment themselves. All visible select/combobox fields must use the shared custom control; native HTML/OS selects are forbidden. It exposes a linked visible label, expanded state, popup relationship, selected options and keyboard/typeahead navigation. Enter/Space opens a closed control; arrow keys navigate enabled options, Home/End reach the first/last enabled option, Enter selects, and Escape dismisses and restores trigger focus without changing the value. Picker keys must not submit the enclosing form. Disabled options cannot be selected; a disabled trigger exposes its reason. A search-enabled variant additionally owns its query and no-match state. Popup focus and scrolling must remain inside the viewport, including within dialogs and at enlarged text. Query/filter fields and date/interval query pickers must use capsule triggers, including both range endpoints; ordinary form fields retain the form-field radius. Popup option rows and binary controls do not inherit this shape. The primitives must expose geometry by role from [design-language §2](design-language-spec.md#2-measurable-composition) and [§3](design-language-spec.md#3-control-treatments). Menu rows, tabs and record activation regions must not inherit the action-button capsule. Button pending presentation must retain the visible label and reserve only the shared status slot; localized progress belongs in an announced form/task status, never an invisible sizing label. Text buttons and search fields must separate their visible face from their non-overlapping hit area; search hit-area activation must focus the input. Their default visible heights must agree as defined in design-language §2–3. Table cells and targets must implement the shared compact geometry without nested padding. Text enlargement must increase content height without multiplying padding, gaps or corner radii. Persistent header/footer surround a scrolling middle. Form/confirmation primitives must expose initial-focus control and implement app-shell §4.1 keyboard rules: deferred loading focus without stealing focus, ordinary Enter validation, multiline/picker/IME exclusions and explicit destructive activation. They must preserve first-invalid focus, dirty dismissal, topmost Escape and focus restoration. Tasks must retain server save granularity and not simulate a new batch transaction. Import and timetable generation are task workspaces; a bulk confirmation is still a confirmation.
+
+## 4. Shell and identity
+
+`AppHeader`, `AppSidebar`, `SchoolSelector`, `AcademicYearSelector`, `AcademicPeriodSelector` and `ClassSelector` own navigation and shared context. `AppHeader` renders navigation and school identity on the left, and one right-aligned LanguageSelector/account group at all widths. It receives the controlled navigation/profile state and callbacks from the shell; it must not own authentication or modal routing. The existing school-switch workflow stays in `SchoolSelector`, now hosted only in the app header. Long school names wrap without pushing language/account controls out of the viewport; profile metadata may collapse to its accessible avatar control when header space is limited. Routes must not duplicate them. AppSidebar must render Inbox immediately after Dashboard with My inbox, School messages and Corrections in order, filtering each by its own eligibility and retaining separate count meanings. The same entries must not also appear in School or the account dialog; the group has no summed badge. Activity log is a Tools destination gated independently by school-scoped audit-read authority. The mobile sidebar uses a focus-managed sheet without changing desktop expansion preference. Term selectors must show persistent labels, dated choices and a missing-year state.
+
+`AcademicYearSelector` implements X-SCHOOL-YEAR-SWITCHER with shared Button, Dialog, Label and SelectField. Expanded navigation shows a small School year / Année scolaire label above its text link; collapsed navigation retains the accessible calendar icon. Its temporary choice is local presentation state, independent of the selected workspace year. It preserves trigger identity/data attributes and its open-state callback so `AppSidebar` keeps hover expansion stable until focus returns. It lists only the current school’s authorized catalog, includes every publication state and sorts by start date descending with stable identity ties. A missing selected ID never borrows the first year’s label. It guards existing dirty work at confirmation, revalidates account/school/catalog/scope before applying, and closes on identity change. Year selection retains the existing academic-context state owner and persistence; no backend/year-management action is introduced.
+
+Under X-LANGUAGE-SWITCHER, `LanguageSelector` must preserve the compact icon/EN–FR/chevron pill and flagged, named language options described in design-language §3. Its original compact geometry and local popup are retained rather than applying the shared form-selector presentation; changing language must not reset workspace, navigation or drafts.
+
+`AccountProfileModal` must implement the compact account-dialog contract using shared `SectionTabs` and `AccountSettingsSection`: one header, horizontal URL-backed tabs and one scrolling content region with the geometry in [design-language §6](design-language-spec.md#6-brand-and-specialized-presentation). Embedded Notifications and Security reuse their workflow owners without adding another page header, padding layer, framed container or scroller. The shell owns section titles and focus. `SectionTabs` uses manual keyboard activation, arrow/Home/End focus movement and controlled selection so the dirty-work guard can refuse a section change. Existing direct account URLs render the same section content with its own heading. Security loads automatically and reveals a single selected verification workflow. Identity reads cannot publish across account changes. Profile administration, photo, notification save and session semantics remain intact. Sign out belongs to Security's Current session section; local Save/Discard appears only for dirty editable preferences.
+
+`BrandLogo` owns official artwork, variants and clear space. `PersonAvatar` serves staff/guardians; `StudentAvatar` uses published portraits only. `ProfilePhotoPicker` exports cropped/rotated JPEG under 1 MiB; staff and guardian self-photos publish immediately, proposed student portraits require Profile review.
+
+Private portraits must resolve an authorized download grant before fetching bytes. Same-API `/core/files/` downloads retain bearer authentication and reject redirects; external object-storage downloads omit account credentials. A denied grant or download must never fall back to an unauthenticated request. Status classes and labels must come from shared `ui-tones` and `drawer-constants`, not one-off colors.
+
+## 5. Smart workflow contracts
+
+Smart components are shared, self-contained features with their own state class, cancellation and lifecycle handling. They live in `lib/smart-components/`, not under route folders.
 
 | Component | Path | Use for |
 |-----------|------|---------|
-| **AppSidebar** | `layout/AppSidebar.svelte` | Module navigation |
-| **AcademicHeader** | `layout/AcademicHeader.svelte` | School · year/period · language · user menu |
-| **ClassSelector** | `layout/ClassSelector.svelte` | Class context in Classes module |
-
-Feature routes **do not** reimplement shell chrome.
-
-### 2.4 T2 — Drawer stack
-
-| Component | Path | Status | Use for |
-|-----------|------|--------|---------|
-| **DetailDrawer shell contract** | Shared `school/shared/DetailDrawer.svelte` or route-local `[[id]]/+layout.svelte` shell | Built / route-local | Overlay shell — type chip, close, backdrop/Escape close, `md:w-1/2`, lazy or routed body dispatch |
-| **DrawerEntityHeader** | `school/shared/DrawerEntityHeader.svelte` | Built | Identity + ≤2 primary actions + overflow |
-| **DrawerField** | `school/shared/DrawerField.svelte` | Built | Read-only label + value in drawer body |
-| **DrawerEmptyState** | `school/shared/DrawerEmptyState.svelte` | Built | Empty sub-collection / tab placeholder |
-| **DrawerActionBar** | `school/shared/DrawerActionBar.svelte` | Built | Optional drawer **body footer** — `border-t`, right-aligned actions; **not** sub-collection `+ Add` header |
-
-Complex drawer bodies (`*Detail.svelte`, `*Tabs.svelte`, nested tab routes) **must** use `DrawerEntityHeader` for identity and actions — not a duplicate hero block in tab content. Nested-route drawers may own a route-local shell when the shared dispatcher would couple the route back to legacy feature bodies.
-
-### 2.5 Smart components (pickers & scope UI)
-
-Smart components are shared, self-contained features with their own state class — see route-state spec §8. They live in `lib/smart-components/`, not under route folders.
-
-| Component | Path | Use for |
-|-----------|------|---------|
-| **PersonPicker** | `smart-components/person-picker/` (target) · legacy `school/shared/pickers/PersonPicker.svelte` | Base searchable person popover |
-| **StaffPicker** | `smart-components/staff-picker/` (target) · legacy `school/shared/pickers/StaffPicker.svelte` | Homeroom, staff assignment targets |
-| **StudentPicker** | `smart-components/student-picker/` (target) · legacy `school/shared/pickers/StudentPicker.svelte` | Incidents, billing, enrollments |
+| **PersonPicker** | `smart-components/person-picker/` | Base searchable person popover |
+| **StaffPicker** | `smart-components/staff-picker/` | Homeroom, staff assignment targets |
+| **StudentPicker** | `smart-components/student-picker/` | Incidents, billing, enrollments |
 | **ClassGroupPicker** | `smart-components/class-group-picker/` | Activity class timetable links, class multi-select on create |
-| **GuardianPicker** | `smart-components/guardian-picker/` (target) · legacy `school/shared/pickers/GuardianPicker.svelte` | Guardian ↔ student linking |
-| **ScopeBuilder** | `smart-components/scope-builder/` (target) · legacy `school/configuration/ScopeBuilder.svelte` | Staff permission typed `scopes` by catalog grain |
-| **StaffPermissionFormModal** | route-local or smart — legacy `school/configuration/StaffPermissionFormModal.svelte` | Add / edit `staffPermissionAssignments` |
+| **GuardianPicker** | `smart-components/guardian-picker/` | Guardian ↔ student linking |
+| **PermissionResolutionPreview** | `components/school/` | Added/changed/removed grant scopes and persistent resolution warnings before save. All four permission forms use shared `PermissionImpactPreviewState` to bind review to the complete current command and active session; outdated responses cannot publish a report or enable Save. |
+| **PermissionScopeTypes** | `smart-components/scope-builder/` | Presentational scope-type badges reused by profile configuration, staff permission lists and manual permission editing. Uses catalog metadata and the scope picker mapping, existing neutral badge tokens, localized labels and wrapping layout. |
+| **PermissionScopeSelections** | `smart-components/scope-builder/` | Mixed selection groups; no automatic broad selection |
+| **ScopeBuilder** | `smart-components/scope-builder/` | Typed scope selection groups for staff permissions, profile assignments and staff defaults |
+| **AccountLinkingSection** | `smart-components/account-linking/` | Staff, guardian and student invitation workflow with actor-scoped state |
+| **PasswordlessPanel** | `smart-components/passwordless-panel/` | Login, signup, invitations and security; transient authentication state |
+| **TestOtpPanel** | `smart-components/test-otp-panel/` | Build-gated testing controls with stale-response and visibility guards |
+| **AnnualProfile** | `smart-components/annual-profile/` | Year-scoped student/teacher declarations with guarded state |
+| **GuardianRelationship** | `smart-components/guardian-relationship/` | Shared guardian/student relationship editing |
+| **ReferenceCatalog** | `smart-components/reference-catalog/` | Academic-discipline and placement-status catalogs |
+| **DirectoryColumnData** | `smart-components/directory-columns/` | Authorized optional column data loaded in batches |
+| **AttendanceReview** | `smart-components/attendance-review/` | Shared attendance review workflow |
+| **StaffPermissionFormModal** | `smart-components/staff-permission-form-modal/` | Add / edit `staffPermissionAssignments` |
 
 Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal**. New smart components follow `*-state.svelte.ts` + root `.svelte` + `components/` subfolder.
 
-### 2.6 T2 — Authorization UI (legacy paths)
+### Authentication and test access
+
+`PasswordlessPanel` is shared by login, signup, invitations and Account security. It owns one contact field with automatic email/international-phone detection and validation, user-triggered resend and SMS switching after server cooldown, OTP, authenticator verification/enrollment and one-time recovery-code display through its colocated `PasswordlessPanelState`. Authentication requests and completion belong to this smart workflow state. Use existing Button/Input/Label primitives and ConfirmModal for identifier removal. No auth-provider SDK belongs in UI components. `TermsAcceptance` displays backend-owned localized terms above the submit action in login, signup, demo and invitation workflows. Its Read terms link opens a focus-contained dialog with a scrolling document and a persistent Accept action at the bottom. Accept closes the dialog and checks the acceptance box without submitting authentication. Close, Escape and outside dismissal preserve the prior checkbox value and restore focus to the link. `PasswordlessPanelState` owns loading, retry, checked and dialog-open state; terms-loading failures block new sign-ins. Identity changes, restart, and document or locale changes clear acceptance; OTP retries and MFA preserve the server-pinned version. Authenticated contact linking and enrollment do not acquire consent. Draft previews are clearly labeled and restricted to non-production configuration.
+
+`TestOtpPanel` is shared by login and contact linking through `PasswordlessPanel`. The `$testOtpPanel` build alias resolves to an empty component unless `PUBLIC_TEST_OTP_ACCESS=true`. The backend must also advertise capture support; explicitly disabling the flag must be respected. The enabled component discovers server capabilities once, reveals only after an explicit **Show test code** action, labels the panel as testing, and offers **Copy** without filling or submitting the form. It clears transient codes and ignores late responses after replacement, expiry, completion, reset, unmount or backgrounding. Code content carries `data-sensitive` so integration captures mask it. Normal deployment builds must disable the flag.
+
+`/login/demo` retains the development-only staff account picker. Choosing a fixture account only prefills `PasswordlessPanel`; sending and verifying its OTP, optional authenticator steps, resend and testing controls use the existing flow. Choosing another account unmounts the panel and clears its transient challenge. No password or automatic sign-in is used by the picker.
+
+Identity advertises phone availability. Until discovery succeeds with phone available, authentication and contact-linking forms display email-only labels, omit phone choices and country hints, and reject pasted phone identifiers locally with translated feedback. Discovery failures fail closed to email-only; phone controls return when availability is explicitly restored. Email OTP, authenticator verification/enrollment and recovery remain available.
+
+### Permission catalog semantics
+
+The API catalog's `staffAssignable`, `serviceAccountAssignable`, `assignmentTargets` and `scopePolicy` determine picker availability. Do not infer eligibility from action names or maintain permission-specific scope exceptions. Unscoped actions have no scope/default controls, supported-scope badges, or effective-scope labels. Their internal `school` grant marker is never a user selection. Profiles automatically include their unscoped actions; mixed profiles expose resource selectors only for resource-scoped members. Default scopes contain resource selections only. Empty resource selections grant no access; broad access requires explicit All at a supported grain. Preserve preview/save identity, ordering, first-wins and unresolved/shadowed warnings.
+
+### Route-owned authorization UI
 
 | Component | Path | Use for |
 |-----------|------|---------|
-| **PermissionCheckboxGroup** | `school/configuration/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes authorized directly by a class-level assignment; **not** the Permissions tab list |
+| **PermissionCheckboxGroup** | `routes/(app)/configuration/structure/classes/components/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes authorized directly by a class-level assignment; **not** the Permissions tab list |
 
-**Do not** use `ScopeBuilder` outside staff permission flows. **Do not** restore a roles CRUD matrix screen.
+**Do not** use `ScopeBuilder` outside staff permission, permission-profile assignment and staff default-scope flows. A mixed-permission **profile checklist catalog** at `/configuration/permission-profiles` is allowed. **Do not** restore a roles CRUD matrix screen.
 
-### 2.7 T2 — Identity
+## 6. Route-specific composition boundaries
 
-| Component | Path | Use for |
-|-----------|------|---------|
-| **PersonAvatar** | `school/shared/PersonAvatar.svelte` | Staff, guardians |
-| **StudentAvatar** | `school/shared/StudentAvatar.svelte` | Students (photo overlay on edit) |
-| **ProfilePhotoPicker** | `school/shared/ProfilePhotoPicker.svelte` | Avatar upload in edit modals |
+Dashboard belongs to `/dashboard`; imports and school timetable generation to `/configuration/tools`; class calendars, occurrence attendance and logbooks to class timetable routes. Report model structure belongs to Configuration and homeroom comments to class report results. Shared scheduling helpers remain in `lib/scheduling/`. Shared subject editors, report comments and document controls receive route/tab action callbacks; they must not call runtime mutation adapters.
 
-### 2.8 Shared modules (not components)
+The generation workspace has one searchable grade-grouped class list beside subject settings. Checkbox and class-navigation targets must be independent. Inclusion and drafts belong to task state; no second class selector is allowed. Narrow screens stack this list above the editor with bounded list scrolling and reachable task actions. `StaffPicker` callers must set active eligibility deliberately; class assignment forms require active staff.
 
-| Module | Path | Use for |
-|--------|------|---------|
-| **ui-tones** | `lib/ui-tones.ts` | Badge / surface tone class strings |
-| **drawer-constants** | `school/shared/drawer-constants.ts` | Status → tone maps, kind labels |
+The X-CONFIG-RAIL composition owns a 17rem full-height white rail flush to the configuration area's left/top/bottom and a right divider; main content owns page padding. Level selection and Details/Subjects/Classes links remain separate from collection facets. The Other configurations rail is headed Configurations in FR/EN, with permission-filtered destinations. Below 1024px use a labeled compact selector above content. Fixed drawer/backdrop elements must stay viewport-aligned without inherited sibling margins.
 
----
+Report model collections must use the standard List renderer, ListPageHeader, name/description search and one FilterPanel containing publication/default-model status. The scoped menu places Add model first, followed only by supported standard controls; it must not introduce export, bulk operations or a view alternate. Model rows open their existing section drawer with Model summary, Structure and Grading context. Selected/focus and return states follow shared List rules. Context changes guard dirty forms before closing stale targets. No duplicate workload/grading editor is permitted: use the assigned subject and level forms.
 
-## 3. Composition recipes
+### Corrections and messages
 
-### 3.1 List route (complex or simple entity)
+Correction lists use ListPageHeader, FilterPanel, PageQuery and DataState. Correction detail uses the shared accessible Dialog drawer and FormModal for rejection/consequence confirmation. Structured logbook content, objectives, homework, family summary and progress render as individual differences; use subject/chapter/student names instead of internal identifiers.
 
-```svelte
-<PageQuery {query} loadingTitle={$t('…')}>
-  {#snippet children(data)}
-    <DataState status={data.status} …>
-      <EntityView />
-    </DataState>
-  {/snippet}
-</PageQuery>
-```
+Route-local MessagesView composes ListPageHeader, DataState, DrawerEntityHeader, Dialog, FormModal, Button, Label and Textarea. Read-only teacher oversight uses the same thread presentation without school mutation actions. School queue status, unread state, author identity and conflict feedback are textual as well as visual.
 
-Inside route-local `*View.svelte` (T3):
+Route-local `ConversationMessageBubble` renders immutable history in chronological DOM order. School staff replies, including colleagues' replies, align right with `primary-container`; guardian messages align left on neutral `muted`. Teacher oversight puts teachers right and guardians left, describing participant roles rather than viewer ownership. Retain actual names, selectable multiline body text and smaller localized timestamps in browser timezone. Direction depends on author kind through the pure `messagePresentation` helper, never display names. Localized article labels identify direction/role, author and time without receipts. Bubbles wrap arbitrary words/URLs, use the conversation-bubble radius from [design-language §2](design-language-spec.md#2-measurable-composition), and width constraints from [design-language §6](design-language-spec.md#6-brand-and-specialized-presentation); compact enlarged text can use the available width. Header actions wrap at larger text sizes. Reply modal, drafts, infinite loading, polling and permissions retain their existing ownership.
 
-```
-ListPageHeader
-  search:   ListSearchField bind:value={query}
-  filters:  FilterSelect (main) + FilterPanel trigger (secondary)
-  more:     ListMoreMenu
-  primary:  Button → EntityFormModal
-EntityTable | EntityCardList   ← collection wrapper (feature-local OK for now)
-  complex:  row click → navigate …/[[id]]
-  simple:   RowActionMenu → FormModal | ConfirmModal
-```
+My inbox, School messages and Corrections use `ListPageHeader`, facet controls inside a single labeled `FilterPanel`, and `ListEntityTable` with semantic status chips and infinite loading. All three retain their debounced `ListSearchField` in the header and the shared table-header Customize control with persisted authorized column choices, Show all available and Reset to defaults. My inbox and Corrections use the exact default columns declared by the feature contract; neither adds a List toggle or unsupported sorting. `TableTimestamp` renders their date/time cells. Correction reasons stay in the drawer, while real consequences use short title-adjacent warnings. Personal message previews remain secondary and opening does not mark a delivery read. Messages combines all authorized conversation types, with row tags and optional type, status and order filters. Message search matches subjects, captured participant names and full immutable message history across the complete authorized query before counts and paging. Detail drawers use type, contextual Back and Close with a scrollable content region; width follows [design-language §2](design-language-spec.md#2-measurable-composition).
 
-### 3.2 Complex drawer
+Interval Edit and Delete actions share RowActionMenu. Report model FormModal includes an optional passing threshold; the drawer displays the saved value or Not configured. Configuration editors reuse FormModal, PermissionGate, FilterSelect, Checkbox, Input and RowActionMenu. RowActionMenu closes after an enabled action is chosen so it cannot obscure the editor’s return destination. School asset slots support a read-only summary and an immediate-save editor. All configuration forms retain keyboard focus within the modal, wrap long labels, and scroll vertically at narrow widths or enlarged text.
 
-```
-DetailDrawer shell (shared or route-local)
-  DrawerEntityHeader — avatar, name, chips, [Action 1] [Action 2] [···]
-  body:
-    tab bar: route links under [[id]]/ (e.g. …/guardians) — not ?tab= query params
-    sections: DrawerField …
-    sub-collection: inline section header (+ Add) + read-only list + row Edit/Delete → modals
-    optional footer: DrawerActionBar (secondary actions only)
-    empty: DrawerEmptyState
-```
+### Weekly period calendar
 
-Route-local drawer shells must still implement the T2 shell contract: type chip + close-only shell header, backdrop click, Escape close, list-preserving overlay, full-width mobile, `md:w-1/2` desktop width, and no footer unless it contains Close only.
+The period-grid route uses only the SVAR Calendar view, including when the selected year has no slots. No board/view switcher or date navigation is permitted (X-PERIOD-GRID). Reuse the installed class-timetable calendar dependency and shared `components/calendar/SvarCalendarLocale`; route components must not import class-route components. Use bundled fonts, semantic theme tokens, weekday unit columns and a fixed local anchor date solely for rendering. Never persist that date or expose date navigation. Hide empty weekend columns independently; retain scheduled weekends. Reset selection and weekend visibility on school/year changes.
 
-### 3.3 Simple entity
+Provide a visible bottom resize handle on every slot, including short breaks. Pointer capture separates resizing from moving/creating; Escape, pointer cancellation and unmount restore the original height without saving. Up/Down on the focused handle adjusts the end by five minutes. Use the rendered time scale for the pointer delta, without a minimum event-height threshold. During dragging, show the snapped end-time preview on the card without changing route data; prioritize the time over the label on short slots. Clear that preview on release, cancellation or unmount so failed saves show the original time. Resize changes end time only, normalize to five-minute clock boundaries, and validate a positive same-day range against all slots (including breaks) in the current school/year/weekday. Adjacent endpoints are allowed. Whole-slot moves preview both displayed times from the native card position, snapping the start to five minutes and preserving duration. Clear the local preview when the native drag ends or the card unmounts; prioritize the time on short slots as during resizing. Whole-slot moves snap the start time, preserve duration and may change weekday; validate against the destination weekday. Keep configured order and other metadata. Route state owns the existing save mutation; serialize writes and cancel the vendor's internal update so only successful API results update displayed data. Failed saves leave the previous time intact. These client checks do not replace server validation or protect against concurrent changes by another client.
 
-No drawer route required. **RowActionMenu** is the primary mutation surface (simple entities: row `···` only, no URL-backed drawer).
+Add slot then Quick setup belong in the collection menu; slot edit/delete remain permission-gated forms/confirmations. Show adjacent in-slot Edit and Delete icons on hover, keyboard focus or selection (always on touch devices); prevent them from starting a drag. Highlight the selected slot. Keep card actions keyboard-focusable with slot-specific accessible labels. Do not show a separate slot selector or Edit/Delete toolbar. Keep the caption and weekend control in a wrapping header with the related-control gap from [design-language §2](design-language-spec.md#2-measurable-composition) above the calendar. Save/pending announcements remain screen-reader accessible without a reserved status row; failures appear inline, while successful saves use the existing toast. Announce save/error results in the active locale. The calendar supports pointer moving and resizing; precise keyboard time editing stays in the modal.
 
----
+Drag across empty calendar space to open the existing creation modal with the selected weekday and independently snapped start/end times. Validate a positive same-day selection and overlaps before opening and again against current data on submission. Scope the in-memory form seed to the current school/year, and clear it when the modal closes or Add slot is used. Cancel creates nothing; only the existing save mutation creates a slot. Keep Add slot for keyboard/touch creation and retain confirmation before deletion.
 
-## 4. Feature-local patterns (not yet extracted)
+### Activity log
 
-These remain route-local (T3) or legacy until migrated. Follow visual patterns from the design-language spec.
+The read-only Activity log must compose ListPageHeader, ListSearchField, one FilterPanel, ListEntityTable, InfiniteList and DataState. Its route state supplies authorized event rows and details; presentation must not query internal command receipts or reconstruct audit changes from current entities. The event drawer composes DrawerEntityHeader, DrawerField and the shared history/comparison patterns without record mutation controls. Missing recorded values and restricted content remain distinct. Related-record links receive separate target eligibility and the standard replace-drawer/Back behavior. The Tools entry is independently gated; no table selection bar, export or replay controls are permitted.
 
-| Pattern | Current location | Target |
-|---------|------------------|--------|
-| **Drawer tab navigation** | Feature-local tab bars in routed drawer layouts | **Nested child routes** under `[[id]]/`; tab bars render route links. The callback-based `DrawerTabBar` primitive is removed and must not be restored. |
-| **Entity table / card list** | `ui/ListEntityTable.svelte` + `ui/ListEntityCards.svelte` + route snippets | Built — students list uses both views |
-| **Chip-bar main filter (legacy)** | Some older views in `lib/components/school/` | Migrate to `FilterSelect` + `FilterPanel` when touching the file |
-| **Feature views in lib** | Legacy `lib/components/school/{domain}/` | Colocate under `routes/.../components/` per route-state spec |
+### Finance
 
----
+Fees, Billing and Payments must use Table, shared header/filter/menu and infinite loading. Fee and billing inspection compose shared drawer fields/sections/menus. Finance overview and payment forms remain finance-domain compositions; no extra global framework. Read-only terms/history must remain separate from mutation controls, and eligibility must include selected-student scope.
 
-## 5. Registry history (completed extractions)
+### Optional subject selection
 
-| ID | Component | Status | Notes |
-|----|-----------|--------|-------|
-| P0.1 | `DrawerEntityHeader` | Built | Required on all complex drawer bodies |
-| P0.2 | `ListSearchField` | Built | Replace inline search markup in views |
-| P0.3 | `FilterPanel` | Built | Secondary filters behind Filter button |
-| P0.4 | `RowActionMenu` | Built | Primary surface for simple entities |
+`smart-components/subject-enrollment/SubjectEnrollmentModal.svelte` and its state are the single subject-enrolment workflow for School/Class student drawers, teaching rosters, and School/Class student-list batch actions. Typed context supplies class/year, student targets and an optional fixed subject; the teaching entry additionally allows selecting recipients. This registered Smart workflow owns authorized bounded reads, draft validation, revisions, replay identity, atomic submission and entity invalidation. Callers own URL entry/return and list selection; presentation must not duplicate command or conflict handling. `$lib/subjects/SubjectSelectionFields.svelte` supplies the same fields to every entry point. It presents Annual, multiple period checkboxes, completed read-only labels and Clear selection. It receives periods, timezone and a bound desired selection; route state owns API calls, revision checks and replay. Clearing selections uses the existing FormModal confirmation action labelled Withdraw.
 
-Remaining chip-bar **main** filters should migrate to `FilterSelect` when touched — not blocking.
+## 7. Conformance
 
----
+A shared component must define all relevant states, keyboard/focus behavior, long-text and 200% text behavior, FR/EN strings, narrow-screen behavior and its authorized variants. Variants must express the named app-shell exceptions; a boolean styling escape hatch must not create an undeclared layout. Feature-local code may supply content and callbacks, not competing typography, collection anatomy, action placement or permission semantics.
 
-## 6. Anti-patterns
+### Report module configuration
 
-| Do not | Do instead |
-|--------|------------|
-| Copy search input markup into each `*View` | `ListSearchField` |
-| Chip bar or pill toggle as **main** filter | `FilterSelect` + `FilterPanel` |
-| Identity block + actions only in drawer body tabs | `DrawerEntityHeader` |
-| Open `*Form.svelte` as default drawer body | Read-only body + `FormModal` |
-| Custom permission matrix / inline CRUD grid | Staff drawer + `StaffPermissionFormModal` |
-| Raw `<select>` for staff/student/guardian | Smart `*Picker` or `PickerModal` |
-| New `ScopeChipSelector` usages | `ScopeBuilder` or delete unused legacy |
-| One-off badge colors | `ui-tones` / `drawer-constants` |
-| Feature views in `lib/components/school/{domain}/` | `routes/.../components/` |
-| `?tab=` query param for drawer tabs | Nested routes under `[[id]]/` |
-
----
-
-## 7. When to add a new shared component
-
-1. Same UI pattern appears in **≥3** features or **≥2** modules.
-2. Pattern is stable (not a one-off experiment).
-3. Add to this registry in the **same PR** as the component.
-4. If route-only, keep in `routes/.../components/` (T3) with no registry entry.
-5. If shared self-contained feature (picker, scope builder), add under `lib/smart-components/` per route-state spec §8.
-
----
-
-## 8. Agent checklist
-
-When building or refactoring a screen:
-
-- [ ] List uses `ListPageHeader` + `FilterSelect` + `ListSearchField` / `FilterPanel` as needed
-- [ ] Route uses `PageQuery` + `DataState`
-- [ ] Mutations use `FormModal` / `ConfirmModal` / `PickerModal`
-- [ ] Actions wrapped in `PermissionGate` where required
-- [ ] Complex drawer uses the DetailDrawer shell contract + `DrawerEntityHeader` + `DrawerField`
-- [ ] Sub-collections use inline section header for `+ Add`; `DrawerEmptyState` for empty tabs
-- [ ] Route-local views in `routes/.../components/` — not `lib/components/school/{domain}/`
-- [ ] Drawer tabs use nested child routes — not `?tab=` query params
-- [ ] People selection uses smart `*Picker` family
-- [ ] Staff permissions use `ScopeBuilder` + `StaffPermissionFormModal` only
-- [ ] Status chips use `ui-tones` / `drawer-constants`
-- [ ] No new shared component without registry update (§2)
-
----
-
-## Document history
-
-| Date | Change |
-|------|--------|
-| 2026-08-12 | Removed callback-based `DrawerTabBar`; route-link tab bars are the replacement |
-| 2026-07-06 | §4 feature-local patterns; DrawerTabBar / EntityTable guidance; registry cleanup |
-| 2026-07-06 | DrawerActionBar = body footer; PermissionCheckboxGroup scope |
-| 2026-07-03 | Initial registry — T0/T1/T2 tiers, mandatory components |
+The grade-level Subjects List uses shared ListPageHeader, ListSearchField, FilterPanel/FilterSelect and RowActionMenu primitives. Module headers show the weighting mode and full-membership coefficient sum or explicit weight; Ungrouped is last. Module metadata/membership and report-settings forms use FormModal; deletion uses ConfirmModal. Reuse the existing subject form for coefficient/module edits. No module drawer or nested result group is introduced.

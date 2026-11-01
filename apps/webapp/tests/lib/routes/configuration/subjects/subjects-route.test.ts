@@ -2,32 +2,31 @@ import { describe, expect, it } from 'bun:test';
 import {
 	resolveLegacySubjectGradeLevelId,
 	subjectLevelCompatibilityHref,
-} from '../../../../../src/routes/(app)/configuration/subjects/lib/subject-level-redirect';
+} from '../../../../../src/routes/(app)/configuration/structure/subjects/lib/subject-level-redirect';
 import {
 	activeSubjectsDetailTab,
 	SUBJECTS_DETAIL_TABS,
-} from '../../../../../src/routes/(app)/configuration/subjects/lib/subjects-detail-tabs';
+} from '../../../../../src/routes/(app)/configuration/structure/subjects/lib/subjects-detail-tabs';
 import {
 	chapterProgressFromEntries,
-	emptySubjectsSlice,
 	logEntriesForSubject,
 	subjectIdFromUrl,
-} from '../../../../../src/routes/(app)/configuration/subjects/lib/subjects-helpers';
+} from '../../../../../src/routes/(app)/configuration/structure/subjects/lib/subjects-helpers';
 
 describe('subjects route helpers', () => {
 	it('parses subject id from drawer URL', () => {
-		const url = new URL('http://local/configuration/subjects/cs-math-6a/progression');
+		const url = new URL('http://local/configuration/structure/subjects/cs-math-6a/progression');
 		expect(subjectIdFromUrl(url)).toBe('cs-math-6a');
 	});
 
 	it('ignores level segment when parsing subject id', () => {
-		const url = new URL('http://local/configuration/subjects/level/6e');
+		const url = new URL('http://local/configuration/structure/subjects/level/6e');
 		expect(subjectIdFromUrl(url)).toBeUndefined();
 	});
 
 	it('redirects a legacy level label to the stable grade-level filter', () => {
 		const url = new URL(
-			'http://local/configuration/subjects/level/Sixi%C3%A8me?q=math&modal=create-subject&gradeLevel=stale',
+			'http://local/configuration/structure/subjects/level/Sixi%C3%A8me?q=math&modal=create-subject&gradeLevel=stale',
 		);
 		const gradeLevels = [
 			{ id: 'ci-gl-6', name: 'Sixième' },
@@ -35,23 +34,16 @@ describe('subjects route helpers', () => {
 		];
 		expect(resolveLegacySubjectGradeLevelId('Sixi%C3%A8me', gradeLevels)).toBe('ci-gl-6');
 		expect(subjectLevelCompatibilityHref(url, 'Sixième', gradeLevels)).toBe(
-			'/configuration/subjects?q=math&gradeLevel=ci-gl-6',
+			'/configuration/structure/subjects?q=math&gradeLevel=ci-gl-6',
 		);
 	});
 
 	it('falls back to the subjects list when the legacy level does not resolve', () => {
 		const url = new URL(
-			'http://local/configuration/subjects/level/Inconnu?q=fran%C3%A7ais&modal=edit&modalTarget=secret',
+			'http://local/configuration/structure/subjects/level/Inconnu?q=fran%C3%A7ais&modal=edit&modalTarget=secret',
 		);
 		expect(subjectLevelCompatibilityHref(url, 'Inconnu', [{ id: 'ci-gl-6', name: 'Sixième' }]))
-			.toBe('/configuration/subjects?q=fran%C3%A7ais');
-	});
-
-	it('returns an empty slice by default', () => {
-		expect(emptySubjectsSlice()).toEqual({
-			subjects: [],
-			logEntries: [],
-		});
+			.toBe('/configuration/structure/subjects?q=fran%C3%A7ais');
 	});
 
 	it('filters log entries for a subject', () => {
@@ -81,10 +73,10 @@ describe('subjects detail tabs', () => {
 	});
 
 	it('defaults bare subject URL to progression', () => {
-		expect(activeSubjectsDetailTab('/configuration/subjects/cs-math-6a', 'cs-math-6a')).toBe('progression');
+		expect(activeSubjectsDetailTab('/configuration/structure/subjects/cs-math-6a', 'cs-math-6a')).toBe('progression');
 	});
 
 	it('detects logbook tab from pathname', () => {
-		expect(activeSubjectsDetailTab('/configuration/subjects/cs-math-6a/logbook', 'cs-math-6a')).toBe('logbook');
+		expect(activeSubjectsDetailTab('/configuration/structure/subjects/cs-math-6a/logbook', 'cs-math-6a')).toBe('logbook');
 	});
 });

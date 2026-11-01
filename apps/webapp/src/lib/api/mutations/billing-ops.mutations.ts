@@ -1,48 +1,71 @@
+import type { AllocationPlan, AllocationPreview, PaymentMethod } from '$lib/api/finance-types';
+import { financeCommand, financeQuery } from '$lib/api/finance-client';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 
-export async function adjustStudentFeeMutation(input: {
-	studentFeeId: string;
+function newId(prefix: string): string {
+	return `${prefix}-${Date.now().toString(36)}`;
+}
+
+export async function adjustStudentChargeMutation(input: {
+	chargeId: string;
 	adjustmentAmount: number;
 	reason: string;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const now = new Date().toISOString();
 	const result = await runMutation(
-		() => client.commands.adjustStudentFee({
-			studentFeeId: input.studentFeeId,
+		() => financeCommand(client, 'adjustStudentCharge', 'adjust-student-charge', {
+			requestId: crypto.randomUUID(),
+			chargeId: input.chargeId,
 			adjustmentAmount: input.adjustmentAmount,
 			reason: input.reason.trim(),
-			adjustedAt: now,
-			updatedAt: now,
-			referenceDate: now,
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
 }
 
-export async function cancelStudentFeeMutation(input: {
-	studentFeeId: string;
+export async function waiveStudentChargeMutation(input: {
+	chargeId: string;
+	reason: string;
+	waiverAmount?: number;
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(
+		() => financeCommand(client, 'waiveStudentCharge', 'waive-student-charge', {
+			requestId: crypto.randomUUID(),
+			chargeId: input.chargeId,
+			reason: input.reason.trim(),
+			waiverAmount: input.waiverAmount,
+		}),
+		{
+			successMessage: input.successMessage,
+			versionKeys: ['fees', 'billing', 'payments'],
+		},
+	);
+	return result !== null;
+}
+
+export async function cancelStudentChargeMutation(input: {
+	chargeId: string;
 	reason: string;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const now = new Date().toISOString();
 	const result = await runMutation(
-		() => client.commands.cancelStudentFee({
-			studentFeeId: input.studentFeeId,
+		() => financeCommand(client, 'cancelStudentCharge', 'cancel-student-charge', {
+			requestId: crypto.randomUUID(),
+			chargeId: input.chargeId,
 			reason: input.reason.trim(),
-			cancelledAt: now,
-			updatedAt: now,
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -50,42 +73,104 @@ export async function cancelStudentFeeMutation(input: {
 
 export async function reversePaymentMutation(input: {
 	paymentId: string;
+	reverseAllocationIds?: readonly string[];
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const now = new Date().toISOString();
 	const result = await runMutation(
-		() => client.commands.reversePayment({
+		() => financeCommand(client, 'reversePayment', 'reverse-payment', {
 			paymentId: input.paymentId,
-			reversedAt: now,
-			updatedAt: now,
-			referenceDate: now,
+			reverseAllocationIds: input.reverseAllocationIds ? [...input.reverseAllocationIds] : undefined,
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['payments', 'billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
 }
 
-export async function cancelPaymentMutation(input: {
-	paymentId: string;
+export async function allocateAccountBalanceMutation(input: {
+	id?: string;
+	accountId: string;
+	allocation: AllocationPlan;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const now = new Date().toISOString();
 	const result = await runMutation(
-		() => client.commands.cancelPayment({
-			paymentId: input.paymentId,
-			cancelledAt: now,
-			updatedAt: now,
-			referenceDate: now,
+		() => financeCommand(client, 'allocateAccountBalance', 'allocate-account-balance', {
+			id: input.id ?? newId('alc'),
+			accountId: input.accountId,
+			allocation: input.allocation,
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['payments', 'billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
+}
+
+export async function reverseAllocationMutation(input: {
+	allocationId: string;
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(
+		() => financeCommand(client, 'reverseAllocation', 'reverse-allocation', {
+			allocationId: input.allocationId,
+		}),
+		{
+			successMessage: input.successMessage,
+			versionKeys: ['fees', 'billing', 'payments'],
+		},
+	);
+	return result !== null;
+}
+
+export async function refundAvailableBalanceMutation(input: {
+	id?: string;
+	accountId: string;
+	amount: number;
+	paymentDate: string;
+	method: PaymentMethod;
+	reference?: string;
+	notes?: string;
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(
+		() => financeCommand(client, 'refundAvailableBalance', 'refund-available-balance', {
+			id: input.id ?? newId('rfd'),
+			accountId: input.accountId,
+			amount: input.amount,
+			paymentDate: input.paymentDate,
+			method: input.method,
+			reference: input.reference?.trim() || null,
+			notes: input.notes?.trim() || null,
+		}),
+		{
+			successMessage: input.successMessage,
+			versionKeys: ['fees', 'billing', 'payments'],
+		},
+	);
+	return result !== null;
+}
+
+export async function previewAccountAllocationQuery(input: {
+	accountId: string;
+	allocation: AllocationPlan;
+}): Promise<AllocationPreview | null> {
+	const client = getBrowserSchoolClient();
+	try {
+		return await financeQuery<AllocationPreview>(
+			client,
+			'previewAccountAllocation',
+			'preview-account-allocation',
+			input,
+		);
+	}
+	catch {
+		return null;
+	}
 }

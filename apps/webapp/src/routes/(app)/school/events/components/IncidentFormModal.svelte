@@ -6,6 +6,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
@@ -13,30 +14,20 @@
 	import { getEventsPageState } from '../events-page.svelte';
 
 	type IncidentKind = 'positive' | 'minor_infraction' | 'major_infraction' | 'emergency';
-
 	const INCIDENT_KINDS: IncidentKind[] = [
 		'positive',
 		'minor_infraction',
 		'major_infraction',
 		'emergency',
 	];
-
-	let {
-		incident,
-		open = $bindable(false),
-		onCreated,
-		disabled = false,
-		title: triggerTitle,
-	}: {
+	let { incident, open = $bindable(false), onCreated, disabled = false, title: triggerTitle }: {
 		incident?: Incident;
 		open?: boolean;
 		onCreated?: (incidentId: string) => void;
 		disabled?: boolean;
 		title?: string;
 	} = $props();
-
 	const eventsPage = getEventsPageState();
-
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let studentId = $state('');
@@ -44,51 +35,74 @@
 	let description = $state('');
 	let kind = $state<IncidentKind>('minor_infraction');
 	let date = $state('');
-
+	let lessonSessionId = $state('');
+	let lessons = $state<Awaited<ReturnType<typeof eventsPage.loadIncidentLessons>>>([]);
+	let lessonLoadGeneration = 0;
+	let lessonsLoading = $state(false);
+	let lessonError = $state(false);
+	async function loadLessons(classId: string) {
+		const generation = ++lessonLoadGeneration;
+		lessonsLoading = true;
+		lessonError = false;
+		try {
+			const data = await eventsPage.loadIncidentLessons(classId);
+			if (generation === lessonLoadGeneration)
+				lessons = data;
+		}
+		catch {
+			if (generation === lessonLoadGeneration)
+				lessonError = true;
+		}
+		finally {
+			if (generation === lessonLoadGeneration)
+				lessonsLoading = false;
+		}
+	}
 	const isEdit = $derived(incident !== undefined);
-	const schoolId = $derived(academicContext.schools[0]?.id ?? '');
-
+	const schoolId = $derived.by(() => {
+		return academicContext.schoolScopeId || academicContext.schools[0]?.id || '';
+	});
 	const selectedStudent = $derived(eventsPage.students.find(entry => entry.id === studentId));
+	$effect(() => {
+		const classId = incident?.classGroupId ?? selectedStudent?.classId;
+		if (open && classId)
+			void loadLessons(classId);
+	});
 	const kindLabel = $derived($t(`events.kind.${kind}`));
-	const studentClass = $derived(
-		selectedStudent
-			? academicContext.classes.find(entry => entry.id === selectedStudent.classId)
-			: undefined,
-	);
-
-	const canSubmit = $derived(
-		incidentTitle.trim().length > 0 && description.trim().length > 0 && (isEdit || (studentId.length > 0 && schoolId.length > 0)),
-	);
-
+	const studentClass = $derived(selectedStudent
+		? academicContext.classes.find(entry => entry.id === selectedStudent.classId)
+		: undefined);
+	const canSubmit = $derived.by(() => {
+		return incidentTitle.trim().length > 0 && description.trim().length > 0 && (isEdit || (studentId.length > 0 && schoolId.length > 0));
+	});
 	function resetForm() {
 		if (incident) {
 			studentId = incident.studentId;
-			incidentTitle = incident.summary.slice(0, 80);
-			description = incident.summary;
-			kind = 'minor_infraction';
+			incidentTitle = incident.title ?? incident.summary;
+			description = incident.description ?? incident.summary;
+			kind = incident.kind;
 			date = incident.date;
+			lessonSessionId = incident.lessonSessionId ?? '';
 		}
 		else {
-			studentId = eventsPage.students[0]?.id ?? '';
+			studentId = '';
 			incidentTitle = '';
 			description = '';
 			kind = 'minor_infraction';
 			date = new Date().toISOString().slice(0, 10);
+			lessonSessionId = '';
 		}
 	}
-
 	$effect(() => {
 		if (open && !wasOpen) {
 			resetForm();
 		}
 		wasOpen = open;
 	});
-
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
-
 		busy = true;
 		try {
 			if (incident) {
@@ -98,6 +112,7 @@
 					description,
 					kind,
 					date,
+					lessonSessionId: lessonSessionId || null,
 					successMessage: get(t)('events.updateSuccess'),
 				});
 				if (ok) {
@@ -113,6 +128,7 @@
 					description,
 					kind,
 					date,
+					lessonSessionId: lessonSessionId || null,
 					successMessage: get(t)('events.createSuccess', {
 						name: selectedStudent?.name ?? '',
 					}),
@@ -134,7 +150,7 @@
 	<Button
 		variant="outline"
 		size="sm"
-		class="rounded-full"
+
 		{disabled}
 		title={triggerTitle}
 		onclick={() => (open = true)}
@@ -165,11 +181,18 @@
 		</div>
 	{/if}
 	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+		<Label
+			for="incident-title"
+			class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+		>
 			{$t('events.titleField')}
 		</Label>
-		<Input bind:value={incidentTitle} />
+		<Input id="incident-title" data-testid="incident-title-input" bind:value={incidentTitle} />
 	</div>
+	<details class="space-y-3 rounded-collection border p-3"><summary>{$t('profile.additionalFields')}</summary>
+		<Label class="block space-y-2"><span>{$t('profile.lessonOccurrence')}</span><SelectField class="w-full border bg-card" bind:value={lessonSessionId} disabled={lessonsLoading || lessonError}><option value="">{$t('profile.notProvided')}</option>{#if lessonSessionId && !lessons.some(lesson => lesson.id === lessonSessionId)}<option value={lessonSessionId}>{$t('profile.restricted')}</option>{/if}{#each lessons as lesson (lesson.id)}<option value={lesson.id}>{lesson.displayLabel ?? $t('profile.lessonOccurrence')} · {lesson.startsAt}</option>{/each}</SelectField></Label>
+		{#if lessonError}<p role="alert">{$t('dataState.error')}</p>{/if}
+	</details>
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

@@ -5,7 +5,7 @@ export function resolveActiveClassId(
 	pageClassId: string | undefined,
 	classes: ClassNode[],
 ): string {
-	if (pageClassId && classes.some(entry => entry.id === pageClassId)) {
+	if (pageClassId && (classes.length === 0 || classes.some(entry => entry.id === pageClassId))) {
 		return pageClassId;
 	}
 	return classes[0]?.id ?? '';

@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'bun:test';
 import {
 	readListCardColumns,
 	readListView,
@@ -6,6 +5,7 @@ import {
 	writeListView,
 } from '$lib/list/list-view-url';
 import { readModal, writeModal } from '$lib/modal/modal-url';
+import { describe, expect, it } from 'bun:test';
 import {
 	readExpandedAcademicYear,
 	writeExpandedAcademicYear,
@@ -16,12 +16,17 @@ import {
 } from '../../../src/routes/(app)/school/students/[[id]]/(tabs)/grades/student-subject-url';
 import {
 	canonicalInvitationAuthUrlState,
+	invitationTokenFromRoute,
+	isInvitationRoute,
 	readInvitationAuthUrlState,
 	writeInvitationAuthUrlState,
 } from '../../../src/routes/invite/[token]/invitation-auth-url';
 import {
 	canonicalLoginUrlState,
 	isEmailVerifiedRedirect,
+	isInvalidVerificationRedirect,
+	isLoginAutoSignInRoute,
+	isLoginRoute,
 	readLoginUrlState,
 	writeLoginUrlState,
 } from '../../../src/routes/login/login-url-state';
@@ -32,9 +37,10 @@ function url(path: string): URL {
 
 describe('addressable non-modal view URL state', () => {
 	it('round-trips list view while preserving filters and modal state', () => {
-		const href = writeListView(url('/school/students?q=ada&modal=create'), 'cards');
-		expect(href).toBe('/school/students?q=ada&modal=create&view=cards');
-		expect(readListView(url(href))).toBe('cards');
+		const href = writeListView(url('/school/students?q=ada&modal=create'), 'list');
+		expect(href).toBe('/school/students?q=ada&modal=create&view=list');
+		expect(readListView(url(href))).toBe('list');
+		expect(readListView(url('/school/students?view=cards'))).toBe('list');
 		expect(readListView(url('/school/students?view=unknown'))).toBe('table');
 	});
 
@@ -55,6 +61,13 @@ describe('addressable non-modal view URL state', () => {
 		expect(readListCardColumns(url('/school/activities?cardColumns=99'), 4)).toBe(3);
 	});
 
+	it('detects login routes so afterNavigate cannot rewrite onboarding', () => {
+		expect(isLoginRoute('/login')).toBe(true);
+		expect(isLoginRoute('/login/demo')).toBe(true);
+		expect(isLoginRoute('/onboarding')).toBe(false);
+		expect(isLoginRoute('/invite/token')).toBe(false);
+	});
+
 	it('routes login panel, method, and stage without credentials', () => {
 		const href = writeLoginUrlState(
 			url('/login?email=ada%40school.test&password=secret&otp=123456'),
@@ -71,14 +84,14 @@ describe('addressable non-modal view URL state', () => {
 				url('/login?panel=signup&method=password&stage=verification'),
 				{ showSignup: false },
 			),
-		).toEqual({ panel: 'signin', method: 'password', stage: 'form' });
+		).toEqual({ panel: 'signin', method: 'email-otp', stage: 'form' });
 	});
 
 	it('resets login stages that lost their local email identity', () => {
 		const codeState = { panel: 'signin', method: 'email-otp', stage: 'code' } as const;
 		const verificationState = {
 			panel: 'signup',
-			method: 'password',
+			method: 'email-otp',
 			stage: 'verification',
 		} as const;
 
@@ -96,9 +109,9 @@ describe('addressable non-modal view URL state', () => {
 	it('keeps teacher portal gate while canonicalizing login params', () => {
 		const href = writeLoginUrlState(
 			url('/login?portal=teacher'),
-			{ panel: 'signin', method: 'password', stage: 'form' },
+			{ panel: 'signin', method: 'email-otp', stage: 'form' },
 		);
-		expect(href).toBe('/login?portal=teacher&panel=signin&method=password&stage=form');
+		expect(href).toBe('/login?portal=teacher&panel=signin&method=email-otp&stage=form');
 	});
 
 	it('detects email-verified redirects and strips the query param', () => {
@@ -111,13 +124,37 @@ describe('addressable non-modal view URL state', () => {
 
 		const href = writeLoginUrlState(
 			url('/login?verified=1&portal=teacher'),
-			{ panel: 'signin', method: 'password', stage: 'form' },
+			{ panel: 'signin', method: 'email-otp', stage: 'form' },
 		);
-		expect(href).toBe('/login?portal=teacher&panel=signin&method=password&stage=form');
+		expect(href).toBe('/login?portal=teacher&panel=signin&method=email-otp&stage=form');
 		expect(href).not.toContain('verified=');
 	});
 
+	it('auto-signs in only on /login and detects invalid verification redirects', () => {
+		expect(isLoginAutoSignInRoute('/login')).toBe(true);
+		expect(isLoginAutoSignInRoute('/login/demo')).toBe(false);
+		expect(isInvalidVerificationRedirect(url('/login?error=INVALID_TOKEN'))).toBe(true);
+		expect(isInvalidVerificationRedirect(url('/login?error=invalid_token'))).toBe(true);
+		expect(isInvalidVerificationRedirect(url('/login?error=EXPIRED'))).toBe(false);
+
+		const href = writeLoginUrlState(
+			url('/login?error=INVALID_TOKEN&portal=teacher'),
+			{ panel: 'signin', method: 'email-otp', stage: 'form' },
+		);
+		expect(href).toBe('/login?portal=teacher&panel=signin&method=email-otp&stage=form');
+		expect(href).not.toContain('error=');
+	});
+
+	it('detects invitation routes so afterNavigate cannot rewrite the dashboard', () => {
+		expect(isInvitationRoute('/invite/token-123')).toBe(true);
+		expect(isInvitationRoute('/invite')).toBe(true);
+		expect(isInvitationRoute('/login')).toBe(false);
+		expect(isInvitationRoute('/dashboard')).toBe(false);
+	});
+
 	it('routes invitation auth mode and safe stage only', () => {
+		expect(invitationTokenFromRoute('  abc-token  ')).toBe('abc-token');
+		expect(invitationTokenFromRoute(undefined)).toBe('');
 		const href = writeInvitationAuthUrlState(
 			url('/invite/token?email=ada%40school.test&password=secret'),
 			{ mode: 'signUp', stage: 'verification' },
@@ -167,11 +204,11 @@ describe('addressable non-modal view URL state', () => {
 
 	it('routes one expanded student subject and rejects stale subjects', () => {
 		const href = writeExpandedStudentSubject(
-			url('/school/students/stu-1/grades?modal=add-grade'),
+			url('/school/students/stu-1/grades?modal=add-absence'),
 			'Mathematics',
 		);
 		expect(href).toBe(
-			'/school/students/stu-1/grades?modal=add-grade&subject=Mathematics',
+			'/school/students/stu-1/grades?modal=add-absence&subject=Mathematics',
 		);
 		expect(readExpandedStudentSubject(url(href), ['Mathematics', 'French']))
 			.toBe('Mathematics');

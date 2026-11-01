@@ -1,5 +1,5 @@
 import type { Student } from '$lib/types/school';
-import { buildSessionDetail, buildSessionSubjectMatters } from '$lib/api/session-detail-data';
+import { buildSessionDetail, buildSessionSubjectMatters, loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
 import { lessonSession } from '$tests/support/openapi-fixtures';
 import { describe, expect, it } from 'bun:test';
 
@@ -97,3 +97,17 @@ describe('buildSessionDetail', () => {
 		expect(matters.map(entry => entry.name)).toEqual(['Fractions', 'Geometry']);
 	});
 });
+
+ it('occurrence reads distinguish missing records from denied and failed requests', async () => {
+	const { ApiError } = await import('@maya-invest/edaya-api-client');
+	for (const kind of ['lesson', 'activity', 'assessment'] as const) {
+		for (const code of [403, 404, 503]) {
+			const error = new ApiError(code, {});
+			const entity = { get: async () => { throw error; } };
+			const client = { entities: { lessonSessions: entity, activitySessions: entity, assessments: entity } } as unknown as Parameters<typeof loadPlanningOccurrenceDetail>[0];
+			const result = loadPlanningOccurrenceDetail(client, { id: 'missing', kind });
+			if (code === 404) expect(await result).toBeNull();
+			else await expect(result).rejects.toBe(error);
+		}
+	}
+ });

@@ -4,24 +4,20 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"dev": "vite dev --port 5174",
-		"build": "vite build",
-		"preview": "vite preview",
-		"preview:production": "wrangler dev --env prod",
-		"deploy:production": "PUBLIC_AUTH_URL=https://identity.edayaplus.com PUBLIC_API_URL=https://api.school.edayaplus.com PUBLIC_APP_ENV=production bun run build && wrangler deploy --env prod",
-		"deploy:production:dry-run": "PUBLIC_AUTH_URL=https://identity.edayaplus.com PUBLIC_API_URL=https://api.school.edayaplus.com PUBLIC_APP_ENV=production bun run build && wrangler deploy --env prod --dry-run",
-		"deploy:staging": "PUBLIC_AUTH_URL=https://staging.identity.edayaplus.com PUBLIC_API_URL=https://staging.api.school.edayaplus.com PUBLIC_APP_ENV=staging bun run build && wrangler deploy --env staging",
-		"deploy:staging:dry-run": "PUBLIC_AUTH_URL=https://staging.identity.edayaplus.com PUBLIC_API_URL=https://staging.api.school.edayaplus.com PUBLIC_APP_ENV=staging bun run build && wrangler deploy --env staging --dry-run",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc --project tsconfig.test.json --noEmit",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"dev": "bun x --bun vite dev --port 5174",
+		"build": "bun x --bun vite build",
+		"preview": "bun x --bun vite preview",
+		"preview:production": "bun x wrangler dev --env prod",
+		"prepare": "bun x --bun svelte-kit sync",
+		"check": "bun x --bun svelte-check --tsconfig ./tsconfig.json && bun x --bun tsc --project tsconfig.test.json --noEmit",
+		"check:watch": "bun x --bun svelte-check --tsconfig ./tsconfig.json --watch",
 		"quality": "bun run lint && bun run check",
 		"test": "bun test src",
-		"lint": "eslint src",
-		"lint:fix": "eslint src --fix"
+		"lint": "bun x --bun eslint src",
+		"lint:fix": "bun x --bun eslint src --fix"
 	},
 	"dependencies": {
-		"@maya-invest/edaya-api-client": "file:../../edaya_backend/package/api-client",
+		"@maya-invest/edaya-api-client": "file:../../.generated/api-client",
 		"clsx": "^2.1.1",
 		"lucide-svelte": "^1.0.1",
 		"tailwind-merge": "^3.6.0"
@@ -42,6 +38,6 @@
 		"tailwindcss-animate": "^1.0.7",
 		"typescript": "^6.0.2",
 		"vite": "^8.0.7",
-		"wrangler": "^4.99.0"
+		"wrangler": "^4.153.0"
 	}
 }

@@ -1,11 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import DataState from '$lib/components/ui/DataState.svelte';
-	import PageQuery from '$lib/components/ui/PageQuery.svelte';
-	import { t } from '$lib/i18n';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { appPath } from '$lib/navigation/app-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import {
+		closeDetailDrawer,
+		currentRouteSurfaceHref,
+		listSurfaceHref,
+		openDetailDrawer,
+	} from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import NotificationsInboxView from './components/NotificationsInboxView.svelte';
 	import {
@@ -20,27 +23,17 @@
 	registerVersionInvalidation(inboxPage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 
-	const query = inboxPage.queryListPage();
-
 	function selectDelivery(delivery: { id: string }) {
-		appGoto(appPath('/(app)/account/inbox/[[id]]', { id: delivery.id }));
+		openDetailDrawer(
+			listSurfaceHref(appPath('/(app)/account/inbox/[[id]]', { id: delivery.id }), $page.url),
+			currentRouteSurfaceHref($page.url),
+		);
 	}
 
 	function closeDetail() {
-		appGoto(appPath('/(app)/account/inbox/[[id]]'));
+		closeDetailDrawer(listSurfaceHref(appPath('/(app)/account/inbox/[[id]]'), $page.url));
 	}
 </script>
 
-<PageQuery {query} loadingTitle={$t('account.inbox.title')}>
-	{#snippet children(data)}
-		<DataState
-			status={data.subjectId ? data.status : 'empty'}
-			errorMessage={data.errorMessage}
-			emptyTitle={$t('account.inbox.title')}
-			emptyDescription={data.subjectId ? $t('account.inbox.empty') : $t('account.notifications.noSubject')}
-		>
-			<NotificationsInboxView onSelect={selectDelivery} onClose={closeDetail} />
-			{@render pageChildren()}
-		</DataState>
-	{/snippet}
-</PageQuery>
+<NotificationsInboxView onSelect={selectDelivery} onClose={closeDetail} />
+{@render pageChildren()}

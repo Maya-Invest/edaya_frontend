@@ -1,5 +1,8 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import { t } from '$lib/i18n';
 	import { Paperclip } from '$lib/icons';
 	import { getTeachingPageState } from '../../../../teaching-page.svelte';
@@ -8,14 +11,29 @@
 
 	const teachingPage = getTeachingPageState();
 	const entries = $derived(teachingPage.logEntriesForSubject(subject));
+	const classId = $derived(subject.classId);
 </script>
 
 <div class="space-y-3">
+	<div class="flex flex-wrap items-center gap-3">
+		<AcademicPeriodSelector />
+		<DocumentPdfButton onRequestDocumentIssuance={teachingPage.performRequestDocumentIssuance}
+			disabled={!academicContext.periodId}
+			templateKey="logbook.v1"
+			sourceId={classId}
+			classGroupId={classId}
+			classSubjectId={subject.id}
+			academicPeriodId={academicContext.periodId}
+			permission="CLASS_LOGBOOK_READ"
+			classId={classId}
+			label={$t('documents.exportLogbook')}
+		/>
+	</div>
 	{#each entries as entry (entry.id)}
-		<article class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+		<article class="rounded-collection border border-border bg-card p-4 shadow-soft">
 			<header class="mb-2 flex items-start justify-between gap-2">
 				<div>
-					<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+					<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 						{new Date(entry.date).toLocaleDateString('fr-FR', {
 							weekday: 'short',
 							day: '2-digit',
@@ -25,7 +43,7 @@
 					</p>
 					<h4 class="mt-0.5 font-display text-sm font-semibold">{entry.chapter}</h4>
 				</div>
-				<span class="font-mono text-[10px] text-muted-foreground">{entry.progress}%</span>
+				<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{entry.progress}%</span>
 			</header>
 			<p class="text-xs leading-relaxed text-foreground/80">{entry.content}</p>
 			{#if entry.notes.trim().length > 0}
@@ -48,7 +66,7 @@
 			{/if}
 		</article>
 	{:else}
-		<p class="rounded-2xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
+		<p class="rounded-collection border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
 			{$t('teaching.empty')}
 		</p>
 	{/each}

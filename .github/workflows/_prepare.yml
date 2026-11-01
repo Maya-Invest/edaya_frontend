@@ -1,0 +1,132 @@
+name: Preparation
+on:
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        required: true
+      source_ref:
+        type: string
+        required: true
+      release_mode:
+        type: boolean
+        default: false
+      backend_ref:
+        type: string
+        default: ''
+      match_backend_branch:
+        type: boolean
+        default: false
+    secrets:
+      BACKEND_CHECKOUT_TOKEN:
+        description: Read-only contents access to the private backend repository
+        required: true
+    outputs:
+      source_sha:
+        value: ${{ jobs.preparation.outputs.source_sha }}
+      backend_sha:
+        value: ${{ jobs.preparation.outputs.backend_sha }}
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+jobs:
+  preparation:
+    name: Prepare immutable inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      source_sha: ${{ steps.source.outputs.sha }}
+      backend_sha: ${{ steps.backend-input.outputs.commit }}
+    env:
+      CI: 'true'
+      CI_TARGET: ${{ inputs.target }}
+    steps:
+      - name: Validate release destination
+        env:
+          RELEASE_MODE: ${{ inputs.release_mode }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          if [ "$RELEASE_MODE" != "true" ]; then exit 0; fi
+          if [ "$REF_TYPE" != "branch" ]; then
+            echo "::error::Deploy must run from the staging or main workflow branch, not a tag."
+            exit 1
+          fi
+          case "$REF_NAME" in
+            staging) expected=staging ;;
+            main) expected=production ;;
+            *) echo "::error::Deploy must run from the staging or main workflow branch."; exit 1 ;;
+          esac
+          if [ "$TARGET" != "$expected" ]; then
+            echo "::error::Deployment target does not match the selected workflow branch."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - id: source
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "started=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.3.14
+      - name: Resolve backend input
+        id: backend-input
+        env:
+          TARGET: ${{ inputs.target }}
+          BACKEND_REF: ${{ inputs.backend_ref }}
+          MATCH_BRANCH: ${{ inputs.match_backend_branch }}
+          BACKEND_CHECKOUT_TOKEN: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+        run: bun --no-env-file tooling/repo/ops/backend-input.ts
+      - name: Checkout backend input
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Maya-Invest/edaya_backend
+          ref: ${{ steps.backend-input.outputs.commit }}
+          path: .ci/edaya_backend
+          token: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
+          persist-credentials: false
+      - name: Pin backend evidence
+        env:
+          BACKEND_SHA: ${{ steps.backend-input.outputs.commit }}
+        run: echo "CI_BACKEND_SHA=$BACKEND_SHA" >> "$GITHUB_ENV"
+      - name: Identify immutable client cache
+        id: client-cache
+        run: bun run repo ci client-key .ci/edaya_backend
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: .cache/clients/
+          key: ${{ runner.os }}-client-${{ steps.client-cache.outputs.client_key }}
+      - name: Restore Bun package cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-prepare-${{ hashFiles('bun.lock', '.ci/edaya_backend/bun.lock') }}-${{ steps.backend-input.outputs.commit }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-bun-
+      - name: Prepare client from checked-out backend
+        run: bun run repo generate client "$CI_TARGET" --backend-root .ci/edaya_backend
+      - run: bun run repo generate dependencies
+      - run: bun run repo ci prepare-inputs "$CI_TARGET"
+      - name: Upload frozen inputs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: prepared-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          if-no-files-found: error
+          path: |
+            .generated/
+            .release/bun.lock
+      - name: Preparation timing
+        if: always()
+        env:
+          STARTED: ${{ steps.source.outputs.started }}
+        run: |
+          if [ -n "$STARTED" ]; then
+            echo "Preparation: $(( $(date +%s) - STARTED ))s" >> "$GITHUB_STEP_SUMMARY"
+          fi

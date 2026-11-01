@@ -1,5 +1,5 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { Subject, SubjectCategory } from '$lib/types/school';
+import type { Subject } from '$lib/types/school';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -8,12 +8,17 @@ export interface CreateSubjectForGradeLevelInput {
 	academicYearId: string;
 	gradeLevelId: string;
 	subjectId: string;
-	gradeLevelSubjectId: string;
 	classSubjectIdsByClassGroupId: Record<string, string>;
 	name: string;
+	disciplineId?: string | null;
+	shortName?: string | null;
+	isOptional?: boolean;
+
 	code?: string;
 	coefficient?: number;
-	category?: SubjectCategory;
+	reportModuleId?: string | null;
+	expectedReportConfigurationRevision?: number;
+	categoryId: string;
 	color?: Subject['color'];
 	createdAt?: string;
 }
@@ -25,11 +30,9 @@ export function createSubjectImportIdsForGradeLevel(
 	seed = Date.now().toString(36),
 ): {
 	subjectId: string;
-	gradeLevelSubjectId: string;
 	classSubjectIdsByClassGroupId: Record<string, string>;
 } {
 	const subjectId = `subj-${seed}-${index}`;
-	const gradeLevelSubjectId = `gls-${gradeLevelId}-${subjectId.slice(-6)}`;
 	const classSubjectIdsByClassGroupId = Object.fromEntries(
 		classGroupIds.map(classGroupId => [
 			classGroupId,
@@ -39,7 +42,6 @@ export function createSubjectImportIdsForGradeLevel(
 
 	return {
 		subjectId,
-		gradeLevelSubjectId,
 		classSubjectIdsByClassGroupId,
 	};
 }
@@ -47,33 +49,30 @@ export function createSubjectImportIdsForGradeLevel(
 export async function createSubjectForGradeLevel(
 	client: SchoolClient,
 	input: CreateSubjectForGradeLevelInput,
-): Promise<{ gradeLevelSubjectId: string; classSubjectIds: string[] }> {
+): Promise<{ subjectId: string; classSubjectIds: string[] }> {
 	const createdAt = input.createdAt ?? new Date().toISOString();
 	const code = input.code?.trim() ?? '';
 
 	await client.commands.configureSubject({
 		id: input.subjectId,
-		name: input.name.trim(),
-		category: input.category ?? 'Scientifique',
-		color: input.color ?? 'mint',
-		...(code ? { code } : {}),
-		...(input.coefficient != null ? { defaultCoefficient: input.coefficient } : {}),
-		createdAt,
-	});
-
-	await client.commands.offerSubjectToGradeLevel({
-		id: input.gradeLevelSubjectId,
 		gradeLevelId: input.gradeLevelId,
 		academicYearId: input.academicYearId,
-		subjectId: input.subjectId,
-		isOptional: false,
-		createdAt,
 		classSubjectIdsByClassGroupId: input.classSubjectIdsByClassGroupId,
+		name: input.name.trim(),
+		reportModuleId: input.reportModuleId,
+		expectedReportConfigurationRevision: input.expectedReportConfigurationRevision,
+		disciplineId: input.disciplineId,
+		shortName: input.shortName,
+		isOptional: input.isOptional,
+		categoryId: input.categoryId,
+		color: input.color ?? 'mint',
+		...(code ? { code } : {}),
 		...(input.coefficient != null ? { coefficient: input.coefficient } : {}),
+		createdAt,
 	});
 
 	return {
-		gradeLevelSubjectId: input.gradeLevelSubjectId,
+		subjectId: input.subjectId,
 		classSubjectIds: Object.values(input.classSubjectIdsByClassGroupId),
 	};
 }

@@ -1,20 +1,18 @@
 #!/usr/bin/env bun
 /**
- * Génère qa-test-matrix.xlsx — gabarit QA par module / endpoint / action.
+ * Génère qa-test-matrix.csv — gabarit QA par module / endpoint / action.
  * Fusionne les NOT OK connus depuis qa-checklist-results.json si présent.
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { QA_TEMPLATE_MATRIX_RUNNABLE, type QaTemplateRow } from './qa-template-matrix';
 import { describeTestExactly } from './qa-test-descriptions';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '..');
-const ROOT = path.join(import.meta.dirname, '../../../..');
+const ROOT = path.join(import.meta.dirname, '../../..');
 const MATRIX_RESULTS_PATH = path.join(WEBAPP_DIR, '.integration-run', 'qa-matrix-results.json');
 const LEGACY_RESULTS_PATH = path.join(ROOT, 'qa-checklist-results.json');
 const CSV_PATH = path.join(ROOT, 'qa-test-matrix.csv');
-const XLSX_PATH = path.join(ROOT, 'qa-test-matrix.xlsx');
 
 interface ResultRow {
 	page?: string;
@@ -224,24 +222,11 @@ async function main(): Promise<void> {
 	const csv = lines.map(cols => cols.map(c => `"${c.replace(/"/g, '""')}"`).join(';')).join('\n');
 	await writeFile(CSV_PATH, `\uFEFF${csv}`, 'utf-8');
 
-	const xlsxScript = path.join(import.meta.dirname, 'generate-qa-template-xlsx.py');
-	let xlsxStatus = 1;
-	for (const bin of ['python', 'python3']) {
-		const py = spawnSync(bin, [xlsxScript, CSV_PATH, XLSX_PATH], { stdio: 'inherit', shell: true });
-		if (py.status === 0) {
-			xlsxStatus = 0;
-			break;
-		}
-	}
-
-	console.log(`\nMatrice QA générée : ${QA_TEMPLATE_MATRIX_RUNNABLE.length} lignes`);
+	console.log(`
+Matrice QA générée : ${QA_TEMPLATE_MATRIX_RUNNABLE.length} lignes`);
 	console.log(`  OK: ${stats.ok}  NOT OK: ${stats.notOk}  N/A: ${stats.na}  À faire: ${stats.todo}`);
 	console.log(`  CSV:  ${CSV_PATH}`);
-	console.log(`  XLSX: ${XLSX_PATH}`);
 
-	if (xlsxStatus !== 0) {
-		console.warn('XLSX generation skipped (openpyxl missing) — CSV is available');
-	}
 	process.exit(0);
 }
 

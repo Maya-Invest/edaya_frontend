@@ -10,7 +10,7 @@ export interface BlockerReport {
 	source?: 'setup' | 'matrix';
 }
 
-export const INTEGRATION_POLICY = 'report-only-no-frontend-fixes';
+export const INTEGRATION_POLICY = 'fail-on-unverified-required-behavior';
 
 export function classifyActionType(action: string): 'list' | 'create' | 'update' | 'delete' | 'navigate' | 'other' {
 	if (/supprimer|delete/i.test(action)) return 'delete';
@@ -52,7 +52,7 @@ export function printBlockers(blockers: BlockerReport[]): void {
 	const needsDiscussion = blockers.filter(b => b.status === 'needs_discussion');
 
 	if (blocked.length > 0) {
-		console.log('\n--- Blocked (known product issues — skipped) ---');
+		console.log('\n--- Blocked required scenarios ---');
 		for (const b of blocked) {
 			console.log(`⊘ [${b.module}] ${b.action.slice(0, 60)} — ${b.detail.slice(0, 100)}`);
 		}
@@ -60,7 +60,7 @@ export function printBlockers(blockers: BlockerReport[]): void {
 	}
 
 	if (needsDiscussion.length > 0) {
-		console.log('\n--- Blockers (NOT OK — no frontend changes; discuss in summary) ---');
+		console.log('\n--- Failed required scenarios ---');
 		for (const b of needsDiscussion) {
 			console.log(`✗ [${b.module}] ${b.action.slice(0, 60)} — ${b.detail.slice(0, 100)}`);
 		}

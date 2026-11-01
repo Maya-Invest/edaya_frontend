@@ -1,4 +1,5 @@
 export const TEACHING_DETAIL_TABS = [
+	{ key: 'students', segment: 'students', labelKey: 'participation.students' },
 	{ key: 'progression', segment: 'progression', labelKey: 'subjects.tab.chapters' },
 	{ key: 'logbook', segment: 'logbook', labelKey: 'subjects.tab.logbook' },
 ] as const;

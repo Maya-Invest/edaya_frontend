@@ -1,18 +1,21 @@
 import { readModal } from '$lib/modal/modal-url';
 import { describe, expect, it } from 'bun:test';
-import { emptyImportSlice } from '../../../../../src/routes/(app)/configuration/tools/lib/import-helpers';
 import {
 	TOOL_MODAL_NAMES,
 	canonicalToolsWorkflowSurface,
-	shouldCloseUnavailablePublishWorkflow,
+	canonicalImportStep,
+	retainsImportDraft,
+	retainsGenerationDraft,
+	retiredTimetableModalHref,
 } from '../../../../../src/routes/(app)/configuration/tools/lib/tools-workflow';
 import { teacherAssignmentsCompatibilityHref } from '../../../../../src/routes/(app)/school/teacher-assignments/teacher-assignments-redirect';
 
 describe('tools route helpers', () => {
-	it('returns a ready slice by default', () => {
-		expect(emptyImportSlice()).toEqual({
-			ready: true,
-		});
+	it('redirects obsolete publication links to Tools without their modal state', () => {
+		for (const modal of ['publish-timetable', 'republish-timetable']) {
+			expect(retiredTimetableModalHref(new URL(`https://school.test/configuration/tools?modal=${modal}&modalStep=success&modalTab=conflicts&modalTarget=class-1`))).toBe('/configuration/tools');
+		}
+		expect(retiredTimetableModalHref(new URL('https://school.test/configuration/tools?modal=generate-timetable'))).toBeNull();
 	});
 
 	it('canonicalizes each tool to its safe initial workflow view', () => {
@@ -22,7 +25,7 @@ describe('tools route helpers', () => {
 			tab: null,
 		})).toEqual({
 			modal: 'import',
-			step: 'download',
+			step: 'settings',
 			tab: 'students',
 		});
 		expect(canonicalToolsWorkflowSurface({
@@ -31,17 +34,8 @@ describe('tools route helpers', () => {
 			tab: 'payments',
 		})).toEqual({
 			modal: 'generate-timetable',
-			step: 'setup',
+			step: 'range',
 			tab: 'subjects',
-		});
-		expect(canonicalToolsWorkflowSurface({
-			modal: 'publish-timetable',
-			step: null,
-			tab: 'advanced',
-		})).toEqual({
-			modal: 'publish-timetable',
-			step: 'setup',
-			tab: null,
 		});
 	});
 
@@ -55,15 +49,6 @@ describe('tools route helpers', () => {
 			step: 'success',
 			tab: 'periods',
 		});
-		expect(canonicalToolsWorkflowSurface({
-			modal: 'publish-timetable',
-			step: 'result',
-			tab: null,
-		})).toEqual({
-			modal: 'publish-timetable',
-			step: 'result',
-			tab: null,
-		});
 	});
 
 	it('canonicalizes an inaccessible import type to the first permitted type', () => {
@@ -73,51 +58,9 @@ describe('tools route helpers', () => {
 			tab: 'students',
 		}, ['staff'])).toEqual({
 			modal: 'import',
-			step: 'upload',
+			step: 'files',
 			tab: 'staff',
 		});
-	});
-
-	it('keeps a publish deep link while shell or planning data is loading', () => {
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: false,
-			planningStatus: 'idle',
-			publishableClassCount: 0,
-		})).toBeFalse();
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: true,
-			planningStatus: 'loading',
-			publishableClassCount: 0,
-		})).toBeFalse();
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: true,
-			planningStatus: 'error',
-			publishableClassCount: 0,
-		})).toBeFalse();
-	});
-
-	it('closes publish only after loading settles without a publishable class', () => {
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: true,
-			planningStatus: 'ready',
-			publishableClassCount: 0,
-		})).toBeTrue();
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: true,
-			planningStatus: 'ready',
-			publishableClassCount: 1,
-		})).toBeFalse();
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'generate-timetable',
-			shellReady: true,
-			planningStatus: 'ready',
-			publishableClassCount: 0,
-		})).toBeFalse();
 	});
 
 	it('classifies known denied tools modals as owned but not allowed', () => {
@@ -137,12 +80,6 @@ describe('tools route helpers', () => {
 		const toolsModal = readModal(url, TOOL_MODAL_NAMES);
 		expect(toolsModal).toBeNull();
 		expect(TOOL_MODAL_NAMES).not.toContain('account-profile');
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: toolsModal,
-			shellReady: true,
-			planningStatus: 'ready',
-			publishableClassCount: 0,
-		})).toBeFalse();
 	});
 
 	it('redirects the legacy teacher assignments route with safe list filters only', () => {
@@ -153,4 +90,47 @@ describe('tools route helpers', () => {
 			'/configuration/tools/teacher-assignments?q=ada&class=class-6&teacher=teacher-1',
 		);
 	});
+});
+
+it('maps all legacy import stages to the five-stage task without executing anything', () => {
+	for (const [legacy, canonical] of [['download', 'settings'], ['upload', 'files'], ['validate', 'preview'], ['execute', 'execution']] as const) {
+		expect(canonicalImportStep(legacy!)).toBe(canonical);
+	}
+	for (const step of ['settings', 'files', 'preview', 'execution', 'history'] as const)
+		expect(canonicalImportStep(step)).toBe(step);
+	expect(canonicalImportStep('unsupported')).toBe('settings');
+});
+
+it('retains drafts only within the same import target, type and workspace context', () => {
+	const source = new URL('https://school.test/configuration/tools?task=import&taskTarget=batch&taskStep=settings&taskPanel=students&year=2026');
+	const next = new URL(source);
+	next.searchParams.set('taskStep', 'files');
+	expect(retainsImportDraft(source, next)).toBe(true);
+	for (const [key, value] of [['taskTarget', 'another'], ['taskPanel', 'payments'], ['year', '2025'], ['task', 'generate-timetable']]) {
+		const destination = new URL(next);
+		destination.searchParams.set(key!, value!);
+		expect(retainsImportDraft(source, destination)).toBe(false);
+	}
+	expect(retainsImportDraft(source, new URL('https://school.test/configuration/tools'))).toBe(false);
+	expect(retainsImportDraft(source, new URL('https://other.test/configuration/tools?task=import'))).toBe(false);
+});
+
+it('canonicalizes legacy generation setup while preserving supported panels and results', () => {
+	expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step: 'setup', tab: 'subjects' }).step).toBe('range');
+	expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step: 'setup', tab: 'advanced' })).toEqual({ modal: 'generate-timetable', step: 'selection', tab: 'advanced' });
+	for (const step of ['range', 'selection', 'review', 'success', 'error'])
+		expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step, tab: 'subjects' }).step).toBe(step);
+});
+it('generation retains step and panel drafts but guards target, school, year and route changes', () => {
+	const start = new URL('https://school.test/configuration/tools?task=generate-timetable&taskStep=range&taskPanel=subjects&year=2026');
+	const selection = new URL(start);
+	selection.searchParams.set('taskStep', 'selection');
+	selection.searchParams.set('taskPanel', 'advanced');
+	expect(retainsGenerationDraft(start, selection)).toBe(true);
+	for (const [key, value] of [['year', '2025'], ['taskTarget', 'other'], ['task', 'import']]) {
+		const next = new URL(selection);
+		next.searchParams.set(key!, value!);
+		expect(retainsGenerationDraft(start, next)).toBe(false);
+	}
+	expect(retainsGenerationDraft(start, new URL('https://school.test/configuration/tools'))).toBe(false);
 });

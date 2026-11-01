@@ -1,13 +1,12 @@
-import { describe, expect, test } from 'bun:test';
 import type { GenerateClassResult } from '$lib/api/mutations/timetable-generation.mutations';
+import { describe, expect, test } from 'bun:test';
 import {
 	activeRangePresetId,
 	buildPreferredPeriodWeekGrid,
 	buildTimetableRangePresets,
 	summarizeClassGeneration,
-	summarizePublish,
 	summarizeSchoolGeneration,
-} from '$lib/components/school/scheduling/timetable-generation-ui';
+} from '../../../../../src/routes/(app)/configuration/tools/lib/timetable-generation-ui';
 
 describe('timetable-generation-ui', () => {
 	test('builds trimester and full-year presets', () => {
@@ -56,16 +55,6 @@ describe('timetable-generation-ui', () => {
 			skippedCount: 1,
 			sessionCount: 1,
 			isComplete: true,
-		});
-
-		expect(summarizePublish({
-			classGroupId: 'class-1',
-			publishedSessionIds: ['s1', 's2'],
-			skippedSessionIds: ['s3'],
-		})).toEqual({
-			publishedCount: 2,
-			skippedCount: 1,
-			isComplete: false,
 		});
 	});
 

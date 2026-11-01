@@ -1,24 +1,61 @@
 const STORAGE_KEY = 'edaya:pending-invite-token';
 
+function readStore(store: Storage | undefined): string | null {
+	try {
+		return store?.getItem(STORAGE_KEY) ?? null;
+	}
+	catch {
+		return null;
+	}
+}
+
+function writeStore(store: Storage | undefined, value: string | null): void {
+	try {
+		if (!store) {
+			return;
+		}
+		if (value) {
+			store.setItem(STORAGE_KEY, value);
+			return;
+		}
+		store.removeItem(STORAGE_KEY);
+	}
+	catch {
+		// Private mode can deny web storage.
+	}
+}
+
 export function persistPendingInviteToken(token: string): void {
-	if (typeof sessionStorage === 'undefined' || !token.trim()) {
+	const value = token.trim();
+	if (!value) {
 		return;
 	}
-	sessionStorage.setItem(STORAGE_KEY, token.trim());
+	// localStorage survives the email-verification tab that sessionStorage does not share.
+	writeStore(globalThis.localStorage, value);
+	writeStore(globalThis.sessionStorage, value);
 }
 
 export function readPendingInviteToken(): string | null {
-	if (typeof sessionStorage === 'undefined') {
-		return null;
-	}
-	return sessionStorage.getItem(STORAGE_KEY);
+	return readStore(globalThis.localStorage) ?? readStore(globalThis.sessionStorage);
 }
 
 export function clearPendingInviteToken(): void {
-	if (typeof sessionStorage === 'undefined') {
+	writeStore(globalThis.localStorage, null);
+	writeStore(globalThis.sessionStorage, null);
+}
+
+export function clearPendingInviteTokenIf(token: string | null | undefined): void {
+	const value = token?.trim();
+	if (!value) {
 		return;
 	}
-	sessionStorage.removeItem(STORAGE_KEY);
+	if (readPendingInviteToken() === value) {
+		clearPendingInviteToken();
+	}
+}
+
+export function discardPendingInviteToken(): void {
+	clearPendingInviteToken();
 }
 
 export function pendingInvitePath(token?: string | null): string | null {

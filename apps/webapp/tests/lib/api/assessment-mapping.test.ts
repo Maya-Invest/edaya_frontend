@@ -1,6 +1,6 @@
+import { mapAssessmentToEvaluation } from '$lib/api/assessment-mapping';
 import { homeworkAssessment } from '$tests/support/openapi-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapAssessmentToEvaluation } from '$lib/api/assessment-mapping';
 
 describe('mapAssessmentToEvaluation', () => {
 	it('preserves assessment kind and homework submission stats', () => {
@@ -19,6 +19,7 @@ describe('mapAssessmentToEvaluation', () => {
 				results: [
 					{
 						id: 'ar-1',
+						revision: 0,
 						studentId: 's1',
 						assessmentId: 'hw-1',
 						status: 'met',
@@ -26,6 +27,7 @@ describe('mapAssessmentToEvaluation', () => {
 					},
 					{
 						id: 'ar-2',
+						revision: 0,
 						studentId: 's2',
 						assessmentId: 'hw-1',
 						status: 'missed',

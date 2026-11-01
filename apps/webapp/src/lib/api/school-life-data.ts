@@ -2,11 +2,9 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { AbsenceRecord, Incident, SchoolYearEvent, Student } from '$lib/types/school';
 import {
-	attendanceForLessonSessions,
-	enrollmentsForStudentsInYear,
-	entitiesByIds,
-	involvementsForIncidents,
-	lessonSessionsForClasses,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { loadClassPeopleData, mapPeopleData } from '$lib/api/people-data';
@@ -186,28 +184,31 @@ export function mapIncidents(
 	return incidentsRaw
 		.map((incident) => {
 			const involvements = involvementsByIncident.get(incident.id) ?? [];
-			if (involvements.length === 0) {
-				return null;
-			}
-
 			const primary = involvements.find(entry => entry.role === 'subject') ?? involvements[0];
 			const category = mapIncidentCategory(incident);
 			const involvedStudentIds = uniqueIds(involvements.map(entry => entry.studentId));
 
 			return {
 				id: incident.id,
-				studentId: primary.studentId,
+				title: incident.title,
+				description: incident.description,
+				classGroupId: incident.classGroupId,
+				lessonSessionId: incident.lessonSessionId,
+				reporterId: incident.reporterId,
+				resolvedAt: incident.resolvedAt instanceof Date ? incident.resolvedAt.toISOString() : typeof incident.resolvedAt === 'string' ? incident.resolvedAt : null,
+				resolvedByStaffId: incident.resolvedByStaffId,
+				resolutionNotes: incident.resolutionNotes,
+				studentId: primary?.studentId ?? '',
 				involvedStudentIds,
 				involvedCount: involvedStudentIds.length,
 				date: formatDate(incident.date),
 				kind: incident.kind,
 				category,
 				severity: mapIncidentSeverity(incident),
-				summary: incident.description,
+				summary: String(incident.title ?? '').trim() || incident.description,
 				status: incident.status ?? 'open',
 			} satisfies Incident;
 		})
-		.filter((incident): incident is Incident => incident !== null)
 		.sort((left, right) => right.date.localeCompare(left.date));
 }
 
@@ -248,8 +249,9 @@ export async function loadCalendarEvents(
 	if (!academicYearId) {
 		return [];
 	}
-	const eventsRaw = await client.entities.calendarEvents.list(
-		schoolId ? { schoolId, academicYearId } : { academicYearId },
+	const eventsRaw = await listAllEntityPages(
+		query => client.entities.calendarEvents.list(query),
+		{ baseQuery: schoolId ? { schoolId, academicYearId } : { academicYearId } },
 	);
 	return mapCalendarEvents(eventsRaw ?? []);
 }
@@ -258,31 +260,57 @@ export async function loadIncidentRouteData(
 	client: SchoolClient,
 	scope: { schoolId: string; academicYearId: string },
 ): Promise<{ incidents: Incident[]; students: Student[] }> {
-	const incidentsRaw = (await client.entities.incidents.list({ schoolId: scope.schoolId })) ?? [];
+	const incidentsRaw = await listAllEntityPages(
+		query => client.entities.incidents.list(query),
+		{ baseQuery: { schoolId: scope.schoolId } },
+	);
 	const incidentIds = uniqueIds(incidentsRaw.map(incident => incident.id));
-	const involvementsRaw = incidentIds.length > 0
-		? await client.entities.studentIncidentInvolvements.list(involvementsForIncidents(incidentIds))
-		: [];
-	const studentIds = uniqueIds((involvementsRaw ?? []).map(involvement => involvement.studentId));
+	const involvementsRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.studentIncidentInvolvements.list(query),
+		[{ field: 'incidentId', ids: incidentIds }],
+	);
+	const studentIds = uniqueIds(involvementsRaw.map(involvement => involvement.studentId));
 	const [studentsRaw, enrollmentsRaw] = studentIds.length > 0
 		? await Promise.all([
-				client.entities.students.list(entitiesByIds(studentIds)),
-				client.entities.enrollments.list(
-					enrollmentsForStudentsInYear(studentIds, scope.academicYearId),
+				listAllEntityPagesByIds(query => client.entities.students.list(query), studentIds),
+				listAllEntityPagesForIdFilters(
+					query => client.entities.enrollments.list(query),
+					[{ field: 'studentId', ids: studentIds }],
+					{ extraQuery: { academicYearId: scope.academicYearId, status: 'active' } },
 				),
 			])
 		: [[], []];
 	const { students } = mapPeopleData({
-		studentsRaw: studentsRaw ?? [],
-		enrollmentsRaw: enrollmentsRaw ?? [],
+		studentsRaw,
+		enrollmentsRaw,
 		guardiansRaw: [],
 		linksRaw: [],
 	});
 
 	return {
-		incidents: mapIncidents(incidentsRaw, involvementsRaw ?? []),
+		incidents: mapIncidents(incidentsRaw, involvementsRaw),
 		students,
 	};
+}
+
+export async function loadIncidentById(
+	client: SchoolClient,
+	incidentId: string,
+): Promise<Incident | null> {
+	try {
+		const incident = await client.entities.incidents.get(incidentId);
+		if (!incident) {
+			return null;
+		}
+		const involvementsRaw = await listAllEntityPagesForIdFilters(
+			query => client.entities.studentIncidentInvolvements.list(query),
+			[{ field: 'incidentId', ids: [incidentId] }],
+		);
+		return mapIncidents([incident], involvementsRaw)[0] ?? null;
+	}
+	catch {
+		return null;
+	}
 }
 
 export interface IncidentResolveModalData {
@@ -299,8 +327,13 @@ export async function loadIncidentResolveModalData(
 ): Promise<IncidentResolveModalData> {
 	const incident = await client.entities.incidents.get(incidentId);
 	const [involvements, disciplinaryActions] = await Promise.all([
-		client.entities.studentIncidentInvolvements.list(involvementsForIncidents([incidentId])),
-		client.entities.disciplinaryActions.list({ schoolId: incident.schoolId }),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.studentIncidentInvolvements.list(query),
+			[{ field: 'incidentId', ids: [incidentId] }],
+		),
+		listAllEntityPages(query => client.entities.disciplinaryActions.list(query), {
+			baseQuery: { schoolId: incident.schoolId },
+		}),
 	]);
 
 	let students: Student[] = [];
@@ -311,7 +344,10 @@ export async function loadIncidentResolveModalData(
 	else {
 		const studentIds = uniqueIds((involvements ?? []).map(entry => entry.studentId));
 		if (studentIds.length > 0) {
-			const studentsRaw = await client.entities.students.list(entitiesByIds(studentIds));
+			const studentsRaw = await listAllEntityPagesByIds(
+				query => client.entities.students.list(query),
+				studentIds,
+			);
 			students = mapPeopleData({
 				studentsRaw: studentsRaw ?? [],
 				enrollmentsRaw: [],
@@ -333,10 +369,11 @@ export async function loadIncidentInvolvements(
 	client: SchoolClient,
 	incidentId: string,
 ): Promise<InvolvementRaw[]> {
-	const involvements = await client.entities.studentIncidentInvolvements.list(
-		involvementsForIncidents([incidentId]),
+	const involvements = await listAllEntityPagesForIdFilters(
+		query => client.entities.studentIncidentInvolvements.list(query),
+		[{ field: 'incidentId', ids: [incidentId] }],
 	);
-	return involvements ?? [];
+	return involvements;
 }
 
 export { loadIncidentSanctions } from '$lib/api/student-drawer-data';
@@ -349,23 +386,27 @@ export async function loadAbsences(
 		return [];
 	}
 
-	const sessionsRaw = (await client.entities.lessonSessions.list(lessonSessionsForClasses(classGroupIds))) ?? [];
+	const sessionsRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.lessonSessions.list(query),
+		[{ field: 'classGroupId', ids: classGroupIds }],
+	);
 	const sessionIds = uniqueIds(sessionsRaw.map(session => session.id));
 	const classSubjectIds = uniqueIds(
 		sessionsRaw.map(session => session.classSubjectId).filter((id): id is string => Boolean(id)),
 	);
 	const [attendanceRaw, classSubjectsRaw] = await Promise.all([
-		sessionIds.length > 0
-			? client.entities.attendance.list(attendanceForLessonSessions(sessionIds))
-			: Promise.resolve([]),
-		classSubjectIds.length > 0
-			? client.entities.classSubjects.list(entitiesByIds(classSubjectIds))
-			: Promise.resolve([]),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.attendance.list(query),
+			[{ field: 'lessonSessionId', ids: sessionIds }],
+			{ extraQuery: { status: 'absent' } },
+		),
+		listAllEntityPagesByIds(query => client.entities.classSubjects.list(query), classSubjectIds),
 	]);
-	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
-	const subjectsRaw = subjectIds.length > 0
-		? await client.entities.subjects.list(entitiesByIds(subjectIds))
-		: [];
+	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
+	const subjectsRaw = await listAllEntityPagesByIds(
+		query => client.entities.subjects.list(query),
+		subjectIds,
+	);
 
 	return mapAbsences({
 		calendarEventsRaw: [],

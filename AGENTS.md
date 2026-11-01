@@ -6,7 +6,7 @@
 
 | Spec | Scope |
 |------|-------|
-| [documentation-spec.md](docs/specs/documentation-spec.md) | Doc taxonomy — specs vs reference vs plans |
+| [documentation-spec.md](docs/specs/documentation-spec.md) | Specs, engineering READMEs and external archives |
 | [feature-architecture-spec.md](docs/specs/feature-architecture-spec.md) | Routes, modules, entities, domain UX |
 | [app-shell-spec.md](docs/specs/app-shell-spec.md) | List · drawer · modal interaction |
 | [shared-components-spec.md](docs/specs/shared-components-spec.md) | Mandatory reusable components |
@@ -19,7 +19,7 @@ One rule per spec. Auto-attached by glob when relevant files are edited:
 
 | Rule | Spec | Globs |
 |------|------|-------|
-| `.cursor/rules/documentation.mdc` | `documentation-spec.md` | `docs/**`, `AGENTS.md`, `.cursor/rules/**` |
+| `.cursor/rules/documentation.mdc` | `documentation-spec.md` | `docs/**`, `**/README.*`, `AGENTS.md`, `.cursor/rules/**` |
 | `.cursor/rules/feature-architecture.mdc` | `feature-architecture-spec.md` | `apps/webapp/**` |
 | `.cursor/rules/app-shell.mdc` | `app-shell-spec.md` | `apps/webapp/**` |
 | `.cursor/rules/shared-components.mdc` | `shared-components-spec.md` | `apps/webapp/**` |
@@ -31,23 +31,21 @@ One rule per spec. Auto-attached by glob when relevant files are edited:
 - **Staff workspace scope** — School → Teachers, Students, Guardians, assignments, invites, and related drawers/modals are first-class features.
 - **Portal vs staff** — portal teachers, guardians, and students do not sign in through the staff webapp; staff **manage** those actors here.
 - **Interaction** — list + URL-backed detail drawer (complex entities) + mutation modals; simple entities use row `···` only.
-- **Mutations** — drawer is read-only; create/edit/delete via modals; pragmatic inline toggles only for boolean/single-value fields.
-- **Data** — `PageQuery` seeds route state from URL; `runMutation` with optimistic patch + version bump; `DataState` for loading/empty/error; toast on mutations.
+- **Mutations** — drawer is read-only; multi-field/destructive changes use modals; preserve the specs' explicit inline and workflow exceptions.
+- **Data** — `PageQuery` seeds route state from URL; shared mutation runners bump domain versions and pair any optimistic patch with rollback; authoritative workflows wait for the server. Use `DataState` for loading/empty/error and feedback on mutations.
 
-## Key docs
+## Operational commands
 
-| Topic | Path |
-|-------|------|
-| Repo CLI (`bun repo`) | [docs/reference/repo-cli.md](docs/reference/repo-cli.md) |
-| CI setup | [docs/reference/ci-setup.md](docs/reference/ci-setup.md) |
-| Cross-repo OpenAPI workflow | [docs/reference/cross-repo-workflow.md](docs/reference/cross-repo-workflow.md) |
+Use `bun run repo --help` for repository commands. Prepare the backend client with `bun run repo generate client staging`, then run `bun run repo generate dependencies` and `bun run repo generate setup` before verification. Engineering guidance lives in colocated READMEs; historical material and gap reports stay outside the repository.
+
+- **EDAYA UI 1.0.0** — royal blue, sky canvas, bundled Poppins headings and Inter UI. Use supplied logos, generated tokens and existing primitives. Preserve logic and effective layouts. Update design specs, token version and current visual evidence together.
 
 ## Verification
 
 Before opening a PR:
 
 ```sh
-bun run verify        # repo hygiene, then quality + build + unit tests
+bun run verify        # repo/workflow checks, tooling tests, quality, build and unit tests
 ```
 
-Ad-hoc Turbo iteration: `bun run lint`, `bun run check`, `bun run test`, etc. Repo hygiene only: `bun repo verify`.
+Ad-hoc Turbo iteration: `bun run lint`, `bun run check`, `bun run test`, etc. Repo hygiene only: `bun run repo check`.

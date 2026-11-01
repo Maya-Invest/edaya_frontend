@@ -1,4 +1,5 @@
 import type { OnboardingDraft, OnboardingStep } from '$lib/onboarding/types';
+import type { DatasetCatalog } from './dataset-model';
 import { isSchoolStepValid } from '$lib/onboarding/school-step-validation';
 import { isStaffStepValid } from '$lib/onboarding/staff-step-validation';
 import { isStructureStepValid } from '$lib/onboarding/structure-step-validation';
@@ -46,20 +47,64 @@ export function getOnboardingStepDefinition(step: OnboardingStep): OnboardingSte
 	return ONBOARDING_STEPS[step - 1]!;
 }
 
-export function canFinishOnboarding(draft: OnboardingDraft): boolean {
-	return draft.schoolStepSubmitted && draft.structureStepSubmitted;
+export type FinishOnboardingBlockKey
+	= | 'onboarding.completeStep.incomplete'
+		| 'onboarding.staffStep.invalidInvite';
+
+/** Why Finish is blocked. Null means the draft can be provisioned. */
+export function finishOnboardingBlockKey(
+	draft: OnboardingDraft,
+	loginEmail?: string | null,
+	catalog?: DatasetCatalog | null,
+): FinishOnboardingBlockKey | null {
+	if (
+		!draft.schoolStepSubmitted
+		|| !draft.structureStepSubmitted
+		|| !isSchoolStepValid(draft.school)
+		|| !isStructureStepValid(draft.structure, catalog)
+	) {
+		return 'onboarding.completeStep.incomplete';
+	}
+	if (!isStaffStepValid(draft.staffInvites, loginEmail)) {
+		return 'onboarding.staffStep.invalidInvite';
+	}
+	return null;
+}
+
+export function canFinishOnboarding(
+	draft: OnboardingDraft,
+	loginEmail?: string | null,
+	catalog?: DatasetCatalog | null,
+): boolean {
+	return finishOnboardingBlockKey(draft, loginEmail, catalog) === null;
+}
+
+export type OnboardingFinishCtaKey
+	= | 'onboarding.createSchool'
+		| 'onboarding.retryBootstrap'
+		| 'onboarding.finish';
+
+export function onboardingFinishCtaKey(
+	provisionSucceeded: boolean,
+	bootstrapRecoveryNeeded = false,
+): OnboardingFinishCtaKey {
+	if (bootstrapRecoveryNeeded) {
+		return 'onboarding.retryBootstrap';
+	}
+	return provisionSucceeded ? 'onboarding.finish' : 'onboarding.createSchool';
 }
 
 export function canAdvanceFromStep(
 	step: OnboardingStep,
 	draft: OnboardingDraft,
 	loginEmail?: string | null,
+	catalog?: DatasetCatalog | null,
 ): boolean {
 	switch (step) {
 		case 1:
 			return isSchoolStepValid(draft.school);
 		case 2:
-			return isStructureStepValid(draft.structure);
+			return isStructureStepValid(draft.structure, catalog);
 		case 3:
 			return isStaffStepValid(draft.staffInvites, loginEmail);
 		case 4:

@@ -1,220 +1,139 @@
 <script lang="ts">
-	import type { SchoolType } from '$lib/types/school';
+	import type { SchoolIssuanceAssetPurpose } from '$lib/api/mutations/issuance-asset.mutations';
 	import { page } from '$app/stores';
-	import { DEFAULT_SCHOOL_TIMEZONE } from '$lib/api/school-data';
-	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
-	import { Building2, Pencil } from '$lib/icons';
+	import { Pencil } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { hasAnyPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getSchoolPageState } from '../school-page.svelte';
+	import IssuanceAssetSlot from './IssuanceAssetSlot.svelte';
+	import SchoolTimetableSettings from './SchoolTimetableSettings.svelte';
 
-	const SCHOOL_TYPES: SchoolType[] = ['primary', 'secondary', 'k12', 'vocational', 'other'];
-
-	const schoolPage = getSchoolPageState();
-	const school = $derived(schoolPage.school);
-
-	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
+	const owner = getSchoolPageState();
+	const school = $derived(owner.school);
+	const sections = [
+		{ id: 'identity', title: 'schoolSettings.sectionIdentity', fields: ['name', 'shortName'] },
+		{ id: 'issuing', title: 'schoolSettings.sectionIssuing', fields: ['issuingName', 'postalAddress', 'phone', 'email', 'schoolCode'] },
+		{ id: 'location', title: 'schoolSettings.sectionLocation', fields: ['city', 'country', 'timeZone', 'financeCurrency'] },
+	] as const;
+	const modals = createUrlSyncedModals({ allowed: ['identity', 'issuing', 'location', 'assets'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
-	const editOpen = bindUrlModal(modals, 'edit');
-
+	const identity = bindUrlModal(modals, 'identity');
+	const issuing = bindUrlModal(modals, 'issuing');
+	const location = bindUrlModal(modals, 'location');
+	const assets = bindUrlModal(modals, 'assets');
+	const editors = { identity, issuing, location };
+	let draft = $state<Record<string, string>>({});
+	let initialized = '';
 	let busy = $state(false);
-	let name = $state('');
-	let timeZone = $state('');
-	let city = $state('');
-	let country = $state('');
-	let type = $state<SchoolType | ''>('');
-
-	const readOnlyFieldClass = 'min-h-10 rounded-md border border-input bg-card px-3 py-2 text-sm';
-
-	function schoolTypeLabel(value: SchoolType | null | undefined): string {
-		if (!value) {
-			return '—';
-		}
-		return get(t)(`schoolSettings.type.${value}`);
-	}
-
-	function hydrateForm() {
-		if (!school) {
-			return;
-		}
-		name = school.name;
-		timeZone = school.timeZone;
-		city = school.city;
-		country = school.country ?? '';
-		type = school.type ?? '';
-	}
-
-	$effect(() => {
-		if (editOpen.open) {
-			hydrateForm();
+	let assetBusy = $state<SchoolIssuanceAssetPurpose | null>(null);
+	$effect.pre(() => {
+		const active = modals.active ?? '';
+		if (active !== initialized && school) {
+			draft = Object.fromEntries(sections.flatMap(section => section.fields.map(key => [key, school[key] ?? ''])));
+			initialized = active;
 		}
 	});
-
-	const canSubmit = $derived(name.trim().length > 0 && timeZone.trim().length > 0);
-	const typeLabel = $derived(type ? get(t)(`schoolSettings.type.${type}`) : '');
-
-	async function submit() {
-		if (!school || !canSubmit || busy) {
+	const assetSlots = [
+		{ purpose: 'school.logo', slot: 'logoAttachmentId', key: 'logo', public: true },
+		{ purpose: 'school.crest', slot: 'crestAttachmentId', key: 'crest', public: true },
+		{ purpose: 'school.stamp', slot: 'stampAttachmentId', key: 'stamp', public: false },
+		{ purpose: 'school.signature', slot: 'signatureAttachmentId', key: 'signature', public: false },
+	] as const;
+	async function save(section: typeof sections[number]) {
+		if (busy || !hasAnyPermission(['SCHOOL_LIFECYCLE_MANAGE']))
 			return;
-		}
 		busy = true;
 		try {
-			const ok = await schoolPage.updateSettings({
-				name,
-				timeZone,
-				city: city.trim() || null,
-				country: country.trim() || null,
-				type: type || null,
-				successMessage: get(t)('schoolSettings.toastSaved'),
-			});
-			if (ok) {
-				editOpen.open = false;
-			}
+			const fields = Object.fromEntries(section.fields.map(key => [key, key === 'financeCurrency' ? draft[key]?.trim().toUpperCase() : draft[key]?.trim() || null]));
+			if (await owner.updateSettings({ ...fields, successMessage: get(t)('schoolSettings.toastSaved') }))
+				modals.close();
 		}
 		finally {
 			busy = false;
 		}
 	}
+	async function upload(purpose: SchoolIssuanceAssetPurpose, file: File) {
+		assetBusy = purpose;
+		try {
+			if (await owner.performUploadSchoolIssuanceAsset({ purpose, file, successMessage: get(t)('schoolSettings.assetToast', { slot: get(t)(`schoolSettings.asset.${purpose.split('.')[1]}`) }) }))
+				await owner.refreshSlice();
+		}
+		finally {
+			assetBusy = null;
+		}
+	}
+	async function clear(purpose: SchoolIssuanceAssetPurpose) {
+		assetBusy = purpose;
+		try {
+			if (await owner.performClearSchoolIssuanceAsset({ purpose, successMessage: get(t)('schoolSettings.assetClearedToast', { slot: get(t)(`schoolSettings.asset.${purpose.split('.')[1]}`) }) }))
+				await owner.refreshSlice();
+		}
+		finally {
+			assetBusy = null;
+		}
+	}
+	async function publishAsset(purpose: SchoolIssuanceAssetPurpose, next: boolean) {
+		if (purpose !== 'school.logo' && purpose !== 'school.crest')
+			return;
+		assetBusy = purpose;
+		try {
+			const current = (school?.publicBrandingPurposes ?? []).filter((value): value is 'school.logo' | 'school.crest' => value === 'school.logo' || value === 'school.crest');
+			await owner.updatePublicBranding(next ? [...new Set([...current, purpose])] : current.filter(value => value !== purpose));
+		}
+		finally {
+			assetBusy = null;
+		}
+	}
 </script>
 
-<div class="animate-fade-in">
-	<ListPageHeader
-		eyebrow={$t('schoolSettings.eyebrow')}
-		title={$t('schoolSettings.title')}
-	>
-		{#snippet primary()}
-			<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable" tooltip={$t('schoolSettings.permissionEdit')}>
-				{#snippet children({ disabled, title })}
-					<Button
-						size="sm"
-						class="rounded-full"
-						{disabled}
-						{title}
-						onclick={() => (editOpen.open = true)}
-					>
-						<Pencil class="mr-1 h-4 w-4" />
-						{$t('common.edit')}
-					</Button>
-				{/snippet}
-			</PermissionGate>
-		{/snippet}
-		{#snippet more()}
-			<ListMoreMenu exportOnly />
-		{/snippet}
+<div class="animate-fade-in space-y-6">
+	<ListPageHeader eyebrow={$t('schoolSettings.eyebrow')} title={$t('schoolSettings.title')}>
+		{#snippet more()}<ListMoreMenu exportOnly onExport={() => void exportMatchingList({ filename: 'school-settings.csv', headers: sections.flatMap(s => [...s.fields]), loadAll: async () => school ? [sections.flatMap(s => s.fields.map(key => school[key] ?? ''))] : [] })} />{/snippet}
 	</ListPageHeader>
-
 	{#if school}
-		<div class="mx-auto max-w-2xl space-y-6">
-			<div class="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
-				<div
-					class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"
-				>
-					<Building2 class="h-8 w-8" />
-				</div>
-				<div class="min-w-0">
-					<h2 class="font-display text-xl font-semibold leading-tight">{school.name}</h2>
-					<p class="mt-1 text-sm text-muted-foreground">
-						{$t('schoolSettings.shortNameDerived', { name: school.shortName })}
-					</p>
-				</div>
-			</div>
-
-			<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
-				<h3 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionIdentity')}</h3>
-				<DrawerField label={$t('schoolSettings.name')}>
-					<div class={readOnlyFieldClass}>{school.name}</div>
-				</DrawerField>
-				<DrawerField label={$t('schoolSettings.shortName')}>
-					<div class={readOnlyFieldClass}>{school.shortName}</div>
-				</DrawerField>
-				<DrawerField label={$t('schoolSettings.type')}>
-					<div class={readOnlyFieldClass}>{schoolTypeLabel(school.type)}</div>
-				</DrawerField>
-			</section>
-
-			<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
-				<h3 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionLocation')}</h3>
-				<DrawerField label={$t('schoolSettings.city')}>
-					<div class={readOnlyFieldClass}>{school.city || '—'}</div>
-				</DrawerField>
-				<DrawerField label={$t('schoolSettings.country')}>
-					<div class={readOnlyFieldClass}>{school.country || '—'}</div>
-				</DrawerField>
-				<DrawerField label={$t('schoolSettings.timeZone')}>
-					<div class={readOnlyFieldClass}>{school.timeZone}</div>
-				</DrawerField>
+		<div class="mx-auto w-full max-w-3xl space-y-5">
+			{#each sections as section (section.id)}
+				<section class="space-y-4 rounded-collection border border-border bg-card p-5 shadow-soft">
+					<div class="flex flex-wrap items-center justify-between gap-3">
+						<h2 class="font-display text-lg font-semibold">{$t(section.title)}</h2>
+						<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">{#snippet children({ disabled, title })}<Button variant="outline" size="sm" {disabled} {title} onclick={() => modals.open(section.id)}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>{/snippet}</PermissionGate>
+					</div>
+					<dl class="grid min-w-0 gap-4 sm:grid-cols-2">
+						{#each section.fields as key (key)}<div class="min-w-0"><dt class="text-sm text-muted-foreground">{$t(`schoolSettings.${key}`)}</dt><dd class="mt-1 break-words text-sm font-medium">{school[key] || '—'}</dd></div>{/each}
+					</dl>
+				</section>
+			{/each}
+			<SchoolTimetableSettings />
+			<section class="space-y-4 rounded-collection border border-border bg-card p-5 shadow-soft">
+				<div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionIssuanceAssets')}</h2><PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">{#snippet children({ disabled, title })}<Button variant="outline" size="sm" {disabled} {title} onclick={() => modals.open('assets')}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>{/snippet}</PermissionGate></div>
+				{#each assetSlots as asset (asset.purpose)}<IssuanceAssetSlot readOnly purpose={asset.purpose} label={$t(`schoolSettings.asset.${asset.key}`)} attachmentId={school[asset.slot]} publicAllowed={(school.publicBrandingPurposes ?? []).includes(asset.purpose as 'school.logo' | 'school.crest')} canPublish={asset.public} canManage={false} busy={false} onUpload={() => {}} onClear={() => {}} onPublicChange={() => {}} />{/each}
 			</section>
 		</div>
 	{/if}
 </div>
 
-<FormModal
-	bind:open={editOpen.open}
-	title={$t('schoolSettings.editTitle')}
-	description={$t('schoolSettings.editDescription')}
-	submitLabel={$t('common.save')}
-	busy={busy}
-	submitDisabled={!canSubmit}
-	onCancel={hydrateForm}
-	onSubmit={submit}
->
-	<div class="space-y-4">
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('schoolSettings.name')}
-			</Label>
-			<Input bind:value={name} />
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('schoolSettings.type')}
-			</Label>
-			<Select.Root type="single" value={type || undefined} onValueChange={v => v && (type = v as SchoolType)}>
-				<Select.Trigger>
-					<Select.Value placeholder={$t('schoolSettings.typePlaceholder')}>
-						{typeLabel}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content class="z-[100]">
-					{#each SCHOOL_TYPES as schoolType (schoolType)}
-						<Select.Item value={schoolType} label={$t(`schoolSettings.type.${schoolType}`)}>
-							{$t(`schoolSettings.type.${schoolType}`)}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-		<div class="grid gap-3 sm:grid-cols-2">
-			<div class="space-y-1.5">
-				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-					{$t('schoolSettings.city')}
-				</Label>
-				<Input bind:value={city} />
-			</div>
-			<div class="space-y-1.5">
-				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-					{$t('schoolSettings.country')}
-				</Label>
-				<Input bind:value={country} />
-			</div>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('schoolSettings.timeZone')}
-			</Label>
-			<Input bind:value={timeZone} placeholder={DEFAULT_SCHOOL_TIMEZONE} />
-			<p class="text-xs text-muted-foreground">{$t('schoolSettings.timeZoneHint')}</p>
-		</div>
-	</div>
+{#each sections as section (section.id)}
+	<FormModal bind:open={editors[section.id].open} title={$t(section.title)} submitLabel={$t('common.save')} cancelLabel={$t('common.cancel')} {busy} submitDisabled={!hasAnyPermission(['SCHOOL_LIFECYCLE_MANAGE']) || section.fields.some(key => ['name', 'shortName', 'timeZone'].includes(key) && !draft[key]?.trim()) || (section.id === 'location' && !!draft.financeCurrency && !/^[A-Z]{3}$/i.test(draft.financeCurrency))} onSubmit={() => save(section)}>
+		<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">{#snippet children({ disabled })}<fieldset {disabled} class="space-y-4">
+			{#each section.fields as key (key)}<label class="block space-y-1.5 text-sm"><span>{$t(`schoolSettings.${key}`)}</span><Input bind:value={() => draft[key] ?? '', value => draft[key] = value} type={key === 'email' ? 'email' : key === 'phone' ? 'tel' : 'text'} required={['name', 'shortName', 'timeZone'].includes(key)} />{#if key === 'financeCurrency'}<span class="block text-xs text-muted-foreground">{$t('schoolSettings.currencyHint')}</span>{/if}</label>{/each}
+		</fieldset>{/snippet}</PermissionGate>
+	</FormModal>
+{/each}
+<FormModal bind:open={assets.open} title={$t('schoolSettings.sectionIssuanceAssets')} description={$t('schoolSettings.assetsImmediate')} onSubmit={() => modals.close()}>
+	{#if school}<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">{#snippet children({ disabled })}<div class="space-y-5">
+		<p class="text-sm text-muted-foreground">{$t('schoolSettings.assetPublicHint')}</p>
+		{#each assetSlots as asset (asset.purpose)}<IssuanceAssetSlot purpose={asset.purpose} label={$t(`schoolSettings.asset.${asset.key}`)} attachmentId={school[asset.slot]} publicAllowed={(school.publicBrandingPurposes ?? []).includes(asset.purpose as 'school.logo' | 'school.crest')} canPublish={asset.public} canManage={!disabled} busy={assetBusy !== null} onUpload={file => upload(asset.purpose, file)} onClear={() => clear(asset.purpose)} onPublicChange={next => publishAsset(asset.purpose, next)} />{/each}
+	</div>{/snippet}</PermissionGate>{/if}
+	{#snippet footer({ close })}<Button onclick={close} disabled={assetBusy !== null}>{$t('common.done')}</Button>{/snippet}
 </FormModal>

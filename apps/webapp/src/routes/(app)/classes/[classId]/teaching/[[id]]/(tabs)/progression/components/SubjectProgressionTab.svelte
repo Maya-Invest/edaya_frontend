@@ -3,9 +3,7 @@
 	import type { Subject } from '$lib/types/school';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
-	import { deleteSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
-	import ClassSubjectTimetableSection from '$lib/components/school/academics/ClassSubjectTimetableSection.svelte';
+
 	import SubjectMatterFormModal from '$lib/components/school/academics/SubjectMatterFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -27,7 +25,6 @@
 	const matterRows = $derived(progressionTab.rowsFor(subject.id));
 	const matterContext = $derived(progressionTab.matterContextFor(subject.id));
 	const chaptersReadOnly = $derived(progressionTab.chaptersReadOnlyFor(subject.id));
-	const addPropagatesToGradeLevel = $derived(!chaptersReadOnly);
 	const canEditChapter = (row: SubjectMatterDrawerRow) =>
 		!progressionTab.isCatalogChapter(subject.id, row.id);
 	const entries = $derived(teachingPage.logEntriesForSubject(subject));
@@ -82,7 +79,7 @@
 	}
 
 	async function removeChapter(row: SubjectMatterDrawerRow): Promise<boolean> {
-		const ok = await deleteSubjectMatterMutation(
+		const ok = await progressionTab.performDeleteSubjectMatter(
 			row.id,
 			get(t)('subjects.chapters.deleteSuccess', { name: row.name }),
 		);
@@ -109,8 +106,6 @@
 	}
 </script>
 
-<ClassSubjectTimetableSection classSubjectId={subject.id} school={academicContext.schools[0]} />
-
 <div class="space-y-4">
 	<section class="space-y-2">
 		<div class="flex items-center justify-between gap-3">
@@ -124,13 +119,13 @@
 					</p>
 				{/if}
 			</div>
-			<Button size="sm" class="rounded-full" onclick={() => modals.open('add-chapter')}>
+			<Button size="sm" onclick={() => modals.open('add-chapter')}>
 				<Plus class="mr-1 h-3.5 w-3.5" />
 				{$t('subjects.chapters.add')}
 			</Button>
 		</div>
 		{#each matterRows as row (row.id)}
-			<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
+			<div class="rounded-collection border border-border bg-card px-4 py-3 shadow-soft">
 				<div class="flex items-start justify-between gap-3">
 					<div class="min-w-0">
 						<p class="text-sm font-semibold">{row.name}</p>
@@ -143,7 +138,7 @@
 							<Button
 								variant="ghost"
 								size="sm"
-								class="h-8 rounded-full"
+
 								onclick={() => modals.open('edit-chapter', { target: row.id })}
 							>
 								{$t('common.edit')}
@@ -151,7 +146,7 @@
 							<Button
 								variant="outline"
 								size="sm"
-								class="rounded-full text-destructive hover:text-destructive"
+								class="text-destructive hover:text-destructive"
 								onclick={() => modals.open('delete-chapter', { target: row.id })}
 							>
 								<Trash2 class="mr-1 h-3.5 w-3.5" />
@@ -162,18 +157,18 @@
 				</div>
 			</div>
 		{:else}
-			<p class="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+			<p class="rounded-collection border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
 				{$t(chaptersReadOnly ? 'subjects.chapters.emptyCatalog' : 'subjects.chapters.empty')}
 			</p>
 		{/each}
 	</section>
 
-	<div class="rounded-2xl border border-border bg-secondary/40 p-4">
+	<div class="rounded-collection border border-border bg-secondary/40 p-4">
 		<div class="flex items-center justify-between">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('teaching.overallProgress')}
 			</p>
-			<span class="font-mono text-xs">{chaptersData.overall}%</span>
+			<span class="font-sans tabular-nums text-xs">{chaptersData.overall}%</span>
 		</div>
 		<div class="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
 			<div class="h-full bg-primary" style="width: {chaptersData.overall}%"></div>
@@ -182,10 +177,10 @@
 
 	<div class="space-y-2">
 		{#each chaptersData.chapters as [chapter, progress] (chapter)}
-			<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
+			<div class="rounded-collection border border-border bg-card px-4 py-3 shadow-soft">
 				<div class="flex items-center justify-between gap-3">
 					<p class="text-sm font-semibold">{chapter}</p>
-					<span class="font-mono text-xs text-muted-foreground">{progress}%</span>
+					<span class="font-sans tabular-nums text-xs text-muted-foreground">{progress}%</span>
 				</div>
 				<div class="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
 					<div class="h-full bg-primary" style="width: {progress}%"></div>
@@ -196,22 +191,20 @@
 </div>
 
 {#if matterContext}
-	<SubjectMatterFormModal
+	<SubjectMatterFormModal onSaveSubjectMatter={progressionTab.performSaveSubjectMatter}
 		bind:open={addChapterOpen.open}
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={subject.id}
 		classGroupId={matterContext.classGroupId}
-		gradeLevelSubjectId={addPropagatesToGradeLevel ? matterContext.gradeLevelSubjectId : undefined}
 		defaultSequenceOrder={matterRows.length + 1}
 		onSaved={handleMatterSaved}
 	/>
-	<SubjectMatterFormModal
+	<SubjectMatterFormModal onSaveSubjectMatter={progressionTab.performSaveSubjectMatter}
 		bind:open={editChapterOpen.open}
 		matter={editingMatter}
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={subject.id}
 		classGroupId={matterContext.classGroupId}
-		gradeLevelSubjectId={addPropagatesToGradeLevel ? matterContext.gradeLevelSubjectId : undefined}
 		onSaved={handleMatterSaved}
 	/>
 {/if}

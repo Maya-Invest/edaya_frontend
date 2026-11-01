@@ -72,11 +72,11 @@
 	<div class="grid gap-4 sm:grid-cols-2">
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('academic.startDate')}</span>
-			<Input type="date" bind:value={startDate} class="rounded-xl" />
+			<Input type="date" bind:value={startDate} />
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('academic.endDate')}</span>
-			<Input type="date" bind:value={endDate} class="rounded-xl" />
+			<Input type="date" bind:value={endDate} />
 		</label>
 	</div>
 </FormModal>

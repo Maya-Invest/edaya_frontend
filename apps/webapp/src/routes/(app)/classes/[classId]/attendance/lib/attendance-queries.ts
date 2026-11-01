@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { AttendancePageState } from '../attendance-page.svelte';
 import { loadClassAttendancePageData } from '$lib/api/attendance-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -14,13 +15,14 @@ export async function loadAttendanceSlice(classId: string) {
 }
 
 export function queryAttendanceListPage(classId: string, state: AttendancePageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyAttendanceSlice(classId),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadAttendanceSlice(classId);
+			signal.throwIfAborted();
 			state.applySlice(classId, data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

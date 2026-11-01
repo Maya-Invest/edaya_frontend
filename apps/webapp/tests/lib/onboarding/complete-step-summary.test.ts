@@ -1,100 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildCompleteStepSummary,
-	previewMatters,
 } from '$lib/onboarding/complete-step-summary';
 import { catalogClassName, catalogPeriodLabel, catalogSubjectName } from '$lib/i18n/catalog-label';
 import { createEmptyDraft } from '$lib/onboarding/draft-storage';
 import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
-import {
-	buildCatalogFromTemplates,
-	subjectsForGradeLevelIds,
-} from '$lib/onboarding/structure-template-model';
-import type { StructureTemplateDefinition } from '$lib/onboarding/structure-template-model';
-
-function level(
-	templateId: string,
-	code: string,
-	name: string,
-	order: number,
-): StructureTemplateDefinition['gradeLevels'][number] {
-	return {
-		id: `${templateId}:${code}`,
-		code,
-		name,
-		shortLabel: code,
-		order,
-	};
-}
-
-const FIXTURE_TEMPLATES: StructureTemplateDefinition[] = [
-	{
-		id: 'ci-college',
-		countryCode: 'CI',
-		label: "Côte d'Ivoire — Collège",
-		description: 'Lower Secondary Education (4 years)',
-		cycle: 'Collège',
-		gradeLevels: [
-			level('ci-college', '6EME', 'Sixième', 1),
-			level('ci-college', '5EME', 'Cinquième', 2),
-		],
-		subjects: [
-			{ code: 'FR', shortName: 'Français', domain: 'Langues', defaultCoefficient: 3 },
-			{ code: 'MATH', shortName: 'Mathématiques', domain: 'Sciences', defaultCoefficient: 3 },
-		],
-		curriculum: [
-			{
-				levelCode: '6EME',
-				subjectCode: 'FR',
-				coefficient: 3,
-				matters: ['Lecture', 'Grammaire', 'Conjugaison', 'Expression écrite'],
-			},
-			{
-				levelCode: '6EME',
-				subjectCode: 'MATH',
-				coefficient: 3,
-				matters: ['Nombres', 'Fractions', 'Géométrie'],
-			},
-			{
-				levelCode: '5EME',
-				subjectCode: 'FR',
-				coefficient: 3,
-				matters: ['Grammaire'],
-			},
-		],
-	},
-];
-
-const catalog = buildCatalogFromTemplates(FIXTURE_TEMPLATES, 'CI');
-
-describe('subjectsForGradeLevelIds', () => {
-	it('dedupes subjects across selected levels and keeps matters', () => {
-		const subjects = subjectsForGradeLevelIds(catalog, ['ci-college:6EME', 'ci-college:5EME']);
-		expect(subjects.map(subject => subject.code)).toEqual(['FR', 'MATH']);
-		expect(subjects.find(subject => subject.code === 'FR')?.matters).toEqual([
-			'Lecture',
-			'Grammaire',
-			'Conjugaison',
-			'Expression écrite',
-		]);
-	});
-});
-
-describe('previewMatters', () => {
-	it('returns first two truncated titles and a more count', () => {
-		expect(previewMatters([
-			'Lecture et compréhension de textes narratifs et documentaires',
-			'Grammaire',
-			'Conjugaison',
-		])).toEqual({
-			preview: [
-				'Lecture et compréhension de textes narr…',
-				'Grammaire',
-			],
-			more: 1,
-		});
-	});
-});
+import { catalog, reference } from './dataset-fixture';
 
 describe('buildCompleteStepSummary', () => {
 	it('nests classes and subjects with matters under each level', () => {
@@ -106,7 +17,7 @@ describe('buildCompleteStepSummary', () => {
 			country: "Côte d'Ivoire",
 		};
 		draft.structure = {
-			models: ['college'],
+			dataset: reference, templates: ['ci-college'],
 			levels: [
 				{ gradeLevelId: 'ci-college:6EME', classCount: 2, capacity: 30, classNamingMode: 'numerical' },
 				{ gradeLevelId: 'ci-college:5EME', classCount: 0, capacity: 30, classNamingMode: 'numerical' },
@@ -134,9 +45,9 @@ describe('buildCompleteStepSummary', () => {
 		expect(summary.levels[0]).toMatchObject({
 			gradeLevelId: 'ci-college:6EME',
 			code: '6EME',
-			model: 'college',
+			templateId: 'ci-college',
 			classCount: 2,
-			classNames: ['6EME 1', '6EME 2'],
+			classNames: ['6ème 1', '6ème 2'],
 		});
 		expect(summary.levels[0]?.subjects.map(subject => subject.code)).toEqual(['FR', 'MATH']);
 		expect(summary.levels[0]?.subjects.find(subject => subject.code === 'MATH')?.matters).toEqual([
@@ -152,7 +63,7 @@ describe('buildCompleteStepSummary', () => {
 	it('includes only complete staff invites', () => {
 		const draft = createEmptyDraft();
 		draft.structure = {
-			models: ['college'],
+			dataset: reference, templates: ['ci-college'],
 			levels: [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30, classNamingMode: 'numerical' }],
 		};
 		draft.staffInvites = [
@@ -183,12 +94,12 @@ describe('buildCompleteStepSummary', () => {
 	it('keeps canonical FR catalog values so the recap can localize them', () => {
 		const draft = createEmptyDraft();
 		draft.structure = {
-			models: ['college'],
+			dataset: reference, templates: ['ci-college'],
 			levels: [{ gradeLevelId: 'ci-college:6EME', classCount: 2, capacity: 30, classNamingMode: 'numerical' }],
 		};
 
 		const summary = buildCompleteStepSummary(draft, catalog);
-		expect(summary.levels[0]?.classNames).toEqual(['6EME 1', '6EME 2']);
+		expect(summary.levels[0]?.classNames).toEqual(['6ème 1', '6ème 2']);
 		expect(summary.levels[0]?.subjects.find(subject => subject.code === 'FR')?.name).toBe('Français');
 		expect(summary.periods[0]?.label.startsWith('Trimestre') || summary.periods[0]?.label.startsWith('Semestre')).toBe(true);
 		expect(catalogSubjectName('Français', 'en', 'FR')).toBe('French');
@@ -198,3 +109,14 @@ describe('buildCompleteStepSummary', () => {
 	});
 });
 
+
+it('counts subjects per configured level and preserves module membership and exact grading labels', () => {
+ const draft = createEmptyDraft();
+ draft.structure = {dataset: reference, templates: ['ci-college'], levels: ['6EME', '5EME'].map(code => ({gradeLevelId: `ci-college:${code}`, classCount: 1, capacity: 30, classNamingMode: 'numerical'}))};
+ const summary = buildCompleteStepSummary(draft, catalog);
+ expect(summary.subjectCount).toBe(4);
+ expect(summary.levels[0]!.modules.map(module => module.subjects.map(subject => subject.code))).toEqual([['FR'], ['MATH']]);
+ expect(summary.levels[0]!.grading?.scale.ranges.map(range => range.label)).toEqual(['Très-faible', 'Faible', 'Très-insuffisant', 'Insuffisant', 'Passable', 'Assez-Bien', 'Bien', 'Très-Bien', 'Excellent']);
+ expect(summary.levels[0]!.grading?.policy).toMatchObject({mode: 'numeric-first', passThreshold: 10, aggregateLabel: 'Moyenne générale'});
+ expect(summary.levels[0]!.subjects[1]).toMatchObject({isOptional: true, disciplineName: 'Mathématiques', categoryName: 'Scientifique'});
+});

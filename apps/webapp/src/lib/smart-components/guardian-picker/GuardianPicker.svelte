@@ -42,7 +42,7 @@
 			.slice()
 			.sort((a, b) => a.name.localeCompare(b.name, 'fr'))
 			.map((guardian) => {
-				const contact = guardian.email || guardian.phone;
+				const contact = guardian.email || guardian.phone || guardian.alternativePhone || '';
 				const relKey = relationKey[guardian.relation];
 				const relationLabel = relKey ? $t(relKey) : guardian.relation;
 				return {
@@ -52,7 +52,7 @@
 					photoUrl: guardian.photoUrl,
 					subtitle: contact,
 					hint: relationLabel,
-					searchText: [guardian.email, guardian.phone, relationLabel].join(' '),
+					searchText: [guardian.email, guardian.phone, guardian.alternativePhone, relationLabel].join(' '),
 				};
 			}),
 	);

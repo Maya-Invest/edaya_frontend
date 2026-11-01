@@ -1,19 +1,20 @@
 <script lang="ts">
-	import type { School } from '$lib/types/school';
 	import { authSession } from '$lib/auth/session.svelte';
+	import { switchActiveSchool } from '$lib/auth/switch-school';
+	import * as Select from '$lib/components/ui/select';
+	import { t } from '$lib/i18n';
 	import { Building2 } from '$lib/icons';
 
-	const { schools }: { schools: School[] } = $props();
-
-	const school = $derived(authSession.school ?? schools[0]);
+	const { collapsed = false }: { collapsed?: boolean } = $props();
+	const memberships = $derived(authSession.staffMemberships);
+	const name = $derived(authSession.school?.shortName ?? authSession.activeStaffMembership?.schoolShortName ?? $t('sidebar.module'));
 </script>
-
-{#if school}
-	<div
-		class="flex h-9 max-w-[11rem] items-center gap-2 rounded-full border border-border bg-card px-3 text-xs font-medium"
-		title={school.name}
-	>
-		<Building2 class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-		<span class="truncate">{school.shortName}</span>
-	</div>
-{/if}
+{#if memberships.length > 1}
+	<div class="min-w-0" data-testid="school-selector"><Select.Root type="single" value={authSession.schoolId ?? undefined} onValueChange={(value) => {
+		if (value && value !== authSession.schoolId)
+			void switchActiveSchool(value);
+	}}>
+		<Select.Trigger data-testid="school-selector-menu" aria-label={$t('sidebar.switchSchool')}><span>{#if collapsed}<Building2 class="h-4 w-4" />{:else}{name}{/if}</span></Select.Trigger>
+		<Select.Content align="start" side={collapsed ? 'right' : 'bottom'}>{#each memberships as membership (membership.actorId)}<Select.Item value={membership.schoolId} label={membership.schoolName} data-testid="school-selector-option" data-school-id={membership.schoolId}>{membership.schoolName}</Select.Item>{/each}</Select.Content>
+	</Select.Root></div>
+{:else if !collapsed}<p class="break-words text-sm font-semibold" data-testid="school-selector">{name}</p>{/if}

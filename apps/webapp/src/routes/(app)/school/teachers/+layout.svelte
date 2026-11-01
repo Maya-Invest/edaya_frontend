@@ -7,9 +7,9 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { readTeacherListFilters } from '$lib/list/list-url-filters';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import TeachersList from './components/TeachersList.svelte';
 	import { teacherListUsesFullRoster } from './lib/teacher-list-filters';
@@ -40,6 +40,7 @@
 		}
 		void teachersPage.filters.values.q;
 		void teachersPage.filters.values.sort;
+		void teachersPage.filters.values.status;
 
 		if (!teacherListUsesFullRoster(teachersPage.filters.values)) {
 			teachersPage.clearFullRoster();
@@ -56,7 +57,7 @@
 
 	function selectTeacher(teacher: Teacher) {
 		const path = detailHref.schoolTeacherTab(teacher.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 </script>
 

@@ -1,25 +1,23 @@
 import type { ActionGrantsSnapshot } from '$lib/auth/types';
-import type { PlanningSurfacePermission } from '$lib/scheduling/planning-surface';
+import type { PlanningSurfacePermission } from '../../../src/routes/(app)/classes/[classId]/timetable/planning-surface';
 import { checkPermission } from '$lib/permission-check';
+import { describe, expect, it } from 'bun:test';
 import {
 	canAccessPlanningModal,
 	planningSurfaceHref,
 	resolvePlanningSurface,
-} from '$lib/scheduling/planning-surface';
-import { describe, expect, it } from 'bun:test';
+} from '../../../src/routes/(app)/classes/[classId]/timetable/planning-surface';
 
 function mockGrants(
 	permissions: readonly PlanningSurfacePermission[],
 	classIds: Partial<Record<PlanningSurfacePermission, string>> = {},
 ): ActionGrantsSnapshot {
-	return permissions.map(permission => ({ permission, source: 'manual',
-		scopes: classIds[permission] ? [{ kind: 'class_subject', classGroupId: classIds[permission]! }] : [],
-	}));
+	return permissions.map(permission => ({ permission, source: 'manual', scopes: classIds[permission] ? [{ kind: 'subject', gradeLevelId: 'grade', classGroupId: classIds[permission]! }] : []	}));
 }
 
 function permissionCheck(grants: ActionGrantsSnapshot) {
 	return (permission: PlanningSurfacePermission, classId: string) =>
-		checkPermission(grants, permission, { classId });
+		checkPermission(grants, permission, { classId, gradeLevelId: 'grade' });
 }
 
 describe('planning URL surface codec', () => {
@@ -87,6 +85,21 @@ describe('planning URL surface codec', () => {
 		);
 	});
 
+	it('matches encoded session identifiers before validating drawer actions', () => {
+		const id = 'schedule:2026-10-05';
+		const url = new URL(`http://local/classes/6a/timetable/${encodeURIComponent(id)}/logbook?modal=session-logbook`);
+		const options = {
+			events: [{ id, kind: 'lesson' }],
+			validateEventTargets: true,
+			validatePermissions: true,
+			classId: '6a',
+			hasPermission: permissionCheck(mockGrants(['CLASS_LOGBOOK_MANAGE'], { CLASS_LOGBOOK_MANAGE: '6a' })),
+		};
+		expect(resolvePlanningSurface(url, options).modal).toBe('session-logbook');
+		expect(resolvePlanningSurface(url, { ...options, events: [] }).modal).toBeNull();
+		expect(resolvePlanningSurface(url, { ...options, hasPermission: () => false }).modal).toBeNull();
+	});
+
 	it('closes an inaccessible drawer attendance student target', () => {
 		const url = new URL(
 			'http://local/classes/6a/timetable/s-1/attendance?modal=session-attendance&modalTarget=stu-404',
@@ -99,8 +112,8 @@ describe('planning URL surface codec', () => {
 
 	it('enforces class-scoped timetable and attendance permissions', () => {
 		const grants = mockGrants(
-			['TIMETABLE_UPDATE', 'ATTENDANCE_RECORD'],
-			{ TIMETABLE_UPDATE: '6a', ATTENDANCE_RECORD: '6a' },
+			['TIMETABLE_MANAGE', 'ATTENDANCE_RECORD'],
+			{ TIMETABLE_MANAGE: '6a', ATTENDANCE_RECORD: '6a' },
 		);
 		const hasPermission = permissionCheck(grants);
 
@@ -144,14 +157,14 @@ describe('planning URL surface codec', () => {
 		)).toEqual({ modal: null, target: null, step: null });
 	});
 
-	it('requires the appropriate create or update logbook permission', () => {
+	it('consolidated logbook management supports creation and editing', () => {
 		const createOnly = permissionCheck(mockGrants(
-			['CLASS_LOGBOOK_CREATE'],
-			{ CLASS_LOGBOOK_CREATE: '6a' },
+			['CLASS_LOGBOOK_MANAGE'],
+			{ CLASS_LOGBOOK_MANAGE: '6a' },
 		));
 		const updateOnly = permissionCheck(mockGrants(
-			['CLASS_LOGBOOK_UPDATE'],
-			{ CLASS_LOGBOOK_UPDATE: '6a' },
+			['CLASS_LOGBOOK_MANAGE'],
+			{ CLASS_LOGBOOK_MANAGE: '6a' },
 		));
 		const event = { id: 's-1', kind: 'lesson' };
 
@@ -168,7 +181,7 @@ describe('planning URL surface codec', () => {
 			hasPermission: createOnly,
 			logbookExists: true,
 			validatePermissions: true,
-		})).toBe(false);
+		})).toBe(true);
 		expect(canAccessPlanningModal('session-logbook', {
 			classId: '6a',
 			event,
@@ -200,8 +213,8 @@ describe('planning URL surface codec', () => {
 			'http://local/classes/6a/timetable/s-1/details?modal=cancel',
 		);
 		const authorized = permissionCheck(mockGrants(
-			['TIMETABLE_UPDATE'],
-			{ TIMETABLE_UPDATE: '6a' },
+			['TIMETABLE_MANAGE'],
+			{ TIMETABLE_MANAGE: '6a' },
 		));
 		const base = {
 			classId: '6a',

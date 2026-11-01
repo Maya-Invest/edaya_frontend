@@ -7,7 +7,6 @@
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -37,10 +36,8 @@
 	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
 	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	const canChangePhoto = $derived(canUploadProfilePhoto('STAFF_UPDATE'));
+	const canChangePhoto = $derived(canUploadProfilePhoto('STAFF_MANAGE'));
 	let deleteBusy = $state(false);
-
-	const permissionsHref = $derived(detailHref.schoolStaffTab(staff.id, 'permissions'));
 
 	async function handlePhotoChange(file: File) {
 		return staffPage.updateProfilePhoto({
@@ -85,26 +82,15 @@
 		{/if}
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
+		<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
 			{#snippet children({ disabled, title })}
 				<StaffProfileEditModal s={staff} {disabled} {title} bind:open={editProfileOpen.open} />
 			{/snippet}
 		</PermissionGate>
-		<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable" tooltip={$t('staff.permissionAssign')}>
-			{#snippet children({ disabled, title })}
-				<a
-					href={permissionsHref}
-					class="inline-flex h-9 items-center rounded-full border border-input bg-background px-4 text-sm font-medium transition hover:bg-secondary aria-disabled:pointer-events-none aria-disabled:opacity-50"
-					aria-disabled={disabled}
-					{title}
-				>
-					{$t('staff.managePermissions')}
-				</a>
-			{/snippet}
-		</PermissionGate>
+
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
+		<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
 			{#snippet children({ disabled, title })}
 				<RowActionMenuItem
 					{disabled}

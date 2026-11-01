@@ -1,4 +1,6 @@
-export const ONBOARDING_DRAFT_VERSION = 7 as const;
+import type { DatasetReference } from './dataset-model';
+
+export const ONBOARDING_DRAFT_VERSION = 8 as const;
 export const ONBOARDING_STEP_COUNT = 4;
 
 export type OnboardingStep = 1 | 2 | 3 | 4;
@@ -17,6 +19,7 @@ export interface OnboardingSchoolDraft {
 	city: string;
 	country: string;
 	timezone: string;
+	financeCurrency?: string;
 	academicYearLabel: string;
 	academicYearStart: string;
 	academicYearEnd: string;
@@ -32,7 +35,8 @@ export interface OnboardingStructureLevelDraft {
 }
 
 export interface OnboardingStructureDraft {
-	models: Array<'college' | 'lycee'>;
+	dataset: DatasetReference | null;
+	templates: string[];
 	levels: OnboardingStructureLevelDraft[];
 }
 

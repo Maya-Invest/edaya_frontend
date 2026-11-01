@@ -23,8 +23,8 @@ describe('drawer path helpers', () => {
 		expect(schoolActivityPath('ci-act-robot')).toBe('/school/activities/ci-act-robot/profile');
 		expect(schoolGuardianPath('ci-g1')).toBe('/school/guardians/ci-g1');
 		expect(financeBillingPath('ci-b1')).toBe('/finance/billing/ci-b1');
-		expect(configClassGroupPath('ci-6a')).toBe('/configuration/classes/ci-6a/profile');
-		expect(configSubjectPath('ci-cs-6a-math')).toBe('/configuration/subjects/ci-cs-6a-math/progression');
+		expect(configClassGroupPath('ci-6a')).toBe('/configuration/structure/classes/ci-6a/profile');
+		expect(configSubjectPath('ci-cs-6a-math')).toBe('/configuration/structure/subjects/ci-cs-6a-math/progression');
 	});
 
 	it('builds class drawer tab paths', () => {
@@ -48,11 +48,15 @@ describe('drawer path helpers', () => {
 		expect(drawerTabFromPathname('/school/students/ci-s1/report-card')).toBe('report-card');
 		expect(drawerTabFromPathname('/school/teachers/ci-t1/assignments')).toBe('assignments');
 		expect(drawerTabFromPathname('/school/teachers/ci-t1/availability')).toBe('availability');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/timetable')).toBe('timetable');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/evaluations')).toBe('evaluations');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/family-feedback')).toBe('family-feedback');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/documents')).toBe('documents');
 		expect(drawerTabFromPathname('/school/staff/ci-st3/permissions')).toBe('permissions');
 		expect(drawerTabFromPathname('/school/activities/ci-act-robot/students')).toBe('students');
-		expect(drawerTabFromPathname('/configuration/classes/ci-6a/profile')).toBe('profile');
-		expect(drawerTabFromPathname('/configuration/classes/ci-6a/assignments')).toBe('assignments');
-		expect(drawerTabFromPathname('/configuration/subjects/ci-cs-6a-math/logbook')).toBe('logbook');
+		expect(drawerTabFromPathname('/configuration/structure/classes/ci-6a/profile')).toBe('profile');
+		expect(drawerTabFromPathname('/configuration/structure/classes/ci-6a/assignments')).toBe('assignments');
+		expect(drawerTabFromPathname('/configuration/structure/subjects/ci-cs-6a-math/logbook')).toBe('logbook');
 		expect(drawerTabFromPathname('/classes/ci-6a/teaching/ci-cs-6a-math/progression')).toBe('progression');
 		expect(drawerTabFromPathname('/classes/ci-6a/evaluations/ci-asm-6a-t1-math/grading')).toBe('grading');
 		expect(drawerTabFromPathname('/classes/ci-6a/students/ci-s1/finances')).toBe('finances');

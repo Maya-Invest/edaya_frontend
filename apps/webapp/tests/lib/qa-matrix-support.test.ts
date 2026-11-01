@@ -3,7 +3,9 @@ import {
 	buildTimetableSessionPath,
 	emptyEntities,
 	encodePathSegment,
+	isClassDailyAttendanceSidebarPath,
 	resolveEndpoint,
+	sidebarSmokeStartPath,
 	timetableWeekFromSessionId,
 } from '../../scripts/qa-matrix-support';
 
@@ -37,5 +39,54 @@ describe('qa-matrix-support timetable paths', () => {
 		expect(url).toBe(
 			'http://localhost:5173/classes/class-1/timetable/sch-abc%3A2026-08-16/attendance?week=2026-08-16',
 		);
+	});
+
+	test('timetable list opens the persisted fixture week even when it differs from today', () => {
+		const entities = { ...emptyEntities(), classId: 'class', sessionId: 'session', timetableWeek: '2026-10-05' };
+		expect(resolveEndpoint('/classes/[classId]/timetable', 'http://local', entities)).toBe('http://local/classes/class/timetable?week=2026-10-05');
+	});
+
+	test('sidebarSmokeStartPath uses a class page for class-segment hrefs', () => {
+		expect(sidebarSmokeStartPath('/classes/c1/timetable', 'c1')).toBe('/classes/c1/students');
+		expect(sidebarSmokeStartPath('/school/students', 'c1')).toBe('/dashboard');
+		expect(sidebarSmokeStartPath('/classes/c1/timetable', null)).toBe('/dashboard');
+	});
+
+	test('isClassDailyAttendanceSidebarPath matches only the class attendance tab', () => {
+		expect(isClassDailyAttendanceSidebarPath('/classes/c1/attendance')).toBe(true);
+		expect(isClassDailyAttendanceSidebarPath('/classes/c1/timetable')).toBe(false);
+		expect(isClassDailyAttendanceSidebarPath('/classes/c1/students/s1/attendance')).toBe(false);
+		expect(isClassDailyAttendanceSidebarPath('/classes/c1/timetable/sess/attendance')).toBe(false);
+	});
+
+	test('messaging detail resolves a conversation id without falling back to a child id', () => {
+		const entities = { ...emptyEntities(), studentId: 'child', conversationId: 'thread' };
+		expect(resolveEndpoint('/school/messages/[id]', 'http://local', entities)).toBe('http://local/school/messages/thread');
+		expect(resolveEndpoint('/school/messages/[id]', 'http://local', { ...entities, conversationId: null })).toBeNull();
+	});
+
+	test('resolveEndpoint substitutes family-feedback campaign ids', () => {
+		const entities = {
+			...emptyEntities(),
+			studentId: 'stu-1',
+			familyFeedbackCampaignId: 'ff-campaign-1',
+		};
+		expect(
+			resolveEndpoint(
+				'http://localhost:5173/school/family-feedback/[id]/setup?modal=edit',
+				'http://localhost:5173',
+				entities,
+			),
+		).toBe('http://localhost:5173/school/family-feedback/ff-campaign-1/setup?modal=edit');
+	});
+
+	test('resolveEndpoint skips family-feedback detail without a campaign id', () => {
+		expect(
+			resolveEndpoint(
+				'http://localhost:5173/school/family-feedback/[id]/setup',
+				'http://localhost:5173',
+				emptyEntities(),
+			),
+		).toBeNull();
 	});
 });

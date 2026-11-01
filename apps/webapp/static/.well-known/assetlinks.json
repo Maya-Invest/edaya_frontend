@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ca.mayainvest.edaya.guardian",
+      "sha256_cert_fingerprints": [
+        "C7:EF:EF:9F:FF:96:73:B6:AA:08:7E:AE:A5:77:F9:32:33:31:C9:A3:69:84:F2:B1:7E:E5:63:FF:1F:A0:0D:52",
+        "BE:3D:0F:4C:60:33:2E:A3:90:71:89:94:26:65:23:96:D8:A5:81:48:D1:69:83:A9:27:1F:E5:62:BC:22:2E:DB"
+      ]
+    }
+  }
+]

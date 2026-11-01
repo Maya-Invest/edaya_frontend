@@ -1,12 +1,18 @@
-import { describe, expect, it } from 'bun:test';
 import {
-	ROUTE_MODAL_CATALOG,
 	isKnownModalForPathname,
+	ROUTE_MODAL_CATALOG,
 } from '$lib/modal/route-modal-catalog';
+import { describe, expect, it } from 'bun:test';
 
 const STUDENT_DETAIL_MODALS = [
 	'create',
+	'change-status',
 	'edit-profile',
+	'edit-annual-profile',
+	'remove-annual-profile',
+	'guardian-relationship',
+	'enrollment-progression',
+	'subject-selection',
 	'edit-health',
 	'change-class',
 	'link-guardian',
@@ -14,20 +20,20 @@ const STUDENT_DETAIL_MODALS = [
 	'edit-note',
 	'add-absence',
 	'add-incident',
-	'add-grade',
 ] as const;
 
 const routeCases = [
+	['school-messages-detail', '/school/messages/thread', ['reply']],
 	['authenticated-app', '/dashboard', ['account-profile']],
-	['school-students-list', '/school/students', ['create']],
-	['school-students-detail', '/school/students/student-1/grades', STUDENT_DETAIL_MODALS],
-	['class-students-list', '/classes/class-1/students', ['create']],
-	['class-students-detail', '/classes/class-1/students/student-1/profile', STUDENT_DETAIL_MODALS],
+	['school-students-list', '/school/students', ['create', 'subject-selection']],
+	['school-students-detail', '/school/students/student-1/grades', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card']],
+	['class-students-list', '/classes/class-1/students', ['create', 'subject-selection']],
+	['class-students-detail', '/classes/class-1/students/student-1/profile', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card']],
 	['school-guardians-list', '/school/guardians', ['create']],
-	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'delete']],
+	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'guardian-relationship', 'delete']],
 	['school-staff-list', '/school/staff', ['create']],
 	['school-staff-detail', '/school/staff/staff-1/profile', ['create', 'edit-profile', 'delete']],
-	['school-staff-permissions', '/school/staff/staff-1/permissions', ['add-permission', 'delete-permission']],
+	['school-staff-permissions', '/school/staff/staff-1/permissions', ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile', 'default-scopes']],
 	['school-teachers-list', '/school/teachers', ['create']],
 	[
 		'school-teachers-detail',
@@ -35,13 +41,19 @@ const routeCases = [
 		[
 			'create',
 			'edit-profile',
+			'edit-annual-profile',
+			'remove-annual-profile',
 			'delete',
 			'add-unavailability',
 			'edit-unavailability',
 			'delete-unavailability',
+			'form',
+			'delete-assignment',
+			'generate-document',
+			'void-document',
 		],
 	],
-	['school-teachers-assignments', '/school/teachers/teacher-1/assignments', ['form']],
+	['school-teachers-assignments', '/school/teachers/teacher-1/assignments', ['form', 'delete-assignment']],
 	['school-activities-list', '/school/activities', ['create']],
 	[
 		'school-activities-detail',
@@ -62,6 +74,23 @@ const routeCases = [
 		'/school/announcements/announcement-1',
 		['create', 'edit', 'add-target', 'publish', 'delete'],
 	],
+	['school-family-feedback-list', '/school/family-feedback', ['create']],
+	[
+		'school-family-feedback-detail',
+		'/school/family-feedback/campaign-1/setup',
+		[
+			'create',
+			'edit',
+			'assign-moderator',
+			'schedule',
+			'open',
+			'close',
+			'cancel',
+			'theme',
+			'publish',
+			'archive',
+		],
+	],
 	['school-events-list', '/school/events', ['create']],
 	['school-events-detail', '/school/events/incident-1', ['create', 'edit', 'resolve', 'delete']],
 	['school-calendar', '/school/calendar', ['create', 'edit', 'delete']],
@@ -76,6 +105,7 @@ const routeCases = [
 			'edit-event',
 			'cancel',
 			'session-attendance',
+			'attendance-review',
 			'session-logbook',
 		],
 	],
@@ -83,86 +113,102 @@ const routeCases = [
 	[
 		'class-evaluations-detail',
 		'/classes/class-1/evaluations/evaluation-1/grading',
-		['edit', 'delete', 'attach', 'grade-entry'],
+		['edit', 'delete', 'attach', 'grade-entry', 'correct-mark', 'submit-marks', 'request-correction', 'approve-correction', 'reject-correction', 'withdraw-correction'],
 	],
 	[
 		'class-teaching-detail',
 		'/classes/class-1/teaching/subject-1/logbook',
-		['edit-subject', 'delete'],
+		['edit-subject', 'delete', 'subject-roster'],
 	],
 	[
 		'class-teaching-progression',
 		'/classes/class-1/teaching/subject-1/progression',
 		['add-chapter', 'edit-chapter', 'delete-chapter'],
 	],
-	['class-attendance-detail', '/classes/class-1/attendance/day-1', ['record-attendance']],
-	['configuration-school', '/configuration/school', ['edit']],
+	['class-attendance-detail', '/classes/class-1/attendance/day-1', ['record-attendance', 'attendance-review']],
+	['configuration-school', '/configuration/school', ['identity', 'issuing', 'location', 'assets', 'timetable-settings']],
 	[
 		'configuration-academic',
 		'/configuration/academic',
 		[
 			'create',
-			'period-def',
-			'period-def-wizard',
-			'delete-period-def',
 			'archive-year',
 			'publish-year',
 			'publish-period',
 		],
 	],
-	['configuration-grade-levels-list', '/configuration/grade-levels', ['create']],
 	[
-		'configuration-grade-levels-detail',
-		'/configuration/grade-levels/grade-1',
-		['create', 'edit', 'delete'],
+		'configuration-period-grid',
+		'/configuration/period-grid',
+		[
+			'period-def',
+			'period-def-wizard',
+			'delete-period-def',
+		],
 	],
-	['configuration-classes-list', '/configuration/classes', ['create']],
+	['configuration-structure-levels', '/configuration/structure/subjects', ['create-level', 'edit-level', 'delete-level', 'level-grading']],
+	['configuration-classes-list', '/configuration/structure/classes', ['create']],
 	[
 		'configuration-classes-detail',
-		'/configuration/classes/class-1/profile',
+		'/configuration/structure/classes/class-1/profile',
 		['create', 'edit'],
 	],
 	[
 		'configuration-classes-assignments',
-		'/configuration/classes/class-1/assignments',
+		'/configuration/structure/classes/class-1/assignments',
 		['form', 'delete-assignment'],
 	],
-	['configuration-subjects-list', '/configuration/subjects', ['create-subject']],
+	['configuration-subjects-list', '/configuration/structure/subjects', ['create-subject', 'module-create', 'module-edit', 'module-members', 'module-delete', 'report-settings']],
 	[
 		'configuration-subjects-detail',
-		'/configuration/subjects/subject-1/logbook',
+		'/configuration/structure/subjects/subject-1/logbook',
 		['create-subject', 'edit-subject', 'delete'],
 	],
 	[
 		'configuration-subjects-progression',
-		'/configuration/subjects/subject-1/progression',
+		'/configuration/structure/subjects/subject-1/progression',
 		['add-chapter', 'edit-chapter', 'delete-chapter'],
 	],
-	['configuration-report-cards-list', '/configuration/report-cards', ['create']],
+	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval']],
+	['configuration-notifications-list', '/configuration/notifications', ['reset-all']],
 	[
-		'configuration-report-cards-detail',
-		'/configuration/report-cards/report-card-1',
-		['create', 'delete'],
+		'configuration-notifications-detail',
+		'/configuration/notifications/report_card.published',
+		['edit', 'reset-key', 'reset-all'],
 	],
-	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete']],
-	['configuration-notifications', '/configuration/notifications', ['edit', 'reset-all']],
-	['configuration-discipline', '/configuration/discipline', ['create', 'edit', 'delete']],
+	['configuration-discipline', '/configuration/other/discipline', ['create', 'edit', 'delete']],
+	['configuration-subject-categories', '/configuration/other/subject-categories', ['create', 'edit', 'delete']],
+	['configuration-permission-profiles', '/configuration/permission-profiles', ['create', 'edit', 'delete']],
 	[
 		'configuration-tools',
 		'/configuration/tools',
-		['import', 'generate-timetable', 'publish-timetable'],
+		['import', 'generate-timetable'],
 	],
 	[
 		'configuration-teacher-assignments',
 		'/configuration/tools/teacher-assignments',
 		['create'],
 	],
-	['finance-fees', '/finance/fees', ['create', 'edit', 'delete']],
+	['finance-fees', '/finance/fees', ['create', 'edit', 'archive', 'activate']],
+	['finance-fee-detail', '/finance/fees/fee-1', ['edit', 'archive', 'activate', 'assign-fee', 'retry-billing']],
 	['finance-billing-list', '/finance/billing', ['assign-fee']],
-	['finance-billing-detail', '/finance/billing/billing-1', ['assign-fee', 'payment', 'delete']],
+	['finance-billing-detail', '/finance/billing/billing-1', ['assign-fee', 'payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel']],
+	['finance-payments', '/finance/payment', ['payment', 'reverse', 'refund']],
 ] as const;
 
 describe('route modal catalog', () => {
+	it('retains billing actions on payment and history tabs', () => {
+		for (const tab of ['payments', 'history']) {
+			for (const action of ['payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel'])
+				expect(isKnownModalForPathname(`/finance/billing/charge-1/${tab}`, action)).toBeTrue();
+		}
+	});
+	it('matches permission profile detail URLs to the existing modal family', () => {
+		const family = ROUTE_MODAL_CATALOG.find(entry => entry.routeFamily === 'configuration-permission-profiles');
+		expect(family?.pathnamePattern.test('/configuration/permission-profiles/profile-1')).toBe(true);
+		expect(family?.modalNames).toEqual(['create', 'edit', 'delete']);
+	});
+
 	it('enumerates every audited route family and modal name', () => {
 		expect(ROUTE_MODAL_CATALOG.map(entry => entry.routeFamily)).toEqual(
 			routeCases.map(([routeFamily]) => routeFamily),
@@ -192,6 +238,18 @@ describe('route modal catalog', () => {
 		}
 	});
 
+	it('does not expose a student grades editor modal', () => {
+		expect(isKnownModalForPathname('/school/students/student-1/grades', 'add-grade')).toBeFalse();
+		expect(isKnownModalForPathname('/classes/class-1/students/student-1/grades', 'add-grade')).toBeFalse();
+	});
+
+	it('retains status deep links only for student detail routes', () => {
+		for (const pathname of ['/school/students/student-1/profile', '/classes/class-1/students/student-1/profile'])
+			expect(isKnownModalForPathname(pathname, 'change-status')).toBeTrue();
+		for (const pathname of ['/school/students', '/classes/class-1/students', '/school/staff/staff-1/profile'])
+			expect(isKnownModalForPathname(pathname, 'change-status')).toBeFalse();
+	});
+
 	it('does not expose route-local names to sibling routes', () => {
 		expect(isKnownModalForPathname('/school/students', 'edit-profile')).toBeFalse();
 		expect(isKnownModalForPathname('/configuration/tools', 'new-session')).toBeFalse();
@@ -209,7 +267,7 @@ describe('route modal catalog', () => {
 
 	it('supports canonical direct-detail and trailing-slash paths', () => {
 		expect(isKnownModalForPathname('/school/students/student-1', 'edit-profile')).toBeTrue();
-		expect(isKnownModalForPathname('/configuration/classes/class-1/', 'edit')).toBeTrue();
+		expect(isKnownModalForPathname('/configuration/structure/classes/class-1/', 'edit')).toBeTrue();
 		expect(isKnownModalForPathname('/classes/class-1/timetable/session-1', 'edit-event')).toBeTrue();
 	});
 });

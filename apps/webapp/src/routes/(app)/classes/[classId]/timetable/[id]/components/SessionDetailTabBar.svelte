@@ -4,6 +4,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
+	import { followDrawerTabLink } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import {
 		activeSessionDetailTab,
@@ -39,6 +40,8 @@
 	{#each visibleTabs as tab (tab.key)}
 		<a
 			href={tabHref(tab.segment)}
+			data-sveltekit-noscroll
+			onclick={event => followDrawerTabLink(event, tabHref(tab.segment))}
 			class={cn(
 				'whitespace-nowrap rounded-full px-2.5 py-1.5 font-medium transition',
 				activeTab === tab.key

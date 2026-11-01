@@ -1,4 +1,5 @@
 import type { StudentGradeRow } from '$lib/types/school';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentGradeRows } from '$lib/api/student-drawer-data';
@@ -52,9 +53,9 @@ export class StudentGradesTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
@@ -62,13 +63,14 @@ export class StudentGradesTabState {
 
 				const grades = await loadStudentGradeRows(getBrowserSchoolClient(), studentId);
 
+				signal.throwIfAborted();
 				this.seed(studentId, {
 					grades,
 				});
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request);
 	}
 }
 

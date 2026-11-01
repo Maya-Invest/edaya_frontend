@@ -1,43 +1,35 @@
 <script lang="ts">
 	import type { StaffMember } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import PersonProfileDetails from '$lib/components/school/shared/PersonProfileDetails.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail } from '$lib/icons';
+	import AccountLinkingSection from '$lib/smart-components/account-linking/AccountLinkingSection.svelte';
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../../../../staff-page.svelte';
 
-	const { s }: { s: StaffMember } = $props();
-
+	const { s }: {
+		s: StaffMember;
+	} = $props();
 	const staffPage = getStaffPageState();
-
 	let optimisticActive = $state<boolean | null>(null);
 	let statusBusy = $state(false);
-
 	const active = $derived(optimisticActive ?? s.isActive);
-
-	const classLabels = $derived(
-		s.classes.map(id => academicContext.classes.find(c => c.id === id)?.name ?? id),
-	);
-
+	const classLabels = $derived(s.classes.map(id => academicContext.classes.find(c => c.id === id)?.name ?? id));
 	async function handleActiveChange(checked: boolean | 'indeterminate') {
 		if (checked === 'indeterminate' || statusBusy)
 			return;
-
 		const previous = active;
 		optimisticActive = checked;
 		statusBusy = true;
 		const ok = await staffPage.updateStatus({
 			staffId: s.id,
 			isActive: checked,
-			successMessage: get(t)(
-				checked ? 'staff.activateSuccess' : 'staff.deactivateSuccess',
-				{ name: s.name },
-			),
+			successMessage: get(t)(checked ? 'staff.activateSuccess' : 'staff.deactivateSuccess', { name: s.name }),
 		});
 		statusBusy = false;
 		if (ok) {
@@ -48,6 +40,7 @@
 		}
 	}
 </script>
+<PersonProfileDetails kind="staff" person={s} />
 
 <div class="space-y-4">
 	<DrawerField label={$t('guardian.fullName')}>
@@ -79,7 +72,7 @@
 			<div class="flex flex-wrap gap-1.5">
 				{#each classLabels as label (label)}
 					<span
-						class="rounded-md bg-secondary px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+						class="rounded-md bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] text-muted-foreground"
 					>
 						{label}
 					</span>
@@ -88,12 +81,12 @@
 		</DrawerField>
 	{/if}
 
-	<div class="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+	<div class="flex items-center justify-between rounded-collection border border-border bg-card px-4 py-3">
 		<div>
 			<Label class="text-sm font-medium">{$t('staff.activeLabel')}</Label>
 			<p class="text-xs text-muted-foreground">{$t('staff.activeHint')}</p>
 		</div>
-		<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
+		<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
 			{#snippet children({ disabled })}
 				<Checkbox
 					checked={active}

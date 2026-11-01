@@ -1,14 +1,18 @@
 import type { TimetableGeneratedClient } from '$lib/api/mutations/timetable-generation.client';
-import { describe, expect, test } from 'bun:test';
 import { timetableGenerationMutations } from '$lib/api/mutations/timetable-generation.client';
+import { describe, expect, test } from 'bun:test';
 
 const calls: Array<{ command: string; input: unknown }> = [];
 const queries: Array<unknown> = [];
 const commands = {
-	generateClassGroupTimetable: (input: unknown) => (calls.push({ command: 'generateClass', input }), Promise.resolve({ classGroupId: 'class-1' })),
-	generateSchoolTimetable: (input: unknown) => (calls.push({ command: 'generateSchool', input }), Promise.resolve({ academicYearId: 'year-1' })),
-	publishClassGroupTimetable: (input: unknown) => (calls.push({ command: 'publishClass', input }), Promise.resolve({ classGroupId: 'class-1' })),
-	republishClassGroupTimetable: (input: unknown) => (calls.push({ command: 'republishClass', input }), Promise.resolve({ generation: {}, publication: {} })),
+	generateClassGroupTimetable: async (input: unknown) => {
+		calls.push({ command: 'generateClass', input });
+		return { classGroupId: 'class-1' };
+	},
+	generateSchoolTimetable: async (input: unknown) => {
+		calls.push({ command: 'generateSchool', input });
+		return { academicYearId: 'year-1' };
+	},
 } as unknown as TimetableGeneratedClient['commands'];
 const timetable = timetableGenerationMutations({
 	commands,
@@ -33,10 +37,8 @@ describe('timetable generation client mutations', () => {
 			},
 		});
 		await timetable.generateSchoolTimetable({ academicYearId: 'year-1', startDate: '2026-09-01', endDate: '2026-12-01' });
-		await timetable.publishClassTimetable({ classGroupId: 'class-1', startDate: '2026-09-01', endDate: '2026-12-01' });
-		await timetable.republishClassTimetable({ classGroupId: 'class-1', academicYearId: 'year-1', startDate: '2026-09-01', endDate: '2026-12-01' });
 
-		expect(calls.map(call => call.command)).toEqual(['generateClass', 'generateSchool', 'publishClass', 'republishClass']);
+		expect(calls.map(call => call.command)).toEqual(['generateClass', 'generateSchool']);
 		expect(calls[0]?.input).toMatchObject({
 			options: {
 				allowUnassignedTeacherPlacements: true,

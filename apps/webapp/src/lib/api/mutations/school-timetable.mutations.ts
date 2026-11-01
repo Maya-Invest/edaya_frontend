@@ -3,7 +3,7 @@ import type { School } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { mapSchoolFromApi } from '$lib/api/school-data';
+import { mapSchoolFromApi, schoolConfigurationIdentityFields } from '$lib/api/school-data';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
@@ -54,7 +54,6 @@ export async function updateSchoolTimetableDefaultsMutation(input: {
 			timeZone: current.timeZone,
 			city: current.city,
 			country: current.country,
-			type: current.type,
 			ownerSubjectId: current.ownerSubjectId,
 			enforceScheduleConflicts: current.enforceScheduleConflicts,
 			timetableEnforceWorkloadFulfillment: defaults.timetableEnforceWorkloadFulfillment,
@@ -66,8 +65,9 @@ export async function updateSchoolTimetableDefaultsMutation(input: {
 			timetableGenerationMode: current.timetableGenerationMode,
 			timetableMinPeriodSpan: defaults.timetableMinPeriodSpan,
 			timetableMaxPeriodSpan: defaults.timetableMaxPeriodSpan,
+			...schoolConfigurationIdentityFields(current),
 		}),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: ['school', 'planning'] },
 	);
 
 	if (!result) {

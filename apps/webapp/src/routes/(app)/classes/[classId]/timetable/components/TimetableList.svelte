@@ -2,8 +2,8 @@
 	import type { PlanningEvent } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { detailHref } from '$lib/detail-hrefs';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { getTimetablePageState } from '../timetable-page.svelte';
 	import TimetablePlanningView from './TimetablePlanningView.svelte';
 
@@ -23,7 +23,7 @@
 		if ($page.url.pathname === path) {
 			return;
 		}
-		appGoto(href);
+		openDetailDrawer(href, currentRouteSurfaceHref($page.url));
 	}
 </script>
 

@@ -1,7 +1,7 @@
-import type { Subject, SubjectCategory } from '$lib/types/school';
+import type { UpdateSubjectInput } from '$lib/subjects/update-subject';
+import type { Subject } from '$lib/types/school';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { buildSubjectConfigCommand } from '$lib/api/subject-save-payload';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
@@ -10,43 +10,31 @@ import {
 	createSubjectForGradeLevel,
 	createSubjectImportIdsForGradeLevel,
 } from '$lib/subjects/create-subject-for-grade-level';
+import { updateSubject } from '$lib/subjects/update-subject';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
-export async function updateSubjectMutation(input: {
-	classSubjectId: string;
-	name: string;
-	category: SubjectCategory;
-	color: Subject['color'];
-	successMessage?: string;
-}): Promise<boolean> {
+export async function updateSubjectMutation(input: UpdateSubjectInput & { successMessage?: string }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	let classSubject;
-	let subject;
-	try {
-		classSubject = await client.entities.classSubjects.get(input.classSubjectId);
-		subject = await client.entities.subjects.get(classSubject.subjectId);
-	}
-	catch {
-		toast.error(get(t)('dataState.errorDescription'));
-		return false;
-	}
-
-	const result = await runMutation(() => client.commands.configureSubject(
-		buildSubjectConfigCommand(subject, {
-			id: subject.id,
-			name: toCanonicalCatalogText(input.name),
-			category: toCanonicalCatalogText(input.category) as SubjectCategory,
-			color: input.color,
-		}),
-	), { successMessage: input.successMessage });
+	const result = await runMutation(() => updateSubject(client, {
+		...input,
+		name: toCanonicalCatalogText(input.name),
+	}), { successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] });
 	return result !== null;
 }
 
 export async function createSubjectForClassMutation(input: {
 	classGroupId: string;
 	name: string;
-	category: SubjectCategory;
+	disciplineId?: string | null;
+	code?: string | null;
+	coefficient?: number | null;
+	reportModuleId?: string | null;
+	expectedReportConfigurationRevision?: number;
+	shortName?: string | null;
+	isOptional?: boolean;
+
+	categoryId: string;
 	color: Subject['color'];
 	successMessage?: string;
 }): Promise<string | null> {
@@ -68,12 +56,17 @@ export async function createSubjectForClassMutation(input: {
 			subjectId,
 			classSubjectId,
 			name: toCanonicalCatalogText(input.name),
-			category: toCanonicalCatalogText(input.category) as SubjectCategory,
+			disciplineId: input.disciplineId,
+			code: input.code ?? undefined,
+			coefficient: input.coefficient ?? undefined,
+			shortName: input.shortName,
+			isOptional: input.isOptional,
+			categoryId: input.categoryId,
 			color: input.color,
 			createdAt,
 		});
 		return classSubjectId;
-	}, { successMessage: input.successMessage });
+	}, { successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] });
 	return result ? classSubjectId : null;
 }
 
@@ -82,7 +75,15 @@ export async function createSubjectForGradeLevelMutation(input: {
 	academicYearId: string;
 	classGroupIds: string[];
 	name: string;
-	category: SubjectCategory;
+	disciplineId?: string | null;
+	code?: string | null;
+	coefficient?: number | null;
+	reportModuleId?: string | null;
+	expectedReportConfigurationRevision?: number;
+	shortName?: string | null;
+	isOptional?: boolean;
+
+	categoryId: string;
 	color: Subject['color'];
 	successMessage?: string;
 }): Promise<string | null> {
@@ -96,13 +97,9 @@ export async function createSubjectForGradeLevelMutation(input: {
 		toast.error(get(t)('subjects.noAcademicYear'));
 		return null;
 	}
-	if (input.classGroupIds.length === 0) {
-		toast.error(get(t)('subjects.noClassesForGradeLevel'));
-		return null;
-	}
 
 	const seed = Date.now().toString(36);
-	const { subjectId, gradeLevelSubjectId, classSubjectIdsByClassGroupId } = createSubjectImportIdsForGradeLevel(
+	const { subjectId, classSubjectIdsByClassGroupId } = createSubjectImportIdsForGradeLevel(
 		0,
 		input.gradeLevelId,
 		input.classGroupIds,
@@ -116,18 +113,23 @@ export async function createSubjectForGradeLevelMutation(input: {
 			academicYearId: input.academicYearId,
 			gradeLevelId: input.gradeLevelId,
 			subjectId,
-			gradeLevelSubjectId,
 			classSubjectIdsByClassGroupId,
 			name: toCanonicalCatalogText(input.name),
-			category: toCanonicalCatalogText(input.category) as SubjectCategory,
+			reportModuleId: input.reportModuleId,
+			expectedReportConfigurationRevision: input.expectedReportConfigurationRevision,
+			disciplineId: input.disciplineId,
+			code: input.code ?? undefined,
+			coefficient: input.coefficient ?? undefined,
+			shortName: input.shortName,
+			isOptional: input.isOptional,
+			categoryId: input.categoryId,
 			color: input.color,
 			createdAt,
 		});
-		return Object.values(classSubjectIdsByClassGroupId)[0] ?? gradeLevelSubjectId;
+		return subjectId;
 	}, {
 		successMessage: input.successMessage,
-		versionKeys: ['subjects'],
-		refresh: true,
+		versionKeys: ['subjects', 'reportCards'],
 	});
 	return result;
 }

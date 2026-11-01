@@ -1,5 +1,8 @@
+import type { UserScopeSelection } from '$lib/api/grant-scopes';
+import type { RenderedPermissionScope } from '$lib/api/permission-scope-labels';
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import { listAllEntityPages } from '$lib/api/entity-list-filters';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignment'];
@@ -8,7 +11,11 @@ type PermissionCatalogEntry = components['schemas']['PermissionCatalogEntry'];
 export type { PermissionCatalogEntry, StaffPermissionAssignment };
 
 export interface StaffPermissionAssignmentView extends StaffPermissionAssignment {
+	customScopes?: UserScopeSelection[];
+	useDefaultScopes?: boolean;
+	warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'];
 	scopeLabel: string;
+	renderedScopes: RenderedPermissionScope[];
 	tenantWide: boolean;
 	hasMissingScope: boolean;
 }
@@ -41,19 +48,22 @@ export async function loadPermissionCatalog(client: SchoolClient): Promise<Permi
 export async function loadStaffPermissionAssignments(
 	client: SchoolClient,
 	scope: { schoolId: string; academicYearId: string },
-): Promise<StaffPermissionAssignment[]> {
-	return client.entities.staffPermissionAssignments.list({
-		schoolId: scope.schoolId,
-		academicYearId: scope.academicYearId,
-		status: 'active',
-	}) ?? [];
+): Promise<(StaffPermissionAssignment & { customScopes?: UserScopeSelection[]; useDefaultScopes?: boolean; warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'] })[]> {
+	const [grants, manuals] = await Promise.all([
+		listAllEntityPages(query => client.entities.staffPermissionAssignments.list(query), { baseQuery: { ...scope, status: 'active' } }),
+		listAllEntityPages(query => client.entities.staffManualPermissionAssignments.list(query), { baseQuery: scope }),
+	]);
+	return [
+		...grants.filter(row => !row.sourceManualAssignmentId),
+		...manuals.map(source => ({ ...source, scopes: grants.find(row => row.sourceManualAssignmentId === source.id)?.scopes ?? [] })),
+	];
 }
 
 export async function buildStaffPermissionAssignmentViews(
 	client: SchoolClient,
-	assignments: readonly StaffPermissionAssignment[],
+	assignments: readonly (StaffPermissionAssignment & { customScopes?: UserScopeSelection[]; useDefaultScopes?: boolean; warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'] })[],
 	academicYearId: string,
-	translate?: (key: string) => string,
+	_translate?: (key: string) => string,
 ): Promise<StaffPermissionAssignmentView[]> {
 	if (assignments.length === 0) {
 		return [];
@@ -63,17 +73,22 @@ export async function buildStaffPermissionAssignmentViews(
 	const views: StaffPermissionAssignmentView[] = [];
 	for (let offset = 0; offset < assignments.length; offset += 100) {
 		const batch = assignments.slice(offset, offset + 100);
-		const rendered = await client.authorization.scopeRender({
-			academicYearId,
-			items: batch.map(({ permission, scopes }) => ({ permission, scopes })),
-		});
-		views.push(...batch.map((assignment, index) => ({
+		const scopedAssignments = batch.filter(row => row.scopes.length);
+		const rendered = scopedAssignments.length
+			? await client.authorization.scopeRender({
+					academicYearId,
+					items: scopedAssignments.map(({ permission, scopes }) => ({ permission, scopes })),
+				})
+			: { items: [] };
+		const scopesById = new Map(scopedAssignments.map((row, index) => [row.id, rendered.items[index]?.scopes ?? []]));
+		views.push(...batch.map(assignment => ({
 			...assignment,
+			renderedScopes: (scopesById.get(assignment.id) ?? []).filter(scope => scope.scope.kind !== 'school'),
 			scopeLabel: assignment.scopes.some(scope => scope.kind === 'school')
-				? translate?.('roles.wholeSchool') ?? 'Whole school'
-				: rendered.items[index]?.scopes.map(scope => scope.label).join('; ') ?? '—',
+				? ''
+				: scopesById.get(assignment.id)?.map(scope => scope.label).join('; ') || '—',
 			tenantWide: assignment.scopes.some(scope => scope.kind === 'school'),
-			hasMissingScope: rendered.items[index]?.scopes.some(scope => scope.missing) ?? false,
+			hasMissingScope: scopesById.get(assignment.id)?.some(scope => scope.missing) ?? false,
 		})));
 	}
 	return views;

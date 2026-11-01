@@ -51,6 +51,7 @@ export async function savePeriodDefinitionMutation(input: PeriodDefinitionSaveIn
 	const result = await runMutation(
 		() => client.commands.configurePeriodDefinition(command),
 		{
+			versionKeys: ['periodDefinitions', 'planning'],
 			successMessage: input.successMessage,
 			onSuccess: () => {
 				academicContext.upsertPeriodDefinition(entity);
@@ -86,6 +87,7 @@ export async function savePeriodDefinitionsBatchMutation(input: {
 			return entities;
 		},
 		{
+			versionKeys: ['periodDefinitions', 'planning'],
 			successMessage: input.successMessage,
 			onSuccess: (created) => {
 				for (const entity of created) {

@@ -3,10 +3,11 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { StaffMember, StaffRole, SubjectCategory } from '$lib/types/school';
 import {
 	DEFAULT_LIST_PAGE_SIZE,
-	entitiesByIds,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	paginatedList,
 	STAFF_LIST_ORDER,
-	staffAssignmentsForStaff,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
@@ -166,6 +167,10 @@ export function mapStaffMembers(
 
 		return {
 			id: member.id,
+			firstName: member.firstName ?? null,
+			lastName: member.lastName ?? null,
+			code: member.code ?? null,
+
 			name: `${member.firstName} ${member.lastName}`,
 			initials: `${member.firstName[0] ?? ''}${member.lastName[0] ?? ''}`,
 			photoUrl: member.photoUrl ?? null,
@@ -178,6 +183,7 @@ export function mapStaffMembers(
 				subjectsRaw,
 			),
 			email: member.email ?? '',
+			phone: member.phone ?? null,
 			classes: classesTaught,
 			mainClassId,
 			subjectsTaught: catalogSubjectIds,
@@ -190,19 +196,20 @@ export function mapStaffMembers(
 
 async function fetchStaffRelations(client: SchoolClient, staffIds: readonly string[]) {
 	const assignmentsRaw = await safeOptionalEntityList(() =>
-		client.entities.staffAssignments.list(staffAssignmentsForStaff(staffIds)));
+		listAllEntityPagesForIdFilters(
+			query => client.entities.staffAssignments.list(query),
+			[{ field: 'staffId', ids: staffIds }],
+		));
 	const classSubjectIds = uniqueIds(
 		assignmentsRaw
 			.map(assignment => assignment.classSubjectId)
 			.filter((id): id is string => Boolean(id)),
 	);
-	const classSubjectsRaw = classSubjectIds.length > 0
-		? await safeOptionalEntityList(() => client.entities.classSubjects.list(entitiesByIds(classSubjectIds)))
-		: [];
+	const classSubjectsRaw = await safeOptionalEntityList(() =>
+		listAllEntityPagesByIds(query => client.entities.classSubjects.list(query), classSubjectIds));
 	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
-	const subjectsRaw = subjectIds.length > 0
-		? await safeOptionalEntityList(() => client.entities.subjects.list(entitiesByIds(subjectIds)))
-		: [];
+	const subjectsRaw = await safeOptionalEntityList(() =>
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds));
 
 	return {
 		assignmentsRaw,
@@ -232,13 +239,17 @@ export async function fetchStaffMembers(
 	scope: { schoolId: string; academicYearId: string },
 ): Promise<StaffMember[]> {
 	const [staffRaw, classGroupsRaw] = await Promise.all([
-		client.entities.staffMembers.list({ schoolId: scope.schoolId, accountKind: 'human' }),
-		client.entities.classGroups.list({
-			schoolId: scope.schoolId,
-			academicYearId: scope.academicYearId,
+		listAllEntityPages(query => client.entities.staffMembers.list(query), {
+			baseQuery: { schoolId: scope.schoolId, accountKind: 'human' },
+		}),
+		listAllEntityPages(query => client.entities.classGroups.list(query), {
+			baseQuery: {
+				schoolId: scope.schoolId,
+				academicYearId: scope.academicYearId,
+			},
 		}),
 	]);
-	const staffIds = uniqueIds((staffRaw ?? []).map(member => member.id));
+	const staffIds = uniqueIds(staffRaw.map(member => member.id));
 	if (staffIds.length === 0) {
 		return [];
 	}
@@ -248,8 +259,8 @@ export async function fetchStaffMembers(
 	]);
 
 	return mapStaffMembers(
-		staffRaw ?? [],
-		classGroupsRaw ?? [],
+		staffRaw,
+		classGroupsRaw,
 		relations.assignmentsRaw,
 		relations.classSubjectsRaw,
 		relations.subjectsRaw,
@@ -272,12 +283,14 @@ export async function fetchStaffMemberById(
 			.map(assignment => assignment.classGroupId)
 			.filter((id): id is string => Boolean(id)),
 	);
-	const classGroupsRaw = await client.entities.classGroups.list({
-		schoolId,
-		$or: [
-			{ homeroomStaffId: staffId },
-			...(assignedClassIds.length > 0 ? [entitiesByIds(assignedClassIds)] : []),
-		],
+	const classGroupsRaw = await listAllEntityPages(query => client.entities.classGroups.list(query), {
+		baseQuery: {
+			schoolId,
+			$or: [
+				{ homeroomStaffId: staffId },
+				...(assignedClassIds.length > 0 ? [{ id: { $in: assignedClassIds } }] : []),
+			],
+		},
 	});
 	const ownerSubjectId = await resolveSchoolOwnerSubjectId(client, schoolId);
 	const members = mapStaffMembers(
@@ -301,31 +314,58 @@ export async function fetchSessionStaffProfile(
 	notificationEmail: string | null;
 	notificationPhone: string | null;
 }> {
-	const staff = await client.entities.staffMembers.get(staffId);
-	const ownerSubjectId = options?.isElevated
-		? staff.subjectId
-		: await resolveSchoolOwnerSubjectId(client, staff.schoolId);
-	const role = mapStaffRole(staff, ownerSubjectId);
+	try {
+		const staff = await client.entities.staffMembers.get(staffId);
+		const ownerSubjectId = options?.isElevated
+			? staff.subjectId
+			: await resolveSchoolOwnerSubjectId(client, staff.schoolId);
+		const role = mapStaffRole(staff, ownerSubjectId);
 
-	return {
-		profile: {
-			id: staff.id,
-			name: `${staff.firstName} ${staff.lastName}`,
-			initials: `${staff.firstName[0] ?? ''}${staff.lastName[0] ?? ''}`,
-			photoUrl: staff.photoUrl ?? null,
-			role,
-			department: mapDepartment(role, staff.id, [], [], []),
-			email: staff.email ?? '',
-			classes: [],
-			mainClassId: undefined,
-			subjectsTaught: [],
-			subjectLabels: [],
-			isActive: staff.isActive ?? true,
-			subjectId: staff.subjectId ?? null,
-		},
-		notificationEmail: staff.notificationEmail ?? null,
-		notificationPhone: staff.notificationPhone ?? null,
-	};
+		return {
+			profile: {
+				id: staff.id,
+				firstName: staff.firstName ?? null,
+				lastName: staff.lastName ?? null,
+				code: staff.code ?? null,
+
+				name: `${staff.firstName} ${staff.lastName}`,
+				initials: `${staff.firstName[0] ?? ''}${staff.lastName[0] ?? ''}`,
+				photoUrl: staff.photoUrl ?? null,
+				role,
+				department: mapDepartment(role, staff.id, [], [], []),
+				email: staff.email ?? '',
+				classes: [],
+				mainClassId: undefined,
+				subjectsTaught: [],
+				subjectLabels: [],
+				isActive: staff.isActive ?? true,
+				subjectId: staff.subjectId ?? null,
+			},
+			notificationEmail: staff.notificationEmail ?? null,
+			notificationPhone: staff.notificationPhone ?? null,
+		};
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 404)) {
+			return {
+				profile: {
+					id: staffId,
+					name: 'Staff',
+					initials: 'ST',
+					photoUrl: null,
+					role: 'staff',
+					department: '',
+					email: '',
+					classes: [],
+					isActive: true,
+					subjectId: null,
+				},
+				notificationEmail: null,
+				notificationPhone: null,
+			};
+		}
+		throw error;
+	}
 }
 
 export interface StaffPageRequest {
@@ -357,9 +397,11 @@ export async function fetchStaffMembersPage(
 		client.entities.staffMembers.list(staffFilter),
 		client.entities.staffMembers.count({ schoolId: scope.schoolId, accountKind: 'human' }).then(result => result.count),
 		scope.academicYearId
-			? client.entities.classGroups.list({
-					schoolId: scope.schoolId,
-					academicYearId: scope.academicYearId,
+			? listAllEntityPages(query => client.entities.classGroups.list(query), {
+					baseQuery: {
+						schoolId: scope.schoolId,
+						academicYearId: scope.academicYearId,
+					},
 				})
 			: Promise.resolve([]),
 	]);

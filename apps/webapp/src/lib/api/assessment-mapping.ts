@@ -1,6 +1,8 @@
 import type { components } from '$lib/api/schema';
 import type { AssessmentResultRow, Evaluation, EvaluationSubmission } from '$lib/types/school';
 
+import { roundedSample } from './grade-intervals';
+
 type AssessmentRaw = components['schemas']['Assessment'];
 type AssessmentResultRaw = components['schemas']['AssessmentResult'];
 
@@ -31,7 +33,7 @@ export function mapAssessmentSubmission(
 		studentId: result.studentId,
 		status: result.status
 			? (RESULT_STATUS_TO_UI[result.status] ?? 'missing')
-			: (typeof result.score === 'number' ? 'submitted' : 'missing'),
+			: (typeof result.score === 'number' || result.mentionId ? 'submitted' : 'missing'),
 		date: result.createdAt ? formatAssessmentDate(result.createdAt) : undefined,
 	};
 }
@@ -43,6 +45,9 @@ export function mapAssessmentResultRow(result: AssessmentResultRaw): AssessmentR
 		assessmentId: result.assessmentId,
 		score: typeof result.score === 'number' ? result.score : null,
 		status: result.status ?? null,
+		designation: result.designation,
+		mentionId: result.mentionId,
+		calculation: result.calculation,
 	};
 }
 
@@ -54,19 +59,19 @@ export function mapAssessmentToEvaluation(
 		results: AssessmentResultRaw[];
 	},
 ): Evaluation {
-	const scoredResults = sources.results.filter(result => typeof result.score === 'number');
+	const statistics = assessmentStatistics(sources.results);
 	const submissions = sources.results.map(mapAssessmentSubmission);
 	const submittedCount = submissions.filter(submission => submission.status === 'submitted').length;
-	const averageMark = scoredResults.length > 0
-		? scoredResults.reduce((sum, result) => sum + (result.score ?? 0), 0) / scoredResults.length
-		: 0;
 	const dueDate = formatAssessmentDate(assessment.dueAt);
 	const assignedDate = formatAssessmentDate(assessment.createdAt);
 	const startsAt = assessment.startsAt ? String(assessment.startsAt) : undefined;
 	const endsAt = assessment.endsAt ? String(assessment.endsAt) : undefined;
 
 	return {
+		marksRevision: assessment.marksRevision,
+		marksStatus: assessment.marksStatus,
 		id: assessment.id,
+		completedAt: assessment.completedAt ? String(assessment.completedAt) : undefined,
 		classId: assessment.classGroupId,
 		classSubjectId: assessment.classSubjectId,
 		title: assessment.title,
@@ -76,9 +81,8 @@ export function mapAssessmentToEvaluation(
 			assessment.startsAt ?? assessment.dueAt ?? assessment.completedAt ?? assessment.endsAt,
 		),
 		coefficient: assessment.coefficient ?? 1,
-		averageMark,
+		...statistics,
 		outOf: assessment.maxScore,
-		graded: scoredResults.length,
 		total: sources.classSize,
 		description: assessment.description ?? '',
 		dueDate: dueDate || undefined,
@@ -93,4 +97,15 @@ export function mapAssessmentToEvaluation(
 		submissions,
 		submittedCount,
 	};
+}
+
+export function assessmentStatistics(results: readonly Pick<AssessmentResultRaw, 'score' | 'designation' | 'mentionId' | 'calculation'>[]): Pick<Evaluation, 'graded' | 'averageMark' | 'averageOutOf' | 'averagePrecision' | 'gradingUpdating'> {
+	const scored = results.filter(row => row.designation !== 'absent' && row.designation !== 'exempt' && (typeof row.score === 'number' || row.mentionId));
+	const graded = results.filter(row => typeof row.score === 'number' || row.mentionId || row.designation === 'absent' || row.designation === 'exempt').length;
+	const calculation = scored.find(row => row.calculation)?.calculation;
+	if (calculation) {
+		const updating = scored.some(row => !row.calculation || row.calculation.policyRevision !== calculation.policyRevision || row.calculation.scaleId !== calculation.scaleId);
+		return { graded, gradingUpdating: updating, averageOutOf: calculation.maximum, averagePrecision: calculation.decimalPlaces, averageMark: updating ? 0 : roundedSample(scored.reduce((sum, row) => sum + row.calculation!.value, 0) / scored.length, calculation.decimalPlaces, calculation.roundingMode) };
+	}
+	return { graded, averageMark: scored.length ? scored.reduce((sum, row) => sum + (row.score ?? 0), 0) / scored.length : 0, ...(scored.some(row => row.mentionId) ? { gradingUpdating: true } : {}) };
 }

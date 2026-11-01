@@ -1,43 +1,29 @@
 import { T1_PERIOD_ID, T1_PERIOD_LABEL } from './constants';
 import type { DemoContext } from './types';
 
-/** Select an academic period (defaults to demo-ci T1). Prefers sessionStorage for reliability. */
+/** Select through the contextual picker; use the dashboard on unrelated routes. */
 export async function selectAcademicPeriod(
 	ctx: DemoContext,
 	label: RegExp = T1_PERIOD_LABEL,
 	periodId: string = T1_PERIOD_ID,
 ): Promise<boolean> {
 	const { page } = ctx;
-	await page.evaluate((id) => {
-		sessionStorage.setItem('edaya:periodId', id);
-	}, periodId);
-
-	// Prefer the period control that includes a month range (e.g. "Sep — Dec").
-	const periodToggle = page
-		.locator('button')
-		.filter({ hasText: /Trimestre|Term/i })
-		.filter({ hasText: /[A-Za-z]{3}\s*[—–-]/i })
-		.first();
-	const fallbackToggle = page.locator('button').filter({ hasText: /Trimestre|Term/i }).first();
-	const toggle = (await periodToggle.isVisible({ timeout: 3_000 }).catch(() => false))
-		? periodToggle
-		: fallbackToggle;
-	if (!(await toggle.isVisible({ timeout: 10_000 }).catch(() => false))) {
-		await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
-		return true;
+	const originalUrl = page.url();
+	const toggle = page.getByTestId('academic-period-trigger').last();
+	const useDashboard = !(await toggle.isVisible({ timeout: 3_000 }).catch(() => false));
+	if (useDashboard) {
+		await page.goto(`${ctx.base}/dashboard`, { waitUntil: 'domcontentloaded' });
 	}
-	const current = (await toggle.innerText().catch(() => '')).trim();
-	if (label.test(current)) {
-		return true;
+	await toggle.waitFor({ state: 'visible' });
+	if ((await toggle.getAttribute('data-period-id')) !== periodId) {
+		await toggle.click();
+		await page.getByRole('option', { name: label }).click();
 	}
-	await toggle.click();
-	const option = page.locator('button').filter({ hasText: label }).first();
-	if (!(await option.isVisible({ timeout: 5_000 }).catch(() => false))) {
-		await page.keyboard.press('Escape').catch(() => {});
-		await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
-		return true;
+	if ((await toggle.getAttribute('data-period-id')) !== periodId) {
+		throw new Error(`Academic term selection did not resolve to ${periodId}`);
 	}
-	await option.click();
-	await page.waitForTimeout(200);
+	if (useDashboard) {
+		await page.goto(originalUrl, { waitUntil: 'domcontentloaded' });
+	}
 	return true;
 }

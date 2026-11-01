@@ -68,7 +68,7 @@
 
 <DrawerEntityHeader name={localizedName} summary={subject.description}>
 	{#snippet chips()}
-		<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
+		<span class="rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] tabular-nums text-foreground/80">
 			{subject.hoursPerWeek === null ? '—' : $t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
 		</span>
 		<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
@@ -77,13 +77,13 @@
 	{/snippet}
 	{#snippet avatar()}
 		<span
-			class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-sm font-semibold text-primary-foreground"
+			class="flex h-14 w-14 items-center justify-center rounded-collection bg-primary font-display text-sm font-semibold text-primary-foreground"
 		>
 			{teacherInitials}
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<Button variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
+		<Button variant="outline" size="sm" onclick={() => modals.open('edit-subject')}>
 			{$t('common.edit')}
 		</Button>
 	{/snippet}
@@ -94,7 +94,7 @@
 	{/snippet}
 </DrawerEntityHeader>
 
-<SubjectFormModal subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
+<SubjectFormModal onLoadParticipationRevisions={teachingPage.onLoadParticipationRevisions} onLoadCategories={teachingPage.onLoadCategories} onCreateSchedule={teachingPage.performCreateSchedule} onCreateSubjectForClass={teachingPage.performCreateSubjectForClass} onUpdateSubject={teachingPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
 
 <ConfirmModal
 	bind:open={deleteOpen.open}

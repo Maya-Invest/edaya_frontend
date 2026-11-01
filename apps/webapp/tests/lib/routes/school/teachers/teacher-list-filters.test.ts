@@ -21,7 +21,7 @@ function teacher(id: string, overrides: Partial<Teacher> = {}): Teacher {
 	};
 }
 
-const defaultFilters = { q: '', sort: 'roster' as const, sortDir: 'asc' as const };
+const defaultFilters = { q: '', status: 'all' as const, sort: 'roster' as const, sortDir: 'asc' as const };
 
 describe('teacher selectors', () => {
 	it('reads teacher detail id from url', () => {
@@ -62,9 +62,19 @@ describe('teacher list filters', () => {
 		expect(cycleTeacherListSort({ sort: 'name', sortDir: 'desc' }, 'name')).toEqual({ sort: 'roster', sortDir: 'asc' });
 	});
 
-	it('uses full roster when search or sort is active', () => {
+	it('uses full roster when search, sort, or status is active', () => {
 		expect(teacherListUsesFullRoster(defaultFilters)).toBe(false);
 		expect(teacherListUsesFullRoster({ ...defaultFilters, q: 'ada' })).toBe(true);
 		expect(teacherListUsesFullRoster({ ...defaultFilters, sort: 'name' })).toBe(true);
+		expect(teacherListUsesFullRoster({ ...defaultFilters, status: 'inactive' })).toBe(true);
+	});
+
+	it('filters teachers by active status', () => {
+		const roster = [
+			teacher('1', { name: 'Alice Martin', isActive: true }),
+			teacher('2', { name: 'Bob Dupont', isActive: false }),
+		];
+		expect(filterTeacherList(roster, { ...defaultFilters, status: 'active' }).map(entry => entry.id)).toEqual(['1']);
+		expect(filterTeacherList(roster, { ...defaultFilters, status: 'inactive' }).map(entry => entry.id)).toEqual(['2']);
 	});
 });

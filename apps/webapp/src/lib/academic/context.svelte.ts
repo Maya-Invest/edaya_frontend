@@ -2,7 +2,9 @@ import type { AppShellData } from '$lib/api/shell-data';
 import type { Lang } from '$lib/i18n/dictionaries';
 import type { AcademicPeriod, AcademicYear, ClassNode, GradeLevel, PeriodDefinition, School } from '$lib/types/school';
 import { browser } from '$app/environment';
+import { academicScopeIdentity, nextAcademicScopeGeneration } from '$lib/academic/academic-scope';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
+import { resolveAcademicPeriodId, selectableAcademicPeriods } from '$lib/academic/period-selection';
 import { lang } from '$lib/i18n';
 import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 import {
@@ -11,6 +13,8 @@ import {
 	localizeGradeLevel,
 	localizePeriodDefinition,
 } from '$lib/i18n/catalog-view';
+import { readPreference, writePreference } from '$lib/preferences/storage';
+import { invalidatePageQueryCache } from '$lib/queries/page-query-cache';
 import { get } from 'svelte/store';
 
 const STORAGE_YEAR = 'edaya:yearId';
@@ -31,9 +35,13 @@ class AcademicContext {
 	studentCount = $state(0);
 	guardianCount = $state(0);
 	staffCount = $state(0);
+	teacherCount = $state(0);
 	shellReady = $state(false);
 	yearId = $state('');
 	periodId = $state('');
+	schoolScopeId = $state('');
+	/** Bumped when school/year/period identity changes so PageQuery cannot reuse loadedKey. */
+	scopeGeneration = $state(0);
 
 	periods = $derived(this.canonicalPeriods.map(period => localizeAcademicPeriod(period, this.uiLang)));
 	classes = $derived(this.canonicalClasses.map(node => localizeClassNode(node, this.uiLang)));
@@ -53,8 +61,10 @@ class AcademicContext {
 	}
 
 	private hydrateSelection() {
-		const storedYear = sessionStorage.getItem(STORAGE_YEAR);
-		const storedPeriod = sessionStorage.getItem(STORAGE_PERIOD);
+		const storedYear = readPreference('session', this.yearStorageKey())
+			?? (this.schoolScopeId ? readPreference('session', STORAGE_YEAR) : null);
+		const storedPeriod = readPreference('session', this.periodStorageKey())
+			?? (this.schoolScopeId ? readPreference('session', STORAGE_PERIOD) : null);
 		if (storedYear) {
 			this.yearId = storedYear;
 		}
@@ -67,8 +77,30 @@ class AcademicContext {
 		if (!browser) {
 			return;
 		}
-		sessionStorage.setItem(STORAGE_YEAR, this.yearId);
-		sessionStorage.setItem(STORAGE_PERIOD, this.periodId);
+		writePreference('session', this.yearStorageKey(), this.yearId);
+		writePreference('session', this.periodStorageKey(), this.periodId);
+	}
+
+	private yearStorageKey(): string {
+		return this.schoolScopeId ? `${STORAGE_YEAR}:${this.schoolScopeId}` : STORAGE_YEAR;
+	}
+
+	private periodStorageKey(): string {
+		return this.schoolScopeId ? `${STORAGE_PERIOD}:${this.schoolScopeId}` : STORAGE_PERIOD;
+	}
+
+	setSchoolScope(schoolId: string) {
+		if (!schoolId || this.schoolScopeId === schoolId) {
+			return;
+		}
+		const previous = this.scopeIdentity();
+		this.schoolScopeId = schoolId;
+		this.yearId = '';
+		this.periodId = '';
+		if (browser) {
+			this.hydrateSelection();
+		}
+		this.notifyScopeChange(previous);
 	}
 
 	hierarchy = $derived(buildClassHierarchy(this.classes, this.gradeLevels));
@@ -81,11 +113,9 @@ class AcademicContext {
 
 	periodsForYear = $derived(this.periods.filter(p => p.academicYearId === this.yearId));
 
-	period = $derived(
-		this.periods.find(p => p.id === this.periodId)
-		?? this.periodsForYear.at(-1)
-		?? this.periods[0],
-	);
+	selectablePeriodsForYear = $derived(selectableAcademicPeriods(this.periods, this.yearId));
+
+	period = $derived(this.selectablePeriodsForYear.find(p => p.id === this.periodId));
 
 	publishedPeriodsForYear = $derived(
 		this.publishedPeriods.filter(p => p.academicYearId === this.yearId),
@@ -134,18 +164,26 @@ class AcademicContext {
 	}
 
 	setYear(id: string) {
+		const previous = this.scopeIdentity();
 		this.yearId = id;
 		this.syncPeriodToYear();
 		this.persistSelection();
+		this.notifyScopeChange(previous);
 	}
 
 	setPeriod(id: string) {
+		if (!this.selectablePeriodsForYear.some(period => period.id === id)) {
+			return;
+		}
+		const previous = this.scopeIdentity();
 		this.periodId = id;
 		this.persistSelection();
+		this.notifyScopeChange(previous);
 	}
 
-	/** Year/period chosen during onboarding — survives empty shell bootstrap. */
+	/** Year/period chosen during onboarding — validated against the next shell catalog. */
 	applyOnboardingSelection(yearId: string, periodId: string) {
+		const previous = this.scopeIdentity();
 		if (yearId) {
 			this.yearId = yearId;
 		}
@@ -153,19 +191,12 @@ class AcademicContext {
 			this.periodId = periodId;
 		}
 		this.persistSelection();
+		this.notifyScopeChange(previous);
 	}
 
 	resolveSelectionForApi(): { academicYearId: string; academicPeriodId: string } | null {
 		const academicYearId = this.resolveAcademicYearIdForApi() ?? '';
-		const periodsForYear = academicYearId
-			? this.periods.filter(period => period.academicYearId === academicYearId)
-			: this.periods;
-		const published = periodsForYear.filter(period => period.status === 'published');
-		const academicPeriodId = this.periodId
-			|| published.at(-1)?.id
-			|| periodsForYear.at(-1)?.id
-			|| this.periods.at(-1)?.id
-			|| '';
+		const academicPeriodId = resolveAcademicPeriodId(this.periods, academicYearId, this.periodId);
 		if (!academicYearId || !academicPeriodId) {
 			return null;
 		}
@@ -183,26 +214,9 @@ class AcademicContext {
 	}
 
 	private syncPeriodToYear() {
-		const options = this.publishedPeriodsForYear.length > 0
-			? this.publishedPeriodsForYear
-			: this.periodsForYear;
-		if (options.length === 0) {
-			return;
-		}
-		if (!options.some(p => p.id === this.periodId)) {
-			this.periodId = options[options.length - 1]!.id;
-			this.persistSelection();
-		}
-	}
-
-	private alignYearWithPeriodCatalog() {
-		if (this.periodsForYear.length > 0 || this.periods.length === 0) {
-			return;
-		}
-		const yearIdFromPeriod = this.periods.find(p => p.academicYearId)?.academicYearId;
-		if (yearIdFromPeriod && yearIdFromPeriod !== this.yearId) {
-			this.yearId = yearIdFromPeriod;
-			this.syncPeriodToYear();
+		const periodId = resolveAcademicPeriodId(this.periods, this.yearId, this.periodId);
+		if (periodId !== this.periodId) {
+			this.periodId = periodId;
 			this.persistSelection();
 		}
 	}
@@ -219,8 +233,9 @@ class AcademicContext {
 			}
 		}
 		else {
+			const previous = this.scopeIdentity();
 			this.syncPeriodToYear();
-			this.alignYearWithPeriodCatalog();
+			this.notifyScopeChange(previous);
 		}
 	}
 
@@ -231,6 +246,7 @@ class AcademicContext {
 		this.studentCount = shell.studentCount;
 		this.guardianCount = shell.guardianCount;
 		this.staffCount = shell.staffCount;
+		this.teacherCount = shell.teacherCount;
 		this.init(shell.academicYears, shell.academicPeriods, shell.classes);
 		this.shellReady = true;
 	}
@@ -247,13 +263,29 @@ class AcademicContext {
 	}
 
 	reset() {
+		const previous = this.scopeIdentity();
 		this.clearShellCatalog();
 		this.yearId = '';
 		this.periodId = '';
+		this.schoolScopeId = '';
 		if (browser) {
 			sessionStorage.removeItem(STORAGE_YEAR);
 			sessionStorage.removeItem(STORAGE_PERIOD);
 		}
+		this.notifyScopeChange(previous);
+	}
+
+	private scopeIdentity(): string {
+		return academicScopeIdentity(this.schoolScopeId, this.yearId, this.periodId);
+	}
+
+	private notifyScopeChange(previous: string) {
+		const next = nextAcademicScopeGeneration(previous, this.scopeIdentity(), this.scopeGeneration);
+		if (!next.changed) {
+			return;
+		}
+		this.scopeGeneration = next.generation;
+		invalidatePageQueryCache();
 	}
 
 	/** Clears loaded catalog data without wiping year/period selection (e.g. before shell reload). */
@@ -267,6 +299,7 @@ class AcademicContext {
 		this.studentCount = 0;
 		this.guardianCount = 0;
 		this.staffCount = 0;
+		this.teacherCount = 0;
 		this.shellReady = false;
 		if (browser && !this.yearId) {
 			this.hydrateSelection();

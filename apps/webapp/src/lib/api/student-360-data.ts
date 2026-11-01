@@ -2,6 +2,7 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { HealthRecord, PedagogicalNote } from '$lib/types/school';
 import { recordsForStudent } from '$lib/api/entity-list-filters';
+import { formatDateInput } from '$lib/date/format';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -38,13 +39,6 @@ function splitHealthList(value?: string | null | string[]): string[] {
 	return value.split(',').map(entry => entry.trim()).filter(Boolean);
 }
 
-type ChronicCondition = HealthRecord['chronicConditions'][number];
-
-function mapChronicConditions(values: string[]): ChronicCondition[] {
-	const allowed = new Set<ChronicCondition>(['Asthme', 'Epilepsie', 'Diabete']);
-	return values.filter((value): value is ChronicCondition => allowed.has(value as ChronicCondition));
-}
-
 export function mapNoteCategory(
 	category?: string | null,
 	title?: string | null,
@@ -70,8 +64,12 @@ export function mapHealthProfiles(profilesRaw: StudentHealthProfileRaw[]): Recor
 			bloodType: profile.bloodType ?? '—',
 			allergies: splitHealthList(profile.allergies),
 			medications: splitHealthList(profile.medications),
-			chronicConditions: mapChronicConditions(splitHealthList(profile.medicalConditions)),
-			lastVisit: formatDate(profile.lastVisit),
+			chronicConditions: splitHealthList(profile.medicalConditions),
+			medicalConditionsText: profile.medicalConditions ?? '',
+			allergiesText: profile.allergies ?? '',
+			medicationsText: profile.medications ?? '',
+			lastVisit: formatDateInput(profile.lastVisit),
+			emergencyProtocols: profile.emergencyProtocols ?? '',
 			notes: profile.clinicalNotes ?? '',
 		};
 	}
@@ -88,6 +86,8 @@ export function mapPedagogicalNotes(notesRaw: StudentNoteRaw[]): PedagogicalNote
 			authorId: note.authorStaffId,
 			category: mapNoteCategory(note.category, note.title),
 			content: note.body,
+			title: note.title,
+			visibility: note.visibility,
 		}))
 		.sort((left, right) => right.date.localeCompare(left.date));
 }

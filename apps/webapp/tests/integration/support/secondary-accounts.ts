@@ -1,12 +1,14 @@
+import { chooseOption, selectControl } from './custom-select';
 import {
 	clickCreateButton,
 	fillPersonCreateDialogWithInvite,
 	openDialogButton,
-	selectComboboxOption,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
 } from '../../../scripts/qa-harness-ui';
+import { uiCommand } from './ui-command';
+import { apiFetch } from '../setup/journey-api';
 import { firstIdFromLinks } from '../../../scripts/qa-matrix-support';
 import type { MatrixEntities } from '../../../scripts/qa-matrix-support';
 import {
@@ -25,7 +27,6 @@ import {
 } from '../setup/journey-context';
 import {
 	createTeacherWithInvitationViaApi,
-	linkActorSubjectViaApi,
 	resendInvitationTokenViaApi,
 } from '../setup/journey-api';
 import { resolveApiUrl } from './integration-hosts';
@@ -55,25 +56,19 @@ async function inviteEducatorStaff(
 			},
 		});
 		if (!response.ok()) {
-			return null;
+			throw new Error(`Staff invitation HTTP ${response.status()}`);
 		}
 	}
 	finally {
 		await isolated.dispose();
 	}
 
-	await gotoApp(journey, '/school/staff');
-	await waitForPageQuery(page);
-	const row = page.locator('main').getByText(email, { exact: false }).first();
-	if (await row.isVisible({ timeout: 10_000 }).catch(() => false)) {
-		await row.click();
-		await page.waitForTimeout(800);
-		const fromUrl = page.url().match(/\/school\/staff\/([^/?]+)/)?.[1];
-		if (fromUrl) {
-			return fromUrl;
-		}
-	}
-	return firstIdFromLinks(page, /\/school\/staff\/([^/?]+)/);
+	const response = await apiFetch(page, base, '/core/entities/staff-members/list', { method: 'POST', data: {} });
+	if (!response.ok()) throw new Error(`Invited staff readback HTTP ${response.status()}`);
+	const staff = await response.json() as Array<{ id: string; email: string }>;
+	const invited = staff.filter(member => member.email === email);
+	if (invited.length !== 1) throw new Error(`Expected one invited staff member; found ${invited.length}`);
+	return invited[0]!.id;
 }
 
 async function resendStaffInvitation(journey: UiJourney, staffId: string): Promise<string | null> {
@@ -167,34 +162,16 @@ async function assignTeacherToClass(
 		return false;
 	}
 
-	const dialog = page.getByRole('dialog');
-	const classSelect = dialog.locator('select').first();
-	if (await classSelect.isVisible().catch(() => false)) {
-		await classSelect.selectOption(classId).catch(async () => {
-			const options = classSelect.locator('option');
-			if (await options.count() > 1) {
-				await classSelect.selectOption({ index: 1 });
-			}
-		});
-		await page.waitForTimeout(1_000);
-	}
-
-	const subjectSelect = dialog.locator('select').nth(1);
-	if (await subjectSelect.isVisible().catch(() => false)) {
-		const optionCount = await subjectSelect.locator('option').count();
-		if (optionCount > 1) {
-			await subjectSelect.selectOption({ index: 1 });
-		}
-	}
-	else {
-		const combo = dialog.getByRole('combobox').first();
-		if (await combo.isVisible().catch(() => false)) {
-			await selectComboboxOption(page, combo);
-		}
-	}
-
-	await submitDialog(page);
-	await waitForDialogClosed(page).catch(() => {});
+	const dialog = page.getByTestId('form-modal');
+	await chooseOption(selectControl(dialog, { name: /^(classe|class)$/i }), classId);
+	await chooseOption(selectControl(dialog, { name: /^(matière dans la classe|subject offering)$/i }), { index: 1 });
+	const response = await uiCommand(page, '/entities/teacher-assignments/save', () => submitDialog(page));
+	const assignment = response.request().postDataJSON() as { id: string };
+	await waitForDialogClosed(page);
+	const saved = await apiFetch(page, journey.ctx.base, `/core/entities/teacher-assignments/${assignment.id}`);
+	if (!saved.ok()) throw new Error(`Teacher assignment readback HTTP ${saved.status()}`);
+	const persisted = await saved.json() as { teacherId: string; classGroupId: string };
+	if (persisted.teacherId !== teacherId || persisted.classGroupId !== classId) throw new Error('Teacher assignment did not persist in the requested class');
 	return true;
 }
 
@@ -223,7 +200,7 @@ async function activateSecondaryAccount(
 export async function provisionSecondaryAccounts(
 	journey: UiJourney,
 	entities: MatrixEntities,
-): Promise<SecondaryAccounts | null> {
+): Promise<SecondaryAccounts> {
 	const { page, base } = journey.ctx;
 	const apiUrl = resolveApiUrl();
 	const appOrigin = base;
@@ -233,49 +210,39 @@ export async function provisionSecondaryAccounts(
 	const educatorEmail = createSecondaryEmail('educator');
 	const educatorPassword = createSecondaryPassword();
 
-	let teacherId: string | null = null;
-	let teacherToken: string | null = null;
-	let teacherOk = false;
+	let teacherId = '';
 	try {
 		const created = await createTeacherWithInvite(journey, teacherEmail);
+		if (!created.teacherId) {
+			throw new Error(`Teacher invite create failed for ${teacherEmail}: no teacher id`);
+		}
 		teacherId = created.teacherId;
-		teacherToken = created.token;
-		if (teacherId && !teacherToken) {
+		let teacherToken = created.token;
+		if (!teacherToken) {
 			teacherToken = await resendTeacherInvitation(journey, teacherId);
 		}
-		if (teacherId && !teacherToken) {
+		if (!teacherToken) {
 			teacherToken = await resendInvitationTokenViaApi(page, base, teacherId);
 		}
-		const resolvedTeacherId = teacherId;
-		const teacherActivation = resolvedTeacherId
-			? await activateTeacherSecondaryAccount(
-				apiUrl,
-				appOrigin,
-				teacherEmail,
-				teacherPassword,
-				'E2E Teacher',
-				teacherToken,
-				resolvedTeacherId,
-				subjectId => linkActorSubjectViaApi(page, base, { subjectId, teacherId: resolvedTeacherId }),
-			)
-			: await activateSecondaryAccount(
-				journey,
-				apiUrl,
-				appOrigin,
-				teacherEmail,
-				teacherPassword,
-				'E2E Teacher',
-				teacherToken,
+		const teacherActivation = await activateTeacherSecondaryAccount(
+			apiUrl,
+			appOrigin,
+			teacherEmail,
+			teacherPassword,
+			'E2E Teacher',
+			teacherToken,
+		);
+		if (!teacherActivation.ok) {
+			throw new Error(
+				`Teacher invitation did not activate for ${teacherEmail}: ${teacherActivation.detail ?? 'unknown'}`,
 			);
-		teacherOk = teacherActivation.ok;
-		if (teacherOk && teacherId) {
-			await assignTeacherToClass(journey, teacherId, entities.classId);
 		}
+		if (!await assignTeacherToClass(journey, teacherId, entities.classId)) throw new Error('Required teacher class assignment missing');
 		logStep(journey, {
 			step: 'secondary-teacher',
-			ok: teacherOk && Boolean(teacherId),
-			detail: teacherActivation.detail ? `${teacherEmail} (${teacherActivation.detail})` : teacherEmail,
-			entityId: teacherId ?? undefined,
+			ok: true,
+			detail: teacherEmail,
+			entityId: teacherId,
 		});
 	}
 	catch (err) {
@@ -284,21 +251,21 @@ export async function provisionSecondaryAccounts(
 			ok: false,
 			detail: err instanceof Error ? err.message : String(err),
 		});
+		throw err;
 	}
 
-	let educatorStaffId: string | null = null;
-	let educatorToken: string | null = null;
-	let educatorOk = false;
+	let educatorStaffId = '';
 	try {
-		educatorStaffId = await inviteEducatorStaff(journey, apiUrl, educatorEmail);
-		if (educatorStaffId) {
-			entities.staffId = educatorStaffId;
-			educatorToken = await resendStaffInvitation(journey, educatorStaffId);
-			if (!educatorToken) {
-				educatorToken = await resendInvitationTokenViaApi(page, base, educatorStaffId);
-			}
+		const createdStaffId = await inviteEducatorStaff(journey, apiUrl, educatorEmail);
+		if (!createdStaffId) {
+			throw new Error(`Educator staff invite failed for ${educatorEmail}: no staff id`);
 		}
-		const resolvedEducatorStaffId = educatorStaffId;
+		educatorStaffId = createdStaffId;
+		entities.staffId = educatorStaffId;
+		let educatorToken = await resendStaffInvitation(journey, educatorStaffId);
+		if (!educatorToken) {
+			educatorToken = await resendInvitationTokenViaApi(page, base, educatorStaffId);
+		}
 		const educatorActivation = await activateSecondaryAccount(
 			journey,
 			apiUrl,
@@ -307,16 +274,18 @@ export async function provisionSecondaryAccounts(
 			educatorPassword,
 			'E2E Educator',
 			educatorToken,
-			resolvedEducatorStaffId
-				? () => resendStaffInvitation(journey, resolvedEducatorStaffId)
-				: undefined,
+			() => resendStaffInvitation(journey, educatorStaffId),
 		);
-		educatorOk = educatorActivation.ok;
+		if (!educatorActivation.ok) {
+			throw new Error(
+				`Educator invitation did not activate for ${educatorEmail}: ${educatorActivation.detail ?? 'unknown'}`,
+			);
+		}
 		logStep(journey, {
 			step: 'secondary-educator',
-			ok: educatorOk && Boolean(educatorStaffId),
-			detail: educatorActivation.detail ? `${educatorEmail} (${educatorActivation.detail})` : educatorEmail,
-			entityId: educatorStaffId ?? undefined,
+			ok: true,
+			detail: educatorEmail,
+			entityId: educatorStaffId,
 		});
 	}
 	catch (err) {
@@ -325,17 +294,7 @@ export async function provisionSecondaryAccounts(
 			ok: false,
 			detail: err instanceof Error ? err.message : String(err),
 		});
-	}
-
-	if (!teacherOk || !educatorOk || !teacherId || !educatorStaffId) {
-		const partial: SecondaryAccounts = {};
-		if (teacherOk && teacherId) {
-			partial.teacher = { email: teacherEmail, password: teacherPassword, entityId: teacherId };
-		}
-		if (educatorOk && educatorStaffId) {
-			partial.educator = { email: educatorEmail, password: educatorPassword, entityId: educatorStaffId };
-		}
-		return partial.teacher || partial.educator ? partial : null;
+		throw err;
 	}
 
 	return {

@@ -1,5 +1,5 @@
 /**
- * Human-readable test procedure + inputs for QA matrix Excel report.
+ * Human-readable test procedure + inputs for QA matrix CSV report.
  * Mirrors qa-matrix-scenarios.ts / filter-setup-registry.ts behaviour.
  */
 import type { QaTemplateRow } from './qa-template-matrix.manual';
@@ -31,7 +31,7 @@ export function describeTestExactly(row: QaTemplateRow): string {
 		if (action.includes('Redirect')) return 'Navigate to route; assert browser redirects to /login.';
 		if (action.includes('succès')) return 'Fill #login-password-email + #login-password; click Se connecter; assert URL leaves /login.';
 		if (action.includes('erreur')) return 'Submit login with wrong password; assert inline error message visible.';
-		if (action.includes('Banner API')) return 'Load /login; assert API connection banner state matches /auth/get-session.';
+		if (action.includes('Banner API')) return 'Load /login; assert API connection banner state matches /auth/edaya/methods.';
 		if (action.includes('démo')) return 'Open /login/demo; click demo persona button; assert redirect to app shell.';
 		if (action.includes('invitation')) return 'Open /invite/[token]; assert signup/login flow or error for token.';
 		return 'Auth page smoke — form controls and navigation.';
@@ -74,7 +74,7 @@ export function describeTestExactly(row: QaTemplateRow): string {
 	}
 
 	if (action === 'Navigation directe — contenu visible') {
-		return `Cold-navigate to ${ep}; waitForPageQuery; assert main/table/[data-testid] OR aside[aria-label] drawer visible (15s for student routes).`;
+		return `Cold-navigate to ${ep}; waitForPageQuery; assert main/table/[data-testid] OR [role="dialog"].ui-drawer drawer visible (15s for student routes).`;
 	}
 
 	if (/^Redirect — cible attendue$/i.test(action)) {
@@ -106,7 +106,7 @@ export function describeTestExactly(row: QaTemplateRow): string {
 			return 'Open Add academic year; fill start/end dates only (no name field); submit; assert heading is derived YYYY-YYYY.';
 		}
 		if (ep.includes('/school/events')) return 'Open Add incident dialog; fill fields; submit if enabled.';
-		if (ep.includes('/configuration/classes')) return 'Open Add class dialog; fillClassCreateDialog; assert modal closes.';
+		if (ep.includes('/configuration/structure/classes')) return 'Open Add class dialog; fillClassCreateDialog; assert modal closes.';
 		if (action.includes('élève') && ep.includes('/school/students')) {
 			return 'clickCreateButton; fillStudentCreateDialog; assert no lifecycle console error; modal closes.';
 		}
@@ -139,7 +139,7 @@ export function describeTestExactly(row: QaTemplateRow): string {
 	}
 
 	if (/export/i.test(action)) {
-		return 'Open list-more-menu; click Sélectionner/Select (not stub Exporter); check first row; click enabled Exporter on selection bar. Empty list → N/A.';
+		return 'Open collection-menu; click Sélectionner/Select (not stub Exporter); check first row; click enabled Exporter on selection bar. Empty list → N/A.';
 	}
 
 	if (/import/i.test(action)) {
@@ -216,11 +216,26 @@ function describeFilterTest(row: QaTemplateRow): string {
 	if (ep === '/configuration/academic' && /filtres liste/i.test(action)) {
 		return 'Academic years list: interact with status filter combobox/select.';
 	}
-	if (ep === '/configuration/subjects' && /filtre niveau/i.test(action)) {
+	if (ep === '/configuration/structure/subjects' && /filtre niveau/i.test(action)) {
 		return 'goto ?gradeLevel={gradeLevelId}; assert subject fixture name in list.';
 	}
-	if (ep === '/configuration/discipline' && /filtre kind/i.test(action)) {
+	if (ep === '/configuration/period-grid' && /sélecteur année/i.test(action)) {
+		return 'Assert the period-grid year select is visible.';
+	}
+	if (ep === '/configuration/period-grid' && /wizard|périodes/i.test(action)) {
+		return 'Open the weekly period-grid quick setup and assert a preset is listed.';
+	}
+	if (ep === '/configuration/other' && /liste des catalogues/i.test(action)) {
+		return 'Assert grade scales, disciplinary catalog, and subject categories in the left list.';
+	}
+	if (ep === '/configuration/other/subject-categories' && /crud catégorie/i.test(action)) {
+		return 'Create a subject category and assert its name in the table.';
+	}
+	if (ep === '/configuration/other/discipline' && /filtre kind/i.test(action)) {
 		return 'Assert discipline fixture entry visible; optional kind combobox.';
+	}
+	if (ep === '/configuration/permission-profiles' && /recherche nom/i.test(action)) {
+		return 'Search permission profiles by name and verify matching and empty results.';
 	}
 	if (ep.includes('/activities') && /filtre/i.test(action)) {
 		return 'Activities category filter combobox.';
@@ -273,7 +288,7 @@ export function describeTestInputs(row: QaTemplateRow): string {
 	if (ep === '/school/calendar' && /filtre/i.test(action)) {
 		return 'filterFixtures.calendarByType[type].title; URL ?type= or list-filter';
 	}
-	if (ep === '/configuration/subjects' && /filtre niveau/i.test(action)) {
+	if (ep === '/configuration/structure/subjects' && /filtre niveau/i.test(action)) {
 		return 'URL ?gradeLevel={gradeLevelId}; filterFixtures.subjectsByGradeLevel[name]';
 	}
 	if (ep === '/finance/payment' && /filtre classe/i.test(action)) {

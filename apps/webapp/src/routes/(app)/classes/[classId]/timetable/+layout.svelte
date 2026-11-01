@@ -8,9 +8,9 @@
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
-	import { PlanningState, setPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import TimetableList from './components/TimetableList.svelte';
 	import TimetablePageHydrator from './components/TimetablePageHydrator.svelte';
+	import { PlanningState, setPlanningState } from './planning-state.svelte';
 	import {
 		TimetablePageState,
 		setTimetablePageState,

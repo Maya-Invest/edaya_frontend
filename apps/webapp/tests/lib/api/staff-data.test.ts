@@ -1,11 +1,11 @@
-import { classSubject, staffMember, subject } from '$tests/support/openapi-fixtures';
-import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
-import { describe, expect, it } from 'bun:test';
 import {
 	mapDepartment,
 	mapStaffMembers,
 	mapStaffRole,
 } from '$lib/api/staff-data';
+import { classSubject, staffMember, subject } from '$tests/support/openapi-fixtures';
+import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
+import { describe, expect, it } from 'bun:test';
 
 const academicYearId = '2025';
 
@@ -60,9 +60,9 @@ const classSubjectsRaw = [
 ];
 
 const subjectsRaw = [
-	subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
-	subject({ id: 'subj-sci', name: 'Natural Sciences', code: 'SCI', defaultCoefficient: 2, category: 'Scientifique', color: 'sky' }),
-	subject({ id: 'subj-hist', name: 'History & Geography', code: 'HIST', defaultCoefficient: 2, category: 'Sciences humaines', color: 'warm' }),
+	subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', coefficient: 3 }),
+	subject({ id: 'subj-sci', name: 'Natural Sciences', code: 'SCI', coefficient: 2, category: 'Scientifique', color: 'sky' }),
+	subject({ id: 'subj-hist', name: 'History & Geography', code: 'HIST', coefficient: 2, category: 'Sciences humaines', color: 'warm' }),
 ];
 
 describe('staff role mapping', () => {

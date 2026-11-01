@@ -1,6 +1,6 @@
 import type { OnboardingPeriodDraft, OnboardingSchoolDraft } from '$lib/onboarding/types';
 
-export function maxPeriodCount(type: OnboardingSchoolDraft['periodType']): number {
+export function periodCount(type: OnboardingSchoolDraft['periodType']): number {
 	return type === 'trimester' ? 3 : 2;
 }
 
@@ -12,7 +12,7 @@ export function periodLabelForIndex(
 	return type === 'trimester' ? `Trimestre ${number}` : `Semestre ${number}`;
 }
 
-export function periodTemplateDates(
+function preferredPeriodDates(
 	type: OnboardingSchoolDraft['periodType'],
 	index: number,
 	yearStart: string,
@@ -37,6 +37,31 @@ export function periodTemplateDates(
 	return { start: `${endYear}-01-05`, end: yearEnd };
 }
 
+/** Keep the usual school breaks when they fit; otherwise split the selected year. */
+export function periodTemplateDates(
+	type: OnboardingSchoolDraft['periodType'],
+	index: number,
+	yearStart: string,
+	yearEnd: string,
+): { start: string; end: string } {
+	const count = periodCount(type);
+	const preferred = Array.from({ length: count }, (_, i) => preferredPeriodDates(type, i, yearStart, yearEnd));
+	if (preferred.every((period, i) => period.start >= yearStart && period.end <= yearEnd
+		&& period.start <= period.end && (i === 0 || preferred[i - 1]!.end < period.start))) {
+		return preferred[index]!;
+	}
+	const start = Date.parse(`${yearStart}T00:00:00.000Z`);
+	const end = Date.parse(`${yearEnd}T00:00:00.000Z`);
+	const days = Math.round((end - start) / 86400000) + 1;
+	if (!Number.isFinite(days) || days < count)
+		return { start: '', end: '' };
+	const dateAt = (offset: number) => new Date(start + offset * 86400000).toISOString().slice(0, 10);
+	return {
+		start: dateAt(Math.floor(index * days / count)),
+		end: dateAt(Math.floor((index + 1) * days / count) - 1),
+	};
+}
+
 export function createDefaultPeriod(
 	type: OnboardingSchoolDraft['periodType'],
 	index: number,
@@ -57,41 +82,18 @@ export function createInitialPeriods(
 	yearStart: string,
 	yearEnd: string,
 ): OnboardingPeriodDraft[] {
-	return [createDefaultPeriod(type, 0, yearStart, yearEnd)];
+	return Array.from({ length: periodCount(type) }, (_, index) => createDefaultPeriod(type, index, yearStart, yearEnd));
 }
 
-export function canAddPeriod(school: OnboardingSchoolDraft): boolean {
-	return school.periods.length < maxPeriodCount(school.periodType);
-}
-
-export function addPeriod(school: OnboardingSchoolDraft): OnboardingSchoolDraft {
-	if (!canAddPeriod(school)) {
+/** Restore the type's fixed count while retaining editable values in existing slots. */
+export function normalizePeriodCount(school: OnboardingSchoolDraft): OnboardingSchoolDraft {
+	const count = periodCount(school.periodType);
+	if (school.periods.length === count)
 		return school;
-	}
-
-	const index = school.periods.length;
 	return {
 		...school,
-		periods: [
-			...school.periods,
-			createDefaultPeriod(
-				school.periodType,
-				index,
-				school.academicYearStart,
-				school.academicYearEnd,
-			),
-		],
-	};
-}
-
-export function removePeriod(school: OnboardingSchoolDraft, periodId: string): OnboardingSchoolDraft {
-	if (school.periods.length <= 1) {
-		return school;
-	}
-
-	return {
-		...school,
-		periods: school.periods.filter(period => period.id !== periodId),
+		periods: Array.from({ length: count }, (_, index) => school.periods[index]
+			?? createDefaultPeriod(school.periodType, index, school.academicYearStart, school.academicYearEnd)),
 	};
 }
 
@@ -100,7 +102,7 @@ export function setPeriodType(
 	type: OnboardingSchoolDraft['periodType'],
 ): OnboardingSchoolDraft {
 	if (school.periodType === type) {
-		return school;
+		return normalizePeriodCount(school);
 	}
 
 	return {

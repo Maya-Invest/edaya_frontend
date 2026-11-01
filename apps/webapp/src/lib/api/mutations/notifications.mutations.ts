@@ -1,92 +1,28 @@
 import type { GuardianNotificationSettings } from '$lib/api/account-data';
-import type { components } from '$lib/api/schema';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 
-type GuardianContactMethod = components['schemas']['Guardian']['contactMethods'][number];
-
 export interface GuardianNotificationPreferencesInput {
 	guardianId: string;
+	phone: string | null;
+	alternativePhone: string | null;
+	email: string | null;
 	emailNotificationsEnabled: boolean;
 	smsNotificationsEnabled: boolean;
-	notificationEmail?: string | null;
-	notificationPhone?: string | null;
-	links: Array<{
-		studentId: string;
-		receivesAcademicReports: boolean;
-		receivesAttendanceAlerts: boolean;
-	}>;
-}
-
-function mapContactMethods(
-	current: GuardianContactMethod[],
-	emailNotificationsEnabled: boolean,
-	smsNotificationsEnabled: boolean,
-): GuardianContactMethod[] {
-	if (current.length === 0) {
-		return current;
-	}
-	return current.map((method) => {
-		if (method.type === 'email') {
-			return { ...method, allowsNotifications: emailNotificationsEnabled };
-		}
-		if (method.type === 'phone' || method.type === 'sms' || method.type === 'whatsapp') {
-			return { ...method, allowsNotifications: smsNotificationsEnabled };
-		}
-		return method;
-	});
+	pushNotificationsEnabled: boolean;
+	links: Array<{ studentId: string; receivesAcademicReports: boolean; receivesAttendanceAlerts: boolean }>;
 }
 
 export async function saveGuardianNotificationPreferencesMutation(
 	input: GuardianNotificationPreferencesInput,
-	options?: {
-		current?: GuardianNotificationSettings;
-		successMessage?: string;
-	},
+	options?: { current?: GuardianNotificationSettings; successMessage?: string },
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const current = options?.current;
-	const contactMethods = mapContactMethods(
-		current?.contactMethods ?? [],
-		input.emailNotificationsEnabled,
-		input.smsNotificationsEnabled,
-	);
-
-	const result = await runMutation(async () => {
-		await client.commands.updateNotificationContact({
-			notificationEmail: input.notificationEmail ?? null,
-			notificationPhone: input.notificationPhone ?? null,
-		});
-		await client.commands.updateGuardianContactMethods({
-			guardianId: input.guardianId,
-			contactMethods,
-			hasAccess: current?.hasAccess ?? true,
-		});
-		for (const link of input.links) {
-			const existingLink = current?.links.find(entry => entry.studentId === link.studentId);
-			if (!existingLink) {
-				continue;
-			}
-			await client.commands.updateGuardianStudentLink({
-				guardianId: input.guardianId,
-				studentId: link.studentId,
-				relationship: existingLink.relationship,
-				isPrimary: existingLink.isPrimary,
-				isBillingContact: existingLink.isBillingContact,
-				legalGuardian: existingLink.legalGuardian,
-				canPickup: existingLink.canPickup,
-				emergencyContactPriority: existingLink.emergencyContactPriority,
-				receivesAcademicReports: link.receivesAcademicReports,
-				receivesAttendanceAlerts: link.receivesAttendanceAlerts,
-				contactRestrictions: existingLink.contactRestrictions,
-				notes: existingLink.notes,
-			});
-		}
-		return true;
-	}, {
+	const { links, ...profile } = input;
+	const result = await runMutation(() => client.commands.updateGuardianProfile({ ...profile, studentNotificationPreferences: links }), {
 		successMessage: options?.successMessage,
+		versionKeys: ['guardians', 'students', 'inbox'],
 	});
-
 	return result !== null;
 }
 
@@ -105,7 +41,7 @@ export async function saveNotificationContactMutation(
 			notificationEmail: input.notificationEmail ?? null,
 			notificationPhone: input.notificationPhone ?? null,
 		}),
-		{ successMessage: options?.successMessage },
+		{ successMessage: options?.successMessage, versionKeys: ['inbox'] },
 	);
 	return result !== null;
 }
@@ -114,7 +50,7 @@ export async function markDeliveryReadMutation(deliveryId: string): Promise<bool
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => client.commands.markDeliveryRead({ deliveryId }),
-		{ errorMessage: 'Unable to mark this message as read.' },
+		{ errorMessage: 'Unable to mark this message as read.', versionKeys: ['inbox'] },
 	);
 	return result !== null;
 }

@@ -1,6 +1,6 @@
 /**
  * Thin seed-id ↔ template-id map for legacy drafts and mnemonic class ids.
- * Not Ivory Coast fixture content — display names come from the structure-templates API.
+ * Not Ivory Coast fixture content — display names come from the canonical dataset.
  */
 export const LEGACY_GL_TO_API_GRADE_LEVEL_ID = {
 	'gl-6': 'ci-college:6EME',

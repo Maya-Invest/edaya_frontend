@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
-	import { GraduationCap } from '$lib/icons';
+	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
 
 	interface Props {
 		title: string;
@@ -21,19 +21,14 @@
 	<main class="flex flex-1 items-center justify-center p-6">
 		<div class="w-full max-w-lg animate-fade-in">
 			<div class="mb-8 flex flex-col items-center text-center">
-				<div
-					class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-panel"
-				>
-					<GraduationCap class="h-7 w-7" />
-				</div>
-				<p class="font-mono text-xs uppercase tracking-widest text-muted-foreground">EDAYA</p>
+				<BrandLogo variant="horizontal" width={144} />
 				<h1 class="font-display text-3xl font-semibold">{title}</h1>
 				{#if subtitle}
 					<p class="mt-2 max-w-sm text-sm text-muted-foreground">{subtitle}</p>
 				{/if}
 			</div>
 
-			<section class="rounded-2xl border border-border bg-card p-5 shadow-soft">
+			<section class="rounded-collection border border-border bg-card p-5 shadow-soft">
 				{@render children()}
 			</section>
 

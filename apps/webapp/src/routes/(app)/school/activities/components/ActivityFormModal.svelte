@@ -154,7 +154,7 @@
 	<Button
 		variant="outline"
 		size="sm"
-		class="rounded-full"
+
 		{disabled}
 		{title}
 		onclick={() => (open = true)}

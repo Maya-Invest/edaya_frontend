@@ -2,11 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import {
 	readClassGroupsListFilters,
 	writeClassGroupsListFilters,
-} from '../../../src/routes/(app)/configuration/classes/lib/class-groups-list-filters';
+} from '../../../src/routes/(app)/configuration/structure/classes/lib/class-groups-list-filters';
 import {
 	readGradeLevelsListFilters,
 	writeGradeLevelsListFilters,
-} from '../../../src/routes/(app)/configuration/grade-levels/lib/grade-levels-list-filters';
+} from '../../../src/routes/(app)/configuration/structure/levels/lib/grade-levels-list-filters';
 import {
 	readTeacherAssignmentsListFilters,
 	writeTeacherAssignmentsListFilters,
@@ -53,7 +53,7 @@ describe('route-local URL list filters', () => {
 	});
 
 	it('round-trips class-group search and grade-level facet', () => {
-		const href = writeClassGroupsListFilters(url('/configuration/classes'), {
+		const href = writeClassGroupsListFilters(url('/configuration/structure/classes'), {
 			q: '6e',
 			gradeLevel: 'gl-6',
 		});

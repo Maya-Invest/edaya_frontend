@@ -5,4 +5,4 @@
 	const { s, size = 'lg' }: { s: Student; size?: 'list' | 'lg' } = $props();
 </script>
 
-<PersonAvatar name={s.name} initials={s.initials} photoUrl={s.photoUrl} {size} />
+<PersonAvatar name={s.name} initials={s.initials} photoUrl={s.photoUrl} {size} class="rounded-full" />

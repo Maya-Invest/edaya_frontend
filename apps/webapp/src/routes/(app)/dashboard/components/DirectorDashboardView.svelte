@@ -1,0 +1,452 @@
+<script lang="ts">
+	import type { ResolvedPathname } from '$app/types';
+	import type { SchoolOverviewResponse } from '$lib/api/dashboard-data';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { formatLocaleDate } from '$lib/date/format';
+	import { locale, t } from '$lib/i18n';
+	import {
+		AlertTriangle,
+		BookOpen,
+		CalendarX2,
+		ChevronRight,
+		FileSpreadsheet,
+		Sparkle,
+		Users,
+		Wallet,
+	} from '$lib/icons';
+	import { appPath } from '$lib/navigation/app-navigation';
+	import { dashboardActionHref, dashboardAttendanceTodayHref, dashboardClassStudentsHref } from '$lib/navigation/dashboard-links';
+	import { BADGE, BADGE_DANGER, BADGE_WARN } from '$lib/ui-tones';
+	import { cn } from '$lib/utils';
+
+	const { overview }: { overview: SchoolOverviewResponse } = $props();
+
+	const kpis = $derived(overview.kpis);
+	const areaHealth = $derived(overview.areaHealth);
+	const attendanceTodayHref = $derived(dashboardAttendanceTodayHref(academicContext.classes));
+
+	const actionModuleKeys: Record<
+		SchoolOverviewResponse['actionItems'][number]['key'],
+		string
+	> = {
+		overdue_fees: 'dashboard.module.finance',
+		unpublished_report_cards: 'dashboard.module.reportCards',
+		pending_justifications: 'dashboard.module.students',
+		pending_student_photos: 'dashboard.module.students',
+		high_severity_incidents: 'dashboard.module.schoolLife',
+		incomplete_grading: 'dashboard.module.evaluations',
+	};
+
+	function actionHref(key: SchoolOverviewResponse['actionItems'][number]['key']): ResolvedPathname {
+		return dashboardActionHref(key, academicContext.classes);
+	}
+
+	const upcomingKindLabel: Record<SchoolOverviewResponse['upcoming'][number]['kind'], string> = {
+		calendar: 'dashboard.upcoming.calendar',
+		fee_due: 'dashboard.upcoming.feeDue',
+		report_card_deadline: 'dashboard.upcoming.reportCardDeadline',
+		exam: 'dashboard.upcoming.exam',
+		holiday: 'dashboard.upcoming.holiday',
+	};
+
+	const riskBadgeClass: Record<
+		SchoolOverviewResponse['classRiskRows'][number]['riskLevel'],
+		string
+	> = {
+		normal: BADGE,
+		watch: BADGE_WARN,
+		needs_action: BADGE_DANGER,
+	};
+
+	const riskLabelKey: Record<
+		SchoolOverviewResponse['classRiskRows'][number]['riskLevel'],
+		string
+	> = {
+		normal: 'dashboard.classRisk.normal',
+		watch: 'dashboard.classRisk.watch',
+		needs_action: 'dashboard.classRisk.needsAction',
+	};
+
+	const kpiToneClass = {
+		primary: 'bg-primary text-primary-foreground',
+		sky: 'bg-secondary text-foreground/80',
+		warn: 'bg-highlight-soft text-highlight',
+		destructive: 'bg-destructive/10 text-destructive',
+	} as const;
+
+	function formatAmount(amount: number): string {
+		return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(amount);
+	}
+
+	function formatPercent(value: number | null): string {
+		return value === null ? '—' : `${value}%`;
+	}
+
+	function actionTitle(key: SchoolOverviewResponse['actionItems'][number]['key']): string {
+		return $t(`dashboard.action.${key}`);
+	}
+
+	function actionMeta(item: SchoolOverviewResponse['actionItems'][number]): string {
+		if (item.key === 'overdue_fees' && item.amount !== undefined) {
+			return $t('dashboard.action.overdueFeesMeta', {
+				amount: formatAmount(item.amount),
+				module: $t(actionModuleKeys[item.key]),
+			});
+		}
+		return $t('dashboard.action.meta', {
+			count: item.count,
+			module: $t(actionModuleKeys[item.key]),
+		});
+	}
+
+	function classHref(classGroupId: string): ResolvedPathname {
+		return dashboardClassStudentsHref(classGroupId, academicContext.classes);
+	}
+
+	function healthMetric(value: string | number | null, warn = false): string {
+		return cn('font-sans text-xl font-semibold tabular-nums', warn && 'text-highlight');
+	}
+</script>
+
+<div class="animate-fade-in mx-auto w-full max-w-[1400px] space-y-6 overflow-y-auto p-4 md:p-6">
+	<!-- Top KPIs -->
+	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+		<a
+			href={appPath('/(app)/school/students/[[id]]')}
+			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+		>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', kpiToneClass.primary)}>
+				<Users class="h-4 w-4" />
+			</div>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.studentCount}</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.students')}</p>
+		</a>
+
+		{#snippet attendanceTodayBody()}
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', kpiToneClass.sky)}>
+				<CalendarX2 class="h-4 w-4" />
+			</div>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">
+				{formatPercent(kpis.attendanceRateToday)}
+			</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.attendanceToday')}</p>
+		{/snippet}
+		{#if attendanceTodayHref}
+			<a
+				href={attendanceTodayHref}
+				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+			>
+				{@render attendanceTodayBody()}
+			</a>
+		{:else}
+			<div class="rounded-collection border border-border bg-card p-4 shadow-soft">
+				{@render attendanceTodayBody()}
+			</div>
+		{/if}
+
+		<a
+			href={appPath('/(app)/finance/billing/[[id]]')}
+			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+		>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', kpis.overdueFeeCount > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
+				<Wallet class="h-4 w-4" />
+			</div>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.overdueFeeCount}</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.overdueFees')}</p>
+		</a>
+
+		<a
+			href={appPath('/(app)/configuration/structure/details')}
+			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+		>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', (kpis.unpublishedReportCardCount ?? 0) > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
+				<FileSpreadsheet class="h-4 w-4" />
+			</div>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.unpublishedReportCardCount ?? '—'}</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.reportCards')}</p>
+		</a>
+
+		<a
+			href={appPath('/(app)/school/events/[[id]]')}
+			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+		>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', kpis.openIncidentCount > 0 ? kpiToneClass.destructive : kpiToneClass.sky)}>
+				<AlertTriangle class="h-4 w-4" />
+			</div>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.openIncidentCount}</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">
+				{$t('dashboard.kpi.openIncidents')}
+				{#if kpis.highSeverityIncidentCount > 0}
+					· <span class="font-medium text-destructive">
+						{$t('dashboard.kpi.highSeverity', { count: kpis.highSeverityIncidentCount })}
+					</span>
+				{/if}
+			</p>
+		</a>
+	</div>
+
+	<!-- Priority actions + Next 7 days -->
+	<div class="grid gap-4 lg:grid-cols-2">
+		<section class="min-w-0 rounded-collection border border-border bg-card p-5 shadow-soft">
+			<header class="mb-4">
+				<h2 class="font-display text-base font-semibold">{$t('dashboard.actions.title')}</h2>
+			</header>
+			{#if overview.actionItems.length === 0}
+				<div class="rounded-collection bg-secondary/40 px-4 py-6 text-sm text-muted-foreground">
+					{$t('dashboard.actions.empty')}
+				</div>
+			{:else}
+				<ul class="divide-y divide-border">
+					{#each overview.actionItems as item (item.key)}
+						<li>
+							<a
+								href={actionHref(item.key)}
+								class="flex items-center justify-between gap-3 py-3.5 text-sm transition hover:text-primary"
+							>
+								<div class="min-w-0">
+									<p class="font-medium">{actionTitle(item.key)}</p>
+									<p class="text-xs text-muted-foreground">{actionMeta(item)}</p>
+								</div>
+								<ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground" />
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</section>
+
+		<section class="min-w-0 rounded-collection border border-border bg-card p-5 shadow-soft">
+			<header class="mb-4 flex items-center justify-between gap-3">
+				<h2 class="font-display text-base font-semibold">{$t('dashboard.upcoming.title')}</h2>
+				<a
+					href={appPath('/(app)/school/calendar')}
+					class="text-xs font-medium text-primary hover:underline"
+				>
+					{$t('dashboard.upcoming.viewCalendar')}
+				</a>
+			</header>
+			<ul class="divide-y divide-border">
+				{#each overview.upcoming as item (`${item.kind}:${item.id}:${item.date}`)}
+					<li class="flex items-start gap-3 py-3.5 text-sm">
+						<time datetime={item.date} class="w-20 shrink-0 font-sans tabular-nums text-[11px] text-muted-foreground">
+							{formatLocaleDate(item.date, $locale, { weekday: 'short', day: 'numeric', month: 'short' })}
+						</time>
+						<div class="min-w-0 flex-1">
+							<p class="break-words font-medium">{item.title}</p>
+							<p class="text-xs text-muted-foreground">{$t(upcomingKindLabel[item.kind])}</p>
+						</div>
+						<span
+							class={cn(
+								'mt-1.5 h-2 w-2 shrink-0 rounded-full',
+								item.highlight ? 'bg-highlight' : 'bg-primary/60',
+							)}
+						></span>
+					</li>
+				{:else}
+					<li class="rounded-collection bg-secondary/40 px-4 py-5 text-sm text-muted-foreground">
+						{$t('dashboard.upcoming.empty')}
+					</li>
+				{/each}
+			</ul>
+		</section>
+	</div>
+
+	<!-- School health by area -->
+	<section aria-labelledby="school-health-title" class="overflow-hidden rounded-collection border border-border bg-card">
+		<header class="border-b border-border px-5 py-4">
+			<h2 id="school-health-title" class="font-display text-base font-semibold">{$t('dashboard.health.title')}</h2>
+		</header>
+		<div class="grid sm:grid-cols-2 xl:grid-cols-4">
+			<a
+				href={appPath('/(app)/school/students/[[id]]')}
+				class="min-w-0 p-4 transition hover:bg-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+			>
+				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
+					<Users class="h-4 w-4" />
+					<h3 class="text-xs font-medium">{$t('dashboard.health.students')}</h3>
+				</div>
+				<dl class="space-y-2 text-sm">
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.attendanceRate')}</dt>
+						<dd class={healthMetric(formatPercent(areaHealth.students.attendanceRateToday))}>
+							{formatPercent(areaHealth.students.attendanceRateToday)}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.absencesToday')}</dt>
+						<dd class={healthMetric(areaHealth.students.absencesToday, areaHealth.students.absencesToday > 0)}>
+							{areaHealth.students.absencesToday}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.pendingJustifications')}</dt>
+						<dd class={healthMetric(areaHealth.students.pendingJustifications, areaHealth.students.pendingJustifications > 0)}>
+							{areaHealth.students.pendingJustifications}
+						</dd>
+					</div>
+				</dl>
+			</a>
+
+			<a
+				href={appPath('/(app)/configuration/structure/details')}
+				class="min-w-0 border-t border-border p-4 transition hover:bg-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary sm:border-l sm:border-t-0"
+			>
+				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
+					<BookOpen class="h-4 w-4" />
+					<h3 class="text-xs font-medium">{$t('dashboard.health.academics')}</h3>
+				</div>
+				<dl class="space-y-2 text-sm">
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.gradingCompletion')}</dt>
+						<dd class={healthMetric(formatPercent(areaHealth.academics.gradingCompletionPercent))}>
+							{formatPercent(areaHealth.academics.gradingCompletionPercent)}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.reportCardsPublished')}</dt>
+						<dd class={healthMetric(`${areaHealth.academics.publishedReportCards}/${areaHealth.academics.totalReportCards}`)}>
+							{#if areaHealth.academics.publishedReportCards !== null && areaHealth.academics.totalReportCards !== null}
+								{areaHealth.academics.publishedReportCards}/{areaHealth.academics.totalReportCards}
+							{:else}
+								—
+							{/if}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.incompleteClasses')}</dt>
+						<dd class={healthMetric(areaHealth.academics.incompleteGradingClassCount, (areaHealth.academics.incompleteGradingClassCount ?? 0) > 0)}>
+							{areaHealth.academics.incompleteGradingClassCount ?? '—'}
+						</dd>
+					</div>
+				</dl>
+			</a>
+
+			<a
+				href={appPath('/(app)/finance/billing/[[id]]')}
+				class="min-w-0 border-t border-border p-4 transition hover:bg-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary xl:border-l xl:border-t-0"
+			>
+				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
+					<Wallet class="h-4 w-4" />
+					<h3 class="text-xs font-medium">{$t('dashboard.health.finance')}</h3>
+				</div>
+				<dl class="space-y-2 text-sm">
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.overdueAmount')}</dt>
+						<dd class={healthMetric(formatAmount(areaHealth.finance.overdueAmount), areaHealth.finance.overdueAmount > 0)}>
+							{formatAmount(areaHealth.finance.overdueAmount)}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.studentsWithBalance')}</dt>
+						<dd class={healthMetric(areaHealth.finance.studentsWithBalance, areaHealth.finance.studentsWithBalance > 0)}>
+							{areaHealth.finance.studentsWithBalance}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.recentPayments')}</dt>
+						<dd class={healthMetric(`${areaHealth.finance.recentPaymentCount} · ${formatAmount(areaHealth.finance.recentPaymentAmount)}`)}>
+							{areaHealth.finance.recentPaymentCount} · {formatAmount(areaHealth.finance.recentPaymentAmount)}
+						</dd>
+					</div>
+				</dl>
+			</a>
+
+			<a
+				href={appPath('/(app)/school/events/[[id]]')}
+				class="min-w-0 border-t border-border p-4 transition hover:bg-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary sm:border-l xl:border-t-0"
+			>
+				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
+					<Sparkle class="h-4 w-4" />
+					<h3 class="text-xs font-medium">{$t('dashboard.health.schoolLife')}</h3>
+				</div>
+				<dl class="space-y-2 text-sm">
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.openIncidents')}</dt>
+						<dd class={healthMetric(areaHealth.schoolLife.openIncidentCount, areaHealth.schoolLife.openIncidentCount > 0)}>
+							{areaHealth.schoolLife.openIncidentCount}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.highSeverity')}</dt>
+						<dd class={healthMetric(areaHealth.schoolLife.highSeverityIncidentCount, areaHealth.schoolLife.highSeverityIncidentCount > 0)}>
+							{areaHealth.schoolLife.highSeverityIncidentCount}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.activeActivities')}</dt>
+						<dd class={healthMetric(areaHealth.schoolLife.activeActivityCount)}>
+							{areaHealth.schoolLife.activeActivityCount}
+						</dd>
+					</div>
+					<div class="flex items-baseline justify-between gap-2">
+						<dt class="text-muted-foreground">{$t('dashboard.health.unresolvedDiscipline')}</dt>
+						<dd class={healthMetric(areaHealth.schoolLife.unresolvedDisciplineCount, areaHealth.schoolLife.unresolvedDisciplineCount > 0)}>
+							{areaHealth.schoolLife.unresolvedDisciplineCount}
+						</dd>
+					</div>
+				</dl>
+			</a>
+		</div>
+	</section>
+
+	<!-- Class risk table -->
+	<section class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
+		<header class="border-b border-border px-5 py-4">
+			<h2 class="font-display text-base font-semibold">{$t('dashboard.classRisk.title')}</h2>
+		</header>
+		{#if overview.classRiskRows.length === 0}
+			<p class="px-5 py-8 text-sm text-muted-foreground">{$t('dashboard.classRisk.empty')}</p>
+		{:else}
+			<div class="overflow-x-auto">
+				<table class="ui-entry-table w-full min-w-[800px] text-sm">
+					<thead class="border-b border-border bg-secondary/30 text-left">
+						<tr>
+							<th class="px-4 py-3 font-medium">{$t('dashboard.classRisk.class')}</th>
+							<th class="px-4 py-3 font-medium">{$t('dashboard.classRisk.attendance')}</th>
+							<th class="px-4 py-3 font-medium">{$t('dashboard.classRisk.incidents')}</th>
+							<th class="px-4 py-3 font-medium">{$t('dashboard.classRisk.grading')}</th>
+							<th class="px-4 py-3 font-medium">{$t('dashboard.classRisk.overdueFees')}</th>
+							<th class="px-4 py-3 font-medium">{$t('dashboard.classRisk.coordinator')}</th>
+							<th class="px-4 py-3 font-medium">{$t('dashboard.classRisk.risk')}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each overview.classRiskRows as row (row.classGroupId)}
+							<tr class="border-b border-border/60 last:border-0 transition hover:bg-secondary/20">
+								<td class="px-4 py-3">
+									<a href={classHref(row.classGroupId)} class="font-medium hover:text-primary">
+										{row.className}
+									</a>
+								</td>
+								<td class="px-4 py-3 font-sans tabular-nums">
+									{formatPercent(row.attendanceRateToday)}
+								</td>
+								<td class="px-4 py-3 font-sans tabular-nums">
+									<span class={row.openIncidentCount > 0 ? 'text-destructive' : ''}>
+										{row.openIncidentCount}
+									</span>
+								</td>
+								<td class="px-4 py-3 font-sans tabular-nums">
+									{formatPercent(row.gradingCompletionPercent)}
+								</td>
+								<td class="px-4 py-3 font-sans tabular-nums">
+									<span class={row.overdueFeeCount > 0 ? 'text-highlight' : ''}>
+										{row.overdueFeeCount}
+									</span>
+								</td>
+								<td class="px-4 py-3 text-muted-foreground">
+									{row.coordinatorName ?? '—'}
+								</td>
+								<td class="px-4 py-3">
+									<span class={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', riskBadgeClass[row.riskLevel])}>
+										{$t(riskLabelKey[row.riskLevel])}
+									</span>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{/if}
+	</section>
+</div>

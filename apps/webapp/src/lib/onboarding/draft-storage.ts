@@ -2,16 +2,15 @@ import type { OnboardingClassNamingMode, OnboardingDraft, OnboardingPeriodDraft,
 import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
 import {
-	DEFAULT_ONBOARDING_COUNTRY,
 	academicYearLabelFromDates,
+	DEFAULT_ONBOARDING_COUNTRY,
 	defaultAcademicYearPreset,
-	isStructureReadyCountry,
 	timezoneForCountry,
 } from '$lib/onboarding/school-step-defaults';
 import { ONBOARDING_DRAFT_VERSION } from '$lib/onboarding/types';
 
 const STORAGE_PREFIX = 'edaya:onboarding:draft';
-const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4, 5, 6, 7]);
+const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4, 5, 6, 7, 8]);
 
 function isOnboardingStaffInviteRole(value: unknown): value is OnboardingStaffInviteRole {
 	return value === 'deputy_director'
@@ -47,6 +46,7 @@ export function createEmptyDraft(): OnboardingDraft {
 			city: '',
 			country: DEFAULT_ONBOARDING_COUNTRY,
 			timezone: defaultTimezone(),
+			financeCurrency: '',
 			academicYearLabel: yearPreset.label,
 			academicYearStart: yearPreset.start,
 			academicYearEnd: yearPreset.end,
@@ -54,7 +54,8 @@ export function createEmptyDraft(): OnboardingDraft {
 			periods: createInitialPeriods('trimester', yearPreset.start, yearPreset.end),
 		},
 		structure: {
-			models: [],
+			dataset: null,
+			templates: [],
 			levels: [],
 		},
 		staffInvites: [],
@@ -108,11 +109,9 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 	const periodType = candidate.periodType === 'semester' ? 'semester' : 'trimester';
 
 	const rawCountry = typeof candidate.country === 'string' ? candidate.country : empty.country;
-	const country = isStructureReadyCountry(rawCountry) ? rawCountry.trim() : empty.country;
+	const country = rawCountry.trim();
 	const rawTimezone = typeof candidate.timezone === 'string' ? candidate.timezone : empty.timezone;
-	const timezone = isStructureReadyCountry(rawCountry)
-		? rawTimezone
-		: (timezoneForCountry(country) ?? empty.timezone);
+	const timezone = rawTimezone;
 	const yearDates = resolveAcademicYearDates(candidate, empty);
 
 	if (Array.isArray(candidate.periods) && candidate.periods.length > 0) {
@@ -125,6 +124,7 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 				...candidate,
 				country,
 				timezone,
+				financeCurrency: typeof candidate.financeCurrency === 'string' ? candidate.financeCurrency : '',
 				periodType,
 				periods,
 				...yearDates,
@@ -145,6 +145,7 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 		city: typeof candidate.city === 'string' ? candidate.city : empty.city,
 		country,
 		timezone,
+		financeCurrency: typeof candidate.financeCurrency === 'string' ? candidate.financeCurrency : '',
 		...yearDates,
 		periodType,
 		periods: legacyPeriod ? [legacyPeriod] : empty.periods,
@@ -167,6 +168,20 @@ function normalizeCapacity(value: unknown): number {
 
 function normalizeClassNamingMode(value: unknown): OnboardingClassNamingMode {
 	return value === 'alphabetical' ? 'alphabetical' : 'numerical';
+}
+
+function normalizeDatasetReference(value: unknown): OnboardingDraft['structure']['dataset'] {
+	if (!value || typeof value !== 'object')
+		return null;
+	const reference = value as { id?: unknown; version?: unknown };
+	return typeof reference.id === 'string' && reference.id.trim() && typeof reference.version === 'string' && /^\d+\.\d+\.\d+$/.test(reference.version)
+		? { id: reference.id, version: reference.version }
+		: null;
+}
+
+function legacyTemplateIds(structure: unknown): unknown[] {
+	const models = (structure as { models?: unknown } | undefined)?.models;
+	return Array.isArray(models) ? models : [];
 }
 
 function normalizeDraft(raw: unknown): OnboardingDraft | null {
@@ -198,9 +213,10 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 			: empty.registeredSchoolId,
 		school: normalizeSchoolDraft(candidate.school ?? {}, empty.school),
 		structure: {
-			models: Array.isArray(candidate.structure?.models)
-				? candidate.structure.models.filter((entry): entry is 'college' | 'lycee' => entry === 'college' || entry === 'lycee')
-				: empty.structure.models,
+			dataset: version < 8 ? { id: 'ci-general-secondary', version: '1.0.0' } : normalizeDatasetReference(candidate.structure?.dataset),
+			templates: version < 8
+				? legacyTemplateIds(candidate.structure).flatMap(model => model === 'college' ? ['ci-college'] : model === 'lycee' ? ['ci-lycee'] : [])
+				: Array.isArray(candidate.structure?.templates) ? candidate.structure.templates.filter((id): id is string => typeof id === 'string' && Boolean(id.trim())) : [],
 			levels: Array.isArray(candidate.structure?.levels)
 				? candidate.structure.levels.map(level => ({
 						gradeLevelId: typeof level.gradeLevelId === 'string'
@@ -226,16 +242,39 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 	};
 }
 
+function readDraftStore(store: Storage | undefined, key: string): string | null {
+	try {
+		return store?.getItem(key) ?? null;
+	}
+	catch {
+		return null;
+	}
+}
+
+function writeDraftStore(store: Storage | undefined, key: string, value: string | null): void {
+	try {
+		if (!store) {
+			return;
+		}
+		if (value) {
+			store.setItem(key, value);
+			return;
+		}
+		store.removeItem(key);
+	}
+	catch {
+		// Private mode can deny web storage.
+	}
+}
+
 export function loadDraft(authUserId: string): OnboardingDraft | null {
-	if (typeof sessionStorage === 'undefined') {
+	const key = draftStorageKey(authUserId);
+	const raw = readDraftStore(globalThis.sessionStorage, key) ?? readDraftStore(globalThis.localStorage, key);
+	if (!raw) {
 		return null;
 	}
 
 	try {
-		const raw = sessionStorage.getItem(draftStorageKey(authUserId));
-		if (!raw) {
-			return null;
-		}
 		return normalizeDraft(JSON.parse(raw));
 	}
 	catch {
@@ -244,20 +283,18 @@ export function loadDraft(authUserId: string): OnboardingDraft | null {
 }
 
 export function saveDraft(authUserId: string, draft: OnboardingDraft): void {
-	if (typeof sessionStorage === 'undefined') {
-		return;
-	}
-
 	const payload: OnboardingDraft = {
 		...draft,
 		updatedAt: new Date().toISOString(),
 	};
-	sessionStorage.setItem(draftStorageKey(authUserId), JSON.stringify(payload));
+	const raw = JSON.stringify(payload);
+	const key = draftStorageKey(authUserId);
+	writeDraftStore(globalThis.sessionStorage, key, raw);
+	writeDraftStore(globalThis.localStorage, key, raw);
 }
 
 export function clearDraft(authUserId: string): void {
-	if (typeof sessionStorage === 'undefined') {
-		return;
-	}
-	sessionStorage.removeItem(draftStorageKey(authUserId));
+	const key = draftStorageKey(authUserId);
+	writeDraftStore(globalThis.sessionStorage, key, null);
+	writeDraftStore(globalThis.localStorage, key, null);
 }

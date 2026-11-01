@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { GradeScale } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
+	import { lookupGradeInterval, roundedSample } from '$lib/api/grade-intervals';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
@@ -10,211 +11,118 @@
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { Pencil, Plus, Trash2 } from '$lib/icons';
+	import { ChevronDown, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { get } from 'svelte/store';
+	import { appGoto } from '$lib/navigation/app-navigation';
+	import { hasAnyPermission } from '$lib/permissions';
 	import { getGradeScalesPageState } from '../grade-scales-page.svelte';
+	import GradeIntervalFormModal from './GradeIntervalFormModal.svelte';
 	import GradeScaleFormModal from './GradeScaleFormModal.svelte';
 
-	const gradeScalesPage = getGradeScalesPageState();
-
-	const modals = createUrlSyncedModals({
-		allowed: ['create', 'edit', 'delete'],
-		getUrl: () => $page.url,
-	});
+	const owner = getGradeScalesPageState();
+	const modals = createUrlSyncedModals({ allowed: ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 	const editOpen = bindUrlModal(modals, 'edit');
 	const deleteOpen = bindUrlModal(modals, 'delete');
-
-	let deleteBusy = $state(false);
-
-	const targetScale = $derived.by((): GradeScale | null => {
-		if (!modals.target) {
-			return null;
-		}
-		const scale = gradeScalesPage.scaleFor(modals.target);
-		return scale && !scale.isDefault ? scale : null;
-	});
-	const editingScale = $derived(modals.active === 'edit' ? targetScale : null);
-	const deleteTarget = $derived(modals.active === 'delete' ? targetScale : null);
-
-	const filteredScales = $derived(
-		gradeScalesPage.scales.filter((scale) => {
-			const needle = gradeScalesPage.filters.values.q.trim().toLowerCase();
-			if (!needle) {
-				return true;
-			}
-			return scale.name.toLowerCase().includes(needle)
-				|| (scale.description?.toLowerCase().includes(needle) ?? false);
-		}),
-	);
-
+	const addInterval = bindUrlModal(modals, 'add-interval');
+	const editInterval = bindUrlModal(modals, 'edit-interval');
+	const deleteInterval = bindUrlModal(modals, 'delete-interval');
+	const target = $derived(owner.scaleFor(modals.target?.split('/')[0] ?? ''));
+	const interval = $derived(target?.ranges?.find(row => row.id === modals.target?.split('/')[1]));
+	const scales = $derived(owner.scales.filter(scale => `${scale.name} ${scale.description ?? ''}`.toLocaleLowerCase().includes(owner.filters.values.q.trim().toLocaleLowerCase())));
+	const expanded = $derived($page.url.searchParams.get('scale') ?? scales[0]?.id);
+	const samples = $state<Record<string, string>>({});
+	let busy = $state(false);
+	let confirmationRevision = 0;
+	let confirmationKey = '';
 	$effect(() => {
-		if (!gradeScalesPage.filters.ready) {
-			return;
+		const key = `${modals.active}:${modals.target}`;
+		if (key !== confirmationKey) {
+			confirmationKey = key;
+			confirmationRevision = target?.revision ?? 0;
 		}
-		void gradeScalesPage.filters.values.q;
-		gradeScalesPage.filters.scheduleSync();
 	});
-
 	$effect(() => {
-		if (!modals.ready) {
-			return;
-		}
-		if (modals.active === 'create') {
-			if (modals.target !== null) {
-				modals.open('create');
-			}
-			return;
-		}
-		if (
-			(modals.active === 'edit' && !editingScale)
-			|| (modals.active === 'delete' && !deleteTarget)
-		) {
-			modals.close();
+		if (owner.filters.ready) {
+			void owner.filters.values.q;
+			owner.filters.scheduleSync();
 		}
 	});
-
-	function openEdit(scale: GradeScale) {
-		modals.open('edit', { target: scale.id });
+	async function toggle(id: string) {
+		const url = new URL($page.url);
+		url.searchParams.set('scale', expanded === id ? 'none' : id);
+		await appGoto(`${url.pathname}${url.search}`, { keepFocus: true, noScroll: true });
 	}
-
-	function openDelete(scale: GradeScale) {
-		modals.open('delete', { target: scale.id });
-	}
-
-	async function confirmDelete() {
-		const target = deleteTarget;
-		if (!target) {
+	async function confirm(action: 'delete' | 'remove-interval') {
+		if (!target || busy || !hasAnyPermission(['GRADE_SCALE_CONFIGURE']) || (action === 'delete' && target.isDefault))
 			return;
-		}
-		deleteBusy = true;
+		busy = true;
 		try {
-			const ok = await gradeScalesPage.deleteScale({
-				scaleId: target.id,
-				successMessage: get(t)('gradeScales.toastDeleted', { name: target.name }),
-			});
-			if (ok) {
-				deleteOpen.open = false;
-			}
+			const ok = await owner.configureScale({ id: target.id, expectedRevision: confirmationRevision, action, intervalId: interval?.id });
+			if (ok)
+				modals.close();
 		}
 		finally {
-			deleteBusy = false;
+			busy = false;
 		}
 	}
 </script>
-
 <div class="animate-fade-in space-y-6">
-	<ListPageHeader
-		eyebrow={$t('gradeScales.subtitle')}
-		title={$t('gradeScales.title', { n: filteredScales.length })}
-	>
-		{#snippet search()}
-			<ListSearchField
-				bind:value={gradeScalesPage.filters.values.q}
-				oninput={() => gradeScalesPage.filters.scheduleSync()}
-			/>
-		{/snippet}
-		{#snippet primary()}
-			<PermissionGate permission="REPORT_CARD_CONFIGURE">
-				{#snippet children({ disabled, title })}
-					<Button
-						size="sm"
-						class="rounded-full"
-						{disabled}
-						{title}
-						onclick={() => modals.open('create')}
-					>
-						<Plus class="mr-1 h-4 w-4" />
-						{$t('gradeScales.add')}
-					</Button>
-				{/snippet}
-			</PermissionGate>
-		{/snippet}
-		{#snippet more()}
-			<ListMoreMenu exportOnly />
-		{/snippet}
+	<ListPageHeader eyebrow={$t('gradeScales.subtitle')} title={$t('gradeScales.title', { n: scales.length })}>
+		{#snippet search()}<ListSearchField bind:value={owner.filters.values.q} oninput={() => owner.filters.scheduleSync()} />{/snippet}
+		{#snippet primary()}<PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}<Button {disabled} {title} onclick={() => modals.open('create')}><Plus class="mr-2 h-4 w-4" />{$t('gradeScales.add')}</Button>{/snippet}</PermissionGate>{/snippet}
+		{#snippet more()}<ListMoreMenu exportOnly onExport={() => void exportMatchingList({ filename: 'grade-scales.csv', headers: ['name', 'minScore', 'maxScore', 'intervals', 'default'], loadAll: async () => scales.map(scale => [scale.name, scale.minScore, scale.maxScore, scale.ranges?.length ?? 0, scale.isDefault ? 'default' : '']) })} />{/snippet}
 	</ListPageHeader>
+	{#if !scales.length}<p class="py-8 text-sm text-muted-foreground">{$t('dataState.emptyDescription')}</p>{/if}
+	{#each scales as scale (scale.id)}
+		<section class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
+			<div class="flex items-center gap-2 p-4">
+				<button type="button" class="flex min-w-0 flex-1 items-center gap-3 rounded-collection p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-expanded={expanded === scale.id} aria-controls={`intervals-${scale.id}`} onclick={() => toggle(scale.id)}>
+					<ChevronDown class={`h-5 w-5 shrink-0 transition-transform ${expanded === scale.id ? 'rotate-180' : ''}`} />
+					<div class="min-w-0"><h2 class="break-words font-display text-base font-semibold">{scale.name}</h2><p class="text-sm text-muted-foreground">{scale.minScore} → {scale.maxScore} · {$t('grading.intervalCount', { n: scale.ranges?.length ?? 0 })}{scale.isDefault ? ` · ${$t('gradeScales.default')}` : ''}{!scale.ranges?.length ? ` · ${$t('grading.incomplete')}` : ''}</p></div>
+				</button>
+				<PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}<RowActionMenu><RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit', { target: scale.id })}>{$t('common.edit')}</RowActionMenuItem>{#if !scale.isDefault}<RowActionMenuItem destructive {disabled} {title} onclick={() => modals.open('delete', { target: scale.id })}>{$t('common.delete')}</RowActionMenuItem>{/if}</RowActionMenu>{/snippet}</PermissionGate>
+			</div>
+			{#if expanded === scale.id}
+				{@const value = samples[scale.id]}
+				{@const rounded = roundedSample(Number(value), scale.decimalPlaces, scale.roundingMode ?? 'nearest')}
+				{@const match = value?.trim() && Number(value) >= scale.minScore && Number(value) <= scale.maxScore ? lookupGradeInterval(scale.ranges ?? [], rounded, scale.intervalConvention === 'continuous') : undefined}
+				<div id={`intervals-${scale.id}`} class="space-y-4 border-t border-border p-5">
+					{#if scale.description}<p class="text-sm text-muted-foreground">{scale.description}</p>{/if}
+					<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="font-medium">{$t('grading.intervals')}</h3><PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}<Button size="sm" variant="outline" {disabled} {title} onclick={() => modals.open('add-interval', { target: scale.id })}>{$t('grading.addInterval')}</Button>{/snippet}</PermissionGate></div>
+					<p class="text-sm text-muted-foreground">{$t('grading.thresholdHelp')}</p>
+					{#if !scale.ranges?.length}<p role="status" class="rounded-collection bg-secondary p-3 text-sm">{$t('grading.emptyHelp')}</p>{/if}
+					<ul class="space-y-2">
+						{#each scale.ranges ?? [] as row, index (row.id ?? index)}
+							<li class="flex flex-wrap items-center justify-between gap-3 rounded-collection border border-border px-4 py-3">
+								<div class="min-w-0 flex-1 basis-56"><p class="break-words text-sm font-medium">{row.letter} · {row.interpretation ?? row.letter}</p><p class="text-sm tabular-nums text-muted-foreground">{$t('grading.minimum')}: {row.minScore}{row.gpaValue != null ? ` · ${$t('grading.points')}: ${row.gpaValue}` : ''}</p></div>
+								<PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}
+									<div class="ml-auto flex shrink-0 items-center gap-2">
+										<RowActionMenu><RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.edit')}</RowActionMenuItem><RowActionMenuItem destructive disabled={disabled || (index === 0 && ((scale.ranges?.length ?? 0) > 1 || !!scale.isDefault))} onclick={() => modals.open('delete-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>
+									</div>
+								{/snippet}</PermissionGate>
+							</li>
+						{/each}
+					</ul>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		<div
-			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
-		>
-			<div class="col-span-4">{$t('gradeScales.name')}</div>
-			<div class="col-span-3">{$t('gradeScales.range')}</div>
-			<div class="col-span-2">{$t('gradeScales.passing')}</div>
-			<div class="col-span-2">{$t('gradeScales.default')}</div>
-			<div class="col-span-1"></div>
-		</div>
-		<ul>
-			{#if filteredScales.length === 0}
-				<li class="px-5 py-12 text-center text-sm text-muted-foreground">
-					{$t('dataState.emptyDescription')}
-				</li>
-			{:else}
-				{#each filteredScales as scale (scale.id)}
-					<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 last:border-b-0">
-						<div class="col-span-4 min-w-0">
-							<p class="truncate text-sm font-medium">{scale.name}</p>
-							{#if scale.description}
-								<p class="truncate text-xs text-muted-foreground">{scale.description}</p>
-							{/if}
-						</div>
-						<div class="col-span-3 font-mono text-sm text-muted-foreground">
-							{scale.minScore} → {scale.maxScore}
-						</div>
-						<div class="col-span-2 text-sm tabular-nums">{scale.passingScore}</div>
-						<div class="col-span-2">
-							{#if scale.isDefault}
-								<span class="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[10px] uppercase">
-									{$t('gradeScales.default')}
-								</span>
-							{:else}
-								<span class="text-xs text-muted-foreground">—</span>
-							{/if}
-						</div>
-						<div class="col-span-1 flex justify-end">
-							{#if !scale.isDefault}
-								<PermissionGate permission="REPORT_CARD_CONFIGURE">
-									{#snippet children({ disabled, title })}
-										<RowActionMenu>
-											<RowActionMenuItem {disabled} {title} onclick={() => openEdit(scale)}>
-												<Pencil class="h-4 w-4" />
-												{$t('common.edit')}
-											</RowActionMenuItem>
-											<RowActionMenuItem
-												destructive
-												{disabled}
-												{title}
-												onclick={() => openDelete(scale)}
-											>
-												<Trash2 class="h-4 w-4" />
-												{$t('common.delete')}
-											</RowActionMenuItem>
-										</RowActionMenu>
-									{/snippet}
-								</PermissionGate>
-							{/if}
-						</div>
-					</li>
-				{/each}
+					<div class="flex flex-wrap items-end gap-x-4 gap-y-2">
+						<label class="block w-40 max-w-full space-y-1.5 text-sm"><span>{$t('grading.sample')}</span><Input type="number" step="any" bind:value={() => samples[scale.id] ?? '', value => samples[scale.id] = value} /></label>
+						<p class="min-w-0 basis-40 flex-1 break-words py-2 text-sm text-muted-foreground" role="status" aria-live="polite" aria-atomic="true">{value ? match ? `${match.letter} · ${match.interpretation ?? ''}` : $t('grading.noMatch') : ''}</p>
+					</div>
+				</div>
 			{/if}
-		</ul>
-	</div>
+		</section>
+	{/each}
 </div>
-
 <GradeScaleFormModal bind:open={createOpen.open} />
-<GradeScaleFormModal bind:open={editOpen.open} scale={editingScale} />
-
-<ConfirmModal
-	bind:open={deleteOpen.open}
-	title={$t('common.deleteConfirmTitle')}
-	description={$t('gradeScales.deleteConfirm', { name: deleteTarget?.name ?? '' })}
-	confirmLabel={$t('common.delete')}
-	cancelLabel={$t('common.cancel')}
-	busy={deleteBusy}
-	onConfirm={confirmDelete}
-/>
+{#if target}
+	<GradeScaleFormModal bind:open={editOpen.open} scale={target} />
+	<GradeIntervalFormModal bind:open={addInterval.open} scale={target} />
+	{#if interval}<GradeIntervalFormModal bind:open={editInterval.open} scale={target} {interval} />{/if}
+	{#if !target.isDefault}<ConfirmModal bind:open={deleteOpen.open} title={$t('common.deleteConfirmTitle')} description={$t('gradeScales.deleteConfirm', { name: target.name })} {busy} onConfirm={() => confirm('delete')} />{/if}
+	{#if interval}<ConfirmModal bind:open={deleteInterval.open} title={$t('common.deleteConfirmTitle')} description={$t('grading.deleteIntervalHelp', { name: interval.letter })} {busy} onConfirm={() => confirm('remove-interval')} />{/if}
+{/if}

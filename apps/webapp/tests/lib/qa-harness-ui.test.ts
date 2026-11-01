@@ -6,6 +6,7 @@ import {
 	BILLING_CANCEL_CONTROL_NAME,
 	DELETE_CONTROL_NAME,
 	REMOVE_ANNOUNCEMENT_TARGET_CONTROL,
+	resolveCreateButtonPatterns,
 } from '../../scripts/qa-harness-ui';
 import { defaultAcademicYearPreset } from '../../src/lib/onboarding/school-step-defaults';
 import { en } from '../../src/lib/i18n/dictionaries/en.ts';
@@ -59,6 +60,16 @@ describe('isDeleteControlVisible locators', () => {
 		expect(ACADEMIC_YEAR_END_DATE_CONTROL.test(fr['academic.endDate'])).toBe(true);
 		expect(ACADEMIC_YEAR_START_DATE_CONTROL.test(en['academic.createYear'])).toBe(false);
 		expect(ACADEMIC_YEAR_END_DATE_CONTROL.test(en['academic.createYear'])).toBe(false);
+	});
+
+	test('family-feedback create locators match campaign buttons', () => {
+		const patterns = resolveCreateButtonPatterns(
+			'Créer campagne',
+			'http://localhost:5173/school/family-feedback',
+		);
+		expect(patterns.some(pattern => pattern.test(en['familyFeedback.new']))).toBe(true);
+		expect(patterns.some(pattern => pattern.test(fr['familyFeedback.new']))).toBe(true);
+		expect(patterns.some(pattern => pattern.test('Créer campagne'))).toBe(true);
 	});
 });
 

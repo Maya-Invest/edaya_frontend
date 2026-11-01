@@ -1,66 +1,52 @@
 <script lang="ts">
 	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
 	import type { StaffMember } from '$lib/types/school';
+	import PersonProfileFields from '$lib/components/school/shared/PersonProfileFields.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
-	import {
-		DEFAULT_STAFF_PROFILE_ROLE,
-		isStaffProfileRole,
-		SELECTABLE_STAFF_PROFILE_ROLES,
-	} from '$lib/staff/staff-profile-roles';
+	import { personFieldDraft } from '$lib/people-profile-fields';
+	import { DEFAULT_STAFF_PROFILE_ROLE, isStaffProfileRole, SELECTABLE_STAFF_PROFILE_ROLES } from '$lib/staff/staff-profile-roles';
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../../staff-page.svelte';
 
-	let {
-		s,
-		disabled = false,
-		title,
-		open = $bindable(false),
-	}: {
+	let { s, disabled = false, title, open = $bindable(false) }: {
 		s: StaffMember;
 		disabled?: boolean;
 		title?: string;
 		open?: boolean;
 	} = $props();
-
 	let busy = $state(false);
 	let wasOpen = $state(false);
+	let additional = $state<Record<string, string>>({});
 	let firstName = $state('');
 	let lastName = $state('');
 	let email = $state('');
 	let profileRole = $state<StaffProfileRole>(DEFAULT_STAFF_PROFILE_ROLE);
-
 	const staffPage = getStaffPageState();
-
 	function resetForm() {
-		const parts = s.name.trim().split(/\s+/);
-		firstName = parts.shift() ?? '';
-		lastName = parts.join(' ');
+		additional = personFieldDraft('staff', s);
+		firstName = s.firstName ?? '';
+		lastName = s.lastName ?? '';
 		email = s.email;
 		profileRole = isStaffProfileRole(s.role) ? s.role : DEFAULT_STAFF_PROFILE_ROLE;
 	}
-
 	$effect(() => {
 		if (open && !wasOpen)
 			resetForm();
 		wasOpen = open;
 	});
-
-	const canSubmit = $derived(
-		firstName.trim().length > 0 && lastName.trim().length > 0 && Boolean(profileRole),
-	);
-
+	const canSubmit = $derived(firstName.trim().length > 0 && lastName.trim().length > 0 && Boolean(profileRole));
 	async function submit() {
 		if (!canSubmit)
 			return;
-
 		busy = true;
 		const ok = await staffPage.updateProfile({
 			staffId: s.id,
+			profile: additional,
 			firstName,
 			lastName,
 			email,
@@ -76,11 +62,11 @@
 	}
 </script>
 
-<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (open = true)}>
+<Button variant="outline" size="sm" {disabled} {title} onclick={() => (open = true)}>
 	{$t('staff.editProfile')}
 </Button>
 
-<FormModal
+<FormModal contentClass="max-w-3xl"
 	bind:open
 	title={$t('staff.editProfileTitle', { name: s.name })}
 	description={$t('staff.editProfileDescription')}
@@ -95,20 +81,20 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('common.firstName')}
 			</Label>
-			<Input bind:value={firstName} autocomplete="given-name" />
+			<Input bind:value={firstName} autocomplete="given-name" aria-label={$t('common.firstName')} />
 		</div>
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('common.lastName')}
 			</Label>
-			<Input bind:value={lastName} autocomplete="family-name" />
+			<Input bind:value={lastName} autocomplete="family-name" aria-label={$t('common.lastName')} />
 		</div>
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('common.email')}
 		</Label>
-		<Input type="email" bind:value={email} autocomplete="email" />
+		<Input type="email" bind:value={email} autocomplete="email" aria-label={$t('common.email')} />
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -137,4 +123,5 @@
 			</Select.Content>
 		</Select.Root>
 	</div>
+	<PersonProfileFields kind="staff" bind:values={additional} />
 </FormModal>

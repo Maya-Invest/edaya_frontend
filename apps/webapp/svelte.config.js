@@ -1,4 +1,8 @@
+import { fileURLToPath } from 'node:url';
+import { loadEnv } from 'vite';
 import adapter from '@sveltejs/adapter-static';
+
+const testOtpAccess = (process.env.PUBLIC_TEST_OTP_ACCESS ?? loadEnv(process.env.NODE_ENV ?? 'development', fileURLToPath(new URL('.', import.meta.url)), 'PUBLIC_TEST_OTP_ACCESS').PUBLIC_TEST_OTP_ACCESS) === 'true';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -11,6 +15,7 @@ const config = {
 		alias: {
 			
 			'$tests': 'tests',
+			'$testOtpPanel': testOtpAccess ? 'src/lib/smart-components/test-otp-panel/TestOtpPanel.svelte' : 'src/lib/smart-components/test-otp-panel/DisabledOtpPanel.svelte',
 		},
 		paths: {
 			relative: false,

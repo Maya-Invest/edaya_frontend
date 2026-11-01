@@ -2,17 +2,8 @@
 	import type { Activity, PlanningEvent, SchoolYearEvent, Student, Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import AttendanceFlow from '$lib/components/school/scheduling/AttendanceFlow.svelte';
-	import ClassTimetableCalendar from '$lib/components/school/scheduling/ClassTimetableCalendar.svelte';
-	import NewSessionWizard from '$lib/components/school/scheduling/NewSessionWizard.svelte';
-	import {
-		activePlanningEvents,
-		detectPlanningOverlaps,
-		filterPlanningEventsForWeek,
-		formatPlanningWeekRange,
-		parseWeekAnchor,
-	} from '$lib/components/school/scheduling/planning-calendar';
-	import ScheduleFormModal from '$lib/components/school/scheduling/ScheduleFormModal.svelte';
+
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -23,15 +14,25 @@
 	import { locale, t } from '$lib/i18n';
 	import { ChevronLeft, ChevronRight, Plus } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { canEditTimetable, hasPermission } from '$lib/permissions';
-	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
+	import {
+		activePlanningEvents,
+		detectPlanningOverlaps,
+		filterPlanningEventsForWeek,
+		formatPlanningWeekRange,
+		parseWeekAnchor,
+	} from '$lib/scheduling/planning-calendar';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
+	import { getPlanningState } from '../planning-state.svelte';
+	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
+	import NewSessionWizard from './NewSessionWizard.svelte';
+	import ScheduleFormModal from './ScheduleFormModal.svelte';
 
 	const {
 		classId,
 		events: routeEvents,
-		students: routeStudents,
 		subjects,
 		activities,
 		schoolYearEvents = [],
@@ -55,8 +56,6 @@
 	} = $props();
 
 	const events = $derived(routeEvents);
-	const classes = $derived(academicContext.classes);
-	const students = $derived(routeStudents);
 
 	const planning = getPlanningState();
 	const newSessionOpen = bindUrlModal(planning.modals, 'new-session');
@@ -67,23 +66,13 @@
 	const viewingCurrentWeek = $derived(planning.viewingCurrentWeek());
 
 	const editable = $derived(canEditTimetable({ classId }));
-	const canRecordAttendance = $derived(hasPermission('ATTENDANCE_RECORD', { classId }));
+	const canRecordAttendance = $derived(academicContext.classes.find(row => row.id === classId)?.attendanceMode === 'session' && hasPermission('ATTENDANCE_RECORD', { classId }));
 
 	const filteredEvents = $derived(planning.filterEvents(events));
 	const weekEvents = $derived(
 		activePlanningEvents(filterPlanningEventsForWeek(filteredEvents, weekStart)),
 	);
 	const planningOverlaps = $derived(detectPlanningOverlaps(weekEvents));
-
-	const attendanceSession = $derived(planning.attendanceSession(events));
-	const attendanceClass = $derived(
-		attendanceSession ? classes.find(c => c.id === attendanceSession.classId) : null,
-	);
-	const attendanceStudents = $derived(
-		attendanceSession
-			? students.filter(s => s.classId === attendanceSession.classId)
-			: [],
-	);
 
 	function handleWeekPickerChange(event: Event) {
 		const value = (event.currentTarget as HTMLInputElement).value;
@@ -103,16 +92,6 @@
 		planning.navigateWeek(new Date(`${focusDate}T12:00:00`));
 	});
 
-	$effect(() => {
-		if (!planning.filters.ready || !selectedId) {
-			return;
-		}
-		if (weekEvents.some(event => event.id === selectedId)) {
-			return;
-		}
-		const href = `${detailHref.classPlanning(classId)}${$page.url.search}`;
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	});
 </script>
 
 <div class={cn('animate-fade-in', expandCalendar && 'flex min-h-0 flex-1 flex-col')}>
@@ -123,9 +102,12 @@
 		{#snippet search()}
 			<ListSearchField bind:value={planning.filters.values.q} oninput={() => planning.filters.scheduleSync()} />
 		{/snippet}
+		{#snippet context()}
+			<AcademicPeriodSelector />
+		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="TIMETABLE_UPDATE"
+				permission="TIMETABLE_MANAGE"
 				{classId}
 				mode="disable"
 				tooltip={$t('calendar.permissionUpdate')}
@@ -147,14 +129,17 @@
 								{title}
 								onCreated={async (sessionId) => {
 									await onRefresh?.();
-									appGoto(detailHref.classPlanning(classId, sessionId));
+									openDetailDrawer(
+										detailHref.classPlanning(classId, sessionId),
+										currentRouteSurfaceHref($page.url),
+									);
 								}}
 							/>
 						{/key}
 						<Button
 							size="sm"
 							variant="outline"
-							class="rounded-full"
+
 							{disabled}
 							{title}
 							onclick={() => planning.openScheduleCreate()}
@@ -167,7 +152,12 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportTimetable')} onExport={() => void planning.performRequestDocumentIssuance({
+				templateKey: 'class-timetable.v1',
+				sourceId: classId,
+				classGroupId: classId,
+				successMessage: get(t)('documents.toastRequested'),
+			})} />
 		{/snippet}
 	</ListPageHeader>
 
@@ -180,7 +170,7 @@
 			<Button
 				variant="ghost"
 				size="icon"
-				class="h-8 w-8 rounded-full"
+				class="w-8"
 				onclick={() => planning.goToPreviousWeek()}
 				aria-label={$t('planning.prevWeek')}
 			>
@@ -196,14 +186,14 @@
 					type="date"
 					value={planning.weekPickerValue}
 					onchange={handleWeekPickerChange}
-					class="h-8 w-[10.5rem] rounded-full px-3 text-xs"
+					class="w-[10.5rem] text-xs"
 					aria-label={$t('planning.goToWeek')}
 				/>
 			</div>
 			<Button
 				variant="ghost"
 				size="icon"
-				class="h-8 w-8 rounded-full"
+				class="w-8"
 				onclick={() => planning.goToNextWeek()}
 				aria-label={$t('planning.nextWeek')}
 			>
@@ -214,7 +204,7 @@
 			<Button
 				variant="outline"
 				size="sm"
-				class="rounded-full"
+
 				onclick={() => planning.goToThisWeek()}
 			>
 				{$t('planning.thisWeek')}
@@ -224,7 +214,7 @@
 
 	{#if planningOverlaps.length > 0}
 		<div
-			class="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground"
+			class="mb-4 rounded-collection border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground"
 			role="status"
 		>
 			<p class="font-medium">{$t('planning.overlapWarning', { count: planningOverlaps.length })}</p>
@@ -271,18 +261,4 @@
 		/>
 	</div>
 
-	{#if attendanceSession && attendanceClass}
-		{#key attendanceSession.id}
-			<AttendanceFlow
-				open={true}
-				step={planning.attendanceStep}
-				onStepChange={(step, replace) =>
-					replace ? planning.replaceStep(step) : planning.setStep(step)}
-				onClose={() => planning.modals.close()}
-				students={attendanceStudents}
-				className="{attendanceClass.name} · {attendanceSession.subject}"
-				classLevel="{$t(`day.${attendanceSession.day}`)} {attendanceSession.start}–{attendanceSession.end}"
-			/>
-		{/key}
-	{/if}
 </div>

@@ -3,9 +3,11 @@ import type { Teacher } from '$lib/types/school';
 import type { TeachersPageState, TeacherUnavailability } from '../teachers-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { sendAccountInvitationMutation } from '$lib/api/mutations/invitation.mutations';
+import { updateTeacherProfilePhotoMutation } from '$lib/api/mutations/profile-photo.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { mapTeacher } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
+import { teacherIdentityPayload } from '$lib/people-profile-fields';
 import { runTeacherRouteMutation } from './teacher-route-mutation';
 import { buildTeacherUnavailabilityPayload } from './teacher-unavailability';
 
@@ -28,20 +30,26 @@ function teacherInitials(firstName: string, lastName: string): string {
 
 function buildOptimisticTeacher(input: {
 	id: string;
+	profile?: Record<string, string>;
 	firstName: string;
 	lastName: string;
+	code?: string;
 	email?: string;
 	phone?: string;
 }): Teacher {
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 	return {
+		...teacherIdentityPayload(input.profile),
 		id: input.id,
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
 		name: `${input.firstName.trim()} ${input.lastName.trim()}`,
 		initials: teacherInitials(input.firstName, input.lastName),
 		photoUrl: null,
 		email,
 		phone,
+		code: input.code?.trim() || null,
 		isActive: true,
 		subjectId: null,
 	};
@@ -51,6 +59,7 @@ export async function createTeacherOnPage(
 	state: TeachersPageState,
 	input: {
 		firstName: string;
+		profile?: Record<string, string>;
 		lastName: string;
 		code?: string;
 		email?: string;
@@ -61,16 +70,18 @@ export async function createTeacherOnPage(
 ): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const email = input.email?.trim() ?? '';
-	const code = input.code?.trim() ?? '';
-	const id = code || `tch-${Date.now().toString(36)}`;
-	const optimistic = buildOptimisticTeacher({ id, ...input });
+	const code = input.code?.trim() || undefined;
+	const id = crypto.randomUUID();
+	const optimistic = buildOptimisticTeacher({ id, ...input, code });
 
 	const result = await runTeacherRouteMutation({
-		request: () => client.entities.teachers.save({
+		request: () => client.commands.registerTeacher({
 			id,
 			schoolId: schoolId(),
+			...teacherIdentityPayload(input.profile),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
+			...(code ? { code } : {}),
 			email: email || null,
 			phone: input.phone?.trim() || null,
 			isActive: true,
@@ -107,6 +118,7 @@ export async function updateTeacherProfileOnPage(
 	state: TeachersPageState,
 	input: {
 		teacherId: string;
+		profile?: Record<string, string>;
 		firstName: string;
 		lastName: string;
 		email?: string;
@@ -125,6 +137,7 @@ export async function updateTeacherProfileOnPage(
 	}
 
 	const patch = {
+		...teacherIdentityPayload(input.profile),
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
 		email: input.email?.trim() || null,
@@ -189,6 +202,24 @@ export async function updateTeacherStatusOnPage(
 	return result !== null;
 }
 
+export async function updateTeacherProfilePhotoOnPage(
+	state: TeachersPageState,
+	input: {
+		teacherId: string;
+		file: File;
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	return updateTeacherProfilePhotoMutation({
+		teacherId: input.teacherId,
+		file: input.file,
+		successMessage: input.successMessage,
+		onSuccess: (photoUrl) => {
+			state.patchTeacher(input.teacherId, { photoUrl });
+		},
+	});
+}
+
 export async function deleteTeacherOnPage(
 	state: TeachersPageState,
 	teacherId: string,
@@ -220,16 +251,24 @@ export function createTeacherAssignmentPayload(input: {
 	kind: TeacherAssignment['kind'];
 	classSubjectId?: string | null;
 	classGroupId?: string | null;
+	responsibility?: string | null;
+	startsAt?: string | null;
+	endsAt?: string | null;
+	status?: TeacherAssignment['status'];
+	original?: TeacherAssignment;
 }): TeacherAssignment {
 	return {
+		...input.original,
 		id: input.id,
 		teacherId: input.teacherId,
 		academicYearId: academicYearId(),
 		kind: input.kind,
 		classSubjectId: input.kind === 'subject' ? (input.classSubjectId ?? null) : null,
 		classGroupId: input.classGroupId ?? null,
-		responsibility: null,
-		status: 'active',
+		responsibility: input.responsibility ?? null,
+		startsAt: input.startsAt ?? null,
+		endsAt: input.endsAt ?? null,
+		status: input.status ?? 'active',
 	};
 }
 

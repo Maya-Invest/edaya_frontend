@@ -1,7 +1,9 @@
+import { createSchoolClient } from '@maya-invest/edaya-api-client';
+import type { components } from '$lib/api/schema';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { CATALOG_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
-import { loadClassPeopleData, loadGuardiansPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
+import { fetchStudentById, loadClassPeopleData, loadGuardiansPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
 import { createRecordingSchoolClient, entityCountRequests, entityListRequests } from '$tests/support/recording-school-client';
 
 const classGroupId = 'class-7a';
@@ -34,6 +36,14 @@ function listEnvelope<T>(items: readonly T[]) {
 	return items.map(item => ({ data: item }));
 }
 
+function paged(body: Record<string, unknown>) {
+	return {
+		...body,
+		$limit: CATALOG_LIST_PAGE_SIZE,
+		$offset: 0,
+	};
+}
+
 describe('people data loading', () => {
 	it('loads class students with scoped list filters instead of school-wide reads', async () => {
 		const { client, requests } = createRecordingSchoolClient([
@@ -59,27 +69,27 @@ describe('people data loading', () => {
 		expect(students[0]?.id).toBe('student-1');
 		expect(students[0]?.classId).toBe(classGroupId);
 
-		expect(entityListRequests(requests, 'enrollments')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'enrollments')[0]?.body).toEqual(paged({
 			classGroupId,
 			status: 'active',
-		});
-		expect(entityListRequests(requests, 'students')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'students')[0]?.body).toEqual(paged({
 			id: { $in: ['student-1'] },
-		});
-		expect(entityListRequests(requests, 'guardian-links')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'guardian-links')[0]?.body).toEqual(paged({
 			studentId: { $in: ['student-1'] },
-		});
-		expect(entityListRequests(requests, 'attendance')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'attendance')[0]?.body).toEqual(paged({
 			studentId: { $in: ['student-1'] },
-		});
-		expect(entityListRequests(requests, 'assessments')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'assessments')[0]?.body).toEqual(paged({
 			classGroupId,
 			periodId,
-		});
-		expect(entityListRequests(requests, 'assessment-results')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'assessment-results')[0]?.body).toEqual(paged({
 			assessmentId: { $in: ['assessment-1'] },
 			studentId: { $in: ['student-1'] },
-		});
+		}));
 
 		for (const request of entityListRequests(requests, 'students')) {
 			expect(request.body).not.toEqual({});
@@ -118,12 +128,12 @@ describe('people data loading', () => {
 			$offset: 0,
 		});
 		expect(entityListRequests(requests, 'guardians')).toHaveLength(0);
-		expect(entityListRequests(requests, 'attendance')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'attendance')[0]?.body).toEqual(paged({
 			studentId: { $in: ['student-1'] },
-		});
-		expect(entityListRequests(requests, 'assessment-results')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'assessment-results')[0]?.body).toEqual(paged({
 			studentId: { $in: ['student-1'] },
-		});
+		}));
 		expect(entityListRequests(requests, 'assessments')).toHaveLength(0);
 	});
 
@@ -182,9 +192,9 @@ describe('people data loading', () => {
 		const { students } = await loadPeopleData(client, SEED_SCHOOL_ID);
 
 		expect(students[0]?.average).toBe(16);
-		expect(entityListRequests(requests, 'assessments')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'assessments')[0]?.body).toEqual(paged({
 			id: { $in: ['assessment-1'] },
-		});
+		}));
 	});
 
 	it('loads guardians with linked students only instead of the full school roster', async () => {
@@ -194,7 +204,7 @@ describe('people data loading', () => {
 			firstName: 'Grace',
 			lastName: 'Hopper',
 			email: 'grace@school.edu',
-			contactMethods: [],
+			emailNotificationsEnabled: true, smsNotificationsEnabled: true, pushNotificationsEnabled: true,
 		};
 		const link = {
 			id: 'link-1',
@@ -218,16 +228,16 @@ describe('people data loading', () => {
 		expect(guardians).toHaveLength(1);
 		expect(students).toHaveLength(1);
 		expect(students[0]?.id).toBe('student-1');
-		expect(entityListRequests(requests, 'guardians')[0]?.body).toEqual({ schoolId: SEED_SCHOOL_ID });
-		expect(entityListRequests(requests, 'guardian-links')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'guardians')[0]?.body).toEqual(paged({ schoolId: SEED_SCHOOL_ID }));
+		expect(entityListRequests(requests, 'guardian-links')[0]?.body).toEqual(paged({
 			guardianId: { $in: ['guardian-1'] },
-		});
-		expect(entityListRequests(requests, 'students')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'students')[0]?.body).toEqual(paged({
 			id: { $in: ['student-1'] },
-		});
-		expect(entityListRequests(requests, 'enrollments')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'enrollments')[0]?.body).toEqual(paged({
 			studentId: { $in: ['student-1'] },
-		});
+		}));
 		expect(entityListRequests(requests, 'attendance')).toHaveLength(0);
 		expect(entityListRequests(requests, 'assessments')).toHaveLength(0);
 	});
@@ -236,12 +246,11 @@ describe('people data loading', () => {
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([enrollment]),
 			{ count: 1 },
-			{ count: 1 },
-			listEnvelope([enrollment]),
 			listEnvelope([student]),
-			listEnvelope([student]),
-			listEnvelope([student]),
-			listEnvelope([student]),
+			listEnvelope([]),
+			listEnvelope([]),
+			listEnvelope([]),
+			listEnvelope([]),
 		]);
 
 		const result = await loadPeopleDataPage(client, {
@@ -253,6 +262,7 @@ describe('people data loading', () => {
 
 		expect(result.students).toHaveLength(1);
 		expect(result.totalStudents).toBe(1);
+		expect(result.totalStudents).toBe(1);
 		expect(entityListRequests(requests, 'enrollments')[0]?.body).toEqual({
 			classGroupId,
 			status: 'active',
@@ -260,9 +270,9 @@ describe('people data loading', () => {
 			$offset: 0,
 			$orderBy: [{ field: 'studentId', direction: 'asc' }],
 		});
-		expect(entityListRequests(requests, 'students')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'students')[0]?.body).toEqual(paged({
 			id: { $in: ['student-1'] },
-		});
+		}));
 		expect(entityCountRequests(requests, 'enrollments')[0]?.body).toEqual({
 			classGroupId,
 			status: 'active',
@@ -292,14 +302,25 @@ describe('people data loading', () => {
 		const schoolLoad = createRecordingSchoolClient([...schoolResponses]);
 		await loadPeopleData(schoolLoad.client, SEED_SCHOOL_ID);
 
-		expect(entityListRequests(classLoad.requests, 'enrollments')[0]?.body).toEqual({
+		expect(entityListRequests(classLoad.requests, 'enrollments')[0]?.body).toEqual(paged({
 			classGroupId,
 			status: 'active',
-		});
+		}));
 		expect(entityListRequests(schoolLoad.requests, 'enrollments')[0]?.body).toEqual({
 			studentId: { $in: ['student-1'] },
 			$limit: CATALOG_LIST_PAGE_SIZE,
 			$offset: 0,
 		});
 	});
+});
+
+it('resolves student identity even when placement and guardian enrichment fail', async () => {
+ const client = createSchoolClient<components['schemas']>({ request: async <T>(_method: string, path: string): Promise<T> => {
+  if (path.includes('/enrollments/') || path.includes('/guardian-links/') || path.includes('/guardians/')) throw new Error('Optional section unavailable');
+  return (path.endsWith('/students/list') ? [{ data: student }] : []) as T;
+ } });
+ const resolved = await fetchStudentById(client, student.id);
+ expect(resolved?.id).toBe(student.id);
+ expect(resolved?.name).toBe('Ada Lovelace');
+ expect(resolved?.classId).toBe('');
 });

@@ -117,13 +117,17 @@ export async function closeEnrollmentMutation(input: {
 }
 
 export async function writeHomeroomReportCommentMutation(input: {
+	requestId?: string;
 	resultId: string;
+	expectedVersion: number;
 	teacherComment: string;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => client.commands.writeHomeroomReportComment({
+			requestId: input.requestId ?? crypto.randomUUID(),
+			expectedVersion: input.expectedVersion,
 			id: input.resultId,
 			teacherComment: input.teacherComment.trim(),
 		}),
@@ -138,4 +142,25 @@ export async function writeHomeroomReportCommentMutation(input: {
 /** Ensures school context is present for health writes (actor headers already set). */
 export function healthWriteSchoolId(): string {
 	return authSession.schoolId ?? '';
+}
+
+export async function writeReportSectionCommentsMutation(input: {
+	requestId?: string;
+	resultId: string;
+	expectedVersion: number;
+	sections: { sectionId: string; comment: string | null }[];
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const requestId = input.requestId ?? crypto.randomUUID();
+	const result = await runMutation(
+		() => client.commands.writeReportCardSectionComments({
+			requestId,
+			expectedVersion: input.expectedVersion,
+			id: input.resultId,
+			sections: input.sections,
+		}),
+		{ successMessage: input.successMessage, versionKeys: ['reportCards'] },
+	);
+	return result !== null;
 }

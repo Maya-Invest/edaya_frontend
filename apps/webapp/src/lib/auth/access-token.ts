@@ -65,6 +65,13 @@ export function createAccessTokenManager(
 	return { get, clear, invalidate };
 }
 
+export function isUnauthorizedCredentialError(error: unknown): boolean {
+	return typeof error === 'object'
+		&& error !== null
+		&& 'status' in error
+		&& (error as { status: unknown }).status === 401;
+}
+
 export function createBearerFetch(
 	manager: ReturnType<typeof createAccessTokenManager>,
 	resource: string,
@@ -76,12 +83,34 @@ export function createBearerFetch(
 		if (target.origin !== origin || target.username || target.password) {
 			throw new Error('API credentials cannot be sent to this destination');
 		}
-		const token = await manager.get(origin);
-		const headers = new Headers(init.headers);
-		headers.delete('cookie');
-		headers.set('Authorization', `Bearer ${token}`);
-		const response = await send(target.href, { ...init, headers, credentials: 'omit' });
-		if (response.status !== 401) {
+
+		async function resolveToken(): Promise<string | null> {
+			try {
+				return await manager.get(origin);
+			}
+			catch (error) {
+				if (!isUnauthorizedCredentialError(error)) {
+					throw error;
+				}
+				return null;
+			}
+		}
+
+		function authorized(token: string | null): Promise<Response> {
+			const headers = new Headers(init.headers);
+			headers.delete('cookie');
+			if (token) {
+				headers.set('Authorization', `Bearer ${token}`);
+			}
+			else {
+				headers.delete('Authorization');
+			}
+			return send(target.href, { ...init, headers, credentials: 'omit' });
+		}
+
+		const token = await resolveToken();
+		const response = await authorized(token);
+		if (response.status !== 401 || !token) {
 			return response;
 		}
 		manager.invalidate(origin, token);
@@ -89,7 +118,6 @@ export function createBearerFetch(
 			return response;
 		}
 		await response.body?.cancel();
-		headers.set('Authorization', `Bearer ${await manager.get(origin)}`);
-		return send(target.href, { ...init, headers, credentials: 'omit' });
+		return authorized(await resolveToken());
 	};
 }

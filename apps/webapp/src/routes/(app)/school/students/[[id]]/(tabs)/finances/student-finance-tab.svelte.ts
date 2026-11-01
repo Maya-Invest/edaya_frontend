@@ -1,40 +1,45 @@
-import type { Fee, StudentBilling } from '$lib/types/school';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { AccountStatement, StudentFinanceSummary } from '$lib/api/finance-types';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadFinanceData } from '$lib/api/finance-data';
+import { loadStudentAccountStatement, loadStudentFinanceSummary } from '$lib/api/finance-data';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
-import { authSession } from '$lib/auth/session.svelte';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
-import { billingStatusTone, summarizeStudentFinances } from './student-finance-tab.selectors';
+import { billingStatusTone } from './student-finance-tab.selectors';
 
-export { billingStatusTone, summarizeStudentFinances };
+export { billingStatusTone };
 
 const STUDENT_FINANCE_TAB_KEY = Symbol('student-finance-tab');
 
 export interface StudentFinanceTabSlice {
 	studentId: string;
-	fees: Fee[];
-	billing: StudentBilling[];
+	summary: StudentFinanceSummary | null;
+	statement: AccountStatement | null;
 }
 
 export type StudentFinanceTabSeed = Partial<Omit<StudentFinanceTabSlice, 'studentId'>>;
 
 function emptySlice(studentId: string): StudentFinanceTabSlice {
-	return { studentId, fees: [], billing: [] };
-}
-
-function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+	return { studentId, summary: null, statement: null };
 }
 
 export class StudentFinanceTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['students', 'billing', 'payments', 'fees']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
 	slice = $state<StudentFinanceTabSlice | null>(null);
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
+		this.versionedQuery.clear();
 		this.slice = null;
 	}
 
@@ -50,42 +55,35 @@ export class StudentFinanceTabState {
 		return this.slice?.studentId === studentId ? this.slice : null;
 	}
 
-	financesSummaryFor(studentId: string) {
-		const billing = this.forStudent(studentId)?.billing ?? [];
-		return summarizeStudentFinances(billing, studentId);
+	summaryFor(studentId: string) {
+		return this.forStudent(studentId)?.summary ?? null;
 	}
 
-	feesFor(studentId: string) {
-		return this.forStudent(studentId)?.fees ?? [];
+	statementFor(studentId: string) {
+		return this.forStudent(studentId)?.statement ?? null;
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
-				if (!studentId) {
+				const academicYearId = academicContext.yearId;
+				if (!studentId || !academicYearId) {
 					return {};
 				}
 
-				const resolvedSchoolId = schoolId();
-				if (!resolvedSchoolId) {
-					return {};
-				}
-
-				const scope = {
-					schoolId: resolvedSchoolId,
-					academicYearId: academicContext.yearId,
-				};
-				const { fees, billing } = await loadFinanceData(getBrowserSchoolClient(), scope);
-				this.seed(studentId, {
-					fees,
-					billing: billing.filter(item => item.studentId === studentId),
-				});
+				const client = getBrowserSchoolClient();
+				const [summary, statement] = await Promise.all([
+					loadStudentFinanceSummary(client, { studentId, academicYearId }),
+					loadStudentAccountStatement(client, { studentId, academicYearId }),
+				]);
+				signal.throwIfAborted();
+				this.seed(studentId, { summary, statement });
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request));
 	}
 }
 

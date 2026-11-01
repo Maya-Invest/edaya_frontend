@@ -25,7 +25,7 @@ export async function waitForUrlTab(
 }
 
 export async function waitForDrawerAside(ctx: DemoContext, timeoutMs = 30_000) {
-	const drawer = ctx.page.locator('aside.fixed.right-0');
+	const drawer = ctx.page.locator('[role="dialog"].ui-drawer');
 	return drawer.waitFor({ state: 'visible', timeout: timeoutMs }).then(() => drawer).catch(() => null);
 }
 
@@ -60,7 +60,7 @@ export async function clickDrawerTab(ctx: DemoContext, tabKey: DrawerTabKey): Pr
 	const testBar = ctx.page.getByTestId('drawer-tab-bar');
 	const root = (await testBar.isVisible().catch(() => false))
 		? testBar
-		: ctx.page.locator('aside.fixed.right-0');
+		: ctx.page.locator('[role="dialog"].ui-drawer');
 	const link = root.getByRole('link', { name: label });
 	if (await link.isVisible({ timeout: 5_000 }).catch(() => false)) {
 		await link.click();
@@ -77,7 +77,7 @@ export async function clickDrawerTab(ctx: DemoContext, tabKey: DrawerTabKey): Pr
 }
 
 export async function closeDrawer(ctx: DemoContext): Promise<boolean> {
-	const drawer = ctx.page.locator('aside.fixed.right-0');
+	const drawer = ctx.page.locator('[role="dialog"].ui-drawer');
 	const footerClose = drawer
 		.locator('footer')
 		.getByRole('button', { name: /close|fermer/i });

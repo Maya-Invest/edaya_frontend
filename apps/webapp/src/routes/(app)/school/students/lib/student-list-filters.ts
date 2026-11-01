@@ -4,8 +4,11 @@ import { studentMatchesSearchQuery } from '$lib/students/matches-student-search-
 
 export type StudentSortColumn = Exclude<StudentListFilters['sort'], 'roster'>;
 
-export function studentListUsesFullRoster(filters: Pick<StudentListFilters, 'q' | 'status' | 'sort'>) {
-	return filters.q.trim() !== '' || filters.status !== 'all' || filters.sort !== 'roster';
+export function studentListUsesFullRoster(filters: Pick<StudentListFilters, 'q' | 'status' | 'sort' | 'photoReview'>) {
+	return filters.q.trim() !== ''
+		|| filters.status !== 'all'
+		|| filters.sort !== 'roster'
+		|| filters.photoReview === 'pending';
 }
 
 export function cycleStudentListSort(
@@ -65,11 +68,16 @@ function sortStudentList(
 export function filterStudentList(
 	students: readonly Student[],
 	filters: StudentListFilters,
-	options?: { classNameById?: ReadonlyMap<string, string> },
+	options?: {
+		classNameById?: ReadonlyMap<string, string>;
+		pendingPhotoStudentIds?: ReadonlySet<string>;
+	},
 ): Student[] {
+	const pendingIds = options?.pendingPhotoStudentIds;
 	const filtered = students
 		.filter(student => filters.class === 'all' || student.classId === filters.class)
 		.filter(student => filters.status === 'all' || student.status === filters.status)
+		.filter(student => filters.photoReview !== 'pending' || Boolean(pendingIds?.has(student.id)))
 		.filter(student => studentMatchesSearchQuery(student, filters.q));
 	return sortStudentList(filtered, filters.sort, filters.sortDir, options?.classNameById);
 }

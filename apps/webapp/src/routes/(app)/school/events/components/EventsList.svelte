@@ -12,8 +12,9 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { AlertTriangle, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getEventsPageState } from '../events-page.svelte';
 	import IncidentFormModal from './IncidentFormModal.svelte';
@@ -61,7 +62,9 @@
 			const sIds = new Set(
 				students.filter(s => s.classId === effectiveClassId).map(s => s.id),
 			);
-			filtered = filtered.filter(i => i.involvedStudentIds.some(id => sIds.has(id)));
+			filtered = filtered.filter((i) => {
+				return i.involvedStudentIds.length === 0 || i.involvedStudentIds.some(id => sIds.has(id));
+			});
 		}
 
 		if (filters.q.trim()) {
@@ -139,17 +142,19 @@
 	}
 
 	function handleCreated(incidentId: string) {
-		appGoto(detailHref.schoolIncident(incidentId));
+		openDetailDrawer(detailHref.schoolIncident(incidentId), currentRouteSurfaceHref($page.url));
 	}
 </script>
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[eventsPage.filters.values.class, eventsPage.filters.values.category, eventsPage.filters.values.severity, eventsPage.filters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => eventsPage.filters.patchImmediate({ class: 'all', category: 'all', severity: 'all', status: 'all' })}
 		eyebrow={$t('events.schoolLife')}
 		title={$t('events.count', { n: list.length })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => eventsPage.filters.syncNow()}
 				value={eventsPage.filters.values.q}
 				placeholder={$t('common.searchStudent')}
 				class="min-w-[200px] max-w-sm"
@@ -161,7 +166,7 @@
 				<FilterSelect
 					value={eventsPage.filters.values.class}
 					onchange={value => eventsPage.filters.patchImmediate({ class: value })}
-					class="h-9 w-[220px] rounded-lg text-sm"
+					class="h-9 w-[220px] rounded-collection text-sm"
 					options={classFilterOptions}
 				/>
 			{/if}
@@ -197,7 +202,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -209,7 +214,20 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'incidents.csv',
+					headers: ['date', 'student', 'category', 'severity', 'summary'],
+					loadAll: async () => list.map(incident => [
+						incident.date,
+						studentSummary(incident),
+						incident.category,
+						incident.severity,
+						incident.summary,
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 
@@ -218,7 +236,7 @@
 		onCreated={handleCreated}
 	/>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+	<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 		<div
 			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 		>
@@ -241,7 +259,7 @@
 							selectedId === i.id && 'border-primary/40 bg-primary/5',
 						)}
 					>
-						<div class="col-span-2 font-mono text-xs text-muted-foreground">
+						<div class="col-span-2 font-sans tabular-nums text-xs text-muted-foreground">
 							{new Date(i.date).toLocaleDateString($locale, {
 								day: 'numeric',
 								month: 'short',
@@ -250,7 +268,7 @@
 						</div>
 						<div class="col-span-3 flex items-center gap-2">
 							<div
-								class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-display text-xs font-semibold text-primary-foreground"
+								class="flex h-8 w-8 items-center justify-center rounded-collection bg-primary font-display text-xs font-semibold text-primary-foreground"
 							>
 								{st?.initials ?? '?'}
 							</div>

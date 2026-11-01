@@ -1,3 +1,4 @@
+import { chooseOption } from '../../support/custom-select';
 import { openUrlModal } from '../../../../scripts/qa-harness-ui';
 import { configClassGroupPath } from './paths';
 import type { DemoContext, EnsureDailyAttendanceOptions } from './types';
@@ -37,7 +38,7 @@ export async function ensureDailyAttendanceMode(
 	const { page, base } = ctx;
 
 	await visit(ctx, `${base}${configClassGroupPath(classId, 'profile')}`, 'setup', `Open ${classId} config`, {
-		pathPrefix: `/configuration/classes/${classId}`,
+		pathPrefix: `/configuration/structure/classes/${classId}`,
 		selector: 'aside#app-sidebar',
 	});
 
@@ -59,7 +60,7 @@ export async function ensureDailyAttendanceMode(
 
 	const modalOpened = await openUrlModal(
 		page,
-		`/configuration/classes/${classId}/profile`,
+		`/configuration/structure/classes/${classId}/profile`,
 		'edit',
 		{ base, timeout: 12_000 },
 	);
@@ -70,23 +71,15 @@ export async function ensureDailyAttendanceMode(
 		}
 		await editBtn.click();
 	}
-	await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 10_000 });
+	await page.getByTestId('form-modal').waitFor({ state: 'visible', timeout: 10_000 });
 
 	if (!dailyOk || force) {
-		const modeSelect = page.locator('[role="dialog"] select').filter({
+		const modeSelect = page.getByTestId('form-modal').locator('select').filter({
 			has: page.locator('option[value="daily"]'),
 		}).last();
 		const currentMode = await modeSelect.inputValue().catch(() => 'session');
 		if (currentMode !== 'daily') {
-			await modeSelect.selectOption('daily');
-			await modeSelect.evaluate((el) => {
-				if (!(el instanceof HTMLSelectElement)) {
-					return;
-				}
-				el.value = 'daily';
-				el.dispatchEvent(new Event('input', { bubbles: true }));
-				el.dispatchEvent(new Event('change', { bubbles: true }));
-			});
+			await chooseOption(modeSelect, 'daily');
 		}
 	}
 
@@ -102,7 +95,7 @@ export async function ensureDailyAttendanceMode(
 		await page.waitForTimeout(1_000);
 	}
 	await saveBtn.click();
-	await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
+	await page.getByTestId('form-modal').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
 
 	const dailyConfigured = await page
 		.getByText(dailyModePattern)
@@ -129,12 +122,12 @@ export async function assertClassAttendanceNav(
 		.locator('aside#app-sidebar button, aside#app-sidebar a')
 		.filter({ hasText: /classes|classe/i })
 		.first();
-	if (await classesToggle.isVisible({ timeout: 3_000 }).catch(() => false)) {
+	const attendanceLink = page.locator(`aside#app-sidebar a[href*="/classes/${classId}/attendance"]`);
+	if (!await attendanceLink.isVisible() && await classesToggle.isVisible({ timeout: 3_000 }).catch(() => false)) {
 		await classesToggle.click().catch(() => {});
 	}
 
-	const attendanceLink = page.locator(`aside#app-sidebar a[href*="/classes/${classId}/attendance"]`);
-	const visible = await attendanceLink.isVisible({ timeout: 10_000 }).catch(() => false);
+	const visible = await attendanceLink.waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false);
 	if (visible) {
 		reporter.log(scene, step, 'pass');
 		return true;

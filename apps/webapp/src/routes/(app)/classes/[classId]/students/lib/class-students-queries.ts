@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ClassStudentsPageState } from '../class-students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassPeopleData } from '$lib/api/people-data';
@@ -19,15 +20,16 @@ export async function loadClassStudentsSlice(classId: string) {
 }
 
 export function queryClassStudentsListPage(classId: string, state: ClassStudentsPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyClassStudentsSlice(classId),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadClassStudentsSlice(classId);
+			signal.throwIfAborted();
 			state.applySlice(classId, data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }
 
 export async function ensureClassStudentDrawerSelection(

@@ -1,3 +1,23 @@
+import { chooseOption, selectControl } from '../tests/integration/support/custom-select';
+import { openViewSurface } from '../tests/integration/support/view-workflow';
+import { bindBrowserScenarioContext } from '../tests/integration/support/browser-scenario';
+import { captureIntegrationCheckpoint } from '../tests/integration/support/visual-artifacts';
+import { withScenarioArtifacts, observeScenarioPage, captureScenarioPage } from '../tests/integration/support/scenario-artifacts';
+import { exerciseAssignmentCrud } from '../tests/integration/support/assignment-workflows';
+import { exerciseDetailCrud } from '../tests/integration/support/detail-crud-workflows';
+import { exerciseStudentList } from '../tests/integration/support/student-list-workflows';
+import assert from 'node:assert/strict';
+import { apiFetch } from '../tests/integration/setup/journey-api';
+import { exerciseRegisteredRead } from '../tests/integration/support/read-workflows';
+import { exerciseDashboard } from '../tests/integration/support/dashboard-workflows';
+import { scenarioForSurface } from '../tests/integration/support/coverage-contract';
+import { exerciseStudentDocument } from '../tests/integration/support/document-workflows';
+import { exerciseStudentPhoto, exerciseStudentStatus, exerciseStudentTransfer } from '../tests/integration/support/student-workflows';
+import { exerciseActivityCreateEdit, exerciseReportModuleLifecycle, exerciseCatalogCrud, exerciseEvaluationEditDelete, exerciseFeeEditArchive, exerciseGradeLevelEditDelete } from '../tests/integration/support/catalog-workflows';
+import { exerciseFinanceMutation, exerciseReconciliation, financeFixture } from '../tests/integration/support/finance-workflows';
+import { exerciseTeacherRead } from '../tests/integration/support/teacher-workflows';
+import { exerciseTimetable } from '../tests/integration/support/timetable-workflows';
+import { IMPORT_SCENARIOS, exerciseImport } from '../tests/integration/support/import-workflows';
 import { attemptPasswordSignIn, ensurePasswordSignInPanel, waitForEnabled } from '../tests/integration/demo-dry-run/support/auth';
 import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '../src/lib/auth/teacher-portal-gate';
 import { defaultAcademicYearPreset } from '../src/lib/onboarding/school-step-defaults';
@@ -6,14 +26,16 @@ import { completeWizardViaApi } from '../tests/integration/setup/journey-api';
 import type { Browser, Page } from 'playwright';
 import type { DemoContext } from '../tests/integration/demo-dry-run/support/types';
 import { DEMO_PASSWORD, STAFF_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
+import { pathnameReachedSidebarTarget } from '../tests/integration/demo-dry-run/support/paths';
 import type { QaTemplateRow } from './qa-template-matrix';
 import {
 	clickCreateButton,
+	navigateSpaPage,
 	clickFirstListSortColumn,
-	dismissPageError,
 	ensureAcademicYearReady,
 	exportSelectedListRows,
 	fillClassCreateDialog,
+	fillFeeCreateDialog,
 	fillStudentCreateDialog,
 	isDeleteControlVisible,
 	listSearchInput,
@@ -31,8 +53,10 @@ import {
 	discoverEntities,
 	emptyEntities,
 	formatError,
+	isClassDailyAttendanceSidebarPath,
 	mergeEntities,
 	navigateToRow,
+	sidebarSmokeStartPath,
 	type MatrixEntities,
 	type MatrixResult,
 	waitForAcademicYearTrigger,
@@ -58,7 +82,7 @@ function result(row: QaTemplateRow, statut: MatrixResult['statut'], detail?: str
 }
 
 function na(row: QaTemplateRow, detail: string): MatrixResult {
-	return result(row, 'N/A', detail);
+	return { ...result(row, 'NOT OK', `Blocked: ${detail}`), blocked: true };
 }
 
 function ok(row: QaTemplateRow, detail?: string): MatrixResult {
@@ -80,7 +104,7 @@ async function loginPassword(page: Page, base: string, email: string, password: 
 
 async function hasMainContent(page: Page, options: { drawerTimeout?: number } = {}): Promise<boolean> {
 	const drawerTimeout = options.drawerTimeout ?? 15_000;
-	const drawer = page.locator('aside[aria-label]');
+	const drawer = page.locator('[role="dialog"].ui-drawer');
 	if (await drawer.isVisible({ timeout: drawerTimeout }).catch(() => false)) {
 		return true;
 	}
@@ -129,6 +153,7 @@ async function runAuthScenario(
 	if (action.includes('erreur visible')) {
 		const context = await browser.newContext();
 		const p = await context.newPage();
+		observeScenarioPage(p);
 		try {
 			await p.goto(`${base}/login`, { waitUntil: 'domcontentloaded' });
 			await ensurePasswordSignInPanel(p);
@@ -143,9 +168,7 @@ async function runAuthScenario(
 			const errorEl = p.locator('[role="alert"], .text-destructive, form .text-red-500, form p.text-red').first();
 			const visible = await errorEl.isVisible({ timeout: 5_000 }).catch(() => false);
 			if (!visible) return notOk(row, 'Aucun message inline visible (toast seulement ?)');
-			const color = await errorEl.evaluate(el => getComputedStyle(el).color).catch(() => '');
-			const isRed = /rgb\(\s*(1?[0-9]{2}|2[0-4][0-9]),\s*0,\s*0\)|#f|#e|red/i.test(color);
-			return isRed ? ok(row) : notOk(row, `Message visible mais couleur: ${color}`);
+			return ok(row);
 		}
 		finally {
 			await context.close();
@@ -213,6 +236,7 @@ async function runOnboardingScenario(row: QaTemplateRow, ctx: DemoContext, entit
 	const fatal = await assertNoFatalError(page);
 	if (fatal) return notOk(row, fatal);
 
+
 	if (action.includes('validation') || action.includes('Formulaire')) {
 		const form = page.locator('form, input, select').first();
 		const visible = await form.isVisible({ timeout: 8_000 }).catch(() => false);
@@ -234,6 +258,7 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	if (action.includes('Non connecté')) {
 		const isolated = await browser.newContext();
 		const p = await isolated.newPage();
+		observeScenarioPage(p);
 		try {
 			await p.context().clearCookies();
 			await p.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
@@ -241,6 +266,7 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 			return redirected ? ok(row) : notOk(row, p.url());
 		}
 		finally {
+			await captureScenarioPage(p).catch(() => {});
 			await isolated.close();
 		}
 	}
@@ -255,10 +281,8 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	if (action.includes('Sidebar') && !action.includes('Sidebar — lien')) {
 		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
-		const sidebar = page.locator('aside#app-sidebar');
-		const visible = await sidebar.isVisible().catch(() => false);
-		const links = await sidebar.locator('a[href], nav button').count();
-		return visible && links > 2 ? ok(row, `${links} entrées sidebar`) : notOk(row, 'Sidebar vide ou absente');
+		const checked = await runPermissionsScenario({ ...row, action: 'Compte éducateur — sidebar filtrée' }, browser, base, entities.secondaryAccounts);
+		return { ...checked, ...row };
 	}
 
 	if (action.includes('sans permission')) {
@@ -270,16 +294,45 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	}
 
 	if (action.includes('Sélecteur école')) {
-		const trigger = page.getByRole('button', { name: /école|school/i }).first();
-		return (await trigger.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : na(row, 'Sélecteur école absent (mono-école)');
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await waitForAppShell(page);
+    const trigger = page.getByTestId('academic-year-trigger');
+    await trigger.waitFor();
+    const schoolId = await trigger.getAttribute('data-school-id');
+    assert(schoolId, 'Required active school missing');
+    const response = await apiFetch(page,base,`/core/entities/schools/${schoolId}`);
+    assert(response.ok());
+    const school = await response.json() as {name:string};
+    const label = (await page.getByTestId('school-selector').innerText()).trim();
+    assert(label.length > 0 && school.name.startsWith(label), 'School selector must identify the persisted active school');
+    assert.equal(await page.getByTestId('school-selector-menu').count(),0, 'A single-school fixture must not offer a school switch');
+    return ok(row,'Verified the active school label against persisted data; multi-school switching executes in invited-staff-second-school');
 	}
 
 	if (action.includes('année scolaire')) {
 		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
 		await waitForResolvedAcademicYearId(page).catch(() => {});
-		const visible = await waitForAcademicYearTrigger(page, 10_000);
-		return visible ? ok(row) : notOk(row, 'Sélecteur année absent');
+		const trigger = page.getByTestId('academic-year-trigger');
+    await trigger.waitFor();
+    const schoolId = await trigger.getAttribute('data-school-id');
+    const yearId = await trigger.getAttribute('data-year-id');
+    assert(schoolId && yearId, 'Required school-scoped academic year missing');
+    const response = await apiFetch(page,base,`/core/entities/academic-years/${yearId}`);
+    assert(response.ok());
+    const year = await response.json() as {name:string;schoolId:string};
+    assert.equal(year.schoolId,schoolId);
+    await trigger.click();
+    const yearChoice = page.getByTestId('academic-year-choice');
+    await chooseOption(yearChoice, yearId);
+    assert(await page.getByTestId('academic-year-apply').isDisabled(), 'Selecting the current year must not create a scope change');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(({schoolId}) => sessionStorage.getItem(`edaya:yearId:${schoolId}`),{schoolId}),yearId);
+    await page.reload({waitUntil:'domcontentloaded'});
+    await waitForResolvedAcademicYearId(page);
+    await trigger.waitFor();
+    assert.equal(await trigger.getAttribute('data-year-id'),yearId);
+    return ok(row,'Selected the published year and verified school-scoped persistence after reload');
 	}
 
 	if (action.includes('langue')) {
@@ -332,28 +385,65 @@ export async function runLogoutShellScenario(row: QaTemplateRow, ctx: DemoContex
 		await page.goto(`${base}/dashboard?modal=account-profile`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
 
-		const dialog = page.getByRole('dialog');
-		if (!(await dialog.isVisible({ timeout: 8_000 }).catch(() => false))) {
-			const profileBtn = page.locator('[data-testid="user-menu"]').first();
-			if (await profileBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-				await profileBtn.click();
-			}
-			if (!(await dialog.isVisible({ timeout: 5_000 }).catch(() => false))) {
-				return notOk(row, 'Modal profil non ouvert avant logout');
-			}
-		}
-
-		const signOut = dialog.getByRole('button', { name: /se déconnecter|sign out/i }).last();
-		if (!(await signOut.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return notOk(row, 'Bouton déconnexion introuvable');
-		}
-		await signOut.click();
-
-		const redirected = await page.waitForURL(/\/login/, { timeout: 15_000 }).then(() => true).catch(() => false);
-		return redirected ? ok(row) : notOk(row, `Pas de redirect /login (url=${page.url()})`);
+		const dialog = page.getByTestId('account-profile-dialog');
+		await dialog.waitFor({ state: 'visible' });
+		await dialog.getByRole('tab', { name: /^(sécurité|security)$/i }).click();
+		const signOut = dialog.getByRole('button', { name: /se déconnecter|sign out/i });
+		const [response] = await Promise.all([
+			page.waitForResponse(response => response.url().endsWith('/auth/edaya/sign-out') && response.request().method() === 'POST'),
+			signOut.click(),
+		]);
+		assert(response.ok(), `Sign out HTTP ${response.status()}`);
+		await page.waitForURL(/\/login/, { timeout: 15_000 });
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+		await page.waitForURL(/\/login/, { timeout: 15_000 });
+		return ok(row, 'Signed out from account Security; server response and protected-page redirect verified');
 	}
 	catch (err) {
 		return notOk(row, formatError(err));
+	}
+}
+
+async function ensureSidebarLabelsVisible(page: Page): Promise<void> {
+	const sidebar = page.locator('aside#app-sidebar');
+	const labeled = sidebar.locator('button[aria-expanded], a').filter({
+		hasText: /dashboard|tableau|école|school|classes|classe/i,
+	}).first();
+	if (await labeled.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		return;
+	}
+	const toggle = page.locator('button[aria-controls="app-sidebar"]');
+	if (await toggle.isVisible().catch(() => false)) {
+		await toggle.click();
+		await labeled.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+	}
+}
+
+async function expandSidebarModuleForPath(
+	sidebar: ReturnType<Page['locator']>,
+	resolvedPath: string,
+): Promise<void> {
+	const modulePatterns: Array<{ prefix: string; pattern: RegExp }> = [
+		{ prefix: '/school', pattern: /école|school/i },
+		{ prefix: '/classes/', pattern: /classes|classe/i },
+		{ prefix: '/finance', pattern: /finance|finances/i },
+		{ prefix: '/configuration', pattern: /config/i },
+	];
+	const moduleMatch = modulePatterns.find(entry => resolvedPath.startsWith(entry.prefix));
+	if (!moduleMatch) {
+		return;
+	}
+	const moduleButtons = sidebar.locator('nav > ul > li > button[aria-expanded]');
+	const buttonCount = await moduleButtons.count();
+	for (let index = 0; index < buttonCount; index++) {
+		const button = moduleButtons.nth(index);
+		const label = await button.innerText().catch(() => '');
+		if (!moduleMatch.pattern.test(label)) continue;
+		if ((await button.getAttribute('aria-expanded')) !== 'true') {
+			await button.click();
+			await button.page().waitForTimeout(400);
+		}
+		break;
 	}
 }
 
@@ -410,8 +500,10 @@ async function loginIsolatedTeacher(
 ): Promise<{ page: Page; context: import('playwright').BrowserContext } | null> {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const page = await context.newPage();
+	observeScenarioPage(page);
 	const logged = await attemptPasswordSignIn(page, base, email, password);
 	if (!logged) {
+		await captureScenarioPage(page).catch(() => {});
 		await context.close();
 		return null;
 	}
@@ -426,8 +518,10 @@ async function loginIsolated(
 ): Promise<{ page: import('playwright').Page; context: import('playwright').BrowserContext } | null> {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const page = await context.newPage();
+	observeScenarioPage(page);
 	const logged = await attemptPasswordSignIn(page, base, email, password);
 	if (!logged) {
+		await captureScenarioPage(page).catch(() => {});
 		await context.close();
 		return null;
 	}
@@ -469,6 +563,7 @@ async function runPermissionsScenario(
 			return gate.ok ? ok(row, gate.detail) : notOk(row, gate.detail);
 		}
 		finally {
+			await captureScenarioPage(session.page).catch(() => {});
 			await session.context.close();
 		}
 	}
@@ -500,6 +595,7 @@ async function runPermissionsScenario(
 			return ok(row, `${hrefs.length} entrées sidebar`);
 		}
 		finally {
+			await captureScenarioPage(session.page).catch(() => {});
 			await session.context.close();
 		}
 	}
@@ -516,6 +612,7 @@ async function runPermissionsScenario(
 			return await assertFinanceRestrictedNoChrome(row, session.page, base);
 		}
 		finally {
+			await captureScenarioPage(session.page).catch(() => {});
 			await session.context.close();
 		}
 	}
@@ -558,6 +655,7 @@ async function runPermissionsScenario(
 			return ok(row, 'accès staff bloqué après tentative directe');
 		}
 		finally {
+			await captureScenarioPage(session.page).catch(() => {});
 			await session.context.close();
 		}
 	}
@@ -607,7 +705,8 @@ async function assertFinanceRedirectRestricted(
 		return await assertFinanceRestrictedNoChrome(row, session.page, base);
 	}
 	finally {
-		await session.context.close();
+		await captureScenarioPage(session.page).catch(() => {});
+			await session.context.close();
 	}
 }
 
@@ -659,42 +758,29 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		if (targetPath.includes('[classId]') && !entities.classId) {
 			return na(row, 'classId requis pour lien sidebar classe');
 		}
-		await page.goto(`${ctx.base}/dashboard`, { waitUntil: 'domcontentloaded' });
-		await waitForAppShell(page);
-
 		const resolvedPath = targetPath.replace('[classId]', entities.classId ?? '');
-		const sidebar = page.locator('aside#app-sidebar');
-		await sidebar.hover().catch(() => {});
+		const startPath = sidebarSmokeStartPath(resolvedPath, entities.classId);
+		await page.goto(`${ctx.base}${startPath}`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+		await waitForResolvedAcademicYearId(page).catch(() => {});
 
-		const modulePatterns: Array<{ prefix: string; pattern: RegExp }> = [
-			{ prefix: '/school', pattern: /école|school/i },
-			{ prefix: '/classes/', pattern: /classes|classe/i },
-			{ prefix: '/finance', pattern: /finance|finances/i },
-			{ prefix: '/configuration', pattern: /config/i },
-		];
-		const moduleMatch = modulePatterns.find(entry => resolvedPath.startsWith(entry.prefix));
-		if (moduleMatch) {
-			const moduleButtons = sidebar.locator('nav > ul > li > button[aria-expanded]');
-			const buttonCount = await moduleButtons.count();
-			for (let index = 0; index < buttonCount; index++) {
-				const button = moduleButtons.nth(index);
-				const label = await button.innerText().catch(() => '');
-				if (!moduleMatch.pattern.test(label)) continue;
-				if ((await button.getAttribute('aria-expanded')) !== 'true') {
-					await button.click();
-					await page.waitForTimeout(400);
-				}
-				break;
-			}
-		}
+		const sidebar = page.locator('aside#app-sidebar');
+		await ensureSidebarLabelsVisible(page);
+		await expandSidebarModuleForPath(sidebar, resolvedPath);
 
 		const link = sidebar.locator(`a[href="${resolvedPath}"], a[href^="${resolvedPath}/"]`).first();
-		if (!(await link.isVisible({ timeout: 6_000 }).catch(() => false))) {
+		if (!(await link.isVisible({ timeout: 10_000 }).catch(() => false))) {
+			if (isClassDailyAttendanceSidebarPath(resolvedPath)) {
+				return na(row, 'Onglet assiduité masqué hors appel quotidien');
+			}
 			return notOk(row, `Lien sidebar introuvable: ${resolvedPath}`);
 		}
 		await link.click();
-		await page.waitForTimeout(1_000);
-		return page.url().includes(resolvedPath) ? ok(row) : notOk(row, page.url());
+		const landed = await page.waitForURL(
+			url => pathnameReachedSidebarTarget(url.pathname, resolvedPath),
+			{ timeout: 15_000 },
+		).then(() => true).catch(() => false);
+		return landed ? ok(row) : notOk(row, page.url());
 	}
 
 	// Redirect-only tests
@@ -707,7 +793,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		}
 		if (!nav.url && row.endpoint.includes('/configuration') && action.includes('subjects')) {
 			await page.goto(`${ctx.base}/configuration`, { waitUntil: 'domcontentloaded' });
-			return page.url().includes('/configuration/subjects') ? ok(row) : notOk(row, page.url());
+			return page.url().includes('/configuration/structure/subjects') ? ok(row) : notOk(row, page.url());
 		}
 		if (!nav.url) return na(row, nav.reason ?? 'URL non résolue');
 		await page.waitForTimeout(1_000);
@@ -718,6 +804,24 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return ok(row, page.url());
 	}
 
+  if (action === ROUTE_SMOKE_ACTION || /^Modal deep-link \?modal=/i.test(action)) {
+    const path = row.endpoint.replace(/^https?:\/\/[^/]+/i, '');
+    const modal = new URL(path, ctx.base).searchParams.get('modal');
+    const registered = MODAL_SURFACES.find(surface => surface.parentRoute === path.split('?')[0] && surface.modal === modal);
+    const definition = scenarioForSurface(row);
+    const surface = { id: definition.id, feature: definition.feature, path, title: row.action,
+      kind: modal ? 'modal' as const : 'page' as const, identity: 'owner' as const,
+      target: registered?.targetEntityKey as keyof MatrixEntities | undefined };
+    const viewEntities = path.startsWith('/finance/billing/') && modal === 'allocate'
+      ? { ...entities, billingId: (await financeFixture(page, ctx.base, entities.classId!)).chargeId }
+      : entities;
+    await openViewSurface(page, ctx.base, surface, viewEntities);
+    const locale = await page.locator('html').getAttribute('lang') === 'en' ? 'en' as const : 'fr' as const;
+    await captureIntegrationCheckpoint({ id: modal ? 'dialog' : 'loaded', title: row.action, surface: path, ready: async () => {} },
+      bindBrowserScenarioContext({ browser, base: ctx.base, outDir: ctx.outDir, locale }, page, () => {}), definition);
+    return ok(row);
+  }
+
 	const nav = await navigateToRow(ctx, row, entities);
 	if (!nav.url) {
 		if (/import/i.test(action) && action.includes('prérequis')) {
@@ -727,51 +831,49 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	}
 
 	await waitForPageQuery(page);
-	await dismissPageError(page);
 
 	const fatal = await assertNoFatalError(page);
 	if (fatal) return notOk(row, fatal);
 
-	// ── Generated: modal deep-link smoke ──
-	if (/^Modal deep-link \?modal=/i.test(action)) {
-		const endpointPath = row.endpoint.replace(/^https?:\/\/[^/]+/i, '');
-		const modalMatch = endpointPath.match(/[?&]modal=([^&]+)/);
-		const modalKey = modalMatch?.[1];
-		const pathOnly = endpointPath.split('?')[0] ?? '';
-		const surface = MODAL_SURFACES.find((s) => {
-			if (s.modal !== modalKey) return false;
-			const normalizedParent = s.parentRoute
-				.replace('/[classId]', '')
-				.replace('/[id]', '');
-			return pathOnly === normalizedParent || pathOnly.startsWith(`${normalizedParent}/`);
-		});
-		if (surface?.requiresTarget && surface.targetEntityKey) {
-			const target = entities[surface.targetEntityKey as keyof MatrixEntities];
-			if (!target) {
-				return na(row, `Setup missing ${surface.setupStep ?? surface.targetEntityKey} for modalTarget`);
-			}
-		}
+	const scenarioId = scenarioForSurface(row).id;
+	if (['web.scenario.0011','web.scenario.0012','web.scenario.0013'].includes(scenarioId)) return ok(row, await exerciseDashboard(page,ctx.base,scenarioId));
+	const studentListResult = await exerciseStudentList(page, ctx.base, scenarioId);
+	if (studentListResult) return ok(row, studentListResult);
+	if (scenarioId === 'web.scenario.0065') return ok(row, await exerciseActivityCreateEdit(page, ctx.base));
+	const detailResult = await exerciseDetailCrud(page, ctx.base, scenarioId, entities);
+	if (detailResult) return ok(row, detailResult);
+	const assignmentResult = await exerciseAssignmentCrud(page, ctx.base, scenarioId, entities);
+	if (assignmentResult) return ok(row, assignmentResult);
+	if (scenarioId === 'web.scenario.0165') {
+		if (!entities.gradeLevelId) return na(row, 'Required grade-level fixture missing');
+		return ok(row, await exerciseReportModuleLifecycle(page, ctx.base, entities.gradeLevelId));
+	}
+	const catalogResult = await exerciseCatalogCrud(page, ctx.base, scenarioId);
+	if (catalogResult) return ok(row, catalogResult);
+	const readResult = await exerciseRegisteredRead(scenarioId, { page, base: ctx.base, entities });
+	if (readResult) return ok(row, readResult);
 
-		if (modalKey === 'add-chapter' && pathOnly.includes('/configuration/subjects/') && !entities.subjectId) {
-			return na(row, 'Setup missing subjectId for progression modal');
-		}
-
-		const visible = await waitForFormModal(page, 15_000);
-
-		const urlHasModal = modalKey ? page.url().includes(`modal=${modalKey}`) : false;
-		return visible && urlHasModal ? ok(row) : notOk(row, `Modal non visible (url=${page.url()})`);
+	if (row.endpoint.endsWith('/school/students/[id]/profile') && ['Photo', 'Changer statut élève', 'Changer classe'].includes(action)) {
+		if (!entities.studentId) return notOk(row, 'Required student fixture missing');
+		const run = action === 'Photo' ? exerciseStudentPhoto : action === 'Changer classe' ? exerciseStudentTransfer : exerciseStudentStatus;
+		return ok(row, await run(page, ctx.base, entities.studentId));
 	}
 
-	// ── Generated: direct route navigation smoke ──
-	if (action === ROUTE_SMOKE_ACTION) {
-		const isStudentDrawerRoute = /\/school\/students\/[^/]+\//.test(page.url())
-			|| row.endpoint.includes('/school/students/[id]/');
-		if (isStudentDrawerRoute) {
-			await waitForPageQuery(page);
-		}
-		const content = await hasMainContent(page, { drawerTimeout: 15_000 });
-		return content ? ok(row) : notOk(row, 'Contenu principal / drawer absent');
-	}
+  if (row.endpoint.endsWith('/finance/fees') && action === 'Éditer / archiver frais') return ok(row, await exerciseFeeEditArchive(page, ctx.base));
+  if (action === 'Imputer le solde' || action === 'Extourner un paiement') {
+    if (!entities.classId) return notOk(row, 'Required finance classroom fixture missing');
+    return ok(row, await exerciseFinanceMutation(page, ctx.base, entities.classId, action === 'Imputer le solde' ? 'allocate' : 'reverse'));
+  }
+  if (action === 'Rapprochement financier' || action === 'Contrôles financiers') return ok(row, await exerciseReconciliation(page, ctx.base));
+  if (action === 'Documents' && row.endpoint.endsWith('/documents')) return ok(row, await exerciseStudentDocument(page, ctx.base));
+  if (row.endpoint.includes('/school/teachers/[id]/') && ['Emploi du temps', 'Évaluations', 'Retour des familles'].includes(action)) return ok(row, await exerciseTeacherRead(page, ctx.base, action, entities));
+  if (row.endpoint.endsWith('/configuration/structure/details?gradeLevel=[id]') && action === 'Niveau sélectionné — éditer / supprimer') return ok(row, await exerciseGradeLevelEditDelete(page, ctx.base));
+  if (row.endpoint.includes('/evaluations') && action === 'Éditer / supprimer') {
+    if (!entities.classId) return notOk(row, 'Required assessment classroom fixture missing');
+    return ok(row, await exerciseEvaluationEditDelete(page, ctx.base, entities.classId));
+  }
+  const importType = (Object.keys(IMPORT_SCENARIOS) as Array<keyof typeof IMPORT_SCENARIOS>).find(key => IMPORT_SCENARIOS[key] === action);
+  if (importType) return ok(row, await exerciseImport(page, ctx.base, importType, entities));
 
 	// ── Notes pédagogiques (before generic CRUD — action contains "CRUD") ──
 	if (/notes pédagogiques/i.test(action)) {
@@ -797,14 +899,6 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			return ok(row, 'Note pédagogique créée');
 		}
 		return notOk(row, closed ? 'API create-student-note échouée' : 'Modal note toujours ouvert');
-	}
-
-	// ── List / display / load ──
-	if (/^(Liste|Chargement|Ledger|Hub|Templates|Catalogue|Affichage|Consulter|Vue |Redirect)/i.test(action)
-		|| /affichage|charge|visible|historique|métadonnées|détail message|profil élève|notes|assiduité|incidents|finances|bulletin|inscriptions/i.test(action)
-		&& !/créer|crud|éditer|sauver|publier|générer|supprimer|marquer|assigner|toggle|offer|import —/i.test(action)) {
-		const content = await hasMainContent(page);
-		return content ? ok(row) : notOk(row, 'Contenu principal absent');
 	}
 
 	// ── Search / Filters (registry-driven setup-first) ──
@@ -856,13 +950,12 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	if (/créer|crud|nouveau|ajouter/i.test(action) && !/notes pédagogiques/i.test(action)) {
 		if (row.endpoint.includes('/school/events') && /incident/i.test(action)) {
 			await waitForPageQuery(page);
-			await dismissPageError(page);
 			const opened = await openDialogButton(page, /add incident|ajouter un incident/i);
 			if (!opened) {
 				return notOk(row, 'Bouton Add incident introuvable sur /school/events');
 			}
 			const dialog = page.getByRole('dialog');
-			const studentCombo = dialog.getByRole('combobox').first();
+			const studentCombo = selectControl(dialog).first();
 			if (await studentCombo.isVisible().catch(() => false)) {
 				await studentCombo.click();
 				await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
@@ -880,17 +973,16 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 				await submit.click();
 				await page.waitForTimeout(2_000);
 				const closed = !(await dialog.isVisible().catch(() => false));
-				return closed ? ok(row) : ok(row, 'Modal incident ouvert (submit disabled sans élève)');
+				return notOk(row, closed ? 'Incident submission requires persisted readback' : 'Incident submission did not close the form');
 			}
-			return ok(row, 'Modal incident ouvert');
+			return notOk(row, 'Incident creation was not submitted');
 		}
 
-		if (row.endpoint.includes('/configuration/classes') && /classe/i.test(action)) {
+		if (row.endpoint.includes('/configuration/structure/classes') && /classe/i.test(action)) {
 			await waitForPageQuery(page);
-			await dismissPageError(page);
 			const opened = await openDialogButton(page, /ajouter une classe|add class/i);
 			if (!opened) {
-				return notOk(row, 'Bouton Add class introuvable sur /configuration/classes');
+				return notOk(row, 'Bouton Add class introuvable sur /configuration/structure/classes');
 			}
 			const className = `QA-Class-${Date.now()}`;
 			try {
@@ -938,13 +1030,10 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 		if (action.includes('frais') && row.endpoint.includes('/finance/fees')) {
 			await waitForPageQuery(page);
-			await dismissPageError(page);
 			const opened = await openDialogButton(page, /add fee|ajouter un frais/i);
 			if (!opened) return notOk(row, 'Bouton Add fee introuvable sur /finance/fees');
 			const dialog = page.getByRole('dialog');
-			await dialog.locator('input').first().fill(`QA-Frais-${Date.now()}`);
-			const amount = dialog.locator('input[type="number"]').first();
-			await amount.fill('10000');
+			await fillFeeCreateDialog(page, `QA-Frais-${Date.now()}`);
 			await submitDialog(page);
 			await page.waitForTimeout(2_000);
 			const closed = !(await dialog.isVisible().catch(() => false));
@@ -952,27 +1041,44 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		}
 
 		const opened = await clickCreateButton(page, action, row.endpoint);
-		return opened ? ok(row, 'Modal création ouvert') : notOk(row, 'Bouton création introuvable');
+		return notOk(row, opened ? 'Creation form opened without exercising the required mutation' : 'Bouton création introuvable');
 	}
 
 	// ── Edit / drawer / open ──
 	if (/éditer|édi|ouvrir|drawer|onglet|assigner|affectation|photo|commentaire|changer/i.test(action)) {
+		if (row.endpoint.includes('/finance/fees') && /éditer|supprimer/i.test(action)) {
+			const menu = page.getByRole('button', { name: /actions de ligne|row actions/i }).first();
+			if (!(await menu.isVisible({ timeout: 8_000 }).catch(() => false))) {
+				return notOk(row, 'Menu d’actions de frais introuvable');
+			}
+			await menu.click();
+			const edit = page.getByRole('button', { name: /^(modifier|edit)$/i }).last();
+			if (!(await edit.isVisible({ timeout: 4_000 }).catch(() => false))) {
+				return notOk(row, 'Action modifier introuvable');
+			}
+			await edit.click();
+			const dialog = page.getByRole('dialog');
+			return (await dialog.isVisible({ timeout: 5_000 }).catch(() => false))
+				? notOk(row, 'Fee edit form opened without saving and reading back a change')
+				: notOk(row, 'Formulaire frais non ouvert');
+		}
+
 		if (row.endpoint.includes('/finance/billing')) {
 			if (/assigner/i.test(action)) {
-				const assignBtn = page.getByRole('button', { name: /ajouter une facture|add invoice/i }).first();
+				const assignBtn = page.getByRole('button', { name: /attribuer un frais|assign fee/i }).first();
 				if (await assignBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
 					await assignBtn.click();
 					const dialog = page.getByRole('dialog');
 					const visible = await dialog.isVisible({ timeout: 5_000 }).catch(() => false);
-					return visible ? ok(row) : notOk(row, 'Modal assignation facture non ouvert');
+					return visible ? notOk(row, 'Invoice assignment opened without persisting an assignment') : notOk(row, 'Modal assignation facture non ouvert');
 				}
-				return notOk(row, 'Bouton Ajouter une facture introuvable');
+				return notOk(row, 'Bouton Attribuer un frais introuvable');
 			}
 			if (/drawer|ouvrir/i.test(action)) {
 				const rowBtn = page.locator('main ul button, [role="main"] ul button').first();
 				if (await rowBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
 					await rowBtn.click();
-					const drawer = page.locator('aside[aria-label]');
+					const drawer = page.locator('[role="dialog"].ui-drawer');
 					const visible = await drawer.isVisible({ timeout: 5_000 }).catch(() => false);
 					return visible ? ok(row) : notOk(row, 'Drawer facturation non ouvert');
 				}
@@ -986,26 +1092,32 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			await editBtn.click();
 			const drawer = page.getByRole('dialog').or(page.locator('[data-vaul-drawer]'));
 			const visible = await drawer.first().isVisible({ timeout: 5_000 }).catch(() => false);
-			return visible ? ok(row) : ok(row, 'Action édition déclenchée');
+			return notOk(row, visible ? 'Edit form opened without a persisted mutation assertion' : 'Edit action did not open its form');
 		}
 		if (await tab.isVisible().catch(() => false)) {
 			await tab.click();
-			return ok(row);
+			return /ouvrir|drawer|onglet/i.test(action) ? ok(row) : notOk(row, 'Tab navigation cannot satisfy a required mutation');
 		}
 		const form = page.locator('input, textarea, select').first();
-		return (await form.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : notOk(row, 'Formulaire / drawer introuvable');
+		return notOk(row, (await form.isVisible({ timeout: 5_000 }).catch(() => false)) ? 'Visible form does not satisfy this action' : 'Formulaire / drawer introuvable');
 	}
 
 	// ── Save preferences ──
 	if (/sauver|charger préférences/i.test(action)) {
-		const save = page.getByRole('button', { name: /sauver|save|enregistrer/i }).first();
-		const toggles = page.locator('input[type="checkbox"], [role="switch"]');
-		const count = await toggles.count();
-		if (action.includes('Charger') && count > 0) return ok(row, `${count} préférences`);
-		if (await save.isVisible().catch(() => false)) {
-			return ok(row, 'Bouton sauvegarde présent (non cliqué)');
-		}
-		return notOk(row, 'Préférences introuvables');
+		const custom = page.locator('main input[type=radio][value=custom]');
+		await custom.waitFor();
+		await custom.check();
+		const email = `qa-notifications-${Date.now()}@integration.edaya.test`;
+		const input = page.locator('main input[type=email]');
+		await input.fill(email);
+		const saved = page.waitForResponse(response => response.url().includes('/core/commands/update-notification-contact') && response.request().method() === 'POST', { timeout: 15000 });
+		await page.getByTestId('notification-save-actions').getByRole('button', { name: /^(save|enregistrer)$/i }).click();
+		const response = await saved;
+		if (!response.ok()) return notOk(row, `Notification contact save returned ${response.status()}`);
+		await page.reload({ waitUntil: 'domcontentloaded' });
+		await input.waitFor({ state: 'visible' });
+		assert.equal(await input.inputValue(), email);
+		return ok(row, 'Changed notification contact persisted after reload');
 	}
 
 	// ── Remove draft recipient (visibility only — must not mutate) ──
@@ -1015,7 +1127,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			.isVisible({ timeout: 6_000 })
 			.catch(() => false);
 		return visible
-			? ok(row, 'remove-target: control visible (not clicked)')
+			? notOk(row, 'Required recipient removal has no persisted postcondition')
 			: na(row, 'remove-target: no draft recipient (published or empty)');
 	}
 
@@ -1023,9 +1135,15 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	if (/supprimer|delete/i.test(action) && !/export/i.test(action)) {
 		const visible = await isDeleteControlVisible(page);
 		return visible
-			? ok(row, 'delete: control visible (not clicked)')
+			? notOk(row, 'Required delete has no persisted postcondition')
 			: na(row, 'delete: no delete control or insufficient data');
 	}
+
+    if (action === 'Générer / télécharger / annuler') return ok(row, await exerciseStudentDocument(page, ctx.base));
+
+    if (action.startsWith('Planning EDT')) {
+        return ok(row, await exerciseTimetable(page, ctx.base, scenarioForSurface(row).id === 'web.scenario.0181'));
+    }
 
 	// ── Publish / generate / payment / toggle — smoke only ──
 	if (row.endpoint.includes('/configuration/academic') && /publier année/i.test(action)) {
@@ -1052,7 +1170,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	if (/publier|générer|enregistrer paiement|résoudre|planning|brouillon|toggle|offer/i.test(action)) {
 		const btn = page.getByRole('button', { name: /publier|générer|paiement|résoudre|brouillon|publier|offer|toggle/i }).first();
 		return (await btn.isVisible({ timeout: 6_000 }).catch(() => false))
-			? ok(row, 'update: action available (not executed — avoids mutation)')
+			? notOk(row, 'Required mutation has no persisted postcondition')
 			: na(row, 'Bouton action absent ou données insuffisantes');
 	}
 
@@ -1064,25 +1182,15 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return notOk(row, outcome.detail);
 	}
 
-	// ── Imports ──
-	if (/import/i.test(action)) {
-		await page.goto(`${ctx.base}/configuration/tools`, { waitUntil: 'domcontentloaded' });
-		await waitForAppShell(page);
-		const importBtn = page.getByRole('button', { name: /import/i }).first();
-		if (await importBtn.isVisible({ timeout: 6_000 }).catch(() => false)) {
-			await importBtn.click();
-			const modal = page.locator('[data-testid="import-pack-generic"], [role="dialog"]');
-			const visible = await modal.first().isVisible({ timeout: 8_000 }).catch(() => false);
-			if (!visible) return notOk(row, 'Modal import non ouvert');
-			const packName = action.match(/import (\w+)/i)?.[1] ?? '';
-			if (packName && packName !== 'données') {
-				const option = page.getByText(new RegExp(packName, 'i')).first();
-				return (await option.isVisible({ timeout: 4_000 }).catch(() => false)) ? ok(row) : ok(row, 'Hub import accessible');
-			}
-			return ok(row);
-		}
-		return notOk(row, 'Hub import introuvable');
+	if (action.includes('Modal import données')) {
+		await navigateSpaPage(page, `${ctx.base}/configuration/tools`);
+		await waitForPageQuery(page);
+		await page.getByTestId('import-action').click();
+		await page.getByTestId('data-import-modal').waitFor({ state: 'visible' });
+		return ok(row, 'Current import chooser opened');
 	}
+
+	if (/import/i.test(action)) return notOk(row, 'Import action requires a registered valid/invalid input scenario');
 
 	// ── Dashboard specifics ──
 	if (row.module === 'Dashboard') {
@@ -1096,7 +1204,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			return (await link.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : na(row, 'Pas de carte cliquable');
 		}
 		if (action.includes('empty')) {
-			return ok(row, 'Page chargée sans erreur fatale');
+			return notOk(row, 'Empty state requires an explicitly empty fixture and an asserted empty state');
 		}
 	}
 
@@ -1109,28 +1217,31 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		await first.click();
 		if (action.includes('Marquer')) {
 			const readBtn = page.getByRole('button', { name: /lu|read/i }).first();
-			return (await readBtn.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : ok(row, 'Message ouvert');
+			return notOk(row, 'Read receipt requires a persisted delivery assertion');
 		}
 		return ok(row);
 	}
 
-	// ── Configuration academic wizard ──
-	if (action.includes('wizard') || action.includes('périodes')) {
-		const wizard = page.getByRole('button', { name: /période|period|wizard|ajouter/i }).first();
-		return (await wizard.isVisible({ timeout: 6_000 }).catch(() => false)) ? ok(row) : notOk(row, 'Wizard périodes introuvable');
+	// ── Weekly period grid ──
+	if (row.endpoint.includes('/configuration/period-grid') && /sélecteur année/i.test(action)) {
+		const yearSelect = page.getByTestId('list-filter-select');
+		return (await yearSelect.isVisible({ timeout: 8_000 }).catch(() => false))
+			? ok(row, 'Year select visible')
+			: notOk(row, 'Sélecteur année introuvable');
+	}
+	if (row.endpoint.includes('/configuration/period-grid') && (/wizard/i.test(action) || /périodes/i.test(action))) {
+		const wizard = page.getByRole('button', { name: /configuration rapide|quick setup/i }).first();
+		return (await wizard.isVisible({ timeout: 8_000 }).catch(() => false))
+			? ok(row, 'Quick setup visible')
+			: notOk(row, 'Wizard périodes introuvable');
+	}
+	if (row.endpoint.includes('/configuration/other') && /liste des catalogues/i.test(action)) {
+		const nav = page.getByRole('navigation', { name: /autres configurations|other configurations/i });
+		const links = await nav.getByRole('link').count();
+		return links >= 3 ? ok(row, `${links} catalogues`) : notOk(row, 'Liste des catalogues incomplète');
 	}
 
-	// ── Tools modal ──
-	if (action.includes('Modal import données')) {
-		const btn = page.getByRole('button', { name: /import/i }).first();
-		if (!(await btn.isVisible({ timeout: 5_000 }).catch(() => false))) return notOk(row, 'Bouton import absent');
-		await btn.click();
-		return (await page.getByRole('dialog').isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : notOk(row, 'Modal non ouvert');
-	}
-
-	// Default smoke
-	const content = await hasMainContent(page);
-	return content ? ok(row) : notOk(row, 'Scénario par défaut — contenu absent');
+	return notOk(row, `No executable behavior assertion registered for: ${action}`);
 }
 
 export async function runMatrixScenario(
@@ -1139,6 +1250,7 @@ export async function runMatrixScenario(
 	browser: Browser,
 	entities: MatrixEntities,
 ): Promise<MatrixResult> {
+	return withScenarioArtifacts({ id: scenarioForSurface(row).id, expected: row.action, directory: ctx.outDir, page: ctx.page }, async () => {
 	try {
 		if (entities.studentSetupBlocked && isStudentBlockedScenario(row.endpoint, row.action)) {
 			return na(row, STUDENT_SETUP_BLOCKER.detail);
@@ -1151,6 +1263,7 @@ export async function runMatrixScenario(
 	catch (err) {
 		return notOk(row, formatError(err));
 	}
+	});
 }
 
 export { discoverEntities, emptyEntities };

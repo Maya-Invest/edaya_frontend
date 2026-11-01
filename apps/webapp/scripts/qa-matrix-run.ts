@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
+import { runScenarios } from '../tests/integration/support/scenario-registry';
+import { bindBrowserScenarioContext, type BrowserScenarioContext } from '../tests/integration/support/browser-scenario';
 /**
  * Exécute les scénarios de qa-template-matrix.ts via Playwright.
- * Écrit apps/webapp/.integration-run/qa-matrix-results.json puis régénère qa-test-matrix.xlsx.
+ * Écrit apps/webapp/.integration-run/qa-matrix-results.json puis régénère qa-test-matrix.csv.
  *
- * Policy: on NOT OK — log blocker, continue, exit 1. Never edit src/ to green the run.
+ * Policy: on NOT OK — log blocker, continue, exit 1. Fix confirmed defects while preserving intended behavior.
  *
  * Env: WEBAPP_URL, QA_LOGIN_EMAIL, QA_LOGIN_PASSWORD
  * Provisioned runs (canonical integration contract): INTEGRATION_PROVISIONED=1
@@ -12,10 +14,11 @@
  * Demo smoke (local only): bun run qa:matrix
  * Always excluded (manual): Auth, Onboarding, Outils & imports, /login, /configuration/tools
  */
+import { scenarioForSurface } from '../tests/integration/support/coverage-contract';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { chromium } from 'playwright';
+import type { Browser } from 'playwright';
 import { ensurePlaywrightChromium } from './playwright-browsers';
 import { assertStackReady, attemptPasswordSignIn } from '../tests/integration/demo-dry-run/support/auth';
 import { createDemoContext } from '../tests/integration/demo-dry-run/support/context';
@@ -41,7 +44,7 @@ import {
 } from './integration-report';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '..');
-const OUT_DIR = path.join(WEBAPP_DIR, '.qa-matrix-run');
+const OUT_DIR = path.join(WEBAPP_DIR, isProvisionedRun() ? '.integration-run/artifacts' : '.qa-matrix-run');
 const RESULTS_PATH = path.join(WEBAPP_DIR, '.integration-run', 'qa-matrix-results.json');
 const FIXTURE_PATH = path.join(WEBAPP_DIR, '.integration-run', 'fixture.json');
 const INTEGRATION_SUMMARY_PATH = path.join(WEBAPP_DIR, '.integration-run', 'summary.json');
@@ -117,6 +120,11 @@ async function qaSignIn(
 ): Promise<void> {
 	const { page, base } = ctx;
 
+	if (await page.locator('aside#app-sidebar').isVisible().catch(() => false)) {
+		await waitForAppShell(page);
+		return;
+	}
+
 	if (isProvisionedRun() && credentials) {
 		const ok = await loginWithPassword(page, base, credentials.email, credentials.password);
 		if (ok) {
@@ -179,7 +187,13 @@ async function main(): Promise<void> {
 	}
 
 	const results: MatrixResult[] = [];
+	const recordedKeys = new Set<string>();
 	const record = (r: MatrixResult) => {
+		const key = `${r.module}::${r.endpoint}::${r.action}`;
+		if (recordedKeys.has(key)) {
+			return;
+		}
+		recordedKeys.add(key);
 		results.push(r);
 		const tag = r.statut === 'OK' ? '✓' : r.statut === 'N/A' ? '○' : '✗';
 		console.log(`${tag} [${r.module}] ${r.action.slice(0, 60)}${r.detail ? ` — ${r.detail.slice(0, 80)}` : ''}`);
@@ -225,8 +239,12 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 
+	const { chromium } = await import('playwright');
 	const browser = await chromium.launch({ headless: true });
+	try {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+	context.setDefaultTimeout(15_000);
+	context.setDefaultNavigationTimeout(30_000);
 	const page = await context.newPage();
 	const consoleErrors: string[] = [];
 	page.on('console', msg => {
@@ -278,7 +296,7 @@ async function main(): Promise<void> {
 		const setupEntities = { ...journey.entities, ...(await loadSetupEntities()) };
 		Object.assign(entities, setupEntities);
 		entities.onboarded = true;
-		if (journey.steps.some(s => s.blocked)) {
+		if (journey.steps.some(s => s.step === 'student' && !s.ok)) {
 			entities.studentSetupBlocked = true;
 		}
 		if (!journey.structureOk) {
@@ -307,16 +325,16 @@ async function main(): Promise<void> {
 
 	console.log('\n--- Phase Application (unclaimed rows) ---');
 	let prevModule = '';
-	try {
-		for (const row of appRows) {
-			if (isProvisionedRun() && results.some(r =>
-				r.module === row.module && r.endpoint === row.endpoint && r.action === row.action
-			)) {
-				continue;
-			}
-			if (isProvisionedRun() && row.module === 'Shell' && row.action === 'Logout') {
-				continue;
-			}
+    try {
+      const unclaimed = appRows.filter(row => !(isProvisionedRun() && (
+        results.some(result => result.module === row.module && result.endpoint === row.endpoint && result.action === row.action)
+        || (row.module === 'Shell' && row.action === 'Logout'))));
+      if (unclaimed.length) {
+        const definitions = unclaimed.map(row => scenarioForSurface(row));
+        const outcomes = await runScenarios<BrowserScenarioContext>(definitions, {
+          createContext: async (_definition, cleanup) => bindBrowserScenarioContext({ browser, base: ctx.base, outDir: ctx.outDir, fixtures: { entities } }, ctx.page, cleanup),
+          execute: async scenario => {
+          const row = unclaimed.find(row => scenarioForSurface(row).id === scenario.id)!;
 			if (prevModule === 'Shell' && row.module !== 'Shell') {
 				console.log('--- Re-login après tests Shell ---');
 				let signedIn = false;
@@ -338,10 +356,20 @@ async function main(): Promise<void> {
 					throw new Error('Re-login failed after Shell tests');
 				}
 			}
-			record(await runMatrixScenario(row, ctx, browser, entities));
+			const result = await runMatrixScenario(row, ctx, browser, entities);
+			record(result);
 			prevModule = row.module;
-		}
-	}
+			if (result.statut !== 'OK') throw new Error(result.detail ?? `Failed action: ${row.action}`);
+
+        } });
+        for (const outcome of outcomes.filter(result => result.status !== 'passed')) {
+          const row = unclaimed.find(row => scenarioForSurface(row).id === outcome.id)!;
+          if (!results.some(result => result.module === row.module && result.endpoint === row.endpoint && result.action === row.action)) {
+            record({ ...row, statut: 'NOT OK', detail: outcome.detail });
+          }
+        }
+      }
+    }
 	catch (err) {
 		console.error(
 			'Unclaimed phase failed; persisting journey results:',
@@ -359,13 +387,14 @@ async function main(): Promise<void> {
 
 	const setupBlockers = entities.studentSetupBlocked ? [studentSetupBlockerReport()] : [];
 	await persistAndExit(base, results, consoleErrors, browser, excluded, setupBlockers);
+	} finally { await browser.close(); }
 }
 
 async function persistAndExit(
 	base: string,
 	results: MatrixResult[],
 	consoleErrors: string[],
-	browser: Awaited<ReturnType<typeof chromium.launch>>,
+	browser: Browser,
 	excluded: string[] = [],
 	setupBlockers: BlockerReport[] = [],
 ): Promise<void> {
@@ -402,7 +431,10 @@ async function persistAndExit(
 		byActionType,
 		blockers,
 		consoleErrors: [...new Set(consoleErrors)].slice(0, 30),
-		results,
+		results: results.map(result => {
+			const scenario = scenarioForSurface(result);
+			return { ...result, id: scenario.id, feature: scenario.feature };
+		}),
 	};
 
 	await mkdir(path.dirname(RESULTS_PATH), { recursive: true });
@@ -432,7 +464,7 @@ async function persistAndExit(
 	}
 
 	console.log(`\n--- Résumé ---`);
-	console.log(`OK: ${passed}  NOT OK: ${failed}  N/A: ${na}  Total: ${results.length}`);
+	console.log(`OK: ${passed}  NOT OK: ${failed}  N/A: ${na}  Unique: ${results.length}`);
 	if (excluded.length > 0) {
 		console.log(`Excluded from automated run: ${excluded.join(', ')}`);
 	}
@@ -445,14 +477,13 @@ async function persistAndExit(
 	const gen = spawnSync('bun', ['run', 'qa:template'], {
 		cwd: path.join(import.meta.dirname, '..'),
 		stdio: 'inherit',
-		shell: true,
 	});
 	if (gen.status !== 0) {
 		console.warn('qa:template a échoué — JSON disponible');
 	}
 
 	await browser.close();
-	process.exit(failed > 0 ? 1 : 0);
+	process.exit(failed > 0 || na > 0 || results.length === 0 ? 1 : 0);
 }
 
 main().catch(err => {

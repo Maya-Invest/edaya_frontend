@@ -2,13 +2,13 @@
 	import type { components } from '$lib/api/schema';
 	import type { Teacher } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { entitiesByIds, uniqueIds } from '$lib/api/entity-list-filters';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
+	import { dateValuePreservingInstant } from '$lib/date/temporal-inputs';
 	import { t } from '$lib/i18n';
 	import { pickClassSubjectIdForTeacherSubject } from '$lib/teachers/pick-class-subject-for-teacher';
 	import { get } from 'svelte/store';
@@ -16,43 +16,47 @@
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
 	import { getTeacherAssignmentsTabState } from '../teacher-assignments-tab.svelte';
 
-	let {
-		open = $bindable(false),
-		teacher,
-	}: {
+	let { open = $bindable(false), teacher, assignment = null }: {
 		open?: boolean;
 		teacher: Teacher;
+		assignment?: components['schemas']['TeacherAssignment'] | null;
 	} = $props();
-
 	const teachersPage = getTeachersPageState();
 	const assignmentsTab = getTeacherAssignmentsTabState();
-
 	let busy = $state(false);
+	let responsibility = $state('');
+	let startsAt = $state('');
+	let endsAt = $state('');
+	let status = $state<'active' | 'ended'>('active');
 	let kind = $state<components['schemas']['TeacherAssignment']['kind']>('subject');
 	let classGroupId = $state('');
 	let classSubjectIds = $state<string[]>(['']);
 	let classSubjects = $state<components['schemas']['ClassSubject'][]>([]);
 	let subjectLabels = $state<Record<string, string>>({});
 	let classSubjectsLoadId = 0;
-
-	const classOptions = $derived(
-		academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })),
-	);
-
-	const subjectOptions = $derived(
-		classSubjects.map(entry => ({
-			value: entry.id,
-			label: subjectLabels[entry.id] ?? entry.id,
-		})),
-	);
-
+	let preserveNextSubjectLoad = false;
+	const editing = $derived(Boolean(assignment));
+	const classOptions = $derived(academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })));
+	const subjectOptions = $derived(classSubjects.map(entry => ({
+		value: entry.id,
+		label: subjectLabels[entry.id] ?? entry.id,
+	})));
 	const selectedSubjectIds = $derived(classSubjectIds.filter(entry => entry.trim().length > 0));
-
-	const canSubmit = $derived(Boolean(classGroupId) && (kind === 'homeroom' || selectedSubjectIds.length > 0));
-
-	async function loadClassSubjects(nextClassGroupId: string) {
+	const canSubmit = $derived(Boolean(classGroupId) && (status !== 'ended' || Boolean(endsAt)) && (!startsAt || !endsAt || startsAt <= endsAt) && (kind === 'homeroom' || selectedSubjectIds.length > 0));
+	function classGroupIdForAssignment(row: components['schemas']['TeacherAssignment']): string {
+		if (row.classGroupId) {
+			return row.classGroupId;
+		}
+		if (row.classSubjectId) {
+			return teachersPage.subjects.find(entry => entry.id === row.classSubjectId)?.classId ?? '';
+		}
+		return '';
+	}
+	async function loadClassSubjects(nextClassGroupId: string, preserveSelection = false) {
 		const loadId = ++classSubjectsLoadId;
-		classSubjectIds = [''];
+		if (!preserveSelection) {
+			classSubjectIds = [''];
+		}
 		classSubjects = [];
 		subjectLabels = {};
 		if (!nextClassGroupId) {
@@ -62,26 +66,17 @@
 		if (!schoolId) {
 			return;
 		}
-		const client = getBrowserSchoolClient();
-		const nextClassSubjects = await client.entities.classSubjects.list({
-			schoolId,
-			classGroupId: nextClassGroupId,
-		});
-		if (loadId !== classSubjectsLoadId) {
+		const { classSubjects: nextClassSubjects, subjects } = await assignmentsTab.loadClassSubjectChoices(schoolId, nextClassGroupId);
+		if (loadId !== classSubjectsLoadId)
 			return;
-		}
 		classSubjects = nextClassSubjects;
-		const subjectIds = uniqueIds(nextClassSubjects.map(entry => entry.subjectId));
-		const subjects = subjectIds.length > 0
-			? await client.entities.subjects.list(entitiesByIds(subjectIds))
-			: [];
-		if (loadId !== classSubjectsLoadId) {
-			return;
-		}
 		subjectLabels = Object.fromEntries(nextClassSubjects.map((entry) => {
 			const name = subjects.find(subject => subject.id === entry.subjectId)?.name ?? entry.id;
 			return [entry.id, name];
 		}));
+		if (preserveSelection) {
+			return;
+		}
 		const hasManualSelections = classSubjectIds.some(entry => entry.trim().length > 0)
 			|| classSubjectIds.length > 1;
 		if (hasManualSelections) {
@@ -90,79 +85,121 @@
 		const defaultSubjectId = pickClassSubjectIdForTeacherSubject(nextClassSubjects, teacher.subjectId);
 		classSubjectIds = defaultSubjectId ? [defaultSubjectId] : [''];
 	}
-
 	function addSubjectRow() {
 		classSubjectIds = [...classSubjectIds, ''];
 	}
-
 	function updateSubjectSelection(index: number, value: string) {
 		classSubjectIds = classSubjectIds.map((entry, entryIndex) => entryIndex === index ? value : entry);
 	}
-
 	$effect(() => {
 		if (!open) {
 			kind = 'subject';
+			responsibility = '';
+			startsAt = '';
+			endsAt = '';
+			status = 'active';
 			classGroupId = '';
 			classSubjectIds = [''];
 			classSubjects = [];
 			subjectLabels = {};
+			preserveNextSubjectLoad = false;
+			return;
+		}
+		if (assignment) {
+			kind = assignment.kind;
+			responsibility = assignment.responsibility ?? '';
+			startsAt = assignment.startsAt ? String(assignment.startsAt).slice(0, 10) : '';
+			endsAt = assignment.endsAt ? String(assignment.endsAt).slice(0, 10) : '';
+			status = assignment.status;
+			classGroupId = classGroupIdForAssignment(assignment);
+			classSubjectIds = assignment.classSubjectId ? [assignment.classSubjectId] : [''];
+			preserveNextSubjectLoad = true;
 		}
 	});
-
 	$effect(() => {
 		if (open && classGroupId && kind === 'subject') {
-			void loadClassSubjects(classGroupId);
+			const preserve = preserveNextSubjectLoad;
+			preserveNextSubjectLoad = false;
+			void loadClassSubjects(classGroupId, preserve);
 		}
 	});
-
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
-
 		busy = true;
 		try {
+			if (editing && assignment) {
+				const payload = createTeacherAssignmentPayload({
+					id: assignment.id,
+					original: assignment,
+					responsibility: responsibility.trim() || null,
+					startsAt: dateValuePreservingInstant(startsAt, assignment?.startsAt),
+					endsAt: dateValuePreservingInstant(endsAt, assignment?.endsAt),
+					status,
+					teacherId: teacher.id,
+					kind,
+					classGroupId,
+					classSubjectId: kind === 'subject' ? selectedSubjectIds[0] ?? null : null,
+				});
+				const ok = await teachersPage.saveAssignment({
+					assignment: payload,
+					successMessage: get(t)('teacher.assignmentUpdated'),
+				});
+				if (ok) {
+					assignmentsTab.upsertAssignment(payload);
+					teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
+					open = false;
+				}
+				return;
+			}
 			if (kind === 'homeroom') {
 				const id = `ta-${Date.now().toString(36)}`;
-				const assignment = createTeacherAssignmentPayload({
+				const nextAssignment = createTeacherAssignmentPayload({
 					id,
+					responsibility: responsibility.trim() || null,
+					startsAt: dateValuePreservingInstant(startsAt, assignment?.startsAt),
+					endsAt: dateValuePreservingInstant(endsAt, assignment?.endsAt),
+					status,
 					teacherId: teacher.id,
 					kind,
 					classGroupId,
 					classSubjectId: null,
 				});
 				const ok = await teachersPage.saveAssignment({
-					assignment,
+					assignment: nextAssignment,
 					successMessage: get(t)('teacher.assignmentCreated'),
 				});
 				if (ok) {
-					assignmentsTab.upsertAssignment(assignment);
+					assignmentsTab.upsertAssignment(nextAssignment);
 					teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
 					open = false;
 				}
 				return;
 			}
-
 			let saved = 0;
 			for (const classSubjectId of [...new Set(selectedSubjectIds)]) {
 				const id = `ta-${Date.now().toString(36)}-${saved}`;
-				const assignment = createTeacherAssignmentPayload({
+				const nextAssignment = createTeacherAssignmentPayload({
 					id,
+					responsibility: responsibility.trim() || null,
+					startsAt: dateValuePreservingInstant(startsAt, assignment?.startsAt),
+					endsAt: dateValuePreservingInstant(endsAt, assignment?.endsAt),
+					status,
 					teacherId: teacher.id,
 					kind: 'subject',
 					classGroupId,
 					classSubjectId,
 				});
 				const ok = await teachersPage.saveAssignment({
-					assignment,
+					assignment: nextAssignment,
 					successMessage: saved === 0 ? get(t)('teacher.assignmentCreated') : undefined,
 				});
 				if (ok) {
-					assignmentsTab.upsertAssignment(assignment);
+					assignmentsTab.upsertAssignment(nextAssignment);
 					saved += 1;
 				}
 			}
-
 			if (saved > 0) {
 				teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
 				open = false;
@@ -176,19 +213,28 @@
 
 <FormModal
 	bind:open
-	title={$t('teacher.assignmentCreateTitle')}
-	description={$t('teacher.assignmentCreateDescription', { name: teacher.name })}
+	title={editing ? $t('teacher.assignmentEditTitle') : $t('teacher.assignmentCreateTitle')}
+	description={editing
+		? $t('teacher.assignmentEditDescription', { name: teacher.name })
+		: $t('teacher.assignmentCreateDescription', { name: teacher.name })}
 	submitLabel={$t('common.save')}
 	busy={busy}
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
 >
+	<div class="grid gap-3 sm:grid-cols-2">
+		<label>{$t('profile.responsibility')}<input bind:value={responsibility} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label>
+		<label>{$t('common.status')}<SelectField bind:value={status} class="w-full border bg-background"><option value="active">{$t('teacher.statusActive')}</option><option value="ended">{$t('profile.assignmentEnded')}</option></SelectField></label>
+		<label>{$t('profile.startsAt')}<input type="date" bind:value={startsAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label>
+		<label>{$t('profile.endsAt')}<input type="date" bind:value={endsAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label>
+	</div>
 	<div class="space-y-4">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('teacher.assignmentKindLabel')}
 			</Label>
 			<FilterSelect
+				aria-label={$t('teacher.assignmentKindLabel')}
 				bind:value={kind}
 				options={[
 					{ value: 'subject', label: $t('teacher.assignmentKind.subject') },
@@ -201,6 +247,7 @@
 				{$t('teacher.classGroupLabel')}
 			</Label>
 			<FilterSelect
+				aria-label={$t('teacher.classGroupLabel')}
 				bind:value={classGroupId}
 				options={[{ value: '', label: $t('teacher.selectClassGroup') }, ...classOptions]}
 			/>
@@ -214,13 +261,14 @@
 								{$t('teacher.classSubjectLabel')}
 							</Label>
 							<FilterSelect
+								aria-label={$t('teacher.classSubjectLabel')}
 								value={classSubjectId}
 								onchange={value => updateSubjectSelection(index, value)}
 								options={[{ value: '', label: $t('teacher.selectClassSubject') }, ...subjectOptions]}
 							/>
 						</div>
-						{#if index === classSubjectIds.length - 1}
-							<Button type="button" variant="outline" class="shrink-0 rounded-full" onclick={addSubjectRow}>
+						{#if !editing && index === classSubjectIds.length - 1}
+							<Button type="button" variant="outline" class="shrink-0" onclick={addSubjectRow}>
 								{$t('teacher.addSubject')}
 							</Button>
 						{/if}

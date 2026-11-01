@@ -3,12 +3,13 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
 import type { LogEntry } from '$lib/types/teaching-log';
 import {
-	assignmentsForClassSubjects,
 	classGroupScope,
-	entitiesByIds,
-	progressForLessonSessions,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
+import { readableLogbookNote } from '$lib/api/session-detail-data';
 import {
 	fetchClassSubjectInstructorSourcesBundle,
 
@@ -73,38 +74,42 @@ export async function fetchClassTeachingLogSources(
 		lessonSessionsRaw,
 		classSubjectsRaw,
 	] = await Promise.all([
-		client.entities.lessonSessions.list(classGroupScope(classGroupId)),
-		client.entities.classSubjects.list(classGroupScope(classGroupId)),
+		listAllEntityPages(query => client.entities.lessonSessions.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
+		listAllEntityPages(query => client.entities.classSubjects.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
 	]);
 
-	const lessonSessionIds = uniqueIds((lessonSessionsRaw ?? []).map(session => session.id));
-	const classSubjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.id));
-	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
+	const lessonSessionIds = uniqueIds(lessonSessionsRaw.map(session => session.id));
+	const classSubjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.id));
+	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
 
 	const [
 		classSubjectProgressRaw,
 		classSubjectMattersRaw,
 		subjectsRaw,
 	] = await Promise.all([
-		lessonSessionIds.length > 0
-			? client.entities.classSubjectProgress.list(progressForLessonSessions(lessonSessionIds))
-			: Promise.resolve([]),
-		classSubjectIds.length > 0
-			? client.entities.classSubjectMatters.list(assignmentsForClassSubjects(classSubjectIds))
-			: Promise.resolve([]),
-		subjectIds.length > 0
-			? client.entities.subjects.list(entitiesByIds(subjectIds))
-			: Promise.resolve([]),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.classSubjectProgress.list(query),
+			[{ field: 'lessonSessionId', ids: lessonSessionIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.classSubjectMatters.list(query),
+			[{ field: 'classSubjectId', ids: classSubjectIds }],
+		),
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
 	]);
 
 	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);
 
 	return {
-		lessonSessionsRaw: lessonSessionsRaw ?? [],
-		classSubjectProgressRaw: classSubjectProgressRaw ?? [],
-		classSubjectMattersRaw: classSubjectMattersRaw ?? [],
-		classSubjectsRaw: classSubjectsRaw ?? [],
-		subjectsRaw: subjectsRaw ?? [],
+		lessonSessionsRaw,
+		classSubjectProgressRaw,
+		classSubjectMattersRaw,
+		classSubjectsRaw,
+		subjectsRaw,
 		...instructorSources,
 	};
 }
@@ -171,8 +176,8 @@ export function mapTeachingLogEntries(
 				chapter: primaryProgress
 					? matterNameForProgress(primaryProgress, sources.classSubjectMattersRaw)
 					: session.displayLabel,
-				content: session.sessionNote ?? '',
-				notes: primaryProgress?.notes ?? session.sessionNote ?? '',
+				content: readableLogbookNote(session.sessionNote),
+				notes: primaryProgress?.notes ?? readableLogbookNote(session.sessionNote),
 				attachments: undefined,
 				progress: primaryProgress?.completedPercentage ?? averageProgress,
 			} satisfies LogEntry;

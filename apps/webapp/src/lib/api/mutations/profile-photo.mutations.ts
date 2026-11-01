@@ -1,7 +1,7 @@
 import type { ProfilePhotoOwnerKind } from '$lib/api/profile-photo-upload';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
-import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
+import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 
@@ -17,11 +17,13 @@ function versionKeyForOwner(ownerKind: ProfilePhotoOwnerKind): EntityVersionKey 
 			return 'students';
 		case 'guardian':
 			return 'guardians';
+		case 'teacher':
+			return 'teachers';
 	}
 }
 
-async function uploadAndSetPhotoUrl(input: {
-	ownerKind: ProfilePhotoOwnerKind;
+async function uploadAndPublishSelfPhoto(input: {
+	ownerKind: Exclude<ProfilePhotoOwnerKind, 'student'>;
 	ownerId: string;
 	file: File;
 	successMessage?: string;
@@ -39,34 +41,31 @@ async function uploadAndSetPhotoUrl(input: {
 			file: input.file,
 			schoolId: resolvedSchoolId,
 		});
-		const photoUrl = withPhotoCacheBust(uploaded.photoUrl);
 		const client = getBrowserSchoolClient();
 
-		switch (input.ownerKind) {
-			case 'staff':
-				await client.commands.updateStaffMemberProfile({
-					staffId: input.ownerId,
-					photoUrl,
-				});
-				break;
-			case 'student':
-				await client.commands.updateStudentProfile({
-					studentId: input.ownerId,
-					photoUrl,
-				});
-				break;
-			case 'guardian': {
-				const existing = await client.entities.guardians.get(input.ownerId);
-				await client.commands.updateGuardianContactMethods({
-					guardianId: input.ownerId,
-					photoUrl,
-					hasAccess: existing.hasAccess,
-				});
-				break;
-			}
+		if (input.ownerKind === 'staff') {
+			await client.commands.updateStaffMemberProfile({
+				staffId: input.ownerId,
+				photoUrl: uploaded.photoUrl,
+			});
+		}
+		else if (input.ownerKind === 'teacher') {
+			const existing = await client.entities.teachers.get(input.ownerId);
+			await client.entities.teachers.save({
+				...existing,
+				photoUrl: uploaded.photoUrl,
+			});
+		}
+		else {
+			const existing = await client.entities.guardians.get(input.ownerId);
+			await client.commands.updateGuardianProfile({
+				guardianId: input.ownerId,
+				photoUrl: uploaded.photoUrl,
+				hasAccess: existing.hasAccess,
+			});
 		}
 
-		return photoUrl;
+		return displayProfilePhotoUrl(uploaded.attachmentId);
 	}, {
 		successMessage: input.successMessage,
 		versionKeys: [versionKeyForOwner(input.ownerKind)],
@@ -83,7 +82,7 @@ export async function updateStaffProfilePhotoMutation(input: {
 	file: File;
 	successMessage?: string;
 }): Promise<boolean> {
-	return uploadAndSetPhotoUrl({
+	return uploadAndPublishSelfPhoto({
 		ownerKind: 'staff',
 		ownerId: input.staffId,
 		file: input.file,
@@ -96,28 +95,30 @@ export async function updateStaffProfilePhotoMutation(input: {
 	});
 }
 
-export async function updateStudentProfilePhotoMutation(input: {
-	studentId: string;
-	file: File;
-	successMessage?: string;
-}): Promise<boolean> {
-	return uploadAndSetPhotoUrl({
-		ownerKind: 'student',
-		ownerId: input.studentId,
-		file: input.file,
-		successMessage: input.successMessage,
-	});
-}
-
 export async function updateGuardianProfilePhotoMutation(input: {
 	guardianId: string;
 	file: File;
 	successMessage?: string;
 }): Promise<boolean> {
-	return uploadAndSetPhotoUrl({
+	return uploadAndPublishSelfPhoto({
 		ownerKind: 'guardian',
 		ownerId: input.guardianId,
 		file: input.file,
 		successMessage: input.successMessage,
+	});
+}
+
+export async function updateTeacherProfilePhotoMutation(input: {
+	teacherId: string;
+	file: File;
+	successMessage?: string;
+	onSuccess?: (photoUrl: string) => void;
+}): Promise<boolean> {
+	return uploadAndPublishSelfPhoto({
+		ownerKind: 'teacher',
+		ownerId: input.teacherId,
+		file: input.file,
+		successMessage: input.successMessage,
+		onSuccess: input.onSuccess,
 	});
 }

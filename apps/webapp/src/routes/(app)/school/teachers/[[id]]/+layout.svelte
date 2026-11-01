@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
+	import { appPath } from '$lib/navigation/app-navigation';
+	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
 	import { getTeachersPageState } from '../teachers-page.svelte';
 	import TeacherDrawer from './components/TeacherDrawer.svelte';
 	import {
@@ -16,21 +16,20 @@
 	const teachersPage = getTeachersPageState();
 	const detailTabs = createAndRegisterTeacherDetailStates(() => teachersPage);
 	const teacher = $derived(teachersPage.selected);
+	const shouldResolveSelection = createDrawerEntitySelection();
 	let selectionRequestVersion = 0;
 
 	function closeDetail() {
 		clearTeacherDetailTabStates(detailTabs);
-		const next = new URL($page.url);
-		next.searchParams.delete(MODAL_QUERY_KEY);
-		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const href = `${appPath('/(app)/school/teachers/[[id]]')}${next.search}` as ResolvedPathname;
-		appGoto(href);
+		closeDetailDrawer(listSurfaceHref(appPath('/(app)/school/teachers/[[id]]'), $page.url));
 	}
 
 	$effect(() => {
 		const teacherId = $page.params.id;
-		if (!teacherId) {
-			clearTeacherDetailTabStates(detailTabs);
+		if (!shouldResolveSelection(teacherId)) {
+			if (!teacherId) {
+				clearTeacherDetailTabStates(detailTabs);
+			}
 			return;
 		}
 
@@ -63,9 +62,9 @@
 {#if $page.params.id}
 	<TeacherDrawer
 		{teacher}
-		loading={teachersPage.selectedResolving || !teacher}
+		loading={drawerEntityLoading(teacher?.id, $page.params.id)}
 		onClose={closeDetail}
 	>
-		{@render children()}
+		{@render children?.()}
 	</TeacherDrawer>
 {/if}

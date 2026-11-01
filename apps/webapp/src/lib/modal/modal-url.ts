@@ -5,6 +5,11 @@ export const MODAL_TARGET_QUERY_KEY = 'modalTarget';
 export const MODAL_STEP_QUERY_KEY = 'modalStep';
 export const MODAL_TAB_QUERY_KEY = 'modalTab';
 
+export interface SurfaceQueryKeys { kind: string; target: string; step: string; panel: string }
+export const MODAL_QUERY_KEYS: SurfaceQueryKeys = { kind: MODAL_QUERY_KEY, target: MODAL_TARGET_QUERY_KEY, step: MODAL_STEP_QUERY_KEY, panel: MODAL_TAB_QUERY_KEY };
+export const TASK_QUERY_KEYS: SurfaceQueryKeys = { kind: 'task', target: 'taskTarget', step: 'taskStep', panel: 'taskPanel' };
+export type TaskKind = 'import' | 'generate-timetable' | 'grade-entry' | 'attendance-roll-call';
+
 export interface ModalSurfaceValue {
 	modal: string | null;
 	target?: string | null;
@@ -27,43 +32,46 @@ function readAllowed<T extends string>(
 export function readModal<T extends string>(
 	url: URL,
 	allowed: readonly T[],
+	keys: SurfaceQueryKeys = MODAL_QUERY_KEYS,
 ): T | null {
-	return readAllowed(url, MODAL_QUERY_KEY, allowed);
+	return readAllowed(url, keys.kind, allowed);
 }
 
-export function readModalTarget(url: URL): string | null {
-	return url.searchParams.get(MODAL_TARGET_QUERY_KEY);
+export function readModalTarget(url: URL, keys: SurfaceQueryKeys = MODAL_QUERY_KEYS): string | null {
+	return url.searchParams.get(keys.target);
 }
 
 export function readModalStep<T extends string>(
 	url: URL,
 	allowed: readonly T[],
+	keys: SurfaceQueryKeys = MODAL_QUERY_KEYS,
 ): T | null {
-	return readAllowed(url, MODAL_STEP_QUERY_KEY, allowed);
+	return readAllowed(url, keys.step, allowed);
 }
 
 export function readModalTab<T extends string>(
 	url: URL,
 	allowed: readonly T[],
+	keys: SurfaceQueryKeys = MODAL_QUERY_KEYS,
 ): T | null {
-	return readAllowed(url, MODAL_TAB_QUERY_KEY, allowed);
+	return readAllowed(url, keys.panel, allowed);
 }
 
-export function writeModalSurface(url: URL, value: ModalSurfaceValue): string {
+export function writeModalSurface(url: URL, value: ModalSurfaceValue, keys: SurfaceQueryKeys = MODAL_QUERY_KEYS): string {
 	const next = new URL(url);
 	if (value.modal === null) {
-		next.searchParams.delete(MODAL_QUERY_KEY);
-		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		next.searchParams.delete(MODAL_STEP_QUERY_KEY);
-		next.searchParams.delete(MODAL_TAB_QUERY_KEY);
+		next.searchParams.delete(keys.kind);
+		next.searchParams.delete(keys.target);
+		next.searchParams.delete(keys.step);
+		next.searchParams.delete(keys.panel);
 		return `${next.pathname}${next.search}`;
 	}
 
-	next.searchParams.set(MODAL_QUERY_KEY, value.modal);
+	next.searchParams.set(keys.kind, value.modal);
 	const values = [
-		[MODAL_TARGET_QUERY_KEY, value.target],
-		[MODAL_STEP_QUERY_KEY, value.step],
-		[MODAL_TAB_QUERY_KEY, value.tab],
+		[keys.target, value.target],
+		[keys.step, value.step],
+		[keys.panel, value.tab],
 	] as const;
 	for (const [key, candidate] of values) {
 		if (candidate) {

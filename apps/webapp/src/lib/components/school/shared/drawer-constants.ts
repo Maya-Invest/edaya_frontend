@@ -1,4 +1,4 @@
-import type { Subject, StaffRole, ActivityEnrollmentStatus, Incident } from '$lib/types/school';
+import type { ActivityEnrollmentStatus, Incident, StaffRole, Subject } from '$lib/types/school';
 import type { DrawerItem } from './drawer-types.ts';
 import { BADGE, BADGE_DANGER, BADGE_INFO, BADGE_WARN } from '$lib/ui-tones';
 
@@ -23,7 +23,7 @@ export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 	level: drawerBadge,
 	activity: drawerBadge,
 	announcement: drawerBadge,
-	reportCardDefinition: drawerBadge,
+	familyFeedback: drawerBadge,
 	reportCardResult: drawerBadge,
 	gradeLevel: drawerBadge,
 	classGroup: drawerBadge,
@@ -45,7 +45,7 @@ export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	level: 'drawer.level',
 	activity: 'drawer.activity',
 	announcement: 'drawer.announcement',
-	reportCardDefinition: 'drawer.reportCardDefinition',
+	familyFeedback: 'drawer.familyFeedback',
 	reportCardResult: 'drawer.reportCardResult',
 	gradeLevel: 'drawer.gradeLevel',
 	classGroup: 'drawer.classGroup',
@@ -59,7 +59,8 @@ export const relationKey: Partial<Record<string, string>> = {
 
 /** Known relations → i18n key; otherwise return the raw API string for display. */
 export function guardianRelationLabel(relation: string): string {
-	return relationKey[relation] ?? relation;
+	const knownRelation = Object.keys(relationKey).find(value => value.toLocaleLowerCase() === relation.trim().toLocaleLowerCase());
+	return (knownRelation && relationKey[knownRelation]) || relation;
 }
 
 export const dotByColor: Record<Subject['color'], string> = {

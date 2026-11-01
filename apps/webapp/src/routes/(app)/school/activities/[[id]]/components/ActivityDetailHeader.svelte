@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Activity } from '$lib/types/school';
-	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -37,7 +36,7 @@
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
-	afterNavigate(() => {
+	$effect(() => {
 		modals.hydrate();
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
@@ -70,19 +69,19 @@
 		<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase text-foreground/80">
 			{$t(`activities.cat.${live.category}`)}
 		</span>
-		<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
+		<span class="rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] tabular-nums text-foreground/80">
 			{live.enrollments.length}/{live.capacity}
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="DISCIPLINE_CREATE" mode="disable" tooltip={$t('activities.permissionCreate')}>
+		<PermissionGate permission="ACTIVITY_MANAGE" activityId={live.id} mode="disable" tooltip={$t('activities.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				<ActivityFormModal activity={live} bind:open={editOpen.open} {disabled} {title} />
 			{/snippet}
 		</PermissionGate>
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="DISCIPLINE_CREATE" mode="disable" tooltip={$t('activities.permissionCreate')}>
+		<PermissionGate permission="ACTIVITY_MANAGE" activityId={live.id} mode="disable" tooltip={$t('activities.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				<RowActionMenuItem
 					destructive

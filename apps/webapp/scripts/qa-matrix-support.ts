@@ -6,6 +6,9 @@ import type { QaTemplateRow } from './qa-template-matrix';
 export type MatrixStatut = 'OK' | 'NOT OK' | 'N/A';
 
 export interface MatrixResult {
+	blocked?: boolean;
+	id?: string;
+	feature?: string;
 	module: string;
 	endpoint: string;
 	action: string;
@@ -42,6 +45,7 @@ export interface MatrixEntities {
 	teacherId: string | null;
 	activityId: string | null;
 	announcementId: string | null;
+	conversationId?: string | null;
 	eventId: string | null;
 	calendarEventId: string | null;
 	notificationTemplateKey: string | null;
@@ -51,13 +55,16 @@ export interface MatrixEntities {
 	dayId: string | null;
 	reportCardId: string | null;
 	billingId: string | null;
+ feeId?: string | null;
 	configClassId: string | null;
 	gradeLevelId: string | null;
 	secondGradeLevelId: string | null;
 	subjectId: string | null;
+	configurationSubjectId?: string | null;
 	gradeScaleId: string | null;
-	reportCardDefId: string | null;
+	reportModuleId: string | null;
 	deliveryId: string | null;
+	familyFeedbackCampaignId: string | null;
 	teachingId: string | null;
 	level: string | null;
 	onboarded: boolean;
@@ -79,6 +86,7 @@ export function emptyEntities(): MatrixEntities {
 		teacherId: null,
 		activityId: null,
 		announcementId: null,
+		conversationId: null,
 		eventId: null,
 		calendarEventId: null,
 		notificationTemplateKey: 'report_card.published',
@@ -93,8 +101,9 @@ export function emptyEntities(): MatrixEntities {
 		secondGradeLevelId: null,
 		subjectId: null,
 		gradeScaleId: null,
-		reportCardDefId: null,
+		reportModuleId: null,
 		deliveryId: null,
+		familyFeedbackCampaignId: null,
 		teachingId: null,
 		level: null,
 		onboarded: true,
@@ -133,7 +142,7 @@ export function formatError(err: unknown): string {
 }
 
 export async function waitForAppShell(page: Page): Promise<void> {
-	const ready = page.locator('aside#app-sidebar, [data-onboarding-shell]').first();
+	const ready = page.locator('[data-testid="app-shell"], [data-onboarding-shell]').first();
 	try {
 		await ready.waitFor({ state: 'visible', timeout: 15_000 });
 		return;
@@ -182,33 +191,44 @@ export async function firstIdFromLinks(page: Page, pattern: RegExp): Promise<str
 	return null;
 }
 
-/** Configuration list tables expose entity id in a `.font-mono` cell (rows are buttons, not links). */
+/** Configuration rows expose a stable record id independently of typography. */
 export async function firstIdFromConfigTable(page: Page, timeout = 8_000): Promise<string | null> {
-	const cell = page.locator('table tbody .font-mono').first();
+	const row = page.locator('table tbody tr[data-entity-id]').first();
 	try {
-		await cell.waitFor({ state: 'visible', timeout });
+		await row.waitFor({ state: 'visible', timeout });
 	} catch {
 		return null;
 	}
-	const id = await cell.textContent();
+	const id = await row.getAttribute('data-entity-id');
 	const trimmed = id?.trim();
 	return trimmed && trimmed.length > 0 ? trimmed : null;
 }
 
 export async function configEntityIdByName(page: Page, name: string): Promise<string | null> {
-	const row = page.locator('table tbody tr').filter({ hasText: name });
+	const row = page.locator('table tbody tr[data-entity-id]').filter({ hasText: name });
+	const link = page.locator('main a[href]').filter({ hasText: name }).first();
+	// The shell is visible before its structure data has finished loading after a reload.
+	// Wait for the saved record itself, including the level rail's URL-backed links.
+	try {
+		await row.or(link).first().waitFor({ state: 'visible', timeout: 20_000 });
+	} catch {
+		return null;
+	}
 	if (await row.first().isVisible().catch(() => false)) {
-		const id = await row.first().locator('.font-mono').first().textContent();
+		const id = await row.first().getAttribute('data-entity-id');
 		const trimmed = id?.trim();
 		if (trimmed && trimmed.length > 0) {
 			return trimmed;
 		}
 	}
 
-	const link = page.locator('main a[href]').filter({ hasText: name }).first();
 	if (await link.isVisible().catch(() => false)) {
 		const href = await link.getAttribute('href');
-		const match = href?.match(/\/configuration\/report-cards\/([^/?]+)/)
+		const templateId = href?.match(/\/configuration\/structure\/details\/report-cards\/([^/?]+)/)?.[1];
+		if (templateId) return templateId;
+		const levelId = href ? new URL(href, page.url()).searchParams.get('gradeLevel') : null;
+		if (levelId) return levelId;
+		const match = href?.match(/\/configuration\/structure\/details\/report-cards\/([^/?]+)/)
 			?? href?.match(/\/([^/?]+)\/?$/);
 		if (match?.[1] && match[1] !== 'report-cards') {
 			return match[1];
@@ -216,6 +236,18 @@ export async function configEntityIdByName(page: Page, name: string): Promise<st
 	}
 
 	return null;
+}
+
+/** Family-feedback rows are buttons, not links — open the first campaign and parse the URL. */
+export async function firstFamilyFeedbackCampaignIdFromList(page: Page): Promise<string | null> {
+	const row = page.locator('ul li button[type="button"]').first();
+	if (!(await row.isVisible().catch(() => false))) {
+		return null;
+	}
+	await row.click();
+	await page.waitForTimeout(800);
+	const match = page.url().match(/\/school\/family-feedback\/([^/?]+)/);
+	return match?.[1] ?? null;
 }
 
 /** Student roster uses ListEntityTable row buttons — navigate via click and parse URL. */
@@ -234,6 +266,19 @@ export async function firstStudentIdFromList(page: Page): Promise<string | null>
 /** Encode dynamic path segments (e.g. lesson session ids containing `:`). */
 export function encodePathSegment(segment: string): string {
 	return encodeURIComponent(segment);
+}
+
+/** Class-segment sidebar rows must start on a class page so tab hrefs resolve. */
+export function sidebarSmokeStartPath(resolvedPath: string, classId: string | null | undefined): string {
+	if (resolvedPath.startsWith('/classes/') && classId) {
+		return `/classes/${classId}/students`;
+	}
+	return '/dashboard';
+}
+
+/** Class attendance tab is omitted unless the class uses daily roll call. */
+export function isClassDailyAttendanceSidebarPath(resolvedPath: string): boolean {
+	return /\/classes\/[^/]+\/attendance\/?$/.test(resolvedPath);
 }
 
 export function timetableWeekFromSessionId(sessionId: string | null): string | null {
@@ -268,6 +313,7 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 
 	const map: Record<string, string | null> = {
 		'[classId]': entities.classId,
+ '[feeId]': entities.feeId ?? null,
 		'[id]': entities.studentId,
 		'[token]': 'qa-invalid-token',
 		'[deliveryId]': entities.deliveryId,
@@ -296,26 +342,32 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (path.includes('/school/activities/')) {
 		map['[id]'] = entities.activityId;
 	}
+	if (path.includes('/school/messages/')) {
+		map['[id]'] = entities.conversationId ?? null;
+	}
 	if (path.includes('/school/announcements/')) {
 		map['[id]'] = entities.announcementId;
 	}
 	if (path.includes('/school/events/')) {
 		map['[id]'] = entities.eventId;
 	}
-	if (path.includes('/configuration/classes/')) {
+	if (path.includes('/configuration/structure/classes/')) {
 		map['[id]'] = entities.configClassId;
 	}
-	if (path.includes('/configuration/grade-levels/')) {
+	if (path.includes('/configuration/grade-levels/') || path.includes('gradeLevel=[id]')) {
 		map['[id]'] = entities.gradeLevelId;
 	}
-	if (path.includes('/configuration/subjects/') && !path.includes('/level/')) {
-		map['[id]'] = entities.subjectId;
+	if (path.includes('/configuration/structure/subjects/') && !path.includes('/level/')) {
+		map['[id]'] = entities.configurationSubjectId ?? entities.subjectId;
 	}
-	if (path.includes('/configuration/report-cards/')) {
-		map['[id]'] = entities.reportCardDefId;
+	if (path.includes('/configuration/notifications/')) {
+		map['[id]'] = entities.notificationTemplateKey;
 	}
 	if (path.includes('/finance/billing/')) {
 		map['[id]'] = entities.billingId;
+	}
+	if (path.includes('/school/family-feedback/')) {
+		map['[id]'] = entities.familyFeedbackCampaignId;
 	}
 	if (path.includes('/evaluations/')) {
 		map['[id]'] = entities.evaluationId;
@@ -344,7 +396,7 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
 	const modal = params.get('modal');
 
-	if (pathname.includes('/timetable/') && entities.sessionId) {
+	if (/\/timetable(?:\/|$)/.test(pathname) && entities.sessionId) {
 		const week = entities.timetableWeek ?? timetableWeekFromSessionId(entities.sessionId);
 		if (week && !params.has('week')) {
 			params.set('week', week);
@@ -354,9 +406,6 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (modal === 'edit' && !params.get('modalTarget')) {
 		if (pathname.includes('/school/calendar') && entities.calendarEventId) {
 			params.set('modalTarget', entities.calendarEventId);
-		}
-		if (pathname.includes('/configuration/notifications') && entities.notificationTemplateKey) {
-			params.set('modalTarget', entities.notificationTemplateKey);
 		}
 	}
 
@@ -384,9 +433,9 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 
 	entities.onboarded = !page.url().includes('/onboarding');
 
-	await safeGoto(ctx, `${base}/configuration/classes`);
+	await safeGoto(ctx, `${base}/configuration/structure/classes`);
 	entities.configClassId = await firstIdFromConfigTable(page)
-		?? await firstIdFromLinks(page, /\/configuration\/classes\/([^/]+)/);
+		?? await firstIdFromLinks(page, /\/configuration\/structure\/classes\/([^/]+)/);
 	entities.classId = entities.configClassId ?? await firstIdFromLinks(page, /\/classes\/([^/]+)/);
 
 	await safeGoto(ctx, `${base}/school/students`);
@@ -416,6 +465,9 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 
 	await safeGoto(ctx, `${base}/school/announcements`);
 	entities.announcementId = await firstIdFromLinks(page, /\/school\/announcements\/([^/]+)/);
+
+	await safeGoto(ctx, `${base}/school/messages`);
+	entities.conversationId = await firstIdFromLinks(page, /\/school\/messages\/([^/]+)/);
 
 	await safeGoto(ctx, `${base}/school/events`);
 	entities.eventId = await firstIdFromLinks(page, /\/school\/events\/([^/]+)/);
@@ -455,22 +507,26 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 		);
 	}
 
-	await safeGoto(ctx, `${base}/finance/billing`);
-	entities.billingId = await firstIdFromLinks(page, /\/finance\/billing\/([^/]+)/);
+	await safeGoto(ctx, `${base}/finance/fees`);
+ entities.feeId = await page.locator('[data-entity-id]').first().getAttribute('data-entity-id').catch(() => null);
+ await safeGoto(ctx, `${base}/finance/billing`);
+	entities.billingId = await page.locator('[data-entity-id]').first().getAttribute('data-entity-id').catch(() => null);
 
-	await safeGoto(ctx, `${base}/configuration/grade-levels`);
-	entities.gradeLevelId = await firstIdFromConfigTable(page)
-		?? await firstIdFromLinks(page, /\/configuration\/grade-levels\/([^/]+)/);
+	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
+	entities.gradeLevelId = new URL(page.url()).searchParams.get('gradeLevel');
 	entities.level = entities.gradeLevelId;
 
-	await safeGoto(ctx, `${base}/configuration/subjects`);
-	entities.subjectId = await firstIdFromLinks(page, /\/configuration\/subjects\/([^/]+)/);
+	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
+	entities.subjectId = await firstIdFromLinks(page, /\/configuration\/structure\/subjects\/([^/]+)/);
 
-	await safeGoto(ctx, `${base}/configuration/report-cards`);
-	entities.reportCardDefId = await firstIdFromLinks(page, /\/configuration\/report-cards\/([^/]+)/);
+	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
+	entities.reportModuleId = await page.locator('[data-module-id]').first().getAttribute('data-module-id').catch(() => null);
 
 	await safeGoto(ctx, `${base}/account/inbox`);
 	entities.deliveryId = await firstIdFromLinks(page, /\/account\/inbox\/([^/]+)/);
+
+	await safeGoto(ctx, `${base}/school/family-feedback`);
+	entities.familyFeedbackCampaignId = await firstFamilyFeedbackCampaignIdFromList(page);
 
 	return entities;
 }

@@ -121,7 +121,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="-ml-2 mb-1 rounded-full"
+		class="-ml-2 mb-1"
 		onclick={() => void appGoto(toolsHref)}
 	>
 		<ArrowLeft class="mr-1.5 h-4 w-4" />
@@ -134,9 +134,9 @@
 		description={$t('tools.teacherAssignments.hint')}
 	>
 		{#snippet primary()}
-			<PermissionGate permission="STAFF_UPDATE" mode="disable">
+			<PermissionGate permission="STAFF_MANAGE" mode="disable">
 				{#snippet children({ disabled })}
-					<Button class="rounded-full" disabled={disabled} onclick={() => modals.open('create')}>
+					<Button disabled={disabled} onclick={() => modals.open('create')}>
 						<Plus class="mr-1.5 h-4 w-4" />
 						{$t('teacher.addAssignment')}
 					</Button>
@@ -170,7 +170,7 @@
 	{#if rows.length === 0}
 		<p class="text-sm text-muted-foreground">{$t('tools.teacherAssignments.noResults')}</p>
 	{:else}
-		<ul class="divide-y divide-border/60 overflow-hidden rounded-xl border border-border bg-card">
+		<ul class="divide-y divide-border/60 overflow-hidden rounded-collection border border-border bg-card">
 			{#each rows as row (row.id)}
 				<li class="flex items-start justify-between gap-3 px-4 py-3">
 					<div class="min-w-0 flex-1">
@@ -185,12 +185,12 @@
 						</div>
 						<div class="mt-1 text-sm text-foreground/90">{targetLabel(row)}</div>
 					</div>
-					<PermissionGate permission="STAFF_UPDATE" mode="disable">
+					<PermissionGate permission="STAFF_MANAGE" mode="disable">
 						{#snippet children({ disabled })}
 							<Button
 								variant="ghost"
 								size="icon"
-								class="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+								class="w-8 shrink-0 text-muted-foreground hover:text-destructive"
 								disabled={disabled || deleteBusy === row.id}
 								onclick={() => removeRow(row)}
 							>

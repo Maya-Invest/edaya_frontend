@@ -1,4 +1,4 @@
-import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
+import type { GradeScale, ReportCardResult } from '$lib/types/report-cards';
 import type { Student } from '$lib/types/school';
 
 export interface ReportCardsPageSlice {
@@ -6,7 +6,6 @@ export interface ReportCardsPageSlice {
 	students: Student[];
 	results: ReportCardResult[];
 	scales: GradeScale[];
-	definitions: ReportCardDefinition[];
 }
 
 export function emptyReportCardsSlice(classId: string): ReportCardsPageSlice {
@@ -15,7 +14,6 @@ export function emptyReportCardsSlice(classId: string): ReportCardsPageSlice {
 		students: [],
 		results: [],
 		scales: [],
-		definitions: [],
 	};
 }
 

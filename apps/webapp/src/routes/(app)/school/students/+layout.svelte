@@ -2,16 +2,19 @@
 	import type { Student } from '$lib/types/school';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { readStudentListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import { untrack } from 'svelte';
 	import StudentCreateModal from './components/StudentCreateModal.svelte';
 	import StudentsList from './components/StudentsList.svelte';
 	import { studentListUsesFullRoster } from './lib/student-list-filters';
@@ -52,6 +55,7 @@
 		void studentsPage.filters.values.status;
 		void studentsPage.filters.values.class;
 		void studentsPage.filters.values.sort;
+		void studentsPage.filters.values.photoReview;
 
 		if (!studentListUsesFullRoster(studentsPage.filters.values)) {
 			studentsPage.clearFullRoster();
@@ -84,14 +88,19 @@
 		lastPagedFilterKey = key;
 	});
 
+	$effect(() => {
+		const scope = JSON.stringify([authSession.subjectId, authSession.schoolId, academicContext.yearId, authSession.grants, studentsPage.filters.values.q, studentsPage.filters.values.class, studentsPage.filters.values.status, studentsPage.filters.values.photoReview]);
+		untrack(() => studentsPage.selection.syncScope(scope));
+	});
+
 	function selectStudent(student: Student) {
 		const path = detailHref.schoolStudent(student.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 
 	function handleCreated(studentId: string) {
 		const path = detailHref.schoolStudent(studentId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 </script>
 
@@ -120,7 +129,8 @@
 					modals.open('create');
 				}}
 			/>
-			{@render pageChildren()}
 		</DataState>
 	{/snippet}
 </PageQuery>
+
+{@render pageChildren()}

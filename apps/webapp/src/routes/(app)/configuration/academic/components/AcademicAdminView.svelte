@@ -1,9 +1,5 @@
 <script lang="ts">
-	import type { PeriodDefinition, PeriodDefinitionDayOfWeek } from '$lib/types/school';
-	import type {
-		AcademicModalName,
-		PeriodDefinitionWizardStep,
-	} from '../lib/academic-modal-surface';
+	import type { AcademicModalName } from '../lib/academic-modal-surface';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -14,53 +10,34 @@
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
-	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { t } from '$lib/i18n';
-	import { CalendarRange, ChevronDown, Plus, Sparkles } from '$lib/icons';
+	import { formatDateInput, formatLocaleDate } from '$lib/date/format';
+	import { locale, t } from '$lib/i18n';
+	import { ChevronRight, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { hasPermission } from '$lib/permissions';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAcademicPageState } from '../academic-page.svelte';
 	import {
 		ACADEMIC_MODAL_NAMES,
-		AcademicWizardObservationGuard,
-		PERIOD_DEFINITION_WIZARD_STEPS,
-		allowedAcademicModalNames,
-		canonicalAcademicModalStep,
 		isAcademicModalTargetValid,
-		resolvePeriodDefinitionModalTarget,
 		snapshotAcademicMutationTarget,
 	} from '../lib/academic-modal-surface';
-	import { PERIOD_DEFINITION_WEEKDAYS } from '../lib/period-definition-presets';
 	import AcademicYearCreateModal from './AcademicYearCreateModal.svelte';
-	import PeriodDefinitionBoard from './PeriodDefinitionBoard.svelte';
-	import PeriodDefinitionFormModal from './PeriodDefinitionFormModal.svelte';
-	import PeriodDefinitionWizardModal from './PeriodDefinitionWizardModal.svelte';
 
 	const academicPage = getAcademicPageState();
-	const canConfigureSchoolStructure = $derived(hasPermission('SCHOOL_STRUCTURE_CONFIGURE'));
-	const allowedModalNames = $derived(
-		allowedAcademicModalNames(canConfigureSchoolStructure),
-	);
 
 	const modals = createUrlSyncedModals<AcademicModalName>({
-		allowed: () => allowedModalNames,
+		allowed: () => ACADEMIC_MODAL_NAMES,
 		owned: ACADEMIC_MODAL_NAMES,
-		allowedSteps: PERIOD_DEFINITION_WIZARD_STEPS,
 		getUrl: () => $page.url,
 	});
-	const wizardObservation = new AcademicWizardObservationGuard();
 	const createOpen = bindUrlModal(modals, 'create');
-	const periodDefOpen = bindUrlModal(modals, 'period-def');
-	const wizardOpen = bindUrlModal(modals, 'period-def-wizard');
-	const deleteOpen = bindUrlModal(modals, 'delete-period-def');
 	const archiveOpen = bindUrlModal(modals, 'archive-year');
 	const publishYearOpen = bindUrlModal(modals, 'publish-year');
 	const publishPeriodOpen = bindUrlModal(modals, 'publish-period');
 
-	let deleteBusy = $state(false);
 	let archiveBusy = $state(false);
 	let publishYearBusy = $state(false);
 	let publishPeriodBusy = $state(false);
@@ -74,10 +51,6 @@
 			id: entry.id,
 			status: entry.status,
 		})),
-		periodDefinitions: academicContext.periodDefinitions.map(entry => ({
-			id: entry.id,
-			academicYearId: entry.academicYearId,
-		})),
 	});
 	const targetedYear = $derived(
 		modals.target
@@ -88,20 +61,6 @@
 		modals.target
 			? academicContext.periods.find(entry => entry.id === modals.target) ?? null
 			: null,
-	);
-	const targetedPeriodDefinition = $derived(
-		modals.target ? academicContext.periodDefinitionById(modals.target) ?? null : null,
-	);
-	const periodDefinitionModalTarget = $derived(
-		modals.isOpen('period-def')
-			? resolvePeriodDefinitionModalTarget(modals.target, modalCatalog)
-			: null,
-	);
-	const editingPeriodDef = $derived(
-		periodDefinitionModalTarget?.mode === 'edit' ? targetedPeriodDefinition : null,
-	);
-	const deleteTarget = $derived(
-		modals.isOpen('delete-period-def') ? targetedPeriodDefinition : null,
 	);
 	const archiveTarget = $derived.by(() => {
 		if (!modals.isOpen('archive-year')) {
@@ -127,12 +86,6 @@
 			? targetedPeriod
 			: null;
 	});
-	const wizardStep = $derived<PeriodDefinitionWizardStep>(
-		canonicalAcademicModalStep('period-def-wizard', modals.step, {
-			resetAdvancedWizardStep: false,
-		}) ?? 'preset',
-	);
-
 	afterNavigate(() => {
 		modals.hydrate();
 		academicPage.hydrateExpandedYear();
@@ -141,16 +94,6 @@
 		}
 		if (!isAcademicModalTargetValid(modals.active, modals.target, modalCatalog)) {
 			modals.close();
-			return;
-		}
-		const resetAdvancedWizardStep = wizardObservation.observe(
-			modals.isOpen('period-def-wizard'),
-		);
-		const canonicalStep = canonicalAcademicModalStep(modals.active, modals.step, {
-			resetAdvancedWizardStep,
-		});
-		if (canonicalStep !== modals.step) {
-			modals.replaceStep(canonicalStep);
 		}
 	});
 
@@ -199,21 +142,6 @@
 		return academicContext.periods
 			.filter(p => p.academicYearId === yearId)
 			.sort((a, b) => a.startDate.localeCompare(b.startDate));
-	}
-
-	function periodDefinitionsFor(yearId: string) {
-		return academicContext.periodDefinitionsForYear(yearId);
-	}
-
-	function periodDefinitionGroups(yearId: string): Array<{
-		dayOfWeek: PeriodDefinitionDayOfWeek;
-		defs: PeriodDefinition[];
-	}> {
-		const defs = periodDefinitionsFor(yearId);
-		return PERIOD_DEFINITION_WEEKDAYS.map(dayOfWeek => ({
-			dayOfWeek,
-			defs: defs.filter(def => def.dayOfWeek === dayOfWeek),
-		}));
 	}
 
 	function handleYearCreated(yearId: string) {
@@ -281,51 +209,18 @@
 		}
 	}
 
-	function openCreatePeriodDef(yearId: string) {
-		modals.open('period-def', { target: yearId });
-	}
-
-	function openPeriodDefWizard(yearId: string) {
-		modals.open('period-def-wizard', { target: yearId, step: 'preset' });
-	}
-
-	function openEditPeriodDef(def: PeriodDefinition) {
-		modals.open('period-def', { target: def.id });
-	}
-
-	function openDeletePeriodDef(def: PeriodDefinition) {
-		modals.open('delete-period-def', { target: def.id });
-	}
-
-	async function confirmDeletePeriodDef() {
-		if (!deleteTarget || deleteBusy) {
-			return;
-		}
-		deleteBusy = true;
-		try {
-			const ok = await academicPage.deletePeriodDefinition({
-				periodDefinition: deleteTarget,
-				successMessage: get(t)('periodDefinitions.toastDeleted', { label: deleteTarget.label }),
-			});
-			if (ok) {
-				modals.close();
-			}
-		}
-		finally {
-			deleteBusy = false;
-		}
-	}
-
 	const statusFilterActive = $derived(academicPage.filters.values.status !== 'all' ? 1 : 0);
 </script>
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[academicPage.filters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => academicPage.filters.patchImmediate({ status: 'all' })}
 		eyebrow={$t('academic.subtitle')}
 		title={$t('academic.title')}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={academicPage.filters.values.q} oninput={() => academicPage.filters.scheduleSync()} />
+			<ListSearchField onCommit={() => academicPage.filters.syncNow()} bind:value={academicPage.filters.values.q} oninput={() => academicPage.filters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<FilterPanel activeCount={statusFilterActive} title={$t('academic.filterAllStatuses')}>
@@ -338,13 +233,25 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
-			<Button size="sm" class="rounded-full" onclick={() => modals.open('create')}>
+			<Button size="sm" onclick={() => modals.open('create')}>
 				<Plus class="mr-1 h-4 w-4" />
 				{$t('academic.createYear')}
 			</Button>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'academic-years.csv',
+					headers: ['label', 'startDate', 'endDate', 'status'],
+					loadAll: async () => filteredYears.map(year => [
+						year.label,
+						year.startDate,
+						year.endDate,
+						year.status,
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 
@@ -352,44 +259,60 @@
 		{#each filteredYears as year (year.id)}
 			{@const open = academicPage.expandedYear === year.id}
 			{@const yearPeriods = periodsFor(year.id)}
-			{@const yearPeriodDefs = periodDefinitionsFor(year.id)}
-			<section class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-				<button
-					type="button"
-					class="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-secondary/40"
-					onclick={() => academicPage.setExpandedYear(open ? null : year.id)}
-				>
-					<CalendarRange class="h-4 w-4 shrink-0 text-muted-foreground" />
-					<div class="min-w-0 flex-1">
-						<div class="flex flex-wrap items-center gap-2">
-							<h3 class="font-display font-semibold">{year.label}</h3>
-							<span
-								class={cn(
-									'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide',
-									year.status === 'published'
-										? 'bg-accent/15 text-accent-foreground'
-										: year.status === 'archived'
-										? 'bg-muted text-muted-foreground'
-										: 'bg-secondary text-muted-foreground',
-								)}
-							>
-								{yearStatusLabel(year.status)}
-							</span>
+			<section class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
+				<div class="flex flex-wrap items-center gap-x-3 px-3">
+					<button
+						type="button"
+						class="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-collection px-2 py-4 text-left transition hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						aria-expanded={open}
+						aria-controls={open ? `academic-year-periods-${year.id}` : undefined}
+						onclick={() => academicPage.setExpandedYear(open ? null : year.id)}
+					>
+						<ChevronRight aria-hidden="true" class={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none', open && 'rotate-90')} />
+						<div class="min-w-0 flex-1">
+							<div class="flex flex-wrap items-center gap-2">
+								<h3 class="font-display font-semibold">{year.label}</h3>
+								<span
+									class={cn(
+										'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase tracking-wide',
+										year.status === 'published'
+											? 'bg-accent/15 text-accent-foreground'
+											: year.status === 'archived'
+											? 'bg-muted text-muted-foreground'
+											: 'bg-secondary text-muted-foreground',
+									)}
+								>
+									{yearStatusLabel(year.status)}
+								</span>
+							</div>
+							<p class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-sans text-xs leading-relaxed text-muted-foreground">
+								<time class="whitespace-nowrap" datetime={formatDateInput(year.startDate)}>{formatLocaleDate(year.startDate, $locale, { dateStyle: 'medium' })}</time>
+								<span>–</span>
+								<time class="whitespace-nowrap" datetime={formatDateInput(year.endDate)}>{formatLocaleDate(year.endDate, $locale, { dateStyle: 'medium' })}</time>
+							</p>
 						</div>
-						<p class="mt-0.5 font-mono text-xs text-muted-foreground">
-							{year.startDate} → {year.endDate}
-						</p>
-					</div>
-					<ChevronDown class={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
-				</button>
+					</button>
+					{#if year.status === 'published'}
+						<div class="ml-auto py-2 pr-2">
+							<Button
+								size="sm"
+								variant="outline"
+
+								onclick={() => openArchiveYear(year.id)}
+							>
+								{$t('academic.archiveYear')}
+							</Button>
+						</div>
+					{/if}
+				</div>
 
 				{#if open}
-					<div class="border-t border-border px-5 py-4">
+					<div id={`academic-year-periods-${year.id}`} class="border-t border-border px-5 py-4">
 						{#if year.status !== 'published'}
 							<div class="mb-4 flex justify-end">
 								<Button
 									size="sm"
-									class="rounded-full"
+
 									disabled={publishedYearId !== null}
 									title={publishedYearId !== null ? $t('academic.publishBlocked') : undefined}
 									onclick={() => modals.open('publish-year', { target: year.id })}
@@ -397,37 +320,28 @@
 									{$t('academic.publishYear')}
 								</Button>
 							</div>
-						{:else if year.status === 'published'}
-							<div class="mb-4 flex justify-end">
-								<Button
-									size="sm"
-									variant="outline"
-									class="rounded-full"
-									onclick={() => openArchiveYear(year.id)}
-								>
-									{$t('academic.archiveYear')}
-								</Button>
-							</div>
 						{/if}
 
-						<p class="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+						<p class="mb-3 font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 							{$t('academic.periods')}
 						</p>
 						<ul class="space-y-2">
 							{#each yearPeriods as period (period.id)}
 								<li
-									class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-4 py-3"
+									class="flex flex-wrap items-center justify-between gap-3 rounded-collection border border-border/70 bg-background/60 px-4 py-3"
 								>
 									<div>
 										<p class="text-sm font-medium">{period.label}</p>
-										<p class="font-mono text-[11px] text-muted-foreground">
-											{period.range} · {period.startDate} → {period.endDate}
+										<p class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-sans text-xs leading-relaxed text-muted-foreground">
+											<time class="whitespace-nowrap" datetime={formatDateInput(period.startDate)}>{formatLocaleDate(period.startDate, $locale, { dateStyle: 'medium' })}</time>
+											<span>–</span>
+											<time class="whitespace-nowrap" datetime={formatDateInput(period.endDate)}>{formatLocaleDate(period.endDate, $locale, { dateStyle: 'medium' })}</time>
 										</p>
 									</div>
 									<div class="flex items-center gap-2">
 										<span
 											class={cn(
-												'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+												'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
 												period.status === 'published'
 													? 'bg-accent/15 text-accent-foreground'
 													: 'bg-secondary text-muted-foreground',
@@ -441,7 +355,7 @@
 											<Button
 												size="sm"
 												variant="outline"
-												class="rounded-full"
+
 												onclick={() => modals.open('publish-period', { target: period.id })}
 											>
 												{$t('academic.publishPeriod')}
@@ -451,53 +365,6 @@
 								</li>
 							{/each}
 						</ul>
-
-						<div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-							<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-								{$t('periodDefinitions.sectionTitle')}
-							</p>
-							<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
-								{#snippet children({ disabled, title })}
-									<div class="flex flex-wrap items-center gap-2">
-										<Button
-											size="sm"
-											variant="outline"
-											class="rounded-full"
-											{disabled}
-											{title}
-											onclick={() => openPeriodDefWizard(year.id)}
-										>
-											<Sparkles class="mr-1 h-4 w-4" />
-											{$t('periodDefinitions.quickSetup')}
-										</Button>
-										<Button
-											size="sm"
-											variant="outline"
-											class="rounded-full"
-											{disabled}
-											{title}
-											onclick={() => openCreatePeriodDef(year.id)}
-										>
-											<Plus class="mr-1 h-4 w-4" />
-											{$t('periodDefinitions.add')}
-										</Button>
-									</div>
-								{/snippet}
-							</PermissionGate>
-						</div>
-						{#if yearPeriodDefs.length === 0}
-							<ul class="mt-3 space-y-2">
-								<li class="rounded-xl border border-dashed border-border/70 px-4 py-6 text-center text-sm text-muted-foreground">
-									{$t('periodDefinitions.empty')}
-								</li>
-							</ul>
-						{:else}
-							<PeriodDefinitionBoard
-								groups={periodDefinitionGroups(year.id)}
-								onEdit={openEditPeriodDef}
-								onDelete={openDeletePeriodDef}
-							/>
-						{/if}
 					</div>
 				{/if}
 			</section>
@@ -506,23 +373,6 @@
 </div>
 
 <AcademicYearCreateModal bind:open={createOpen.open} onCreated={handleYearCreated} />
-
-{#if periodDefOpen.open && periodDefinitionModalTarget}
-	<PeriodDefinitionFormModal
-		bind:open={periodDefOpen.open}
-		academicYearId={periodDefinitionModalTarget.academicYearId}
-		periodDefinition={editingPeriodDef}
-	/>
-{/if}
-
-{#if wizardOpen.open && targetedYear}
-	<PeriodDefinitionWizardModal
-		bind:open={wizardOpen.open}
-		academicYearId={targetedYear.id}
-		step={wizardStep}
-		onStepChange={step => modals.setStep(step)}
-	/>
-{/if}
 
 {#if archiveOpen.open && archiveTarget}
 	<ConfirmModal
@@ -535,18 +385,6 @@
 		cancelLabel={$t('academic.cancel')}
 		busy={archiveBusy}
 		onConfirm={confirmArchiveYear}
-	/>
-{/if}
-
-{#if deleteOpen.open && deleteTarget}
-	<ConfirmModal
-		bind:open={deleteOpen.open}
-		title={$t('common.deleteConfirmTitle')}
-		description={$t('periodDefinitions.deleteConfirm', { label: deleteTarget.label })}
-		confirmLabel={$t('common.delete')}
-		cancelLabel={$t('common.cancel')}
-		busy={deleteBusy}
-		onConfirm={confirmDeletePeriodDef}
 	/>
 {/if}
 

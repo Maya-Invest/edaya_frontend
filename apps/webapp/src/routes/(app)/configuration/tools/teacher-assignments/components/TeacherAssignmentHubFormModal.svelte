@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { entitiesByIds, uniqueIds } from '$lib/api/entity-list-filters';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -15,11 +13,14 @@
 	import { createTeacherAssignmentPayload } from '../../../../school/teachers/lib/teacher-detail-mutations';
 	import { getTeacherAssignmentsPageState } from '../teacher-assignments-page.svelte';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
-
+	let { open = $bindable(false) }: {
+		open?: boolean;
+	} = $props();
 	const hubPage = getTeacherAssignmentsPageState();
-
 	let busy = $state(false);
+	let responsibility = $state('');
+	let startsAt = $state('');
+	let endsAt = $state('');
 	let teacherId = $state('');
 	let kind = $state<components['schemas']['TeacherAssignment']['kind']>('subject');
 	let classGroupId = $state('');
@@ -27,30 +28,15 @@
 	let classSubjects = $state<components['schemas']['ClassSubject'][]>([]);
 	let subjectLabels = $state<Record<string, string>>({});
 	let classSubjectsLoadId = 0;
-
-	const teacherOptions = $derived(
-		hubPage.teachers.map(teacher => ({ value: teacher.id, label: teacher.name })),
-	);
-
-	const classOptions = $derived(
-		academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })),
-	);
-
-	const subjectOptions = $derived(
-		classSubjects.map(entry => ({
-			value: entry.id,
-			label: subjectLabels[entry.id] ?? entry.id,
-		})),
-	);
-
+	const teacherOptions = $derived(hubPage.teachers.map(teacher => ({ value: teacher.id, label: teacher.name })));
+	const classOptions = $derived(academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })));
+	const subjectOptions = $derived(classSubjects.map(entry => ({
+		value: entry.id,
+		label: subjectLabels[entry.id] ?? entry.id,
+	})));
 	const selectedTeacher = $derived(hubPage.findTeacher(teacherId));
-
 	const selectedSubjectIds = $derived(classSubjectIds.filter(entry => entry.trim().length > 0));
-
-	const canSubmit = $derived(
-		Boolean(teacherId) && Boolean(classGroupId) && (kind === 'homeroom' || selectedSubjectIds.length > 0),
-	);
-
+	const canSubmit = $derived((!startsAt || !endsAt || startsAt <= endsAt) && Boolean(teacherId) && Boolean(classGroupId) && (kind === 'homeroom' || selectedSubjectIds.length > 0));
 	async function loadClassSubjects(nextClassGroupId: string) {
 		const loadId = ++classSubjectsLoadId;
 		classSubjectIds = [''];
@@ -63,22 +49,10 @@
 		if (!schoolId) {
 			return;
 		}
-		const client = getBrowserSchoolClient();
-		const nextClassSubjects = await client.entities.classSubjects.list({
-			schoolId,
-			classGroupId: nextClassGroupId,
-		});
-		if (loadId !== classSubjectsLoadId) {
+		const { classSubjects: nextClassSubjects, subjects } = await hubPage.loadClassSubjectChoices(schoolId, nextClassGroupId);
+		if (loadId !== classSubjectsLoadId)
 			return;
-		}
 		classSubjects = nextClassSubjects;
-		const subjectIds = uniqueIds(nextClassSubjects.map(entry => entry.subjectId));
-		const subjects = subjectIds.length > 0
-			? await client.entities.subjects.list(entitiesByIds(subjectIds))
-			: [];
-		if (loadId !== classSubjectsLoadId) {
-			return;
-		}
 		subjectLabels = Object.fromEntries(nextClassSubjects.map((entry) => {
 			const subject = subjects.find(item => item.id === entry.subjectId);
 			const name = subject
@@ -98,23 +72,22 @@
 		const defaultSubjectId = pickClassSubjectIdForTeacherSubject(nextClassSubjects, teacher.subjectId);
 		classSubjectIds = defaultSubjectId ? [defaultSubjectId] : [''];
 	}
-
 	function addSubjectRow() {
 		classSubjectIds = [...classSubjectIds, ''];
 	}
-
 	function updateSubjectSelection(index: number, value: string) {
 		classSubjectIds = classSubjectIds.map((entry, entryIndex) => entryIndex === index ? value : entry);
 	}
-
 	$effect(() => {
 		if (open) {
 			void hubPage.ensureTeachersLoaded();
 		}
 	});
-
 	$effect(() => {
 		if (!open) {
+			responsibility = '';
+			startsAt = '';
+			endsAt = '';
 			teacherId = '';
 			kind = 'subject';
 			classGroupId = '';
@@ -123,18 +96,15 @@
 			subjectLabels = {};
 		}
 	});
-
 	$effect(() => {
 		if (open && classGroupId && kind === 'subject') {
 			void loadClassSubjects(classGroupId);
 		}
 	});
-
 	async function submit() {
 		if (!canSubmit || !teacherId) {
 			return;
 		}
-
 		busy = true;
 		try {
 			if (kind === 'homeroom') {
@@ -142,6 +112,9 @@
 				const assignment = createTeacherAssignmentPayload({
 					id,
 					teacherId,
+					responsibility: responsibility.trim() || null,
+					startsAt: startsAt ? new Date(startsAt).toISOString() : null,
+					endsAt: endsAt ? new Date(endsAt).toISOString() : null,
 					kind,
 					classGroupId,
 					classSubjectId: null,
@@ -155,13 +128,15 @@
 				}
 				return;
 			}
-
 			let saved = 0;
 			for (const classSubjectId of [...new Set(selectedSubjectIds)]) {
 				const id = `ta-${Date.now().toString(36)}-${saved}`;
 				const assignment = createTeacherAssignmentPayload({
 					id,
 					teacherId,
+					responsibility: responsibility.trim() || null,
+					startsAt: startsAt ? new Date(startsAt).toISOString() : null,
+					endsAt: endsAt ? new Date(endsAt).toISOString() : null,
 					kind: 'subject',
 					classGroupId,
 					classSubjectId,
@@ -175,7 +150,6 @@
 					saved += 1;
 				}
 			}
-
 			if (saved > 0) {
 				open = false;
 			}
@@ -195,6 +169,7 @@
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
 >
+	<div class="grid gap-3 sm:grid-cols-2"><label>{$t('profile.responsibility')}<input bind:value={responsibility} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label><label>{$t('profile.startsAt')}<input type="date" bind:value={startsAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label><label>{$t('profile.endsAt')}<input type="date" bind:value={endsAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label></div>
 	<div class="space-y-4">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -204,6 +179,7 @@
 				<p class="text-sm text-muted-foreground">{$t('tools.teacherAssignments.noTeachers')}</p>
 			{:else}
 				<FilterSelect
+					aria-label={$t('tools.teacherAssignments.teacherLabel')}
 					bind:value={teacherId}
 					options={[{ value: '', label: $t('tools.teacherAssignments.selectTeacher') }, ...teacherOptions]}
 				/>
@@ -214,6 +190,7 @@
 				{$t('teacher.assignmentKindLabel')}
 			</Label>
 			<FilterSelect
+				aria-label={$t('teacher.assignmentKindLabel')}
 				bind:value={kind}
 				options={[
 					{ value: 'subject', label: $t('teacher.assignmentKind.subject') },
@@ -226,6 +203,7 @@
 				{$t('teacher.classGroupLabel')}
 			</Label>
 			<FilterSelect
+				aria-label={$t('teacher.classGroupLabel')}
 				bind:value={classGroupId}
 				options={[{ value: '', label: $t('teacher.selectClassGroup') }, ...classOptions]}
 			/>
@@ -239,13 +217,14 @@
 								{$t('teacher.classSubjectLabel')}
 							</Label>
 							<FilterSelect
+								aria-label={$t('teacher.classSubjectLabel')}
 								value={classSubjectId}
 								onchange={value => updateSubjectSelection(index, value)}
 								options={[{ value: '', label: $t('teacher.selectClassSubject') }, ...subjectOptions]}
 							/>
 						</div>
 						{#if index === classSubjectIds.length - 1}
-							<Button type="button" variant="outline" class="shrink-0 rounded-full" onclick={addSubjectRow}>
+							<Button type="button" variant="outline" class="shrink-0" onclick={addSubjectRow}>
 								{$t('teacher.addSubject')}
 							</Button>
 						{/if}

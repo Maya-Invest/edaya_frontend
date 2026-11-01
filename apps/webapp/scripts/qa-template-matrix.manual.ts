@@ -2,8 +2,8 @@
  * Matrice QA complète — endpoints + actions par module.
  * Utilisée par generate-qa-template.ts
  *
- * Auth, Onboarding, Outils & imports et /configuration/tools sont exclus
- * des runs automatisés (voir qa-matrix-exclusions.ts).
+ * Auth and onboarding run in their dedicated executable suite.
+ * Tools and imports are required production scenarios.
  */
 export type QaModule =
 	| 'Auth'
@@ -35,8 +35,8 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Auth', `${B}/`, ['Redirect vers /login']),
 	...rows('Auth', `${B}/login`, [
 		'Affichage page connexion',
-		'Connexion mot de passe — succès',
-		'Connexion mot de passe — erreur visible (message rouge inline)',
+		'Connexion OTP — succès',
+		'Connexion OTP — erreur visible (message rouge inline)',
 		'Onglet signup (si activé)',
 		'Banner API indisponible',
 	]),
@@ -123,7 +123,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Ouvrir drawer profil',
 		'Éditer profil',
 		'Photo',
-		'Notes pédagogiques CRUD',
+		'Notes pédagogiques — créer / éditer',
 		'Changer classe',
 		'Changer statut élève',
 	]),
@@ -133,6 +133,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('École', `${B}/school/students/[id]/finances`, ['Consulter lignes finance']),
 	...rows('École', `${B}/school/students/[id]/report-card`, ['Générer / publier bulletin']),
 	...rows('École', `${B}/school/students/[id]/enrollments`, ['Historique inscriptions']),
+	...rows('École', `${B}/school/students/[id]/documents`, ['Historique documents', 'Générer / télécharger / annuler']),
 
 	...rows('École', `${B}/school/guardians`, [
 		'Liste — affichage / recherche',
@@ -146,12 +147,15 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('École', `${B}/school/staff`, ['Liste', 'Créer personnel']),
 	...rows('École', `${B}/school/staff/[id]/profile`, ['Éditer profil']),
 	...rows('École', `${B}/school/staff/[id]/permissions`, ['Assigner permissions']),
-	...rows('École', `${B}/school/staff/[id]/assignments`, ['Assignations classe/rôle']),
 
 	...rows('École', `${B}/school/teachers`, ['Liste', 'Créer enseignant']),
 	...rows('École', `${B}/school/teachers/[id]/profile`, ['Éditer profil']),
 	...rows('École', `${B}/school/teachers/[id]/assignments`, ['CRUD affectations matière/classe']),
 	...rows('École', `${B}/school/teachers/[id]/availability`, ['CRUD indisponibilités']),
+	...rows('École', `${B}/school/teachers/[id]/timetable`, ['Emploi du temps']),
+	...rows('École', `${B}/school/teachers/[id]/evaluations`, ['Évaluations']),
+	...rows('École', `${B}/school/teachers/[id]/family-feedback`, ['Retour des familles']),
+	...rows('École', `${B}/school/teachers/[id]/documents`, ['Documents']),
 	...rows('École', `${B}/school/teacher-assignments`, [
 		'Redirect vers /configuration/tools/teacher-assignments',
 	]),
@@ -180,6 +184,20 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Publier',
 	]),
 
+	...rows('École', `${B}/school/family-feedback`, [
+		'Liste — filtre statut',
+		'Créer campagne',
+	]),
+	...rows('École', `${B}/school/family-feedback/[id]/setup`, [
+		'Paramétrage',
+		'Éditer calendrier',
+		'Désigner modérateur',
+		'Planifier / ouvrir / clôturer',
+	]),
+	...rows('École', `${B}/school/family-feedback/[id]/audience`, ['Audience']),
+	...rows('École', `${B}/school/family-feedback/[id]/moderation`, ['Thèmes et commentaires']),
+	...rows('École', `${B}/school/family-feedback/[id]/results`, ['Agrégats et publication']),
+
 	...rows('École', `${B}/school/events`, ['Liste incidents', 'Créer incident']),
 	...rows('École', `${B}/school/events/[id]`, ['Éditer', 'Résoudre incident']),
 
@@ -197,9 +215,10 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Classes', `${B}/classes/[classId]/students/[id]/finances`, ['Finances']),
 	...rows('Classes', `${B}/classes/[classId]/students/[id]/report-card`, ['Bulletin']),
 	...rows('Classes', `${B}/classes/[classId]/students/[id]/enrollments`, ['Inscriptions']),
+	...rows('Classes', `${B}/classes/[classId]/students/[id]/documents`, ['Documents']),
 
 	...rows('Classes', `${B}/classes/[classId]/timetable`, [
-		'Vue semaine / liste',
+		'Vue semaine',
 		'Navigation semaine',
 	]),
 	...rows('Classes', `${B}/classes/[classId]/timetable/[sessionId]/details`, ['Détails séance']),
@@ -246,7 +265,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Liste frais',
 		'Filtre catégorie',
 		'Créer frais (nom, montant, échéances %)',
-		'Éditer / supprimer frais',
+		'Éditer / archiver frais',
 	]),
 	...rows('Finance', `${B}/finance/billing`, [
 		'Liste facturations',
@@ -255,60 +274,79 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 	...rows('Finance', `${B}/finance/billing/[id]`, [
 		'Enregistrer paiement',
-		'Supprimer facturation',
+		'Imputer le solde',
 	]),
 	...rows('Finance', `${B}/finance/payment`, [
 		'Ledger paiements',
 		'Recherche',
 		'Filtre statut',
 		'Filtre classe',
+		'Extourner un paiement',
+	]),
+	...rows('Configuration', `${B}/configuration/tools/finance-checks`, [
+		'Contrôles financiers',
 	]),
 
 	// ─── Configuration ──────────────────────────────────────────────────
-	...rows('Configuration', `${B}/configuration`, ['Redirect vers /configuration/subjects']),
+	...rows('Configuration', `${B}/configuration`, ['Redirect vers /configuration/structure/details']),
 	...rows('Configuration', `${B}/configuration/school`, [
-		'Éditer nom, timezone, ville, type école',
+		'Éditer les sections du profil école',
 	]),
 	...rows('Configuration', `${B}/configuration/academic`, [
-		'CRUD années scolaires',
+		'Créer année scolaire',
 		'Publier année',
-		'Définitions périodes (wizard)',
 		'Filtres liste',
 	]),
-	...rows('Configuration', `${B}/configuration/grade-levels`, [
+	...rows('Configuration', `${B}/configuration/period-grid`, [
+		'Sélecteur année',
+		'Définitions périodes (wizard)',
+	]),
+	...rows('Configuration', `${B}/configuration/other`, [
+		'Liste des catalogues',
+	]),
+	...rows('Configuration', `${B}/configuration/structure/details`, [
 		'Liste niveaux',
 		'Créer niveau',
 	]),
-	...rows('Configuration', `${B}/configuration/grade-levels/[id]`, ['Drawer — éditer / supprimer']),
-	...rows('Configuration', `${B}/configuration/classes`, [
+	...rows('Configuration', `${B}/configuration/structure/details?gradeLevel=[id]`, ['Niveau sélectionné — éditer / supprimer']),
+	...rows('Configuration', `${B}/configuration/structure/classes`, [
 		'Liste classes',
 		'Créer classe',
 	]),
-	...rows('Configuration', `${B}/configuration/classes/[id]/profile`, ['Profil classe — éditer']),
-	...rows('Configuration', `${B}/configuration/classes/[id]/assignments`, ['Affectations staff']),
-	...rows('Configuration', `${B}/configuration/subjects`, [
+	...rows('Configuration', `${B}/configuration/structure/classes/[id]/profile`, ['Profil classe — éditer']),
+	...rows('Configuration', `${B}/configuration/structure/classes/[id]/assignments`, ['Affectations staff']),
+	...rows('Configuration', `${B}/configuration/structure/subjects`, [
 		'Liste matières',
 		'Filtre niveau',
 		'Créer matière',
 	]),
-	...rows('Configuration', `${B}/configuration/subjects/[id]/progression`, ['Chapitres CRUD']),
-	...rows('Configuration', `${B}/configuration/subjects/[id]/logbook`, ['Logbook (si applicable)']),
-	...rows('Configuration', `${B}/configuration/subjects/level/[level]`, [
-		'Redirect vers /configuration/subjects?gradeLevel=[id]',
+	...rows('Configuration', `${B}/configuration/structure/subjects/[id]/progression`, ['Chapitres CRUD']),
+	...rows('Configuration', `${B}/configuration/structure/subjects/[id]/logbook`, ['Redirection catalogue vers progression']),
+	...rows('Configuration', `${B}/configuration/structure/subjects/level/[level]`, [
+		'Redirect vers /configuration/structure/subjects?gradeLevel=[id]',
 	]),
 	...rows('Configuration', `${B}/configuration/grade-scales`, [
 		'Liste barèmes',
 		'CRUD barème',
 	]),
-	...rows('Configuration', `${B}/configuration/report-cards`, [
-		'Liste définitions bulletins',
-		'CRUD / publier',
+	...rows('Configuration', `${B}/configuration/structure/subjects`, [
+		'Liste modules de résultats',
+		'Créer / supprimer un module',
+		'Groupement des matières',
 	]),
-	...rows('Configuration', `${B}/configuration/report-cards/[id]`, ['Drawer définition']),
 	...rows('Configuration', `${B}/configuration/notifications`, ['Templates notifications école']),
-	...rows('Configuration', `${B}/configuration/discipline`, [
+	...rows('Configuration', `${B}/configuration/other/discipline`, [
 		'Catalogue disciplinaire',
 		'Filtre kind',
+		'CRUD entrée',
+	]),
+	...rows('Configuration', `${B}/configuration/other/subject-categories`, [
+		'Liste catégories',
+		'CRUD catégorie',
+	]),
+	...rows('Configuration', `${B}/configuration/permission-profiles`, [
+		'Catalogue des profils',
+		'Recherche nom / description',
 		'CRUD entrée',
 	]),
 	...rows('Configuration', `${B}/configuration/tools`, [
@@ -317,11 +355,11 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 	...rows('Configuration', `${B}/configuration/tools/teacher-assignments`, [
 		'Hub affectations enseignant (deep link)',
-		'CRUD affectation',
+		'Créer / supprimer affectation',
 	]),
 	...rows('Configuration', `${B}/configuration/tools`, [
-		'Planning EDT — générer brouillon',
-		'Planning EDT — publier',
+		'Planning EDT — générer les séances',
+		'Planning EDT — régénérer sans doublons',
 	]),
 
 	// ─── Outils & imports ───────────────────────────────────────────────

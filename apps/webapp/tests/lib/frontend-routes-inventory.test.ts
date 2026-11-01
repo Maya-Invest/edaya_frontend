@@ -14,8 +14,8 @@ describe('frontend routes inventory compatibility routes', () => {
 	});
 
 	it('registers subject level compatibility routing', () => {
-		const route = '/configuration/subjects/level/:level?';
-		expect(ROUTE_REDIRECTS[route]).toBe('/configuration/subjects?gradeLevel=:level');
+		const route = '/configuration/structure/subjects/level/:level?';
+		expect(ROUTE_REDIRECTS[route]).toBe('/configuration/structure/subjects?gradeLevel=:level');
 		expect(LEGACY_ROUTES.has(route)).toBe(true);
 		expect(ROUTE_DESCRIPTIONS[route]).toBeTruthy();
 	});

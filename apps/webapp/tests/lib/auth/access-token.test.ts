@@ -84,6 +84,34 @@ describe('Bearer transport', () => {
 		expect(requests).toBe(1);
 	});
 
+	it('sends public requests without a session instead of failing the fetch', async () => {
+		const unauthorized = Object.assign(new Error('An active renewal session is required'), { status: 401 });
+		const manager = createAccessTokenManager(async () => {
+			throw unauthorized;
+		});
+		const send = createBearerFetch(manager, school, (async (_url, init) => {
+			expect(new Headers(init?.headers).has('Authorization')).toBe(false);
+			return new Response('{"status":"pending"}', { status: 200 });
+		}));
+		expect((await send(`${school}/public/invitations/token`)).status).toBe(200);
+	});
+
+	it('does not retry an anonymous 401', async () => {
+		let issues = 0;
+		let requests = 0;
+		const manager = createAccessTokenManager(async () => {
+			issues += 1;
+			throw Object.assign(new Error('An active renewal session is required'), { status: 401 });
+		});
+		const send = createBearerFetch(manager, school, (async () => {
+			requests += 1;
+			return new Response('', { status: 401 });
+		}));
+		expect((await send(`${school}/core/students`)).status).toBe(401);
+		expect(issues).toBe(1);
+		expect(requests).toBe(1);
+	});
+
 	it('refuses to attach a token to a different origin', async () => {
 		const send = createBearerFetch(createAccessTokenManager(async () => issue('a')), school);
 		await expect(send(`${children}/core/students`)).rejects.toThrow('API credentials cannot be sent to this destination');

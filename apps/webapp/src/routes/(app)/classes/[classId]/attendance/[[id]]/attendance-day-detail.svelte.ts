@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { AttendanceDay } from '$lib/types/school';
 import type { SessionAttendanceRow, SessionAttendanceStatus } from '$lib/types/session-detail';
 import type { AttendancePageState } from '../attendance-page.svelte';
@@ -71,9 +72,9 @@ export class AttendanceDayDetailState {
 	}
 
 	query() {
-		return (url: URL) => resolvePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const occurrenceId = attendanceDayDetailIdFromUrl(url);
 				const classId = attendanceClassIdFromUrl(url);
 				if (!occurrenceId || !classId) {
@@ -88,13 +89,14 @@ export class AttendanceDayDetailState {
 
 				const detail = await loadAttendanceDayDetail(queryClient(), occurrenceId);
 				if (detail) {
+					signal.throwIfAborted();
 					this.seed(occurrenceId, detail.attendance);
 				}
 				return {};
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load attendance day detail.',
-		});
+		}, request);
 	}
 
 	async recordStudentAttendance(input: {

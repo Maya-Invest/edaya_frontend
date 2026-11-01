@@ -1,12 +1,12 @@
 import type { Browser } from 'playwright';
-import { OWNER_EMAIL, STAFF_ID } from '../support/constants';
+import type { DemoReporter } from '../support/reporter';
+import { assertReportCardWorkspace, assertListShell } from '../support/assertions';
 import { signIn } from '../support/auth';
+import { OWNER_EMAIL, STAFF_ID } from '../support/constants';
 import { createDemoContext } from '../support/context';
 import { waitForDrawerAside } from '../support/drawer';
-import { assertFilterSelectShell, assertListShell } from '../support/assertions';
 import { waitForFormModal, waitForUrlModal } from '../support/modal';
 import { DEMO_DRY_RUN_OUT_DIR, schoolStaffPath } from '../support/paths';
-import type { DemoReporter } from '../support/reporter';
 import { visit } from '../support/visit';
 
 /** School owner role: permission-gated routes that skip for deputy director. */
@@ -25,10 +25,10 @@ export async function runOwnerPermissionChecks(
 		await signIn(ctx, { namePattern: /Aminata Koné|Koné/i, email: OWNER_EMAIL });
 		reporter.log(scene, 'O.1 Login a.kone@', 'pass');
 
-		if (await visit(ctx, `${base}/configuration/report-cards`, scene, 'O.2 Report card definitions', {
-			pathPrefix: '/configuration/report-cards',
+		if (await visit(ctx, `${base}/configuration/structure/details`, scene, 'O.2 Report card definitions', {
+			pathPrefix: '/configuration/structure/details',
 		})) {
-			await assertFilterSelectShell(ctx, scene, 'O.3 Report card definitions filter shell');
+			await assertReportCardWorkspace(ctx, scene, 'O.3 Report models follow level navigation', true);
 		}
 
 		if (await visit(ctx, `${base}/configuration/grade-scales`, scene, 'O.4 Grade scales list', {

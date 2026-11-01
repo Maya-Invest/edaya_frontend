@@ -36,7 +36,7 @@ const classSources: TeachingLogSources = {
 		classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
 	],
 	subjectsRaw: [
-		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
+		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', coefficient: 3 }),
 	],
 	staffMembersRaw: [
 		staffMember({ id: 'st1', firstName: 'Marie', lastName: 'Dupont', email: 'm.dupont@school.edu' }),

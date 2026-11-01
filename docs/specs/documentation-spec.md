@@ -1,116 +1,98 @@
 # Documentation Spec
 
-> **Applies to:** `edaya_web` documentation and agent configuration  
-> **Audience:** AI agents and implementers
+Normative. This contract governs the staff frontend's specification set, its authority and its relationship to engineering documentation. **Must** and **must not** are requirements. **May** grants only the explicitly stated choice.
 
-This document defines how documentation in this repository is organized. Agents **must** follow this taxonomy when reading or updating docs.
+## 1. Maintained documentation
 
----
+### 1.1 Specs
 
-## 1. Document types
+`docs/` must contain exactly the six Markdown contracts in §2, under `docs/specs/`. Specs define the required product and architecture in present tense. They must not contain implementation status, correction backlogs, migration plans, changelogs or dated qualification claims.
 
-Three types exist. Do not mix concerns across types.
+The six-spec set must be self-contained: each concern must state its requirements directly, without requiring archived plans, implementation reports or external evidence. Cross-spec references may identify the owning contract; necessary repeated context must agree with it. Source paths and interface names may identify an architectural boundary; the presence or absence of a component in the implementation does not establish the norm. Requirements must occupy their owning sections, not appended amendments.
 
-### 1.1 Specs (`docs/specs/`)
+A requirement must name its subject, required behavior, applicable condition and observable result. “Appropriate layout,” “as needed,” “hide or disable,” and similar unresolved alternatives must not substitute for a decision. An optional capability must state the exact condition under which it appears.
 
-Canonical, normative contracts for agents.
+### 1.2 Engineering READMEs
 
-Each spec:
+Engineering procedures belong in the README nearest their owner:
 
-- Defines **one concern** completely within its scope
-- Does **not** link to or depend on any other document (including other specs, reference docs, or plans)
-- Is precise and implementation-ready
-- Is updated when architecture decisions change
+| Owner | Content |
+| --- | --- |
+| Repository root | Overview, setup, common commands and guide navigation |
+| Repository tooling | CLI reference, client preparation, verification and releases |
+| Each application | Configuration, responsibilities and development |
+| Tests | Test authoring, fixtures, coverage and capture procedures |
+| Design system | Token/asset maintenance and visual review procedure |
+| Component/module | Local interfaces and examples |
 
-**Agent entry point:** the repository root `AGENTS.md` file indexes the spec set. Cursor rules under `.cursor/rules/` use **one rule file per spec** — each points to exactly one spec document.
+READMEs may link to specs. They must not establish competing UI or domain requirements. The generated CLI reference must stay inside the tooling README's marked block and be produced by its generator.
 
-### 1.2 Reference (`docs/reference/`)
+### 1.3 External artifacts
 
-Human-targeted architecture notes, decision logs, catalogs, and operational guides.
+Plans, audits, implementation gaps, reconciliation reports, client delivery material and historical evidence belong outside repositories. Shared standalone agent outputs and scripts belong in the workspace `bin/`; existing external archives retain their own organization. No build or check may depend on a local archive or `bin/` path.
 
-Each reference doc:
+Before removing source material, its archive must preserve original paths, repository/commit identity, working-tree status, checksums and dispositions. Copies must be verified. Archival must not mark unresolved work complete.
 
-- Is self-contained for human readers
-- May discuss rationale, progress, and historical context
-- Is **not** normative for agents
+Generated runtime, test and screenshot evidence must use ignored output directories and identify source revision/fingerprint, conditions and outcomes. Evidence establishes what was observed, not what the product must do.
 
-**Must not** be linked from `AGENTS.md`, `.cursor/rules/`, or any spec file.
+## 2. Six concerns
 
-### 1.3 Plans (`docs/sprints/`)
+| Spec | Authority |
+| --- | --- |
+| `documentation-spec.md` | Normative language, ownership, precedence and exception governance |
+| `feature-architecture-spec.md` | Domain meaning, capabilities, permissions, required information and feature surface assignments |
+| `app-shell-spec.md` | Page, collection, drawer, form and workspace composition and interaction |
+| `shared-components-spec.md` | Reusable component responsibilities, interfaces and allowed variants |
+| `design-language-spec.md` | Visual measurements, state presentation and FR/EN writing |
+| `route-state-spec.md` | Addressability, state ownership, loading, mutations and return context |
 
-Proposals and implementation trackers with a lifecycle:
+The root agent index and one Cursor rule per concern must point to this set. Summaries, examples and agent shortcuts must not override normative requirements.
 
-| Stage | Meaning |
-|-------|---------|
-| **planned** | Proposed work, not started |
-| **on-going** | Active execution and checkbox tracking |
-| **done** | Delivered; tracker frozen |
-| **archived** | Historical; open items extracted to a newer plan if needed |
+### 2.1 Authority by concern
 
-Plan docs **must not** be linked from specs, reference docs, or agent configuration.
+Domain contracts determine what information, actions, permissions, calculations and transaction semantics exist. Shared UI contracts determine how those capabilities are presented and operated. Route-state contracts determine their state and navigation behavior. A feature-specific paragraph does not automatically override a shared presentation or state requirement. Shared numerical geometry is owned exclusively by design-language §2–3, and collection row-state treatments by §3.1. Other specs must reference those sections rather than repeat generic measurements. Business quantities, transaction limits and named exception boundaries remain with their owning contracts. Open record, bulk selected and keyboard focus name independent states; ‘selected row’ must not ambiguously combine them.
 
----
+UI composition must not implicitly invent backend capabilities, imply unsupported atomic saves or relax authorization. An explicitly required new capability must be declared by the feature contract with its public information boundary and authorization requirements; its declaration must not be presented as evidence of an existing API. Activity-log browsing requires such an authorized public audit projection; internal command receipts are not that projection. Implementation habits do not override the norm. An apparent conflict must be resolved in the owning requirements, not by selecting whichever wording is most convenient.
 
-## 2. Agent spec set
+### 2.2 Named exceptions
 
-These six documents are the **only** normative sources for agents working on `apps/webapp`:
+A departure from a shared rule must have a stable `X-…` identifier and record:
 
-| Spec | Scope |
-|------|-------|
-| `feature-architecture-spec.md` | Routes, modules, entities, domain UX rules |
-| `app-shell-spec.md` | List, drawer, modal interaction patterns |
-| `shared-components-spec.md` | Mandatory reusable component registry |
-| `design-language-spec.md` | Visual design tokens and patterns |
-| `route-state-spec.md` | URL-driven loading, route state, mutations, colocation, smart components |
-| `documentation-spec.md` | This taxonomy and doc hygiene rules |
+1. The exact affected routes, surfaces or components.
+2. The shared rule being replaced.
+3. The replacement composition or behavior, including state and accessibility requirements.
+4. The domain or task justification.
+5. The rules that remain applicable.
 
-When multiple specs apply to a task, read each relevant spec independently. The root `AGENTS.md` file is an index only — not a substitute for reading the specs.
+An exception must be bounded; “this feature is special” is insufficient. Its identifier and short operative rule must appear wherever needed to keep a spec self-contained. Unnamed per-feature variants are forbidden. Changes to an exception must update all affected contracts together.
 
-### 2.1 Conflict resolution
+## 3. Feature contract completeness
 
-When rules appear to overlap, **precedence** is:
+Every accessible route family, including account/authentication and specialized configuration/task surfaces, must have an explicit contract. Sub-entities must have a declared parent owner. Aliases must have one canonical destination.
 
-| Priority | Spec | Wins for |
-|----------|------|----------|
-| 1 | `feature-architecture-spec.md` | Routes, entity surface type (complex/simple/thin/layout), locked product decisions |
-| 2 | Concern-specific spec | Interaction (`app-shell`), components (`shared-components`), visuals (`design-language`) |
-| 3 | `route-state-spec.md` | Data loading, route state ownership, mutations, colocation — wins over legacy patterns in code |
-| 4 | Heuristics in app-shell | Classifying **new** entities only — never overrides an assigned surface in feature-architecture §3 / §8 |
+Each feature contract must establish:
 
-Codebase drift does not override specs. Align code to specs in dedicated PRs.
+| Decision | Required content |
+| --- | --- |
+| Scope | Parent record, school/year/term and permission boundaries |
+| Collection | List, Table, allowed alternate, ordering and available search/facets |
+| Inspection | No drawer, section drawer, tabbed drawer or named specialized composition; useful inspection purpose |
+| Content | Ordered sections/tabs, required fields, conditional information and disclosures |
+| Actions | Scope, label, authoritative location, eligibility and outcome |
+| Editing | Bounded form, confirmation or focused task workspace; save granularity |
+| States | Loading, empty, restricted, unavailable, failure and pending behavior |
+| Continuity | Opening, Back, Close, direct-link return, preserved context and dirty dismissal |
 
-### 2.2 Multi-spec changes
+A shared default may satisfy a decision only when the feature explicitly inherits the named contract and identifies its data and actions. A broad label such as “complex entity” is not a content contract. Empty authorized data must remain distinct from denied access.
 
-Architecture or UX changes that span concerns **must** update every affected spec in the same PR (e.g. new drawer pattern → `app-shell` + `shared-components`; new route → `feature-architecture` + `route-state`).
+## 4. Norm acceptance
 
----
+The six contracts must use consistent terminology, dimensions, action ownership, exception identifiers and surface assignments. Each shared requirement must have an owner; necessary repeated context must agree with it. Navigation grouping must not merge recipient identities, broaden grants or combine counts with different meanings. Account section state must remain separate from school business authority; audit-read authority must not imply access to sensitive record contents.
 
-## 3. Rules for agents
+Acceptance must cover representative List and Table pages, section/tabbed drawers, collection-only records, forms, focused workspaces and named specialized surfaces. Review scenarios must include FR/EN, keyboard operation, narrow screens, 200% text, long values, zero/unknown/restricted data, empty results, failures, pending writes and direct links.
 
-1. **Start at the root `AGENTS.md` file** — it lists the spec set and cursor rules.
-2. **Specs are law** — do not treat reference or plan docs as requirements.
-3. **Spec vs code** — when they disagree, fix code or amend the relevant spec in the same PR.
-4. **No cross-links in specs** — if context from another concern is needed, state it inline briefly; do not link out.
-5. **Do not update reference or plans** unless the user explicitly asks for human-facing tracker work.
+References and section numbers must resolve. No route family or presentation choice may be left to an implementer's preference. Spec acceptance must not claim implementation, browser or release qualification.
 
----
+## 5. Authorization boundaries
 
-## 4. Rules for humans
-
-1. **Architecture changes** — update the relevant spec first, then code, in the same PR when possible.
-2. **Progress and gaps** — track in reference docs or plans, not in specs.
-3. **Plan lifecycle** — move trackers to `archived/` when done; carry open items forward in a new on-going plan.
-4. **Agent config hygiene** — keep the root `AGENTS.md` and `.cursor/rules/` limited to the spec set above.
-
----
-
-## 5. Portal authorization caution
-
-Staff permission, role, scope, and seed changes in `edaya_backend` can regress **portal authorization** (teacher assignments, guardian links, student access).
-
-When touching grants, seeds, or `StaffPermissionAssignment` in either repo:
-
-- Verify portal actor data still resolves in webapp screens (timetable labels, teacher drawer)
-- Ensure enrichment reads degrade gracefully on 403
-
-This applies across repos; it is not tracked in webapp plan docs.
+Staff role labels and profile names must not establish authority. Typed grants, valid scopes and backend eligibility determine actions and reads. Portal teachers, guardians and students remain distinct actors; staff administration must not confer portal authority implicitly. Forbidden optional enrichment must degrade to Restricted without exposing hidden values or treating the record as absent.

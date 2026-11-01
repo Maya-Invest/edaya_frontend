@@ -1,85 +1,134 @@
 <script lang="ts" generics="T extends PageLoadMeta">
 	import type { PageLoadMeta } from '$lib/page/load-state';
+	import type { PageQueryFn } from '$lib/queries/page-query-runtime';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle } from '$lib/icons';
-	import { getPageQueryCache, setPageQueryCache } from '$lib/queries/page-query-cache';
+	import {
+		getPageQueryCache,
+		invalidatePageQueryCache,
+		setPageQueryCache,
+	} from '$lib/queries/page-query-cache';
+	import {
+		bindPageQuery,
+		composePageQueryIdentity,
+		isPageQueryAbortError,
+	} from '$lib/queries/page-query-runtime';
 	import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
-	import { untrack } from 'svelte';
+	import { PAGE_QUERY_RETRY } from '$lib/queries/retry-context';
+	import { onDestroy, untrack, setContext } from 'svelte';
 
 	const {
 		query,
 		cacheKey = listRouteCacheKey,
 		cache = true,
+		preserveWhileLoading = false,
+		compactLoading = false,
+		loadingSurfaceKey = (url: URL) => url.pathname,
 		loadingTitle,
 		children,
 	}: {
-		query: (url: URL) => Promise<T>;
+		query: PageQueryFn<T>;
 		cacheKey?: (url: URL) => string;
 		cache?: boolean;
+		/** Keep mounted forms during a refresh of the same route and account scope. */
+		preserveWhileLoading?: boolean;
+		compactLoading?: boolean;
+		/** Shared list/detail owners can preserve their collection while selection changes. */
+		loadingSurfaceKey?: (url: URL) => string;
 		loadingTitle?: string;
 		children: Snippet<[T]>;
 	} = $props();
 
 	let result = $state<T | null>(null);
 	let loadedKey = $state<string | null>(null);
-	let inFlightKey = $state<string | null>(null);
+	let instanceCacheKey: string | null = null;
 	let loadVersion = 0;
+	let loadedSurface: string | null = null;
+	setContext(PAGE_QUERY_RETRY, () => {
+		if (instanceCacheKey)
+			invalidatePageQueryCache(instanceCacheKey);
+		loadedKey = null;
+	});
 
 	$effect(() => {
 		const url = $page.url;
-		const key = cacheKey(url);
+		const generation = academicContext.scopeGeneration;
+		const resolveKey = untrack(() => cacheKey);
+		const key = resolveKey(url);
+		const identity = composePageQueryIdentity(key, generation);
+		const surface = `${untrack(() => loadingSurfaceKey)(url)}|${generation}`;
+		instanceCacheKey = key;
 
-		if (key === loadedKey && result !== null) {
-			return;
-		}
-		if (key === inFlightKey) {
-			return;
+		const controller = new AbortController();
+		const version = ++loadVersion;
+
+		if (identity === loadedKey && result !== null) {
+			return () => {
+				controller.abort();
+			};
 		}
 
 		const cached = cache ? getPageQueryCache<T>(key) : undefined;
 		if (cached) {
 			result = cached;
-			loadedKey = key;
+			loadedKey = identity;
+			loadedSurface = surface;
 			pageQueryStatus.markReady(key);
-			return;
+			return () => {
+				controller.abort();
+			};
 		}
 
-		inFlightKey = key;
-		const version = ++loadVersion;
-		if (key !== loadedKey) {
+		if (identity !== loadedKey && (!preserveWhileLoading || loadedSurface !== surface)) {
 			result = null;
 		}
 		pageQueryStatus.markPending(key);
 
-		const runQuery = untrack(() => query);
-		void runQuery(url)
+		const runQuery = untrack(() => bindPageQuery(query));
+		void untrack(() => runQuery(url, { signal: controller.signal }))
 			.then((data) => {
-				if (version !== loadVersion) {
+				if (version !== loadVersion || controller.signal.aborted) {
 					return;
 				}
 				result = data;
-				loadedKey = key;
-				inFlightKey = null;
-				if (cache)
+				loadedKey = identity;
+				loadedSurface = surface;
+				if (cache) {
 					setPageQueryCache(key, data);
+				}
 				pageQueryStatus.markReady(key);
 			})
-			.catch(() => {
-				if (version !== loadVersion) {
+			.catch((error: unknown) => {
+				if (
+					version !== loadVersion
+					|| controller.signal.aborted
+					|| isPageQueryAbortError(error)
+				) {
 					return;
 				}
-				inFlightKey = null;
 				const fallback = {
 					status: 'error',
 					errorMessage: 'Unable to load this page.',
 				} as T;
 				result = fallback;
-				loadedKey = key;
+				loadedKey = identity;
 				pageQueryStatus.markReady(key);
 			});
+
+		return () => {
+			controller.abort();
+		};
+	});
+
+	onDestroy(() => {
+		loadVersion += 1;
+		if (cache && instanceCacheKey) {
+			invalidatePageQueryCache(instanceCacheKey);
+		}
 	});
 </script>
 
@@ -87,7 +136,7 @@
 	{@render children(result)}
 {:else}
 	<div
-		class="flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8 animate-fade-in"
+		class={compactLoading ? 'flex items-center gap-3 py-4' : 'flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8 animate-fade-in'}
 		role="status"
 		aria-live="polite"
 	>

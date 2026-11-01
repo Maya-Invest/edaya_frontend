@@ -4,29 +4,28 @@
 	import { page } from '$app/stores';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
+	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../teachers-page.svelte';
 	import TeacherProfileEditModal from './TeacherProfileEditModal.svelte';
 
-	const {
-		teacher,
-		onDeleted,
-	}: {
+	const { teacher, onDeleted }: {
 		teacher: Teacher;
 		onDeleted?: () => void;
 	} = $props();
-
 	const teachersPage = getTeachersPageState();
-
 	const modals = createUrlSyncedModals({
 		allowed: [
 			'edit-profile',
+			'edit-annual-profile',
+			'remove-annual-profile',
 			'delete',
 			'add-unavailability',
 			'edit-unavailability',
@@ -35,14 +34,24 @@
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
 	afterNavigate(() => {
 		modals.hydrate();
 	});
 	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
 	const deleteOpen = bindUrlModal(modals, 'delete');
-
+	const canChangePhoto = $derived(canUploadProfilePhoto('STAFF_MANAGE'));
 	let deleteBusy = $state(false);
-
+	const assignmentCount = $derived(teachersPage.assignmentCount(teacher.id) ?? 0);
+	async function handlePhotoChange(file: File) {
+		return teachersPage.updateProfilePhoto({
+			teacherId: teacher.id,
+			file,
+			successMessage: get(t)('profilePhoto.updateSuccess'),
+		});
+	}
 	async function confirmDelete() {
 		deleteBusy = true;
 		try {
@@ -62,25 +71,40 @@
 
 <DrawerEntityHeader
 	name={teacher.name}
-	summary={$t('teacher.drawerSummary')}
+	summary={$t('teacher.assignmentCount', { n: assignmentCount })}
 >
 	{#snippet avatar()}
-		<PersonAvatar
-			name={teacher.name}
-			initials={teacher.initials}
-			photoUrl={teacher.photoUrl}
-			size="lg"
-		/>
+		{#if canChangePhoto}
+			<ProfilePhotoPicker
+				name={teacher.name}
+				initials={teacher.initials}
+				photoUrl={teacher.photoUrl}
+				size="lg"
+				onChange={handlePhotoChange}
+			/>
+		{:else}
+			<PersonAvatar
+				name={teacher.name}
+				initials={teacher.initials}
+				photoUrl={teacher.photoUrl}
+				size="lg"
+			/>
+		{/if}
+	{/snippet}
+	{#snippet chips()}
+		<span class="rounded-full bg-secondary px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/80">
+			{teacher.isActive ? $t('teacher.statusActive') : $t('teacher.statusInactive')}
+		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
+		<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
 			{#snippet children({ disabled, title })}
 				<TeacherProfileEditModal {teacher} {disabled} {title} bind:open={editProfileOpen.open} />
 			{/snippet}
 		</PermissionGate>
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
+		<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
 			{#snippet children({ disabled, title })}
 				<RowActionMenuItem
 					{disabled}

@@ -7,22 +7,24 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
 	import { Check, ClipboardCheck } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import AttendanceReview from '$lib/smart-components/attendance-review/AttendanceReview.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAttendanceDayDetailState } from '../attendance-day-detail.svelte';
 	import AttendanceDayRecordModal from './AttendanceDayRecordModal.svelte';
 
-	const { day }: { day: AttendanceDay } = $props();
-
-	type AttendanceDayDrawerModal = 'record-attendance';
-
+	const { day }: {
+		day: AttendanceDay;
+	} = $props();
+	type AttendanceDayDrawerModal = 'record-attendance' | 'attendance-review';
 	const detailState = getAttendanceDayDetailState();
 	const modals = createUrlSyncedModals<AttendanceDayDrawerModal>({
-		allowed: ['record-attendance'],
+		allowed: ['record-attendance', 'attendance-review'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -30,22 +32,15 @@
 		modals.hydrate();
 	});
 	const recordAttendanceOpen = bindUrlModal(modals, 'record-attendance');
-
 	const statusTone: Record<SessionAttendanceStatus, string> = {
 		present: 'bg-secondary text-foreground/80',
 		absent: 'bg-highlight-soft text-destructive',
 		late: 'bg-highlight-soft text-highlight',
 	};
-
 	const attendanceRows = $derived(detailState.attendanceFor(day.id));
 	const recordedCount = $derived(attendanceRows.filter(row => row.status).length);
-	const unrecordedStudentIds = $derived(
-		attendanceRows.filter(row => !row.status).map(row => row.studentId),
-	);
-
-	const recordTargetRow = $derived(
-		modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined,
-	);
+	const unrecordedStudentIds = $derived(attendanceRows.filter(row => !row.status).map(row => row.studentId));
+	const recordTargetRow = $derived(modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined);
 	$effect(() => {
 		if (!modals.ready || modals.active !== 'record-attendance') {
 			return;
@@ -58,19 +53,13 @@
 			modals.close();
 		}
 	});
-
 	let bulkBusy = $state(false);
-
 	async function markAllPresent() {
 		if (unrecordedStudentIds.length === 0) {
 			return;
 		}
-
 		bulkBusy = true;
-		const attendanceByStudent = Object.fromEntries(
-			unrecordedStudentIds.map(studentId => [studentId, 'present' as const]),
-		) satisfies Record<string, SessionAttendanceStatus>;
-
+		const attendanceByStudent = Object.fromEntries(unrecordedStudentIds.map(studentId => [studentId, 'present' as const])) satisfies Record<string, SessionAttendanceStatus>;
 		await detailState.recordBulkAttendance({
 			day,
 			attendanceByStudent,
@@ -78,22 +67,19 @@
 		});
 		bulkBusy = false;
 	}
-
-	const formattedDate = $derived(
-		new Date(day.date).toLocaleDateString($locale, {
-			weekday: 'long',
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric',
-		}),
-	);
+	const formattedDate = $derived(formatLocaleDate(day.date, $locale, {
+		weekday: 'long',
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+	}));
 </script>
 
 <div class="flex min-h-0 flex-col">
 	<div class="shrink-0 space-y-5">
 		<DrawerEntityHeader name={day.label} summary={formattedDate}>
 			{#snippet chips()}
-				<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
+				<span class="rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] tabular-nums text-foreground/80">
 					{$t('attendanceDay.recordedSummary', {
 						recorded: recordedCount,
 						total: attendanceRows.length || day.totalStudents,
@@ -112,7 +98,7 @@
 							<Button
 								size="sm"
 								variant="outline"
-								class="rounded-full"
+
 								disabled={disabled || bulkBusy}
 								{title}
 								onclick={markAllPresent}
@@ -140,20 +126,21 @@
 			</DrawerEmptyState>
 		{:else}
 			<ul
-				class="scrollbar-thin mt-2 max-h-[min(32rem,calc(100dvh-16rem))] overflow-y-auto rounded-2xl border border-border bg-card shadow-soft"
+				class="scrollbar-thin mt-2 max-h-[min(32rem,calc(100dvh-16rem))] overflow-y-auto rounded-collection border border-border bg-card shadow-soft"
 			>
 				{#each attendanceRows as row (row.studentId)}
 					<li class="border-b border-border px-4 py-3 last:border-b-0">
 						<div class="flex items-center justify-between gap-3">
 							<div class="flex items-center gap-3">
 								<div
-									class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-display text-xs font-semibold text-primary-foreground"
+									class="flex h-9 w-9 items-center justify-center rounded-collection bg-primary font-display text-xs font-semibold text-primary-foreground"
 								>
 									{row.studentInitials}
 								</div>
 								<p class="text-sm font-medium">{row.studentName}</p>
 							</div>
 							<div class="flex items-center gap-2">
+								{#if row.attendanceId}<AttendanceReview recordId={row.attendanceId} classId={day.classId} />{/if}
 								{#if row.status}
 									<span
 										class={cn(
@@ -178,7 +165,7 @@
 										<Button
 											variant="ghost"
 											size="sm"
-											class="h-7 rounded-full px-2.5 text-[11px]"
+											class="text-[11px]"
 											{disabled}
 											{title}
 											onclick={() => modals.open('record-attendance', { target: row.studentId })}

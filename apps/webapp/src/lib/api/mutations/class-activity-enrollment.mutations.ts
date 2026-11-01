@@ -21,6 +21,7 @@ export async function ensureClassActivityEnrollment(input: {
 		classGroupId: input.classGroupId,
 		createdAt: new Date().toISOString(),
 	}), {
+		versionKeys: ['activities', 'planning'],
 		errorMessage: 'Impossible de lier l\'activité à la classe.',
 	});
 	return result !== null;

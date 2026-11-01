@@ -1,5 +1,11 @@
 import { dev } from '$app/environment';
-import { PUBLIC_API_URL, PUBLIC_APP_ENV } from '$env/static/public';
+import * as publicEnv from '$env/static/public';
+
+const { PUBLIC_API_URL, PUBLIC_APP_ENV } = publicEnv;
+
+// Optional public flags must come through SvelteKit's environment module.
+// Vite's import.meta.env only exposes its own configured prefixes.
+const optionalPublicEnv: Record<string, string> = { ...publicEnv };
 
 export function isDemoLoginEnabled(): boolean {
 	return dev; // || PUBLIC_APP_ENV === 'staging';
@@ -23,9 +29,20 @@ export function isOnboardingSkipEnabled(): boolean {
 	return dev || PUBLIC_APP_ENV === 'staging';
 }
 
+export const DEFAULT_PROFILE_PHOTO_MAX_BYTES = 1_048_576;
+
+/** Mirrors API `PROFILE_PHOTO_MAX_BYTES` for client JPEG export. */
+export function profilePhotoMaxBytes(): number {
+	const parsed = Number(optionalPublicEnv.PUBLIC_PROFILE_PHOTO_MAX_BYTES);
+	if (Number.isFinite(parsed) && parsed > 0) {
+		return Math.floor(parsed);
+	}
+	return DEFAULT_PROFILE_PHOTO_MAX_BYTES;
+}
+
 /** Mirrors API `ALLOW_PUBLIC_SCHOOL_REGISTRATION` — enabled in dev/staging by default. */
 export function isPublicSchoolRegistrationEnabled(): boolean {
-	const flag = import.meta.env.PUBLIC_ALLOW_SCHOOL_REGISTRATION;
+	const flag = optionalPublicEnv.PUBLIC_ALLOW_SCHOOL_REGISTRATION;
 	if (flag === 'true') {
 		return true;
 	}

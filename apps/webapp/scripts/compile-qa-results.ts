@@ -4,9 +4,8 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 
-const ROOT = path.join(import.meta.dirname, '../../../..');
+const ROOT = path.join(import.meta.dirname, '../../..');
 const CSV_PATH = path.join(ROOT, 'qa-manual-checklist.csv');
 const RESULTS_PATH = path.join(ROOT, 'qa-checklist-results.json');
 
@@ -74,8 +73,8 @@ const routeTestsOk: Array<{ page: string; probleme: string }> = [
 	{ page: 'http://localhost:5173/configuration/school', probleme: 'Config école' },
 	{ page: 'http://localhost:5173/configuration/academic', probleme: 'Config académique' },
 	{ page: 'http://localhost:5173/configuration/grade-levels', probleme: 'Niveaux' },
-	{ page: 'http://localhost:5173/configuration/classes', probleme: 'Classes' },
-	{ page: 'http://localhost:5173/configuration/subjects', probleme: 'Matières' },
+	{ page: 'http://localhost:5173/configuration/structure/classes', probleme: 'Classes' },
+	{ page: 'http://localhost:5173/configuration/structure/subjects', probleme: 'Matières' },
 	{ page: 'http://localhost:5173/configuration/grade-scales', probleme: 'Barèmes' },
 	{ page: 'http://localhost:5173/configuration/tools', probleme: 'Outils / imports' },
 	{ page: 'http://localhost:5173/finance/fees', probleme: 'Frais' },
@@ -122,9 +121,4 @@ await writeFile(RESULTS_PATH, JSON.stringify(summary, null, 2));
 console.log(`Wrote ${RESULTS_PATH}`);
 console.log(`OK=${summary.passed} NOT OK=${summary.failed} N/A=${summary.na}`);
 
-const py = spawnSync('python', [path.join(import.meta.dirname, 'update-qa-xlsx.py')], {
-	cwd: path.join(import.meta.dirname, '..'),
-	stdio: 'inherit',
-	shell: true,
-});
-process.exit(py.status ?? 1);
+process.exit(summary.failed > 0 ? 1 : 0);

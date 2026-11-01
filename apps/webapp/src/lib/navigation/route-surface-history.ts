@@ -30,3 +30,14 @@ export function routeSurfaceBackDelta(
 	}
 	return -Math.max(1, state.routeSurfaceDepth ?? 1);
 }
+
+/** Replacing a direct-linked modal must not invent a parent browser-history entry. */
+export function replacementRouteSurfaceHistoryState(
+	parentHref: string,
+	current: App.PageState,
+): App.PageState {
+	if (current.routeSurfaceParent === parentHref) {
+		return current;
+	}
+	return { ...current, routeSurfaceParent: undefined, routeSurfaceDepth: undefined };
+}

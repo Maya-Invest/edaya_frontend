@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { AcademicPageState } from '../academic-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { bootstrapAppShell } from '$lib/auth/bootstrap-app';
@@ -10,13 +11,14 @@ export async function loadAcademicSlice() {
 }
 
 export function queryAcademicListPage(state: AcademicPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyAcademicSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadAcademicSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

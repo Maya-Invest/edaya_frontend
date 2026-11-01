@@ -1,9 +1,8 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import {
-	assignmentsForClassSubjects,
-	entitiesByIds,
-	teacherAssignmentsForClassSubjects,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
@@ -114,14 +113,16 @@ export async function fetchHomeroomTeacherSources(
 	classGroupId: string,
 	academicYearId: string,
 ): Promise<Pick<ClassSubjectInstructorSources, 'teachersRaw' | 'teacherAssignmentsRaw'>> {
-	const teacherAssignmentsRaw = await safeOptionalEntityList(() => client.entities.teacherAssignments.list({
-		classGroupId,
-		academicYearId,
-		kind: 'homeroom',
-		status: 'active',
-	}));
+	const teacherAssignmentsRaw = await safeOptionalEntityList(() =>
+		listAllEntityPagesForIdFilters(
+			query => client.entities.teacherAssignments.list(query),
+			[{ field: 'classGroupId', ids: [classGroupId] }],
+			{ extraQuery: { academicYearId, kind: 'homeroom', status: 'active' } },
+		));
 	const teacherIds = uniqueIds(teacherAssignmentsRaw.map(entry => entry.teacherId));
-	const teachersRaw = teacherIds.length ? await safeOptionalEntityList(() => client.entities.teachers.list(entitiesByIds(teacherIds))) : [];
+	const teachersRaw = await safeOptionalEntityList(() =>
+		listAllEntityPagesByIds(query => client.entities.teachers.list(query), teacherIds),
+	);
 	return { teachersRaw, teacherAssignmentsRaw };
 }
 
@@ -134,14 +135,15 @@ export async function fetchClassSubjectInstructorSources(
 	}
 
 	const teacherAssignmentsRaw = (await safeOptionalEntityList(() =>
-		client.entities.teacherAssignments.list(teacherAssignmentsForClassSubjects(classSubjectIds)),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.teacherAssignments.list(query),
+			[{ field: 'classSubjectId', ids: classSubjectIds }],
+		),
 	)) ?? [];
 	const teacherIds = uniqueIds(teacherAssignmentsRaw.map(assignment => assignment.teacherId));
-	const teachersRaw = teacherIds.length > 0
-		? (await safeOptionalEntityList(() =>
-				client.entities.teachers.list(entitiesByIds(teacherIds)),
-			)) ?? []
-		: [];
+	const teachersRaw = (await safeOptionalEntityList(() =>
+		listAllEntityPagesByIds(query => client.entities.teachers.list(query), teacherIds),
+	)) ?? [];
 
 	return { teachersRaw, teacherAssignmentsRaw };
 }
@@ -155,14 +157,15 @@ export async function fetchStaffInstructorSources(
 	}
 
 	const staffAssignmentsRaw = (await safeOptionalEntityList(() =>
-		client.entities.staffAssignments.list(assignmentsForClassSubjects(classSubjectIds)),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.staffAssignments.list(query),
+			[{ field: 'classSubjectId', ids: classSubjectIds }],
+		),
 	)) ?? [];
 	const staffIds = uniqueIds(staffAssignmentsRaw.map(assignment => assignment.staffId));
-	const staffMembersRaw = staffIds.length > 0
-		? (await safeOptionalEntityList(() =>
-				client.entities.staffMembers.list(entitiesByIds(staffIds)),
-			)) ?? []
-		: [];
+	const staffMembersRaw = (await safeOptionalEntityList(() =>
+		listAllEntityPagesByIds(query => client.entities.staffMembers.list(query), staffIds),
+	)) ?? [];
 
 	return { staffMembersRaw, staffAssignmentsRaw };
 }

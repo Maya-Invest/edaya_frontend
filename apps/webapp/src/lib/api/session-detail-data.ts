@@ -11,10 +11,12 @@ import type {
 } from '$lib/types/session-detail';
 import {
 	entitiesByIds,
+	listAllEntityPages,
 	progressForLessonSessions,
 	recordsForFieldIds,
 } from '$lib/api/entity-list-filters';
 import { fetchClassPeopleSources, mapStudents } from '$lib/api/people-data';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type LessonSessionRaw = components['schemas']['LessonSession'];
@@ -84,8 +86,8 @@ function mapLogbook(
 	return {
 		id: primaryProgress?.id ?? session.id,
 		chapter: matterLink?.id ?? session.displayLabel,
-		content: session.sessionNote ?? primaryProgress?.notes ?? '',
-		notes: primaryProgress?.notes ?? session.sessionNote ?? '',
+		content: readableLogbookNote(session.sessionNote) || primaryProgress?.notes || '',
+		notes: primaryProgress?.notes ?? readableLogbookNote(session.sessionNote) ?? '',
 		progress: primaryProgress?.completedPercentage ?? 0,
 	};
 }
@@ -139,21 +141,25 @@ export function buildSessionDetail(input: {
 export async function loadSessionDetail(
 	client: SchoolClient,
 	lessonSessionId: string,
+	options: { attendanceOnly?: boolean } = {},
 ): Promise<SessionDetail | null> {
 	let session: LessonSessionRaw;
 	try {
 		session = await client.entities.lessonSessions.get(lessonSessionId);
 	}
-	catch {
-		return null;
+	catch (error) {
+		if (error instanceof ApiError && error.status === 404)
+			return null;
+		throw error;
 	}
 
-	const classStudents = mapStudents(await fetchClassPeopleSources(client, session.classGroupId));
+	const roster = await client.queries.getClassSubjectRoster({ classSubjectId: session.classSubjectId, at: String(session.startsAt) });
+	const classStudents = mapStudents({ studentsRaw: await listAllEntityPages(query => client.entities.students.list(query), { baseQuery: entitiesByIds(roster.students.map(row => row.id)) }), enrollmentsRaw: [], guardiansRaw: [], linksRaw: [] });
 	const classSubjectId = session.classSubjectId;
 	const [attendanceRaw, classSubjectMattersRaw, progressRaw] = await Promise.all([
 		client.entities.attendance.list(recordsForFieldIds('lessonSessionId', [lessonSessionId])),
-		client.entities.classSubjectMatters.list(recordsForFieldIds('classSubjectId', [classSubjectId])),
-		client.entities.classSubjectProgress.list(progressForLessonSessions([lessonSessionId])),
+		options.attendanceOnly ? [] : client.entities.classSubjectMatters.list(recordsForFieldIds('classSubjectId', [classSubjectId])),
+		options.attendanceOnly ? [] : client.entities.classSubjectProgress.list(progressForLessonSessions([lessonSessionId])),
 	]);
 	const subjectMatterIds = [...new Set((classSubjectMattersRaw ?? []).map(entry => entry.subjectMatterId))];
 	const subjectMattersRaw = subjectMatterIds.length > 0
@@ -221,8 +227,10 @@ async function loadActivitySessionDetail(
 	try {
 		session = await client.entities.activitySessions.get(activitySessionId);
 	}
-	catch {
-		return null;
+	catch (error) {
+		if (error instanceof ApiError && error.status === 404)
+			return null;
+		throw error;
 	}
 
 	const classStudents = mapStudents(await fetchClassPeopleSources(client, session.classGroupId));
@@ -250,11 +258,17 @@ async function loadAssessmentOccurrenceDetail(
 	try {
 		assessment = await client.entities.assessments.get(assessmentId);
 	}
-	catch {
-		return null;
+	catch (error) {
+		if (error instanceof ApiError && error.status === 404)
+			return null;
+		throw error;
 	}
 
-	const classStudents = mapStudents(await fetchClassPeopleSources(client, assessment.classGroupId));
+	const at = assessment.dueAt ?? assessment.startsAt ?? (assessment.lessonSessionId ? (await client.entities.lessonSessions.get(assessment.lessonSessionId)).startsAt : undefined);
+	if (!at)
+		throw new Error('Assessment date is required');
+	const roster = await client.queries.getClassSubjectRoster({ classSubjectId: assessment.classSubjectId, at: String(at) });
+	const classStudents = mapStudents({ studentsRaw: await listAllEntityPages(query => client.entities.students.list(query), { baseQuery: entitiesByIds(roster.students.map(row => row.id)) }), enrollmentsRaw: [], guardiansRaw: [], linksRaw: [] });
 	const attendanceRaw = await client.entities.attendance.list(
 		recordsForFieldIds('assessmentId', [assessmentId]),
 	);
@@ -274,6 +288,7 @@ async function loadAssessmentOccurrenceDetail(
 export async function loadPlanningOccurrenceDetail(
 	client: SchoolClient,
 	event: Pick<PlanningEvent, 'id' | 'kind'>,
+	options: { attendanceOnly?: boolean } = {},
 ): Promise<SessionDetail | null> {
 	switch (event.kind) {
 		case 'activity':
@@ -282,6 +297,28 @@ export async function loadPlanningOccurrenceDetail(
 			return loadAssessmentOccurrenceDetail(client, event.id);
 		case 'lesson':
 		default:
-			return loadSessionDetail(client, event.id);
+			return loadSessionDetail(client, event.id, options);
+	}
+}
+
+/** Parent-facing lesson text. Structured teacher notes stay out of the raw JSON. */
+export function readableLogbookNote(sessionNote: string | null | undefined): string {
+	const value = sessionNote?.trim() ?? '';
+	if (!value.startsWith('{"edayaLogbook":'))
+		return value;
+	try {
+		const decoded = JSON.parse(value) as {
+			edayaLogbook?: { content?: string; objectives?: string[]; homework?: string };
+		};
+		const envelope = decoded.edayaLogbook;
+		if (!envelope)
+			return value;
+		return [envelope.content, ...(envelope.objectives ?? []), envelope.homework]
+			.map(part => part?.trim())
+			.filter((part): part is string => Boolean(part))
+			.join('\n');
+	}
+	catch {
+		return value;
 	}
 }

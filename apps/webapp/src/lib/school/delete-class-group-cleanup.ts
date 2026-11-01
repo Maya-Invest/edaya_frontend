@@ -52,7 +52,7 @@ export async function cleanupClassGroupDependencies(
 	const classSubjects = await listOrEmpty(() =>
 		client.entities.classSubjects.list(classGroupScope(classGroupId)),
 	);
-	if (classSubjects.some(subject => subject.gradeLevelSubjectId)) {
+	if (classSubjects.some(subject => subject.subjectId)) {
 		throw new ClassGroupDeleteBlockedError(get(t)('classGroups.deleteBlockedCurriculum'));
 	}
 	const classSubjectIds = classSubjects.map(entry => entry.id);

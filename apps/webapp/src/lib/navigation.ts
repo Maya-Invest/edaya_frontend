@@ -4,33 +4,36 @@ import type { LucideIcon } from '$lib/icons';
 import type { NavItemDefinition } from '$lib/navigation/nav-catalog';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
-	Users,
-	Shield,
-	CalendarDays,
-	Mail,
-	Sparkle,
 	AlertTriangle,
-	GraduationCap,
+	BadgeDollarSign,
 	BookOpen,
+	Building2,
+	CalendarClock,
+	CalendarDays,
+	CalendarRange,
 	ClipboardCheck,
 	FileSpreadsheet,
-	Percent,
-	Upload,
-	BadgeDollarSign,
-	Receipt,
-	Wallet,
-	Building2,
-	LayoutGrid,
-	Wallet as WalletIcon,
-	Settings2,
-	CalendarRange,
+	GraduationCap,
+	HeartHandshake,
 	Layers,
+	LayoutGrid,
+	List,
+	Mail,
+	Receipt,
+	Settings2,
+	Shield,
+	Sparkle,
+	Upload,
+	Users,
+	Wallet,
+	Wallet as WalletIcon,
 } from '$lib/icons';
 import { appPath } from '$lib/navigation/app-navigation';
 import {
 	CLASS_NAV_DEFS,
 	CONFIG_NAV_DEFS,
 	FINANCE_NAV_DEFS,
+	INBOX_NAV_DEFS,
 	SCHOOL_NAV_DEFS,
 
 } from '$lib/navigation/nav-catalog';
@@ -39,7 +42,7 @@ export type { LucideIcon };
 
 export const DASHBOARD_HREF = appPath('/(app)/dashboard');
 
-export type ModuleKey = 'dashboard' | 'school' | 'classes' | 'finance' | 'configuration';
+export type ModuleKey = 'dashboard' | 'inbox' | 'school' | 'classes' | 'finance' | 'configuration';
 
 export const MODULES: {
 	key: Exclude<ModuleKey, 'dashboard'>;
@@ -47,11 +50,12 @@ export const MODULES: {
 	icon: LucideIcon;
 	href: ResolvedPathname;
 }[] = [
+	{ key: 'inbox', tKey: 'module.inbox', icon: Mail, href: appPath('/(app)/account/inbox/[[id]]') },
 	{ key: 'school', tKey: 'module.school', icon: Building2, href: appPath('/(app)/school/students/[[id]]') },
-	// Placeholder only — AppRail/AppSidebar resolve the real class id at click time.
+	// Placeholder only — AppSidebar resolve the real class id at click time.
 	{ key: 'classes', tKey: 'module.classes', icon: LayoutGrid, href: DASHBOARD_HREF },
 	{ key: 'finance', tKey: 'module.finance', icon: WalletIcon, href: appPath('/(app)/finance/billing/[[id]]') },
-	{ key: 'configuration', tKey: 'module.configuration', icon: Settings2, href: appPath('/(app)/configuration/subjects/[[id]]') },
+	{ key: 'configuration', tKey: 'module.configuration', icon: Settings2, href: appPath('/(app)/configuration/structure') },
 ];
 
 export interface ContextItem {
@@ -67,6 +71,9 @@ export interface ContextItem {
 type RouteId = Parameters<typeof appPath>[0];
 
 const SCHOOL_ICONS: Record<string, LucideIcon> = {
+	personal: Mail,
+	marksReview: ClipboardCheck,
+	messages: Mail,
 	students: Users,
 	guardians: Shield,
 	staff: GraduationCap,
@@ -74,6 +81,7 @@ const SCHOOL_ICONS: Record<string, LucideIcon> = {
 	calendar: CalendarDays,
 	activities: Sparkle,
 	announcements: Mail,
+	familyFeedback: HeartHandshake,
 	events: AlertTriangle,
 };
 
@@ -90,22 +98,28 @@ const FINANCE_ICONS: Record<string, LucideIcon> = {
 	fees: BadgeDollarSign,
 	billing: Receipt,
 	payment: Wallet,
+	reconciliation: FileSpreadsheet,
 };
 
 const CONFIG_ICONS: Record<string, LucideIcon> = {
 	school: Building2,
 	academic: CalendarRange,
-	gradeLevels: Layers,
+	periodGrid: CalendarClock,
+	structure: Layers,
+	gradeScales: ClipboardCheck,
 	classGroups: Layers,
 	subjects: BookOpen,
-	gradeScales: Percent,
+	other: List,
 	reportCards: FileSpreadsheet,
 	notificationTemplates: Mail,
-	discipline: AlertTriangle,
+	permissionProfiles: Shield,
 	tools: Upload,
 };
 
 const SCHOOL_ROUTES: Record<string, RouteId> = {
+	personal: '/(app)/account/inbox/[[id]]',
+	messages: '/(app)/school/messages/[[id]]',
+	marksReview: '/(app)/school/corrections',
 	students: '/(app)/school/students/[[id]]',
 	guardians: '/(app)/school/guardians/[[id]]',
 	staff: '/(app)/school/staff/[[id]]',
@@ -113,6 +127,7 @@ const SCHOOL_ROUTES: Record<string, RouteId> = {
 	calendar: '/(app)/school/calendar',
 	activities: '/(app)/school/activities/[[id]]',
 	announcements: '/(app)/school/announcements/[[id]]',
+	familyFeedback: '/(app)/school/family-feedback/[[id]]',
 	events: '/(app)/school/events/[[id]]',
 };
 
@@ -120,18 +135,18 @@ const FINANCE_ROUTES: Record<string, RouteId> = {
 	fees: '/(app)/finance/fees',
 	billing: '/(app)/finance/billing/[[id]]',
 	payment: '/(app)/finance/payment',
+	reconciliation: '/(app)/finance/reconciliation',
 };
 
 const CONFIG_ROUTES: Record<string, RouteId> = {
 	school: '/(app)/configuration/school',
 	academic: '/(app)/configuration/academic',
-	gradeLevels: '/(app)/configuration/grade-levels/[[id]]',
-	classGroups: '/(app)/configuration/classes/[[id]]',
-	subjects: '/(app)/configuration/subjects/[[id]]',
+	periodGrid: '/(app)/configuration/period-grid',
+	structure: '/(app)/configuration/structure',
 	gradeScales: '/(app)/configuration/grade-scales',
-	reportCards: '/(app)/configuration/report-cards/[[id]]',
 	notificationTemplates: '/(app)/configuration/notifications',
-	discipline: '/(app)/configuration/discipline',
+	other: '/(app)/configuration/other',
+	permissionProfiles: '/(app)/configuration/permission-profiles',
 	tools: '/(app)/configuration/tools',
 };
 
@@ -192,6 +207,7 @@ export function visibleClassNavItems(classId: string): ContextItem[] {
 }
 
 export const NAV_MODULE_ITEMS: Record<Exclude<ModuleKey, 'dashboard'>, ContextItem[]> = {
+	inbox: buildSchoolItems(INBOX_NAV_DEFS),
 	school: SCHOOL_ITEMS,
 	classes: CLASS_ITEMS,
 	finance: FINANCE_ITEMS,
@@ -203,6 +219,8 @@ export function isDashboardPath(pathname: string): boolean {
 }
 
 export function getModuleFromPath(pathname: string): ModuleKey {
+	if (/^\/(?:account\/inbox|school\/(?:messages|corrections))(?:\/|$)/.test(pathname))
+		return 'inbox';
 	if (isDashboardPath(pathname))
 		return 'dashboard';
 	if (pathname.startsWith('/classes'))

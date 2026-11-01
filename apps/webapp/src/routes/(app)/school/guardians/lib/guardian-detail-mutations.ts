@@ -1,56 +1,47 @@
+import type { components } from '$lib/api/schema';
 import type { Guardian } from '$lib/types/school';
 import type { GuardiansPageState } from '../guardians-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
-import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
+import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { guardianIdentityPayload } from '$lib/people-profile-fields';
 import { runGuardianRouteMutation } from './guardian-route-mutation';
 
+type ContactInput = Partial<Pick<components['schemas']['Guardian'], 'phone' | 'alternativePhone' | 'email' | 'emailNotificationsEnabled' | 'smsNotificationsEnabled' | 'pushNotificationsEnabled'>>;
+function contactPatch(input: ContactInput): ContactInput {
+	return Object.fromEntries(['phone', 'alternativePhone', 'email', 'emailNotificationsEnabled', 'smsNotificationsEnabled', 'pushNotificationsEnabled'].filter(key => input[key as keyof ContactInput] !== undefined).map(key => [key, input[key as keyof ContactInput]]));
+}
+
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
+	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-ci-cocody';
 }
 
 function guardianInitials(firstName: string, lastName: string): string {
 	return `${firstName.trim()[0] ?? ''}${lastName.trim()[0] ?? ''}`;
 }
 
-function buildContactMethods(email: string, phone: string) {
-	return [
-		email
-			? {
-					type: 'email' as const,
-					value: email,
-					label: 'Email',
-					isPrimary: true,
-					allowsNotifications: true,
-				}
-			: null,
-		phone
-			? {
-					type: 'phone' as const,
-					value: phone,
-					label: 'Téléphone',
-					isPrimary: !email,
-					allowsNotifications: true,
-				}
-			: null,
-	].filter((method): method is NonNullable<typeof method> => method !== null);
-}
-
-function buildOptimisticGuardian(input: {
+function buildOptimisticGuardian(input: ContactInput & {
 	id: string;
+	profile?: Record<string, string>;
+	code?: string;
 	firstName: string;
 	lastName: string;
-	email?: string;
-	phone?: string;
+	hasAccess?: boolean;
 }): Guardian {
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 	return {
+		...guardianIdentityPayload(input.profile),
+		code: input.code?.trim() || null,
 		id: input.id,
-		name: `${input.firstName.trim()} ${input.lastName.trim()}`,
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
+		name: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
 		initials: guardianInitials(input.firstName, input.lastName),
 		relation: 'Legal guardian',
+		hasAccess: input.hasAccess ?? true,
+		...contactPatch(input),
 		email,
 		phone,
 		studentIds: [],
@@ -62,12 +53,12 @@ function buildOptimisticGuardian(input: {
 
 export async function createGuardianOnPage(
 	state: GuardiansPageState,
-	input: {
+	input: ContactInput & {
 		firstName: string;
+		profile?: Record<string, string>;
 		lastName: string;
 		code?: string;
-		email?: string;
-		phone?: string;
+		hasAccess?: boolean;
 		sendAccountInvitation?: boolean;
 		successMessage?: string;
 	},
@@ -75,20 +66,22 @@ export async function createGuardianOnPage(
 	const client = getBrowserSchoolClient();
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
-	const code = input.code?.trim() ?? '';
-	const id = code || `grd-${Date.now().toString(36)}`;
+	const code = input.code?.trim() || undefined;
+	const id = crypto.randomUUID();
 	const optimistic = buildOptimisticGuardian({ id, ...input });
 
 	const result = await runGuardianRouteMutation({
 		request: () => client.commands.registerGuardian({
 			id,
 			schoolId: schoolId(),
+			...guardianIdentityPayload(input.profile),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
+			...(code ? { code } : {}),
 			email: email || null,
 			phone: phone || null,
-			contactMethods: buildContactMethods(email, phone),
-			hasAccess: true,
+			...contactPatch(input),
+			hasAccess: input.hasAccess ?? true,
 			sendAccountInvitation: input.sendAccountInvitation ?? true,
 			createdAt: new Date().toISOString(),
 		}),
@@ -107,46 +100,48 @@ export async function createGuardianOnPage(
 
 export async function updateGuardianContactOnPage(
 	state: GuardiansPageState,
-	input: {
+	input: ContactInput & {
 		guardianId: string;
+		profile?: Record<string, string>;
 		firstName: string;
 		lastName: string;
-		email?: string;
-		phone?: string;
+		hasAccess?: boolean;
 		successMessage?: string;
 	},
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = state.findGuardian(input.guardianId);
+	const scope = JSON.stringify([authSession.authUserId, authSession.schoolId, authSession.subjectId]);
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 
 	const result = await runGuardianRouteMutation({
-		request: async () => {
-			const existing = await client.entities.guardians.get(input.guardianId);
-			return client.commands.updateGuardianContactMethods({
-				guardianId: input.guardianId,
+		request: () => client.commands.updateGuardianProfile({
+			guardianId: input.guardianId,
+			...guardianIdentityPayload(input.profile),
+			firstName: input.firstName.trim(),
+			lastName: input.lastName.trim(),
+			...contactPatch(input),
+			...(input.hasAccess !== undefined ? { hasAccess: input.hasAccess } : {}),
+		}),
+		onSuccess: (saved) => {
+			if (scope !== JSON.stringify([authSession.authUserId, authSession.schoolId, authSession.subjectId]))
+				return;
+			state.patchGuardian(input.guardianId, {
+				...guardianIdentityPayload(input.profile),
 				firstName: input.firstName.trim(),
 				lastName: input.lastName.trim(),
-				email: email || null,
-				phone: phone || null,
-				contactMethods: buildContactMethods(email, phone),
-				hasAccess: existing.hasAccess,
-			});
-		},
-		apply: () => {
-			state.patchGuardian(input.guardianId, {
-				name: `${input.firstName.trim()} ${input.lastName.trim()}`,
+				name: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
 				initials: guardianInitials(input.firstName, input.lastName),
-				email,
-				phone,
+				...contactPatch(input),
+				email: saved.email ?? '',
+				phone: saved.phone ?? '',
+				alternativePhone: saved.alternativePhone,
+				emailNotificationsEnabled: saved.emailNotificationsEnabled,
+				smsNotificationsEnabled: saved.smsNotificationsEnabled,
+				pushNotificationsEnabled: saved.pushNotificationsEnabled,
+				...(input.hasAccess !== undefined ? { hasAccess: input.hasAccess } : {}),
 				preferredContact: email ? 'email' : phone ? 'phone' : 'email',
 			});
-		},
-		rollback: () => {
-			if (previous) {
-				state.patchGuardian(input.guardianId, previous);
-			}
 		},
 		successMessage: input.successMessage,
 		versionKeys: ['guardians'],
@@ -203,20 +198,9 @@ export async function updateGuardianProfilePhotoOnPage(
 				file: input.file,
 				schoolId: resolvedSchoolId,
 			});
-			const photoUrl = withPhotoCacheBust(uploaded.photoUrl);
 			const client = getBrowserSchoolClient();
-			const existing = await client.entities.guardians.get(input.guardianId);
-			await client.commands.updateGuardianContactMethods({
-				guardianId: input.guardianId,
-				firstName: existing.firstName,
-				lastName: existing.lastName,
-				email: existing.email,
-				phone: existing.phone,
-				contactMethods: existing.contactMethods,
-				hasAccess: existing.hasAccess,
-				photoUrl,
-			});
-			return photoUrl;
+			await client.commands.updateGuardianProfile({ guardianId: input.guardianId, photoUrl: uploaded.photoUrl });
+			return displayProfilePhotoUrl(uploaded.attachmentId);
 		},
 		apply: () => {},
 		rollback: () => {

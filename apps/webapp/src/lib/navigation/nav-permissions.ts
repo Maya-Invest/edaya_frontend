@@ -11,7 +11,7 @@ export interface NavPermissionContext {
 	schoolId?: string;
 }
 
-const MODULE_ORDER: NavModuleKey[] = ['school', 'classes', 'finance', 'configuration'];
+const MODULE_ORDER: NavModuleKey[] = ['inbox', 'school', 'classes', 'finance', 'configuration'];
 
 function resolveNavContext(ctx: NavPermissionContext = {}) {
 	return {
@@ -61,6 +61,8 @@ function pathnameMatchesItem(pathname: string, href: string): boolean {
 }
 
 export function findNavItemForPath(pathname: string, classId?: string): NavItemDefinition | null {
+	if (pathname.replace(/\/$/, '') === '/configuration/other/grade-scales')
+		pathname = '/configuration/grade-scales';
 	if (pathname === '/dashboard' || pathname.startsWith('/dashboard/') || pathname.startsWith('/account')) {
 		return null;
 	}
@@ -84,8 +86,16 @@ export function canAccessPath(
 	grants: ActionGrantsSnapshot | null,
 	ctx: NavPermissionContext = {},
 ): boolean {
+	if (pathname === '/configuration/tools/finance-checks' || pathname === '/finance/reconciliation') {
+		return canAccessNavItem({ permissions: ['FINANCIAL_REPORT_READ'] }, grants, ctx);
+	}
+
 	if (pathname === '/dashboard' || pathname.startsWith('/dashboard/') || pathname.startsWith('/account')) {
 		return true;
+	}
+
+	if (/^\/configuration\/(?:report-cards|structure\/details\/report-cards)(?:\/|$)/.test(pathname)) {
+		return canAccessNavItem({ permissions: ['REPORT_CARD_CONFIGURE'] }, grants, ctx);
 	}
 
 	const classId = ctx.classId ?? extractClassIdFromPath(pathname);
@@ -107,43 +117,50 @@ function extractClassIdFromPath(pathname: string): string | undefined {
 
 /** Staff teaching-write permissions — used in unit tests for profile 3.2. */
 export const TEACHER_NAV_PERMISSIONS: readonly PermissionCode[] = [
-	'CLASS_LOGBOOK_CREATE',
+	'ACTIVITY_READ',
+	'CLASS_LOGBOOK_MANAGE',
 	'ATTENDANCE_RECORD',
 	'DISCIPLINE_CREATE',
-	'GRADE_INPUT',
-	'CLASS_LOGBOOK_UPDATE',
+	'GRADE_MANAGE',
+	'CLASS_LOGBOOK_MANAGE',
 	'GRADE_READ',
-	'QUERY_WORKSPACE_READ',
-	'QUERY_CLASS_DIRECTORY_READ',
-	'QUERY_ENROLLMENT_HISTORY_READ',
-	'QUERY_CLASS_CURRICULUM_READ',
-	'QUERY_OVERVIEW_READ',
-	'QUERY_OVERDUE_FEES_READ',
-	'QUERY_STUDENT_DIRECTORY_READ',
-	'QUERY_GUARDIAN_STUDENTS_ADMIN_READ',
+	'WORKSPACE_ACCESS',
+	'CLASS_READ',
+	'ENROLLMENT_READ',
+	'ACADEMIC_PROGRAM_READ',
+	'WORKSPACE_ACCESS',
+	'OVERDUE_BALANCE_READ',
 	'STUDENT_READ',
 	'PARENT_READ',
-	'QUERY_TIMETABLE_READ',
+	'STUDENT_READ',
+	'PARENT_READ',
+	'TIMETABLE_READ',
 	'RESOURCE_READ',
-	'QUERY_CALENDAR_READ',
-	'QUERY_ATTENDANCE_READ',
+	'TIMETABLE_READ',
+	'ATTENDANCE_READ',
 	'ATTENDANCE_READ',
 	'DISCIPLINE_READ',
-	'QUERY_STUDENT_DETAIL_READ',
+	'STUDENT_READ',
 	'CLASS_LOGBOOK_READ',
 	'STUDENT_HEALTH_READ',
-	'QUERY_REPORT_CARD_DETAIL_READ',
+	'REPORT_CARD_READ',
 ];
 
 /** Dev seed `role-coordinator` permissions — used in unit tests for profile 3.3. */
 export const COORDINATOR_NAV_PERMISSIONS: readonly PermissionCode[] = [
-	'ACADEMIC_PROGRAM_UPDATE',
+	'ACTIVITY_READ',
+	'ACADEMIC_CATALOG_READ',
+	'ACADEMIC_CATALOG_MANAGE',
+	'GRADE_SCALE_CONFIGURE',
+	'REPORT_CARD_REVIEW_COMMENTS',
+	'REPORT_CARD_EXPORT',
+	'ACADEMIC_PROGRAM_MANAGE',
 	'SCHOOL_LIFECYCLE_MANAGE',
-	'CLASS_LOGBOOK_CREATE',
+	'CLASS_LOGBOOK_MANAGE',
 	'CLASS_LOGBOOK_READ',
-	'TIMETABLE_UPDATE',
+	'TIMETABLE_MANAGE',
 	'ATTENDANCE_RECORD',
-	'ATTENDANCE_JUSTIFY',
+	'ATTENDANCE_MANAGE',
 	'ATTENDANCE_READ',
 	'DISCIPLINE_CREATE',
 	'DISCIPLINE_VALIDATE',
@@ -152,35 +169,35 @@ export const COORDINATOR_NAV_PERMISSIONS: readonly PermissionCode[] = [
 	'RESOURCE_READ',
 	'ATTACHMENT_CONFIGURE',
 	'ATTACHMENT_READ',
-	'EXAM_CONFIG_CONFIGURE',
-	'GRADE_INPUT',
+	'ASSESSMENT_MANAGE',
+	'GRADE_MANAGE',
 	'GRADE_READ',
 	'REPORT_CARD_PUBLISH',
-	'ENROLLMENT_CREATE',
-	'PARENT_UPDATE',
-	'STUDENT_UPDATE',
+	'ENROLLMENT_MANAGE',
+	'PARENT_MANAGE',
+	'STUDENT_MANAGE',
 	'STUDENT_HEALTH_READ',
 	'STUDENT_HEALTH_UPDATE',
-	'CLASS_LOGBOOK_UPDATE',
-	'COMMUNICATION_CREATE',
-	'QUERY_WORKSPACE_READ',
-	'QUERY_STUDENT_DETAIL_READ',
-	'QUERY_ENROLLMENT_HISTORY_READ',
-	'QUERY_REPORT_CARD_DETAIL_READ',
-	'QUERY_COMMUNICATIONS_READ',
-	'QUERY_CALENDAR_READ',
-	'QUERY_CURRICULUM_PROGRESS_READ',
-	'QUERY_CLASS_DIRECTORY_READ',
-	'QUERY_CLASS_CURRICULUM_READ',
-	'QUERY_TIMETABLE_READ',
-	'QUERY_ATTENDANCE_READ',
-	'QUERY_GUARDIAN_STUDENTS_ADMIN_READ',
-	'TIMETABLE_CREATE',
-	'SCHOOL_STRUCTURE_CONFIGURE',
+	'CLASS_LOGBOOK_MANAGE',
+	'COMMUNICATION_DRAFT_MANAGE',
+	'WORKSPACE_ACCESS',
+	'STUDENT_READ',
+	'ENROLLMENT_READ',
+	'REPORT_CARD_READ',
+	'PERSONAL_COMMUNICATIONS_READ',
+	'TIMETABLE_READ',
+	'CLASS_LOGBOOK_READ',
+	'CLASS_READ',
+	'ACADEMIC_PROGRAM_READ',
+	'TIMETABLE_READ',
+	'ATTENDANCE_READ',
+	'PARENT_READ',
+	'TIMETABLE_MANAGE',
+	'SCHOOL_CONFIGURE',
 	'REPORT_CARD_CONFIGURE',
 	'REPORT_CARD_GENERATE',
-	'QUERY_STUDENT_DIRECTORY_READ',
-	'QUERY_OVERVIEW_READ',
+	'STUDENT_READ',
+	'WORKSPACE_ACCESS',
 	'ACCESS_CONTROL_READ',
 	'STAFF_READ',
 ];
@@ -189,22 +206,22 @@ export const COORDINATOR_NAV_PERMISSIONS: readonly PermissionCode[] = [
 export const EDUCATOR_NAV_PERMISSIONS: readonly PermissionCode[] = [
 	'DISCIPLINE_READ',
 	'DISCIPLINE_CREATE',
-	'DISCIPLINE_UPDATE',
+	'DISCIPLINE_MANAGE',
 	'ATTENDANCE_READ',
 	'ATTENDANCE_RECORD',
-	'ATTENDANCE_JUSTIFY',
+	'ATTENDANCE_MANAGE',
 	'CLASS_LOGBOOK_READ',
 	'GRADE_READ',
 	'STUDENT_READ',
-	'QUERY_WORKSPACE_READ',
-	'QUERY_CLASS_DIRECTORY_READ',
-	'QUERY_ENROLLMENT_HISTORY_READ',
-	'QUERY_CLASS_CURRICULUM_READ',
-	'QUERY_OVERVIEW_READ',
-	'QUERY_OVERDUE_FEES_READ',
-	'QUERY_STUDENT_DIRECTORY_READ',
-	'QUERY_GUARDIAN_STUDENTS_ADMIN_READ',
-	'QUERY_STUDENT_DETAIL_READ',
+	'WORKSPACE_ACCESS',
+	'CLASS_READ',
+	'ENROLLMENT_READ',
+	'ACADEMIC_PROGRAM_READ',
+	'WORKSPACE_ACCESS',
+	'OVERDUE_BALANCE_READ',
+	'STUDENT_READ',
+	'PARENT_READ',
+	'STUDENT_READ',
 	'STUDENT_HEALTH_READ',
-	'QUERY_REPORT_CARD_DETAIL_READ',
+	'REPORT_CARD_READ',
 ];

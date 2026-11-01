@@ -23,11 +23,11 @@
 		Plus,
 		Trash2,
 	} from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getCalendarPageState } from '../calendar-page.svelte';
-	import { deleteCalendarEventOnPage } from '../lib/calendar-mutations';
 	import CalendarEventFormModal from './CalendarEventFormModal.svelte';
 
 	const calendarPage = getCalendarPageState();
@@ -178,7 +178,7 @@
 		}
 		deleteBusy = true;
 		try {
-			const ok = await deleteCalendarEventOnPage(calendarPage, target, {
+			const ok = await calendarPage.deleteCalendarEvent(target, {
 				successMessage: get(t)('cal.toastDeleted', { title: target.title }),
 			});
 			if (ok) {
@@ -194,11 +194,13 @@
 
 <div class="animate-fade-in space-y-6">
 	<ListPageHeader
+		filterCount={[calendarPage.filters.values.type].filter(value => value !== 'all').length}
+		onResetFilters={() => calendarPage.filters.patchImmediate({ type: 'all' })}
 		eyebrow={$t('calendar.year')}
 		title={$t('calendar.eventCount', { n: filtered.length })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => calendarPage.filters.syncNow()}
 				value={calendarPage.filters.values.q}
 				oninput={(event) => {
 					calendarPage.filters.patch({ q: event.currentTarget.value });
@@ -217,14 +219,14 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="TIMETABLE_UPDATE"
+				permission="SCHOOL_CONFIGURE"
 				mode="disable"
 				tooltip={$t('calendar.permissionUpdate')}
 			>
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -236,7 +238,20 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'calendar.csv',
+					headers: ['date', 'endDate', 'type', 'title', 'scope'],
+					loadAll: async () => filtered.map(event => [
+						event.date,
+						event.endDate ?? event.date,
+						event.type,
+						event.title,
+						scopeLabel(event.scope),
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 
@@ -270,20 +285,20 @@
 						{@const cfg = typeConfig[ev.type]}
 						{@const multiDay = isMultiDayEvent(ev)}
 						<div
-							class="group flex w-full items-start gap-4 rounded-2xl border border-border bg-card p-4 text-left shadow-soft"
+							class="group flex w-full items-start gap-4 rounded-collection border border-border bg-card p-4 text-left shadow-soft"
 						>
 							<div
-								class="flex w-28 shrink-0 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2 text-center"
+								class="flex w-28 shrink-0 flex-col items-center justify-center rounded-collection bg-secondary/50 py-2 text-center"
 							>
 								{#if multiDay}
-									<span class="mb-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+									<span class="mb-1 font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
 										{$t('drawer.start')}
 									</span>
 								{/if}
 								<span class="font-display text-lg font-semibold leading-tight">
 									{parseCivilDate(ev.date).getDate()}
 								</span>
-								<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+								<span class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 									{parseCivilDate(ev.date).toLocaleDateString($locale, { month: 'short' })}
 								</span>
 							</div>
@@ -307,7 +322,7 @@
 										{/if}
 										{$t(cfg.labelKey)}
 									</span>
-									<span class="font-mono text-[10px] text-muted-foreground">
+									<span class="font-sans tabular-nums text-[10px] text-muted-foreground">
 										{scopeLabel(ev.scope)}
 									</span>
 								</div>
@@ -319,27 +334,27 @@
 								{#if multiDay}
 									{@const endDate = eventEndDate(ev)}
 									<div
-										class="flex w-28 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2 text-center"
+										class="flex w-28 flex-col items-center justify-center rounded-collection bg-secondary/50 py-2 text-center"
 									>
-										<span class="mb-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+										<span class="mb-1 font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
 											{$t('drawer.end')}
 										</span>
 										<span class="font-display text-lg font-semibold leading-tight">
 											{parseCivilDate(endDate).getDate()}
 										</span>
-										<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+										<span class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 											{parseCivilDate(endDate).toLocaleDateString($locale, { month: 'short' })}
 										</span>
 									</div>
 								{/if}
 								<div class="mt-1">
 									<PermissionGate
-										permission="TIMETABLE_UPDATE"
+										permission="SCHOOL_CONFIGURE"
 										mode="disable"
 										tooltip={$t('calendar.permissionUpdate')}
 									>
 										{#snippet children({ disabled, title })}
-											<RowActionMenu>
+											<RowActionMenu label={`${$t('list.rowActions')} · ${ev.title}`}>
 												<RowActionMenuItem
 													{disabled}
 													{title}

@@ -8,13 +8,21 @@ type SchoolStudentTabSegment
 		| 'incidents'
 		| 'finances'
 		| 'report-card'
-		| 'enrollments';
+		| 'enrollments'
+		| 'documents';
 
-type SchoolStaffTabSegment = 'profile' | 'permissions' | 'assignments';
-type SchoolTeacherTabSegment = 'profile' | 'assignments' | 'availability';
+type SchoolStaffTabSegment = 'profile' | 'permissions';
+type SchoolTeacherTabSegment
+	= | 'profile'
+		| 'assignments'
+		| 'availability'
+		| 'timetable'
+		| 'evaluations'
+		| 'family-feedback'
+		| 'documents';
 type ClassPlanningTabSegment = 'details' | 'attendance' | 'logbook';
 type ClassEvaluationTabSegment = 'details' | 'grading';
-type ClassTeachingTabSegment = 'progression' | 'logbook';
+type ClassTeachingTabSegment = 'progression' | 'logbook' | 'students';
 type ConfigSubjectTabSegment = 'progression' | 'logbook';
 type ConfigClassGroupTabSegment = 'profile' | 'assignments';
 
@@ -25,7 +33,8 @@ const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'incidents': '/(app)/school/students/[[id]]/(tabs)/incidents',
 	'finances': '/(app)/school/students/[[id]]/(tabs)/finances',
 	'report-card': '/(app)/school/students/[[id]]/(tabs)/report-card',
-	'enrollments': '/(app)/school/students/[[id]]/(tabs)/enrollments',
+	'enrollments': '/(app)/school/students/[[id]]/(tabs)/profile',
+	'documents': '/(app)/school/students/[[id]]/(tabs)/documents',
 };
 
 const CLASS_STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
@@ -35,19 +44,23 @@ const CLASS_STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'incidents': '/(app)/classes/[classId]/students/[[id]]/(tabs)/incidents',
 	'finances': '/(app)/classes/[classId]/students/[[id]]/(tabs)/finances',
 	'report-card': '/(app)/classes/[classId]/students/[[id]]/(tabs)/report-card',
-	'enrollments': '/(app)/classes/[classId]/students/[[id]]/(tabs)/enrollments',
+	'enrollments': '/(app)/classes/[classId]/students/[[id]]/(tabs)/profile',
+	'documents': '/(app)/classes/[classId]/students/[[id]]/(tabs)/documents',
 };
 
 const STAFF_TAB_ROUTES: Record<SchoolStaffTabSegment, RouteId> = {
 	profile: '/(app)/school/staff/[[id]]/(tabs)/profile',
 	permissions: '/(app)/school/staff/[[id]]/(tabs)/permissions',
-	assignments: '/(app)/school/staff/[[id]]/(tabs)/assignments',
 };
 
 const TEACHER_TAB_ROUTES: Record<SchoolTeacherTabSegment, RouteId> = {
-	profile: '/(app)/school/teachers/[[id]]/(tabs)/profile',
-	assignments: '/(app)/school/teachers/[[id]]/(tabs)/assignments',
-	availability: '/(app)/school/teachers/[[id]]/(tabs)/availability',
+	'profile': '/(app)/school/teachers/[[id]]/(tabs)/profile',
+	'assignments': '/(app)/school/teachers/[[id]]/(tabs)/assignments',
+	'availability': '/(app)/school/teachers/[[id]]/(tabs)/availability',
+	'timetable': '/(app)/school/teachers/[[id]]/(tabs)/timetable',
+	'evaluations': '/(app)/school/teachers/[[id]]/(tabs)/evaluations',
+	'family-feedback': '/(app)/school/teachers/[[id]]/(tabs)/family-feedback',
+	'documents': '/(app)/school/teachers/[[id]]/(tabs)/documents',
 };
 
 const PLANNING_TAB_ROUTES: Record<ClassPlanningTabSegment, RouteId> = {
@@ -62,26 +75,35 @@ const EVALUATION_TAB_ROUTES: Record<ClassEvaluationTabSegment, RouteId> = {
 };
 
 const TEACHING_TAB_ROUTES: Record<ClassTeachingTabSegment, RouteId> = {
+	students: '/(app)/classes/[classId]/teaching/[[id]]/(tabs)/students',
 	progression: '/(app)/classes/[classId]/teaching/[[id]]/(tabs)/progression',
 	logbook: '/(app)/classes/[classId]/teaching/[[id]]/(tabs)/logbook',
 };
 
 const CONFIG_SUBJECT_TAB_ROUTES: Record<ConfigSubjectTabSegment, RouteId> = {
-	progression: '/(app)/configuration/subjects/[[id]]/(tabs)/progression',
-	logbook: '/(app)/configuration/subjects/[[id]]/(tabs)/logbook',
+	progression: '/(app)/configuration/structure/subjects/[[id]]/(tabs)/progression',
+	logbook: '/(app)/configuration/structure/subjects/[[id]]/(tabs)/logbook',
 };
 
 const CONFIG_CLASS_GROUP_TAB_ROUTES: Record<ConfigClassGroupTabSegment, RouteId> = {
-	profile: '/(app)/configuration/classes/[[id]]/(tabs)/profile',
-	assignments: '/(app)/configuration/classes/[[id]]/(tabs)/assignments',
+	profile: '/(app)/configuration/structure/classes/[[id]]/(tabs)/profile',
+	assignments: '/(app)/configuration/structure/classes/[[id]]/(tabs)/assignments',
 };
 
 type SchoolActivityTabSegment = 'profile' | 'students' | 'classes';
+type SchoolFamilyFeedbackTabSegment = 'setup' | 'audience' | 'moderation' | 'results';
 
 const ACTIVITY_TAB_ROUTES: Record<SchoolActivityTabSegment, RouteId> = {
 	profile: '/(app)/school/activities/[[id]]/(tabs)/profile',
 	students: '/(app)/school/activities/[[id]]/(tabs)/students',
 	classes: '/(app)/school/activities/[[id]]/(tabs)/classes',
+};
+
+const FAMILY_FEEDBACK_TAB_ROUTES: Record<SchoolFamilyFeedbackTabSegment, RouteId> = {
+	setup: '/(app)/school/family-feedback/[[id]]/(tabs)/setup',
+	audience: '/(app)/school/family-feedback/[[id]]/(tabs)/audience',
+	moderation: '/(app)/school/family-feedback/[[id]]/(tabs)/moderation',
+	results: '/(app)/school/family-feedback/[[id]]/(tabs)/results',
 };
 
 export const detailHref = {
@@ -96,6 +118,10 @@ export const detailHref = {
 	schoolActivityTab: (id: string, tab: SchoolActivityTabSegment = 'profile'): ResolvedPathname =>
 		appPath(ACTIVITY_TAB_ROUTES[tab], { id }),
 	schoolAnnouncement: (id: string): ResolvedPathname => appPath('/(app)/school/announcements/[[id]]', { id }),
+	schoolFamilyFeedback: (id: string): ResolvedPathname =>
+		appPath(FAMILY_FEEDBACK_TAB_ROUTES.setup, { id }),
+	schoolFamilyFeedbackTab: (id: string, tab: SchoolFamilyFeedbackTabSegment = 'setup'): ResolvedPathname =>
+		appPath(FAMILY_FEEDBACK_TAB_ROUTES[tab], { id }),
 	schoolIncident: (id: string): ResolvedPathname => appPath('/(app)/school/events/[[id]]', { id }),
 	classStudent: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/students/[[id]]/(tabs)/profile', { classId, id }),
@@ -142,8 +168,9 @@ export const detailHref = {
 	configStaffMember: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]/(tabs)/profile', { id }),
 	schoolStaffTab: (id: string, tab: SchoolStaffTabSegment = 'profile'): ResolvedPathname =>
 		appPath(STAFF_TAB_ROUTES[tab], { id }),
-	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/report-cards/[[id]]', { id }),
-	configGradeLevel: (id: string): ResolvedPathname => appPath('/(app)/configuration/grade-levels/[[id]]', { id }),
+	configNotificationTemplate: (id: string): ResolvedPathname =>
+		appPath('/(app)/configuration/notifications/[[id]]', { id }),
+	configGradeLevel: (id: string): string => `${appPath('/(app)/configuration/structure/subjects/[[id]]')}?gradeLevel=${encodeURIComponent(id)}`,
 	configClassGroup: (id: string): ResolvedPathname => appPath(CONFIG_CLASS_GROUP_TAB_ROUTES.profile, { id }),
 	configClassGroupTab: (
 		id: string,

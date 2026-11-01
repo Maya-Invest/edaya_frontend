@@ -1,13 +1,17 @@
 /**
  * Shared Playwright helpers for the owner UI journey.
  */
+import assert from 'node:assert/strict';
+import { redactDiagnostic, runScenarios, type ScenarioStep } from '../support/scenario-registry';
+import { bindBrowserScenarioContext, type BrowserScenarioContext } from '../support/browser-scenario';
+import { captureIntegrationCheckpoint } from '../support/visual-artifacts';
+import { uiCommand, waitForMutationDialog } from '../support/ui-command';
 import type { Page } from 'playwright';
 import type { DemoContext } from '../demo-dry-run/support/types';
 import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
 import {
-	addAnnouncementTargetViaApi,
+	apiFetch,
 	ensureDailyAttendanceViaApi,
-	publishAnnouncementCommandViaApi,
 	recordDailyAttendanceViaApi,
 } from './journey-api';
 import {
@@ -19,14 +23,19 @@ import {
 	type MatrixStatut,
 } from '../../../scripts/qa-matrix-support';
 import {
+	assertListContains,
+	confirmDialog,
 	dismissOpenDialogs,
 	dismissPageError,
 	navigateSpaPage,
+	openDialogButton,
+	openUrlModal,
 	refreshAppShell,
 	REMOVE_ANNOUNCEMENT_TARGET_CONTROL,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
+	waitForSubmitEnabled,
 } from '../../../scripts/qa-harness-ui';
 import type { QaTemplateRow } from '../../../scripts/qa-template-matrix.manual';
 import { JourneyLedger } from './journey-ledger';
@@ -134,6 +143,169 @@ export function coverModal(
 	}
 }
 
+/** Cover a mutation only after open, submit, close, and a visible or API-confirmed postcondition. */
+export function coverCompletedModal(
+	journey: UiJourney,
+	parentRoute: string,
+	modal: string,
+	input: {
+		opened: boolean;
+		submitted: boolean;
+		closed: boolean;
+		postcondition?: boolean;
+	},
+	detail?: string,
+): void {
+	const ok = input.opened
+		&& input.submitted
+		&& input.closed
+		&& input.postcondition === true;
+	coverModal(journey, parentRoute, modal, ok ? 'OK' : 'NOT OK', detail);
+}
+
+/** Unexercised mutation actions are N/A. Exercised ones are OK only with a confirmed postcondition. */
+export function coverMutationActions(
+	journey: UiJourney,
+	templatePath: string,
+	actions: readonly string[],
+	input: {
+		exercised: boolean;
+		postcondition?: boolean;
+	},
+	detail?: string,
+): void {
+	if (!input.exercised) {
+		coverActions(journey, templatePath, actions, 'NOT OK', detail ?? 'Required mutation was not exercised');
+		return;
+	}
+	coverActions(
+		journey,
+		templatePath,
+		actions,
+		input.postcondition === true ? 'OK' : 'NOT OK',
+		detail,
+	);
+}
+
+export type ModalMutationInput = {
+		parentRoute: string;
+		modal: string;
+		pathname: string;
+		target?: string;
+		command: string;
+		fill?: (page: import('playwright').Page) => Promise<void>;
+		submit?: 'form' | 'confirm';
+		confirmLabel?: RegExp;
+		openLabel?: RegExp;
+		visibleAfter?: string;
+		verifyPersisted?: (page: Page) => Promise<void>;
+		listPath?: string;
+		actionPath?: string;
+		actions?: readonly string[];
+	};
+export interface ModalMutationState {
+  opened: boolean; submitted: boolean; closed: boolean; postcondition: boolean;
+  result: Record<string, unknown> | null;
+}
+export const emptyModalMutation = (): ModalMutationState => ({ opened: false, submitted: false, closed: false, postcondition: false, result: null });
+
+/** Shared form boundary: capture stops before submit; integration preserves command and persistence assertions. */
+export function modalMutationSteps<C extends BrowserScenarioContext>(input: ModalMutationInput, state: ModalMutationState,
+  hooks: { navigate: (path: string) => Promise<void>; shot: (name: string) => Promise<unknown> },
+): ScenarioStep<C>[] {
+  return [
+    { id: 'open-form', run: async ({ page, base }) => {
+	await dismissOpenDialogs(page);
+	state.opened = false;
+	if (input.openLabel) {
+		await hooks.navigate(input.pathname);
+		state.opened = await openDialogButton(page, input.openLabel, 15_000);
+	}
+	if (!state.opened) {
+		state.opened = await openUrlModal(page, input.pathname, input.modal, {
+			target: input.target,
+			base,
+		});
+	}
+	if (!state.opened && input.openLabel) {
+		state.opened = await openDialogButton(page, input.openLabel, 15_000);
+	}
+
+      assert(state.opened, `${input.modal} not found`);
+	if (input.fill) await input.fill(page);
+    }, checkpoint: { id: 'edit-form', title: input.modal, surface: `${input.parentRoute}?modal=${input.modal}`,
+      ready: async ({ page }) => { await page.getByRole('dialog').last().waitFor({ state: 'visible' }); } } },
+    { id: 'submit', run: async ({ page }) => {
+	const resultPromise = waitForCommandResult(page, input.command);
+	state.submitted = true;
+	if (input.submit === 'confirm') {
+		state.submitted = await confirmDialog(page, input.confirmLabel);
+	}
+	else {
+		await waitForSubmitEnabled(page, 15_000).catch(() => {});
+		try {
+			await submitDialog(page);
+		}
+		catch {
+			state.submitted = false;
+		}
+	}
+	state.result = state.submitted ? await resultPromise : null;
+	state.closed = state.submitted && state.result !== null
+		? await waitForDialogClosed(page).catch(() => false)
+		: false;
+	if (!state.submitted) {
+		console.log(`modal ${input.modal} submit stayed disabled (${input.command})`);
+	}
+	else if (!state.result) {
+		console.log(`modal ${input.modal} command ${input.command} had no ok response`);
+	}
+	if (!state.submitted || !state.closed || !state.result) {
+		await hooks.shot(`failure-mutation-${input.command.replaceAll('/', '-')}-${input.modal}`);
+	}
+
+    } },
+    { id: 'verify-persistence', run: async ({ page }) => {
+	if (input.listPath) {
+		await hooks.navigate(input.listPath);
+		await waitForPageQuery(page);
+	}
+	const visible = input.visibleAfter
+		? await assertListContains(page, input.visibleAfter, true, 12_000)
+		: false;
+	let persisted = true;
+	if (input.verifyPersisted) {
+		try { await input.verifyPersisted(page); }
+		catch { persisted = false; }
+	}
+	state.postcondition = state.submitted && state.closed && state.result !== null && (!input.visibleAfter || visible) && persisted;
+	if (!state.postcondition) await hooks.shot(`failure-postcondition-${input.command.replaceAll('/', '-')}-${input.modal}`);
+	assert(state.postcondition, `${input.command}: mutation or persistence assertion failed (submitted=${state.submitted}, closed=${state.closed}, response=${state.result !== null}, persisted=${persisted})`);
+
+    } },
+  ];
+}
+
+export async function runModalMutation(journey: UiJourney, input: ModalMutationInput): Promise<ModalMutationState> {
+  const state = emptyModalMutation();
+  const { page, base } = journey.ctx;
+  const scenario = { id: `mutation.${input.command}.${input.modal}`, feature: 'provisioned-journey',
+    steps: modalMutationSteps(input, state, { navigate: path => gotoApp(journey, path), shot: name => journey.ctx.shot(name) }) };
+  const outcomes = await runScenarios<BrowserScenarioContext>([scenario], {
+    createContext: async (_definition, cleanup) => bindBrowserScenarioContext({ browser: page.context().browser()!, base, outDir: journey.ctx.outDir }, page, cleanup),
+    onCheckpoint: captureIntegrationCheckpoint,
+    onFailure: async () => { await journey.ctx.shot(`failure-mutation-${input.command}-${input.modal}`); },
+  });
+  if (outcomes[0]?.status !== 'passed') {
+    state.postcondition = false;
+    console.error(`Mutation ${input.command} failed: ${redactDiagnostic(outcomes[0]?.detail ?? 'Scenario did not complete')}`);
+  }
+  coverCompletedModal(journey, input.parentRoute, input.modal, state, input.visibleAfter);
+  if (input.actions && input.actionPath) coverMutationActions(journey, input.actionPath, input.actions,
+    { exercised: state.submitted, postcondition: state.postcondition }, input.visibleAfter);
+  return state;
+}
+
 export function logStep(journey: UiJourney, result: SetupStepResult): void {
 	journey.steps.push(result);
 	const tag = result.blocked ? '⊘' : result.ok ? '✓' : '✗';
@@ -150,7 +322,9 @@ function commandPublicName(fragment: string): string {
 function matchesCommandResponse(url: string, commandFragment: string): boolean {
 	const publicName = commandPublicName(commandFragment);
 	return url.includes(`/core/commands/${publicName}`)
-		|| url.includes(`/core/commands/${commandFragment}`);
+		|| url.includes(`/core/commands/${commandFragment}`)
+		|| url.includes(`/core/entities/${commandFragment}`)
+		|| url.includes(`/core/entities/${publicName}`);
 }
 
 async function waitForCommandResponse(
@@ -158,10 +332,15 @@ async function waitForCommandResponse(
 	commandFragment: string,
 	timeout = 45_000,
 ): Promise<import('playwright').Response | null> {
-	return page.waitForResponse(
+	const response = await page.waitForResponse(
 		res => res.request().method() === 'POST' && matchesCommandResponse(res.url(), commandFragment),
 		{ timeout },
 	).catch(() => null);
+	if (response && !response.ok()) {
+		const detail = redactDiagnostic((await response.text().catch(() => '')).slice(0, 1000));
+		console.log(`command ${commandFragment} status=${response.status()} ${detail}`);
+	}
+	return response;
 }
 
 export async function waitForCommandPayload(
@@ -229,186 +408,115 @@ export async function waitForInvitationToken(page: Page, timeout = 45_000): Prom
 	}
 }
 
-const ADD_TARGET_CONTROL = /add recipient|add target|ajouter un destinataire|ajouter une cible|gérer les cibles|manage targets/i;
-
-async function inspectRemoveAnnouncementTarget(
-	journey: UiJourney,
-	announcementId: string,
-): Promise<boolean> {
-	const { page } = journey.ctx;
-	await gotoApp(journey, `/school/announcements/${announcementId}`);
-	await waitForPageQuery(page);
-	return page.getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL })
-		.first()
-		.isVisible({ timeout: 8_000 })
-		.catch(() => false);
-}
-
 export async function publishAnnouncement(
-	journey: UiJourney,
-	announcementId: string,
+  journey: UiJourney,
+  announcementId: string,
 ): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> {
-	const { page } = journey.ctx;
-	const viaApiAfterAddTarget = async (
-		reason: string,
-		removeTargetVisible: boolean,
-	): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> => {
-		const ok = await publishAnnouncementCommandViaApi(page, journey.ctx.base, announcementId);
-		return { ok, detail: ok ? reason : `${reason}; API fallback failed`, removeTargetVisible };
-	};
-	const viaApiFromScratch = async (
-		reason: string,
-	): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> => {
-		const added = await addAnnouncementTargetViaApi(page, journey.ctx.base, announcementId);
-		if (!added) {
-			return { ok: false, detail: `${reason}; add-target API failed`, removeTargetVisible: false };
-		}
-		const removeTargetVisible = await inspectRemoveAnnouncementTarget(journey, announcementId);
-		return viaApiAfterAddTarget(reason, removeTargetVisible);
-	};
-
-	await gotoApp(journey, `/school/announcements/${announcementId}?modal=add-target`);
-	await waitForPageQuery(page);
-
-	const dialog = page.getByRole('dialog');
-	if (!(await dialog.isVisible({ timeout: 12_000 }).catch(() => false))) {
-		const addTargetControl = page.getByRole('button', { name: ADD_TARGET_CONTROL })
-			.or(page.getByRole('menuitem', { name: ADD_TARGET_CONTROL }))
-			.first();
-		if (await addTargetControl.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await addTargetControl.click();
-		}
-		if (!(await dialog.isVisible({ timeout: 8_000 }).catch(() => false))) {
-			return viaApiFromScratch('add-target modal not visible');
-		}
-	}
-
-	const addTargetPromise = waitForCommandPayload(page, 'add-target', 30_000);
-	try {
-		await submitDialog(page, /^add$|^ajouter$/i);
-	}
-	catch {
-		return viaApiFromScratch('add-target submit failed');
-	}
-	const addTargetPayload = await addTargetPromise;
-	if (!addTargetPayload) {
-		return viaApiFromScratch('add-target command not observed');
-	}
-	await waitForDialogClosed(page).catch(() => {});
-	await page.waitForTimeout(800);
-
-	const removeTargetVisible = await inspectRemoveAnnouncementTarget(journey, announcementId);
-
-	await gotoApp(journey, `/school/announcements/${announcementId}?modal=publish`);
-	await waitForPageQuery(page);
-	const publishDialog = page.getByRole('dialog');
-	if (!(await publishDialog.isVisible({ timeout: 12_000 }).catch(() => false))) {
-		const publishBtn = page.getByRole('button', { name: /^publish$|^publier$/i }).first();
-		if (!(await publishBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return viaApiAfterAddTarget('publish modal/button not visible', removeTargetVisible);
-		}
-		const publishPromise = waitForCommandPayload(page, 'publish-announcement', 25_000);
-		await publishBtn.click();
-		if (!await publishPromise) {
-			return viaApiAfterAddTarget('publish command not observed after button', removeTargetVisible);
-		}
-		await waitForPageQuery(page);
-		return { ok: true, detail: 'published via button', removeTargetVisible };
-	}
-
-	const publishPromise = waitForCommandPayload(page, 'publish-announcement', 30_000);
-	try {
-		await submitDialog(page, /^publish$|^publier$/i);
-	}
-	catch {
-		return viaApiAfterAddTarget('publish submit failed', removeTargetVisible);
-	}
-	if (!await publishPromise) {
-		return viaApiAfterAddTarget('publish command not observed', removeTargetVisible);
-	}
-	await waitForPageQuery(page);
-	if (await page.getByText(/published|publiée/i).first().isVisible({ timeout: 3_000 }).catch(() => false)) {
-		return { ok: true, detail: 'published via modal', removeTargetVisible };
-	}
-	return viaApiAfterAddTarget('publish confirmation not visible', removeTargetVisible);
+  const { page, base } = journey.ctx;
+  const path = `/school/announcements/${announcementId}`;
+  await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  const targets = async () => {
+    const response = await apiFetch(page, base, '/core/entities/announcement-targets/list', { method: 'POST', data: { announcementId } });
+    assert(response.ok(), `Target readback HTTP ${response.status()}`);
+    return await response.json() as Array<{ id: string }>;
+  };
+  const addTarget = async () => {
+    assert(await openUrlModal(page, path, 'add-target', { base }));
+    await uiCommand(page, '/commands/add-target', () => page.getByTestId('form-modal-submit').click());
+    await waitForMutationDialog(page);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPageQuery(page);
+    assert((await targets()).length > 0, 'Added announcement recipient must persist');
+  };
+  await addTarget();
+  const before = await targets();
+  await page.getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL }).first().click();
+  await uiCommand(page, '/entities/announcement-targets/delete', () => page.getByTestId('confirm-modal').getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL }).click());
+  await waitForMutationDialog(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  assert.equal((await targets()).length, before.length - 1, 'Removed recipient must stay absent after reload');
+  await addTarget();
+  assert(await openUrlModal(page, path, 'publish', { base }));
+  await uiCommand(page, '/commands/publish-announcement', () => page.getByTestId('form-modal-submit').click());
+  await waitForMutationDialog(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  const response = await apiFetch(page, base, `/core/entities/announcements/${announcementId}`);
+  assert(response.ok());
+  assert.equal((await response.json() as { status: string }).status, 'published');
+  return { ok: true, detail: 'Added and removed recipients, then published through the UI; changes persisted after reload', removeTargetVisible: true };
 }
 
 async function recordCompletionFilterFixtureDays(
 	page: Page,
 	base: string,
 	classId: string,
+	completeDay: string,
 	studentId?: string | null,
 ): Promise<void> {
 	const isoDay = (offsetDays: number) => {
-		const next = new Date();
+		const next = new Date(`${completeDay}T00:00:00Z`);
 		next.setUTCDate(next.getUTCDate() + offsetDays);
 		return next.toISOString().slice(0, 10);
 	};
-	await recordDailyAttendanceViaApi(page, base, classId, studentId);
-	await recordDailyAttendanceViaApi(page, base, classId, studentId, undefined, {
-		date: isoDay(-1),
+	assert(await recordDailyAttendanceViaApi(page, base, classId, studentId, undefined, {
+		date: isoDay(1),
 		attendanceByStudent: studentId ? { [studentId]: 'present' } : {},
-	});
-	await recordDailyAttendanceViaApi(page, base, classId, null, undefined, {
-		date: isoDay(-2),
+	}), 'Partial attendance fixture failed');
+	assert(await recordDailyAttendanceViaApi(page, base, classId, null, undefined, {
+		date: isoDay(2),
 		attendanceByStudent: {},
-	});
+	}), 'Unmarked attendance fixture failed');
 }
 
-export async function recordAttendanceForToday(
-	journey: UiJourney,
-	classId: string,
+export async function recordAttendanceForFixtureDay(
+  journey: UiJourney,
+  classId: string,
 ): Promise<string | null> {
-	const { page, base } = journey.ctx;
-	const homeroomStaffId = journey.entities.staffId;
-	await ensureDailyAttendanceMode(journey.ctx, classId, { force: true });
-	await ensureDailyAttendanceViaApi(page, base, classId, homeroomStaffId);
-
-	const today = new Date().toISOString().slice(0, 10);
-	const dayId = `${classId}:${today}`;
-
-	await gotoApp(journey, `/classes/${classId}/attendance/${encodeURIComponent(dayId)}`);
-	await waitForPageQuery(page);
-	await page.waitForTimeout(1_000);
-
-	const onDayDetail = page.url().includes(`/attendance/${encodeURIComponent(dayId)}`)
-		|| page.url().includes(`/attendance/${dayId}`);
-
-	if (!onDayDetail) {
-		await gotoApp(journey, `/classes/${classId}/attendance`);
-		await waitForPageQuery(page);
-		const dayButton = page.locator('main button').filter({ hasText: /roll call|appel|daily roll call|appel du jour/i }).first();
-		if (await dayButton.isVisible({ timeout: 12_000 }).catch(() => false)) {
-			await dayButton.click();
-			await page.waitForTimeout(1_000);
-		}
-		else {
-			await recordCompletionFilterFixtureDays(page, base, classId, journey.entities.studentId);
-			return dayId;
-		}
-	}
-
-	const resolvedDayId = idFromUrl(page, /\/attendance\/([^/?]+)/) ?? dayId;
-
-	const markAll = page.getByRole('button', { name: /mark all present|tout marquer présent|marquer tous présents|tous présents/i }).first();
-	if (await markAll.isVisible({ timeout: 8_000 }).catch(() => false)) {
-		await markAll.click();
-		await page.waitForTimeout(1_500);
-	}
-	else {
-		const recordBtn = page.getByRole('button', { name: /record|enregistrer|saisir|pointer/i }).first();
-		if (await recordBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await recordBtn.click();
-			const dialog = page.getByRole('dialog');
-			if (await dialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
-				await dialog.getByRole('button', { name: /save|enregistrer/i }).last().click();
-				await waitForDialogClosed(page).catch(() => {});
-			}
-		}
-	}
-
-	await recordCompletionFilterFixtureDays(page, base, classId, journey.entities.studentId);
-	return resolvedDayId;
+  const { page, base } = journey.ctx;
+  const studentId = journey.entities.studentId;
+  assert(studentId, 'Required attendance student missing');
+  await ensureDailyAttendanceMode(journey.ctx, classId, { force: true });
+  assert(await ensureDailyAttendanceViaApi(page, base, classId, journey.entities.staffId), 'Daily attendance configuration failed');
+  // Attendance is recorded at midnight, after these newly created enrollments.
+  // Keep separate days for complete, partial and unmarked filter fixtures.
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + 3);
+  const dayId = `${classId}:${date.toISOString().slice(0, 10)}`;
+  assert(await recordDailyAttendanceViaApi(page, base, classId, null, undefined, {
+    date: date.toISOString().slice(0, 10), attendanceByStudent: {},
+  }), 'Unrecorded attendance occurrence fixture failed');
+  const path = `/classes/${classId}/attendance/${encodeURIComponent(dayId)}`;
+  await gotoApp(journey, path);
+  await waitForPageQuery(page);
+  const markAll = page.locator('[role="dialog"].ui-drawer').getByRole('button', { name: /mark all present|tout marquer présent|marquer tous présents|tous présents/i });
+  const bulk = await uiCommand(page, '/commands/record-class-daily-attendance', () => markAll.click());
+  const bulkRecords = await bulk.json() as Array<{attendanceId:string;studentId:string;status:string}>;
+  const attendanceId = bulkRecords[0]?.attendanceId;
+  assert(attendanceId, 'Daily attendance occurrence missing');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  const readRecords = async () => {
+    const response = await apiFetch(page, base, '/core/entities/attendance/list', { method: 'POST', data: { attendanceId } });
+    assert(response.ok());
+    return await response.json() as Array<{ studentId: string; status: string; date: string }>;
+  };
+  const recorded = await readRecords();
+  assert(recorded.length >= 2 && bulkRecords.length > 0, 'Required enrolled attendance roster missing');
+  for (const row of bulkRecords) assert.equal(recorded.find(saved => saved.studentId === row.studentId)?.status, 'present', 'Bulk-marked students must persist as present');
+  const nextStatus = recorded.find(row => row.studentId === studentId)?.status === 'absent' ? 'late' : 'absent';
+  assert(await openUrlModal(page, path, 'record-attendance', { base, target: studentId }));
+  await page.getByRole('dialog').getByTestId('attendance-status-select').click();
+  await page.getByTestId(`attendance-status-${nextStatus}`).click();
+  await uiCommand(page, '/commands/record-daily-attendance', () => page.getByTestId('form-modal-submit').click());
+  await waitForMutationDialog(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  assert.equal((await readRecords()).find(row => row.studentId === studentId)?.status, nextStatus, 'Edited daily attendance must persist');
+  await recordCompletionFilterFixtureDays(page, base, classId, date.toISOString().slice(0, 10), studentId);
+  return dayId;
 }
 
 export function idFromUrl(page: Page, pattern: RegExp): string | null {

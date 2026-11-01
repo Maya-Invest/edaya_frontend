@@ -1,11 +1,15 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { School, SchoolType } from '$lib/types/school';
+import type { School } from '$lib/types/school';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 export type SchoolRaw = components['schemas']['School'];
 
 export const DEFAULT_SCHOOL_TIMEZONE = 'America/Toronto';
+
+export function privateAttachmentContentPath(attachmentId: string): string {
+	return `/core/files/${attachmentId}/content`;
+}
 
 export function deriveSchoolShortName(name: string): string {
 	const emDashParts = name.split('—');
@@ -29,11 +33,12 @@ export function mapSchoolFromApi(raw: SchoolRaw): School {
 	return {
 		id: raw.id,
 		name: raw.name,
-		shortName: deriveSchoolShortName(raw.name),
+		shortName: raw.shortName ?? deriveSchoolShortName(raw.name),
 		city: raw.city ?? '',
 		country: raw.country ?? undefined,
 		timeZone: raw.timeZone,
-		type: (raw.type ?? null) as SchoolType | null,
+		financeCurrency: raw.financeCurrency,
+
 		timetableEnforceWorkloadFulfillment: raw.timetableEnforceWorkloadFulfillment,
 		timetableExcludeBreakSlots: raw.timetableExcludeBreakSlots,
 		timetableMinDayGapSameSubject: raw.timetableMinDayGapSameSubject,
@@ -43,6 +48,28 @@ export function mapSchoolFromApi(raw: SchoolRaw): School {
 		timetableGenerationMode: raw.timetableGenerationMode,
 		timetableMinPeriodSpan: raw.timetableMinPeriodSpan,
 		timetableMaxPeriodSpan: raw.timetableMaxPeriodSpan,
+		issuingName: raw.issuingName,
+		postalAddress: raw.postalAddress,
+		phone: raw.phone,
+		email: raw.email,
+		schoolCode: raw.schoolCode,
+		logoAttachmentId: raw.logoAttachmentId,
+		crestAttachmentId: raw.crestAttachmentId,
+		stampAttachmentId: raw.stampAttachmentId,
+		signatureAttachmentId: raw.signatureAttachmentId,
+		issuanceAssetVersion: raw.issuanceAssetVersion,
+		publicBrandingPurposes: raw.publicBrandingPurposes ?? [],
+	};
+}
+
+export function schoolConfigurationIdentityFields(current: SchoolRaw) {
+	return {
+		postalAddress: current.postalAddress ?? null,
+		phone: current.phone ?? null,
+		email: current.email ?? null,
+		schoolCode: current.schoolCode ?? null,
+		issuingName: current.issuingName ?? null,
+		publicBrandingPurposes: current.publicBrandingPurposes ?? [],
 	};
 }
 

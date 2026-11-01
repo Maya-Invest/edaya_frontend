@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { academicContext } from '$lib/academic/context.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import { t } from '$lib/i18n';
-	import { Check, Search } from '$lib/icons';
+	import { Check } from '$lib/icons';
 	import { cn } from '$lib/utils';
 	import { ClassGroupPickerState } from './class-group-picker-state.svelte';
 
@@ -95,7 +95,7 @@
 
 	<div
 		class={cn(
-			'flex flex-col overflow-hidden rounded-xl border border-border',
+			'flex flex-col overflow-hidden rounded-collection border border-border',
 			variant === 'panel' ? 'h-[min(55vh,28rem)]' : 'max-h-64',
 		)}
 	>
@@ -108,11 +108,10 @@
 				/>
 			{/if}
 			<div class="relative">
-				<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-				<Input
+				<ListSearchField
 					bind:value={pickerState.search}
 					placeholder={placeholder ?? $t('activities.searchClass')}
-					class="h-9 rounded-full pl-8 text-sm"
+
 					{disabled}
 				/>
 			</div>

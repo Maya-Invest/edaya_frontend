@@ -1,15 +1,15 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
-	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
-	import PlanningFormModal from '$lib/components/school/scheduling/PlanningFormModal.svelte';
+
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
-	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { get } from 'svelte/store';
+	import PlanningFormModal from '../../components/PlanningFormModal.svelte';
+	import { getPlanningState } from '../../planning-state.svelte';
 	import { getTimetablePageState } from '../../timetable-page.svelte';
 
 	const {
@@ -34,11 +34,10 @@
 	async function confirmCancel() {
 		cancelBusy = true;
 		try {
-			const ok = await cancelPlanningEventMutation(s, {
+			const ok = await timetablePage.performCancelPlanningEvent(s, {
 				successMessage: get(t)('planning.toastCancelled', { title: s.title }),
 			});
 			if (ok) {
-				timetablePage.patchEvent(s.id, { status: 'cancelled' });
 				cancelOpen.open = false;
 			}
 		}
@@ -65,7 +64,7 @@
 	{/snippet}
 	{#snippet actions()}
 		{#if canEditLesson}
-			<PermissionGate permission="TIMETABLE_UPDATE" classId={s.classId}>
+			<PermissionGate permission="TIMETABLE_MANAGE" classId={s.classId}>
 				<PlanningFormModal event={s} subjects={timetablePage.subjects} bind:open={editEventOpen.open} />
 			</PermissionGate>
 		{/if}
@@ -73,7 +72,7 @@
 	{#snippet overflow()}
 		{#if canCancel}
 			<PermissionGate
-				permission="TIMETABLE_UPDATE"
+				permission="TIMETABLE_MANAGE"
 				classId={s.classId}
 				mode="disable"
 				tooltip={$t('calendar.permissionUpdate')}
@@ -96,7 +95,7 @@
 <p class="text-sm text-muted-foreground">{s.teacher}</p>
 
 {#if canCancel}
-	<PermissionGate permission="TIMETABLE_UPDATE" classId={s.classId}>
+	<PermissionGate permission="TIMETABLE_MANAGE" classId={s.classId}>
 		<ConfirmModal
 			bind:open={cancelOpen.open}
 			title={$t('planning.cancelConfirmTitle')}

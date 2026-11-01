@@ -1,11 +1,13 @@
 import type { StudentsPageState } from '../students-page.svelte';
+import type { PageQueryRequest } from './student-page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { listPageHasItems, resolveStudentPageLoad } from './student-page-status';
 
 export function querySchoolStudentsPage(state: StudentsPageState) {
-	return (url: URL) => resolveStudentPageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 		empty: () => ({ totalStudents: 0 }),
-		load: async () => {
+		load: async (signal) => {
+			signal.throwIfAborted();
 			state.hydrateFiltersFromUrl();
 			if (state.usesFullRoster) {
 				await state.loadFullRoster();
@@ -13,10 +15,11 @@ export function querySchoolStudentsPage(state: StudentsPageState) {
 			else {
 				await state.loadFirstPage();
 			}
+			signal.throwIfAborted();
 			return { totalStudents: state.totalStudents };
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }
 
 export async function ensureStudentDrawerSelection(

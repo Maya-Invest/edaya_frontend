@@ -13,6 +13,7 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { runSelectionOperation } from '$lib/interaction/selection-operation';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { writeModalSurface } from '$lib/modal/modal-url';
 	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
@@ -43,6 +44,16 @@
 	const addOpen = bindUrlModal(modals, 'add-students');
 	const removeOpen = bindUrlModal(modals, 'remove-enrollment');
 	let studentIds = $state<string[]>([]);
+	let pickerSession = 0;
+	$effect(() => {
+		void addOpen.open;
+		void activityId;
+		void academicContext.scopeGeneration;
+		pickerSession += 1;
+		return () => {
+			pickerSession += 1;
+		};
+	});
 	let busy = $state(false);
 	let removeBusy = $state(false);
 
@@ -61,7 +72,7 @@
 	);
 	const removeStudentName = $derived(
 		removeTarget
-			? (activitiesPage.findStudent(removeTarget.studentId)?.name ?? studentDisplayFallback(removeTarget.studentId))
+			? (studentsTab.slice?.students.find(student => student.id === removeTarget.studentId)?.name ?? studentDisplayFallback(removeTarget.studentId))
 			: '—',
 	);
 
@@ -90,7 +101,6 @@
 
 	async function query(url: URL) {
 		const result = await loadTab(url);
-		void activitiesPage.ensureStudents();
 		validateModal();
 		return result;
 	}
@@ -127,28 +137,32 @@
 	}
 
 	async function confirmAddStudents() {
-		if (!activity || studentIds.length === 0 || busy) {
+		if (!activity || studentIds.length === 0 || busy)
 			return;
-		}
-
+		const targetId = activity.id;
+		const generation = academicContext.scopeGeneration;
+		const session = pickerSession;
+		const current = () => session === pickerSession && addOpen.open && activityId === targetId && academicContext.scopeGeneration === generation;
 		busy = true;
-		let added = 0;
-		for (const studentId of studentIds) {
-			const ok = await activitiesPage.enrollStudent({
-				activityId: activity.id,
+		try {
+			const result = await runSelectionOperation(studentIds, studentId => activitiesPage.enrollStudent({
+				activityId: targetId,
 				studentId,
 				status: 'pending',
-			});
-			if (ok) {
-				added += 1;
+			}), current);
+			if (!current())
+				return;
+			studentIds = result.remaining;
+			if (result.succeeded.length > 0) {
+				toast.success(get(t)('activities.enrollStudentsSuccess', { n: result.succeeded.length }));
+				studentsTab.syncFromPage(targetId);
 			}
+			if (result.remaining.length === 0)
+				modals.close();
+			else toast.error(get(t)('common.partialSelection', { n: result.remaining.length }));
 		}
-		busy = false;
-		if (added > 0) {
-			toast.success(get(t)('activities.enrollStudentsSuccess', { n: added }));
-			studentsTab.syncFromPage(activity.id);
-			modals.close();
-			studentIds = [];
+		finally {
+			busy = false;
 		}
 	}
 
@@ -176,17 +190,17 @@
 	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.enrolledStudents')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
-				<div class="rounded-2xl border border-border bg-card">
+				<div class="rounded-collection border border-border bg-card">
 					<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
-						<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+						<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 							{$t('activities.enrolledStudents')}
 						</p>
-						<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+						<PermissionGate permission="ACTIVITY_ENROLLMENT_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 							{#snippet children({ disabled, title })}
 								<Button
 									size="sm"
 									variant="outline"
-									class="h-7 rounded-full text-xs"
+									class="text-xs"
 									disabled={disabled || busy || !canAddStudents}
 									title={!canAddStudents ? $t('activities.addStudentsRequiresLinkedClasses') : title}
 									onclick={() => modals.open('add-students')}
@@ -201,7 +215,7 @@
 					{:else}
 						<ul class="divide-y divide-border">
 							{#each enrollments as enrollment (enrollment.id)}
-								{@const student = activitiesPage.findStudent(enrollment.studentId)}
+								{@const student = studentsTab.slice?.students.find(student => student.id === enrollment.studentId)}
 								{@const classGroup = student ? academicContext.classes.find(entry => entry.id === student.classId) : undefined}
 								<li class="flex items-center justify-between gap-3 px-4 py-2.5">
 									<div class="flex min-w-0 items-center gap-2">
@@ -217,7 +231,7 @@
 											<p class="truncate text-[11px] text-muted-foreground">{classGroup?.name ?? '—'}</p>
 										</div>
 									</div>
-									<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+									<PermissionGate permission="ACTIVITY_ENROLLMENT_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 										{#snippet children({ disabled, title })}
 											<div class="flex items-center gap-2">
 												<button
@@ -233,7 +247,7 @@
 													type="button"
 													variant="ghost"
 													size="icon"
-													class="h-8 w-8 text-muted-foreground hover:text-destructive"
+													class="w-8 text-muted-foreground hover:text-destructive"
 													disabled={disabled || busy}
 													title={$t('activities.removeEnrollment')}
 													onclick={() => modals.open('remove-enrollment', { target: enrollment.id })}
@@ -254,6 +268,7 @@
 {/if}
 
 <PickerModal
+	dirty={studentIds.length > 0}
 	bind:open={addOpen.open}
 	title={activity ? $t('activities.addStudentTitle', { name: activity.name }) : $t('activities.addStudent')}
 	description={addStudentsDescription}
@@ -266,6 +281,7 @@
 	onConfirm={confirmAddStudents}
 >
 	<StudentPicker
+		students={(studentsTab.slice?.activityId === activityId ? studentsTab.slice.students : []).filter(student => studentsTab.slice?.eligibleStudentIds.includes(student.id))}
 		bind:values={studentIds}
 		mode="multi"
 		variant="panel"
