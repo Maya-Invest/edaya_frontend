@@ -159,6 +159,8 @@ Section changes, Close, Escape, Back and Sign out must guard unsaved section edi
 
 `/account/security` is an Account-level route, independent of a selected school profile. Removal confirmation is addressable with `?unlink=<identifier-id>`. OTP/TOTP challenges, enrollment secrets and recovery codes stay in the mounted authentication workflow state and never enter URLs, browser storage, or entity caches. Reloading an in-progress challenge restarts authentication. Security mutations require fresh authentication; sensitive enrollment/recovery submissions are pessimistic and never optimistic.
 
+The registration proof stays in mounted authentication state and never enters a URL, browser storage, entity cache, log or capture. Changing the email, restarting, reloading or leaving the flow discards the proof. An expired proof requires fresh verification. Changed terms require acceptance of the current version before submission; they do not require another OTP while the proof remains valid. If the completion response is lost, check the session before offering fresh verification; do not replay creation automatically. Preserve the validated return destination or invitation through registration and MFA.
+
 Authentication invitation acceptance uses route-owned I/O with its existing explicit committed-write/session-refresh handling; a failed session refresh must not repeat a confirmed acceptance. Credentials and form drafts remain local to the view.
 
 ### Correction route state

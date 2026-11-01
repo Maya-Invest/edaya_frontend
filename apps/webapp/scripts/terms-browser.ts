@@ -30,7 +30,7 @@ try {
 					body = { enforced: true, document: { version, locale: url.searchParams.get('locale'), status: 'published', title: french ? 'Conditions d’utilisation — exemple de test' : 'Terms of Use — test example', documentHash: `${version}-${url.searchParams.get('locale')}`, sourceUrl: french ? 'https://edayaplus.com/conditions-utilisation/' : 'https://edayaplus.com/en/terms/', html: `<h1>${french ? 'Conditions' : 'Terms'}</h1><p>${french ? 'Texte publié' : 'Published text'}</p><a href="https://edayaplus.com/" target="_blank" rel="noopener noreferrer">EDAYA</a>${'<p>EDAYA</p>'.repeat(35)}`, sections: [{ heading: french ? 'Utilisation scolaire' : 'School use', paragraphs: [french ? 'Lisez ces conditions avant de les accepter.' : 'Read these terms before accepting.', ...Array.from({ length: 12 }, (_, index) => french ? `Section ${index + 1} : Utilisez le service scolaire de manière responsable et protégez les informations de votre compte.` : `Section ${index + 1}: Use the school service responsibly and protect your account information.`)] }] } };
 				}
 				else if (url.pathname.endsWith('/methods')) {
-					body = { methods: [] };
+					body = { publicAccountRegistration: true, methods: [] };
 				}
 				else if (url.pathname.endsWith('/session')) {
 					status = 401;

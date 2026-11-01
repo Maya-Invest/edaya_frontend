@@ -564,7 +564,7 @@
 						{/if}
 
 						{#if !authSession.hasAuthAccount}
-							<PasswordlessPanel bind:email onComplete={async () => { await invitationPage.authenticate(); }} />
+							<PasswordlessPanel invitationToken={token} bind:email onComplete={async () => { await invitationPage.authenticate(); }} />
 						{/if}
 
 						<Button

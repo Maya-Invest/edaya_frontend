@@ -50,6 +50,8 @@ export interface ProvisionTenantOptions {
 }
 
 interface AuthUserResponse {
+  state?: string;
+  proof?: string;
 	user?: {
 		id?: string;
 		email?: string;
@@ -408,10 +410,16 @@ async function authenticateAccount(client: ProvisionHttpClient, email: string): 
     body: JSON.stringify({ kind: 'email', value: email, channel: 'email' }),
   });
   if (!sent.response.ok || !sent.body?.challenge) throw new Error('OTP delivery failed');
-  const verified = await client.jsonRequest<AuthUserResponse>('/auth/edaya/otp/verify', {
+  let verified = await client.jsonRequest<AuthUserResponse>('/auth/edaya/otp/verify', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ challenge: sent.body.challenge, code: await peekOtp(email, 'email', sent.body.challenge) }),
   });
+  if (verified.body?.state === 'registration_required') {
+    verified = await client.jsonRequest<AuthUserResponse>('/auth/edaya/registration/complete', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ challenge: sent.body.challenge, proof: verified.body.proof }),
+    });
+  }
   if (!verified.response.ok || !verified.body?.user?.id) throw new Error('Completed Account authentication required');
   return verified.body.user.id;
 }

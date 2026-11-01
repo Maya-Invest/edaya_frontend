@@ -32,6 +32,9 @@ export class PasswordlessPanelState {
   setIdentity(value: string) {
     const identifier = value.trim().toLowerCase();
     if (identifier !== this.identifier) {
+      if (this.registration || this.busy || this.retryRequest)
+        this.reset();
+      this.cooldownUntil = 0;
       this.identifier = identifier;
       this.termsAccepted = false;
     }
@@ -70,7 +73,22 @@ export class PasswordlessPanelState {
     }
   }
 
-  async submit(input: { email: string; locale: 'fr' | 'en'; recoveryEligible: boolean; enroll: boolean; link: boolean; onComplete: () => Promise<unknown> }) {
+  async submit(input: { email: string; invitationToken?: string; locale: 'fr' | 'en'; recoveryEligible: boolean; enroll: boolean; link: boolean; onComplete: () => Promise<unknown> }) {
+    if (this.state === 'registration_required') {
+      const offer = this.registration;
+      if (!offer?.eligible || !this.termsReady)
+        return;
+      if (offer.expiresAt <= this.now + this.clockOffset) {
+        this.expireRegistration();
+        return;
+      }
+      const document = this.terms?.document;
+      const termsAcceptance = this.terms?.enforced && document
+        ? { version: document.version, locale: document.locale, accepted: true as const }
+        : undefined;
+      await this.run(() => authClient.completeRegistration({ challenge: offer.challenge, proof: offer.proof, termsAcceptance }), input.onComplete);
+      return;
+    }
     if (this.state === 'form' && !input.enroll) {
       const identifier = detectIdentifier(input.email);
       const error = contactError(identifier, this.phoneAvailable);
@@ -89,7 +107,7 @@ export class PasswordlessPanelState {
       const termsAcceptance = !input.link && this.terms?.enforced && document
         ? { version: document.version, locale: document.locale, accepted: true as const }
         : undefined;
-      await this.begin({ ...identifier, locale: input.locale, recoveryEligible: input.recoveryEligible, ...(termsAcceptance ? { termsAcceptance } : {}) }, input.link, input.onComplete);
+      await this.begin({ ...identifier, ...(input.invitationToken && identifier.kind === 'email' && !input.link ? { invitationToken: input.invitationToken } : {}), locale: input.locale, recoveryEligible: input.recoveryEligible, ...(termsAcceptance ? { termsAcceptance } : {}) }, input.link, input.onComplete);
       return;
     }
     await this.run(() => {
@@ -103,7 +121,16 @@ export class PasswordlessPanelState {
     }, input.onComplete);
   }
 
-  state = $state<'form' | 'primary_required' | 'totp_required' | 'enrollment_required' | 'recovery_codes'>('form');
+  registration = $state<Extract<AuthOutcome, { state: 'registration_required' }> | null>(null);
+  cooldownUntil = $state(0);
+  private generation = 0;
+
+  expireRegistration() {
+    this.reset();
+    this.error = get(t)('auth.registrationExpired');
+  }
+
+  state = $state<'registration_required' | 'form' | 'primary_required' | 'totp_required' | 'enrollment_required' | 'recovery_codes'>('form');
   challenge = $state('');
   code = $state('');
   secret = $state('');
@@ -121,7 +148,7 @@ export class PasswordlessPanelState {
   private pendingRequests = new SvelteMap<string, string>();
   private complete: (() => Promise<unknown>) | undefined;
   get secondsRemaining() {
-    return Math.max(0, Math.ceil(((this.primary?.nextResendAt ?? 0) - this.now - this.clockOffset) / 1000));
+    return Math.max(0, Math.ceil(((this.primary?.nextResendAt ?? this.cooldownUntil) - this.now - this.clockOffset) / 1000));
   }
 
   get canResend() {
@@ -166,8 +193,11 @@ export class PasswordlessPanelState {
   private async sendRequest(key: string, action: (requestId: string) => ReturnType<typeof authClient.startOtp>) {
     const requestId = this.pendingRequests.get(key) ?? crypto.randomUUID();
     this.pendingRequests.set(key, requestId);
+    const generation = this.generation;
     const response = await action(requestId);
-    if (response.error && (response.error.code === 'network_error' || (response.error.status ?? 0) >= 500)) {
+    if (generation !== this.generation)
+      return response;
+    if (response.error && response.error.code !== 'delivery_unavailable' && (response.error.code === 'network_error' || (response.error.status ?? 0) >= 500)) {
       this.retryRequest = () => this.sendRequest(key, action);
     }
     else {
@@ -196,11 +226,48 @@ export class PasswordlessPanelState {
   async run(action: () => Promise<{ data: AuthOutcome | null; error: AuthFailure | null }>, onComplete: () => Promise<unknown>) {
     if (this.busy)
       return;
+    const generation = this.generation;
     this.busy = true;
     this.error = '';
     try {
       const { data, error } = await action();
+      if (generation !== this.generation)
+        return;
       if (error || !data) {
+        if (error?.code === 'delivery_unavailable') {
+          this.reset();
+          this.cooldownUntil = error.nextResendAt ?? 0;
+          this.clockOffset = (error.serverNow ?? Date.now()) - Date.now();
+          this.now = Date.now();
+          this.error = get(t)('auth.emailSendFailed');
+          return;
+        }
+        if (this.registration) {
+          if (error?.code === 'registration_expired') {
+            this.expireRegistration();
+            return;
+          }
+          if (error?.code === 'registration_unavailable') {
+            this.registration.eligible = false;
+            return;
+          }
+          if (error?.code === 'network_error' || (error?.status ?? 0) >= 500) {
+            const { data: session } = await authClient.getSession();
+            if (generation !== this.generation)
+              return;
+            const verifiedEmail = this.identifier;
+            this.reset();
+            if (session?.account.identifiers.some(id => id.kind === 'email' && id.value === verifiedEmail))
+              await onComplete();
+            else
+              this.error = get(t)('auth.restartVerification');
+            return;
+          }
+        }
+        if (this.retryRequest) {
+          this.error = get(t)('auth.sendUnconfirmed');
+          return;
+        }
         this.reauthenticationRequired = error?.code === 'reauthentication_required';
         this.error = error?.code?.startsWith('terms_')
           ? get(t)(error.code === 'terms_version_changed' ? 'auth.termsChanged' : error.code === 'terms_acceptance_required' ? 'auth.termsRequired' : 'auth.termsUnavailable')
@@ -222,6 +289,7 @@ export class PasswordlessPanelState {
 
   private async apply(data: AuthOutcome, onComplete: () => Promise<unknown>) {
     this.code = '';
+    this.registration = data.state === 'registration_required' ? data : null;
     if (data.state === 'linked') {
       this.reset();
       await onComplete();
@@ -268,6 +336,9 @@ export class PasswordlessPanelState {
   }
 
   reset() {
+    this.generation++;
+    this.registration = null;
+    this.cooldownUntil = 0;
     this.termsAccepted = false;
     this.termsDialogOpen = false;
     this.state = 'form';
