@@ -6,17 +6,25 @@
 	import { lang, t } from '$lib/i18n';
 	import { getDirtyWork } from '$lib/interaction/dirty-work.svelte';
 	import TestOtpPanel from '$testOtpPanel';
-	import { onMount, onDestroy, untrack } from 'svelte';
+	import { onMount, onDestroy, tick, untrack } from 'svelte';
 	import { PasswordlessPanelState, completePasswordlessSignIn } from './passwordless-panel-state.svelte';
 
-	let { email = $bindable(''), recoveryEligible = $bindable(false), apiConnected = true, onComplete = completePasswordlessSignIn, enroll = false, link = false, guard = false, onReauthenticationRequired }:
-		{ email?: string; recoveryEligible?: boolean; apiConnected?: boolean; onComplete?: () => Promise<unknown>; enroll?: boolean; link?: boolean; guard?: boolean; onReauthenticationRequired?: () => void } = $props();
+	let { email = $bindable(''), active = true, invitationToken, recoveryEligible = $bindable(false), apiConnected = true, onComplete = completePasswordlessSignIn, enroll = false, link = false, guard = false, onReauthenticationRequired }:
+		{ email?: string; active?: boolean; invitationToken?: string; recoveryEligible?: boolean; apiConnected?: boolean; onComplete?: () => Promise<unknown>; enroll?: boolean; link?: boolean; guard?: boolean; onReauthenticationRequired?: () => void } = $props();
 	const phoneInput = $derived(/^[+\d(]/.test(email.trim()) && !email.includes('@'));
 	let container: HTMLDivElement;
 	const flow = new PasswordlessPanelState();
 	$effect(() => {
 		if (flow.reauthenticationRequired && onReauthenticationRequired)
 			untrack(onReauthenticationRequired);
+	});
+	let previousStep = 'form';
+	$effect(() => {
+		const step = flow.state;
+		if (step !== previousStep) {
+			previousStep = step;
+			void tick().then(() => container?.querySelector<HTMLElement>('[data-step-focus], input:not([disabled])')?.focus());
+		}
 	});
 	const uid = $props.id();
 	$effect(() => {
@@ -29,6 +37,10 @@
 				void flow.loadTerms(locale);
 			});
 		}
+	});
+	$effect(() => {
+		if (!active && (flow.registration || flow.busy))
+			untrack(() => flow.reset());
 	});
 	const unregister = getDirtyWork()?.register({
 		isDirty: () => guard && (email.length > 0 || recoveryEligible || flow.state !== 'form'),
@@ -44,6 +56,8 @@
 		let ticks = 0;
 		const timer = setInterval(() => {
 			flow.now = Date.now();
+			if (flow.registration && !flow.busy && flow.registration.expiresAt <= flow.now + flow.clockOffset)
+				flow.expireRegistration();
 			if (++ticks % 3 === 0 && document.visibilityState === 'visible' && container?.getClientRects().length)
 				void flow.poll();
 		}, 1000);
@@ -60,7 +74,7 @@
 		await onComplete();
 	}
 	function submit() {
-		void flow.submit({ email, locale: $lang, recoveryEligible, enroll, link, onComplete: completed });
+		void flow.submit({ email, invitationToken, locale: $lang, recoveryEligible, enroll, link, onComplete: completed });
 	}
 </script>
 
@@ -81,6 +95,9 @@
 				<Input data-testid="auth-identifier" id={`${uid}-identifier`} type="text" inputmode="email" bind:value={email} autocomplete="username" autocapitalize="none" spellcheck={false} required disabled={flow.busy || !!flow.retryRequest} />
 				{#if flow.phoneAvailable && phoneInput}<p class="text-xs text-muted-foreground">{$t('auth.phoneCountryHint')}</p>{/if}
 				{#if link}<label class="flex gap-2 text-sm"><input type="checkbox" bind:checked={recoveryEligible} />{$t('auth.recoveryEligible')}</label>{/if}
+			{:else if flow.state === 'registration_required'}
+				<p data-step-focus tabindex="-1">{$t('auth.noEmailAccount')}</p>
+				{#if !flow.registration?.eligible}<p class="text-sm text-muted-foreground">{$t('auth.invitationGuidance')}</p>{/if}
 			{:else if flow.state !== 'form'}
 				{#if flow.state === 'enrollment_required'}
 					<p>{$t('auth.authenticatorSetup')}</p><code data-sensitive data-testid="auth-totp-secret" class="block break-all select-all">{flow.secret}</code>
@@ -88,22 +105,31 @@
 				<Label for={`${uid}-code`}>{$t(flow.recovery ? 'auth.recoveryCode' : flow.state === 'totp_required' ? 'auth.authenticatorCode' : 'auth.otpLabel')}</Label>
 				<Input data-testid="auth-code" id={`${uid}-code`} bind:value={flow.code} autocomplete="one-time-code" required disabled={flow.busy} />
 			{/if}
-			{#if flow.state === 'form' && !enroll && !link}
+			{#if (flow.state === 'form' || (flow.registration?.eligible && !flow.termsReady)) && !enroll && !link}
 				<TermsAcceptance {flow} disabled={flow.busy || !!flow.retryRequest} onRetry={() => void flow.loadTerms($lang)} />
 			{/if}
-			<Button data-testid="auth-submit" class="w-full" type="submit" disabled={flow.busy || !apiConnected || (flow.state === 'form' && !enroll && !link && !flow.termsReady) || (flow.state === 'primary_required' && flow.primary?.lifecycle !== 'pending')}>{$t(flow.state === 'form' ? enroll ? 'auth.enableAuthenticator' : 'auth.sendCode' : 'auth.verifyCode')}</Button>
+			{#if flow.state === 'form' && flow.secondsRemaining > 0}<p class="text-sm text-muted-foreground">{$t('auth.resendCountdown', { seconds: flow.secondsRemaining })}</p>{/if}
+			{#if !flow.retryRequest && (!flow.registration || flow.registration.eligible)}
+				<Button data-testid="auth-submit" class="w-full" type="submit" disabled={flow.busy || !apiConnected || (flow.state === 'form' && flow.secondsRemaining > 0) || ((flow.state === 'form' || flow.registration) && !enroll && !link && !flow.termsReady) || (flow.state === 'primary_required' && flow.primary?.lifecycle !== 'pending')}>{$t(flow.registration ? 'auth.createEmailAccount' : flow.state === 'form' ? enroll ? 'auth.enableAuthenticator' : 'auth.sendCode' : 'auth.verifyCode')}</Button>
+			{/if}
+			{#if flow.registration}
+				<Button type="button" variant="link" disabled={flow.busy} onclick={() => {
+					flow.reset();
+					email = '';
+				}}>{$t('auth.useAnotherEmail')}</Button>
+			{/if}
 		</form>
 		{#if flow.state === 'totp_required'}<Button variant="link" onclick={() => {
 			flow.recovery = !flow.recovery;
 			flow.code = '';
 		}}>{$t(flow.recovery ? 'auth.useAuthenticator' : 'auth.useRecoveryCode')}</Button>{/if}
-		{#if flow.state === 'primary_required'}
+		{#if flow.state === 'primary_required' && !flow.retryRequest}
 			<TestOtpPanel primary={flow.primary} busy={flow.busy} now={flow.now + flow.clockOffset} />
 			<p class="text-sm text-muted-foreground">{$t(`auth.delivery.${flow.primary?.channel ?? 'email'}`)}</p>
 			<p class="text-sm">{$t('auth.latestCode')}</p>
 			{#if flow.primary?.delivery === 'failed' || flow.primary?.delivery === 'uncertain'}<p role="status" class="text-sm">{$t(`auth.delivery.${flow.primary.delivery}`)}</p>{/if}
 			{#if flow.primary?.lifecycle === 'expired'}<p role="status" class="text-sm">{$t('auth.codeExpired')}</p>{/if}
-			{#if flow.secondsRemaining > 0}<p role="status" class="text-sm text-muted-foreground">{$t('auth.resendCountdown', { seconds: flow.secondsRemaining })}</p>{/if}
+			{#if flow.secondsRemaining > 0}<p class="text-sm text-muted-foreground">{$t('auth.resendCountdown', { seconds: flow.secondsRemaining })}</p>{/if}
 			<div class="flex flex-wrap gap-2">
 				<Button data-testid="auth-resend" variant="link" disabled={!flow.canResend} onclick={() => void flow.resend('resend', completed)}>{$t('auth.resendCode')}</Button>
 				{#if flow.primary?.actions.sms}<Button data-testid="auth-sms" variant="link" disabled={!flow.canSms} onclick={() => void flow.resend('sms', completed)}>{$t('auth.sendBySms')}</Button>{/if}

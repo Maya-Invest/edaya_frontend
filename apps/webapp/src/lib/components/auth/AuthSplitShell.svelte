@@ -47,10 +47,10 @@
 					<!-- Keep panel instances stable so changing panels does not discard drafts. -->
 					<section class="mx-auto w-full max-w-[420px]" hidden={activePanel !== 'signin'} inert={activePanel !== 'signin'} aria-labelledby="signin-title">
 						<h1 id="signin-title" tabindex="-1" class="font-display text-2xl font-semibold leading-tight sm:text-[28px]">{$t('auth.signInTitle')}</h1>
-						<p class="mb-6 mt-2 text-sm leading-relaxed text-muted-foreground">{$t('auth.signInDescription')}</p>
+						<p class="entry-guidance mb-6 mt-2 text-sm leading-relaxed text-muted-foreground">{$t('auth.signInDescription')}</p>
 						{@render signin()}
 						{#if showSignup}
-							<p class="mt-6 text-sm text-muted-foreground">
+							<p class="entry-guidance mt-6 text-sm text-muted-foreground">
 								{$t('auth.noAccountYet')}
 								<button type="button" class="control-focus ml-1 rounded font-medium text-primary underline-offset-4 hover:underline" onclick={() => onPanelChange('signup')}>
 									{$t('auth.switchToSignUp')}
@@ -61,9 +61,9 @@
 					{#if showSignup}
 						<section class="mx-auto w-full max-w-[420px]" hidden={activePanel !== 'signup'} inert={activePanel !== 'signup'} aria-labelledby="signup-title">
 							<h1 id="signup-title" tabindex="-1" class="font-display text-2xl font-semibold leading-tight sm:text-[28px]">{$t('auth.signUpTitle')}</h1>
-							<p class="mb-6 mt-2 text-sm leading-relaxed text-muted-foreground">{$t('auth.signUpSubtitle')}</p>
+							<p class="entry-guidance mb-6 mt-2 text-sm leading-relaxed text-muted-foreground">{$t('auth.signUpSubtitle')}</p>
 							{@render signup()}
-							<p class="mt-6 text-sm text-muted-foreground">
+							<p class="entry-guidance mt-6 text-sm text-muted-foreground">
 								{$t('auth.alreadyHaveAccount')}
 								<button type="button" class="control-focus ml-1 rounded font-medium text-primary underline-offset-4 hover:underline" onclick={() => onPanelChange('signin')}>
 									{$t('auth.switchToSignIn')}
@@ -79,3 +79,12 @@
 		</div>
 	</main>
 </div>
+
+<style>
+  section:has(:global([data-testid="auth-panel"]:not([data-state="form"]))) .entry-guidance {
+    display: none;
+  }
+  section:has(:global([data-testid="auth-panel"]:not([data-state="form"]))) h1 {
+    margin-bottom: 1rem;
+  }
+</style>

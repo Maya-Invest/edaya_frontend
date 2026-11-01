@@ -9,7 +9,7 @@ export interface AuthSnapshot { user: AccountUser; account: { id: string; identi
 export type PrimaryStatus = components['schemas']['AuthPrimaryStatus'];
 export type AuthTerms = components['schemas']['AuthTerms'];
 export type OtpStart = components['schemas']['AuthStart'];
-export type AuthOutcome = PrimaryStatus | (AuthSnapshot & { state: 'complete'; recoveryCodes?: string[] }) | { state: 'linked'; account: AuthSnapshot['account'] } | { state: 'totp_required' | 'enrollment_required'; challenge: string; secret?: string; uri?: string };
+export type AuthOutcome = components['schemas']['AuthRegistrationOffer'] | PrimaryStatus | (AuthSnapshot & { state: 'complete'; recoveryCodes?: string[] }) | { state: 'linked'; account: AuthSnapshot['account'] } | { state: 'totp_required' | 'enrollment_required'; challenge: string; secret?: string; uri?: string };
 export interface AuthFailure { code?: string; message: string; status?: number; nextResendAt?: number; serverNow?: number }
 const generated = createAuthClient(authTransport);
 async function result<T>(operation: () => Promise<T>): Promise<{ data: T | null; error: AuthFailure | null }> {
@@ -44,6 +44,7 @@ export const authClient = {
 	statusOtp: (challenge: string) => result(() => generated.statusOtp({ challenge })),
 	resendOtp: (challenge: string, action: 'resend' | 'sms', requestId: string) => result(() => generated.resendOtp({ challenge, action, requestId })),
 	startOtp: (input: OtpStart) => result(() => generated.startOtp(input)),
+	completeRegistration: (input: components['schemas']['AuthRegistrationInput']) => result(() => generated.completeRegistration(input)),
 	verifyOtp: (challenge: string, code: string) => result(() => generated.verifyOtp({ challenge, code })),
 	verifyTotp: (challenge: string, code: string) => result(() => generated.verifyTotp({ challenge, code })),
 	recover: (challenge: string, code: string) => result(() => generated.recover({ challenge, code })),

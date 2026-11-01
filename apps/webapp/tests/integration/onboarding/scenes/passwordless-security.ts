@@ -15,6 +15,9 @@ async function verify(target: Locator, code: string, endpoint: string, expectedO
   const completed = await response;
   if (completed.ok() !== expectedOk) throw new Error(`${endpoint}: unexpected HTTP ${completed.status()}`);
   if (!expectedOk) await target.getByRole('alert').waitFor();
+  if (expectedOk && endpoint === 'otp/verify' && (await completed.json()).state === 'registration_required') {
+    await target.locator('[data-testid="auth-submit"]').filter({ hasText: /Créer un compte|Create account/ }).click();
+  }
   return completed;
 }
 function totp(secret: string, offsetMs = 0): string {

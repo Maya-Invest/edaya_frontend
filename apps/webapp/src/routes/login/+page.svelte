@@ -4,7 +4,6 @@
 	import { afterNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
-	import { checkBrowserApiHealth } from '$lib/api/check-api-health';
 	import { getAuthenticatedAuthUser } from '$lib/auth/bootstrap';
 	import { completeAuthSignIn } from '$lib/auth/complete-sign-in';
 	import {
@@ -23,11 +22,12 @@
 	import AuthSplitShell from '$lib/components/auth/AuthSplitShell.svelte';
 	import LoginPanelHost from '$lib/components/auth/login/LoginPanelHost.svelte';
 	import SignupPanel from '$lib/components/auth/signup/SignupPanel.svelte';
-	import { isDemoLoginEnabled, isPublicSchoolRegistrationEnabled } from '$lib/env/app-env';
+	import { isDemoLoginEnabled } from '$lib/env/app-env';
 	import { t } from '$lib/i18n';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { onMount } from 'svelte';
+	import { loadLoginCapabilities } from './login-capabilities';
 	import {
 		canonicalLoginUrlState,
 		isEmailVerifiedRedirect,
@@ -46,7 +46,8 @@
 	let sessionAutoSignInChecked = false;
 
 	const showDemoLink = $derived(isDemoLoginEnabled());
-	const showSignup = $derived(isPublicSchoolRegistrationEnabled());
+	let showSignup = $state(false);
+	let registrationLoaded = false;
 	const routedUrlState = $derived(readLoginUrlState($page.url, { showSignup }));
 	const urlState = $derived(canonicalLoginUrlState(routedUrlState, {
 		hasEmailIdentity: email.trim().length > 0,
@@ -57,8 +58,10 @@
 
 	onMount(() => {
 		void (async () => {
-			const health = await checkBrowserApiHealth();
-			apiConnected = health.connected;
+			const capability = await loadLoginCapabilities();
+			showSignup = capability.publicSignup;
+			registrationLoaded = true;
+			apiConnected = capability.connected;
 			apiChecking = false;
 		})();
 	});
@@ -91,6 +94,8 @@
 			}
 		}
 
+		if (!registrationLoaded && url.searchParams.get('panel') === 'signup')
+			return;
 		const canonicalHref = writeLoginUrlState(url, urlState);
 		if (canonicalHref !== `${url.pathname}${url.search}`) {
 			void appGoto(canonicalHref, {
@@ -138,6 +143,7 @@
 		{#if showSignup}
 			<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
 			<SignupPanel
+				active={urlState.panel === 'signup'}
 				bind:email
 				{apiConnected}
 				onSwitchToSignIn={handleSwitchToSignIn}
@@ -180,6 +186,7 @@
 		<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
 
 		<LoginPanelHost
+			active={urlState.panel === 'signin'}
 			bind:email
 			activeMethod={urlState.method}
 			{apiConnected}

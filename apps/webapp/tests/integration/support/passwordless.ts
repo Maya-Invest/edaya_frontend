@@ -33,7 +33,11 @@ export async function sendOtpThroughUi(page: Page, email: string): Promise<void>
 export async function verifyOtpThroughUi(page: Page, _email: string): Promise<void> {
   await page.locator('[data-testid="auth-code"]:visible').fill('');
   await page.locator('[data-testid="auth-code"]:visible').fill(await revealTestCode(page));
+  const verifying = page.waitForResponse(response => response.url().endsWith('/auth/edaya/otp/verify'));
   await page.locator('[data-testid="auth-submit"]:visible').click();
+  if ((await (await verifying).json()).state === 'registration_required') {
+    await page.locator('[data-state="registration_required"]:visible [data-testid="auth-submit"]').click();
+  }
 }
 
 export async function passwordlessApiLogin(page: Page, origin: string, email: string): Promise<void> {
@@ -42,7 +46,11 @@ export async function passwordlessApiLogin(page: Page, origin: string, email: st
   const sent = await page.request.post(`${authUrl}/auth/edaya/otp/start`, { headers, data: { kind: 'email', value: email, channel: 'email' } });
   if (!sent.ok()) throw new Error(`OTP send failed (${sent.status()})`);
   const { challenge } = await sent.json();
-  const verified = await page.request.post(`${authUrl}/auth/edaya/otp/verify`, { headers, data: { challenge, code: await peekOtp(email, 'email', challenge) } });
+  let verified = await page.request.post(`${authUrl}/auth/edaya/otp/verify`, { headers, data: { challenge, code: await peekOtp(email, 'email', challenge) } });
+  const outcome = await verified.json();
+  if (outcome.state === 'registration_required') {
+    verified = await page.request.post(`${authUrl}/auth/edaya/registration/complete`, { headers, data: { challenge, proof: outcome.proof } });
+  }
   if (!verified.ok() || (await verified.json()).state !== 'complete') throw new Error('Completed Account authentication required');
 }
 
