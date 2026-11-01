@@ -158,7 +158,7 @@
 		}
 
 		const nextAuthState = canonicalInvitationAuthUrlState(
-			result.authAccountExists
+			result.contactChannel === 'phone' && result.authAccountExists
 				? { mode: 'signIn', stage: 'form',
 				}
 				: authUrlState,
@@ -565,16 +565,16 @@
 
 						{#if !authSession.hasAuthAccount}
 							<PasswordlessPanel invitationToken={token} bind:email onComplete={async () => { await invitationPage.authenticate(); }} />
+						{:else}
+							<Button
+								type="button"
+								class="w-full"
+								disabled={busy || wrongAccount || acceptedIssue === 'contactMismatch'}
+								onclick={handleAccept}
+							>
+								{$t('invitation.accept.cta')}
+							</Button>
 						{/if}
-
-						<Button
-							type="button"
-							class="w-full"
-							disabled={busy || wrongAccount || acceptedIssue === 'contactMismatch' || !authSession.hasAuthAccount}
-							onclick={handleAccept}
-						>
-							{$t('invitation.accept.cta')}
-						</Button>
 					</div>
 				{/if}
 			</section>
