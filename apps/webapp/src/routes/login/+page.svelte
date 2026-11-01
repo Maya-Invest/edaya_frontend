@@ -47,8 +47,9 @@
 
 	const showDemoLink = $derived(isDemoLoginEnabled());
 	let showSignup = $state(false);
-	let registrationLoaded = false;
-	const routedUrlState = $derived(readLoginUrlState($page.url, { showSignup }));
+	const signupRequested = $derived($page.url.searchParams.get('panel') === 'signup');
+	const showSignupPanel = $derived(showSignup || (apiChecking && signupRequested));
+	const routedUrlState = $derived(readLoginUrlState($page.url, { showSignup: showSignupPanel }));
 	const urlState = $derived(canonicalLoginUrlState(routedUrlState, {
 		hasEmailIdentity: email.trim().length > 0,
 	}));
@@ -60,9 +61,10 @@
 		void (async () => {
 			const capability = await loadLoginCapabilities();
 			showSignup = capability.publicSignup;
-			registrationLoaded = true;
 			apiConnected = capability.connected;
 			apiChecking = false;
+			if (signupRequested && !showSignup)
+				void appGoto(writeLoginUrlState($page.url, urlState), { replaceState: true, keepFocus: true, noScroll: true });
 		})();
 	});
 
@@ -94,7 +96,7 @@
 			}
 		}
 
-		if (!registrationLoaded && url.searchParams.get('panel') === 'signup')
+		if (apiChecking && url.searchParams.get('panel') === 'signup')
 			return;
 		const canonicalHref = writeLoginUrlState(url, urlState);
 		if (canonicalHref !== `${url.pathname}${url.search}`) {
@@ -134,13 +136,15 @@
 
 <AuthSplitShell
 	activePanel={urlState.panel}
-	showSignup={showSignup}
+	showSignup={showSignupPanel}
 	onPanelChange={(panel) => {
 		navigateLoginState({ panel, stage: 'form' });
 	}}
 >
 	{#snippet signup()}
-		{#if showSignup}
+		{#if apiChecking}
+			<p role="status" class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
+		{:else if showSignup}
 			<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
 			<SignupPanel
 				active={urlState.panel === 'signup'}
