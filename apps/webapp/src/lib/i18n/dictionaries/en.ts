@@ -553,7 +553,6 @@ export const en: Dict = {
 	'auth.termsRetry': 'Retry loading terms',
 	'auth.termsRequired': 'Accept the Terms of Use before continuing.',
 	'auth.termsChanged': 'The Terms of Use have changed. Read and accept the new version to continue.',
-	'auth.termsDraft': 'Draft preview — this text is awaiting approval and is not a published agreement.',
 	'auth.testingOnly': 'Testing only',
 	'auth.showTestCode': 'Show test code',
 	'auth.copyTestCode': 'Copy',
