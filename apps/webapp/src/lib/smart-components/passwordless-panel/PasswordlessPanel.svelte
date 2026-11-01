@@ -105,7 +105,7 @@
 				<Label for={`${uid}-code`}>{$t(flow.recovery ? 'auth.recoveryCode' : flow.state === 'totp_required' ? 'auth.authenticatorCode' : 'auth.otpLabel')}</Label>
 				<Input data-testid="auth-code" id={`${uid}-code`} bind:value={flow.code} autocomplete="one-time-code" required disabled={flow.busy} />
 			{/if}
-			{#if (flow.state === 'form' || (flow.registration?.eligible && !flow.termsReady)) && !enroll && !link}
+			{#if (flow.state === 'form' || (flow.registration?.eligible && (flow.renewRegistrationConsent || !flow.termsReady))) && !enroll && !link}
 				<TermsAcceptance {flow} disabled={flow.busy || !!flow.retryRequest} onRetry={() => void flow.loadTerms($lang)} />
 			{/if}
 			{#if flow.state === 'form' && flow.secondsRemaining > 0}<p class="text-sm text-muted-foreground">{$t('auth.resendCountdown', { seconds: flow.secondsRemaining })}</p>{/if}
