@@ -333,10 +333,10 @@
 	</header>
 
 	<main class="flex flex-1 items-center justify-center p-6">
-		<div class="w-full max-w-lg animate-fade-in">
+		<div class="w-full min-w-0 max-w-lg animate-fade-in">
 			<div class="mb-8 flex flex-col items-center text-center">
 				<BrandLogo variant="horizontal" width={144} />
-				<h1 class="font-display text-3xl font-semibold">{$t('invitation.accept.title')}</h1>
+				<h1 class="max-w-full font-display text-3xl font-semibold [overflow-wrap:anywhere]">{$t('invitation.accept.title')}</h1>
 			</div>
 
 			<section class="rounded-collection border border-border bg-card p-5 shadow-soft">
