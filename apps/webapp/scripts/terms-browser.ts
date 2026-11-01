@@ -27,7 +27,7 @@ try {
 				if (url.pathname.endsWith('/terms')) {
 					status = failTerms ? 503 : 200;
 					const french = url.searchParams.get('locale') === 'fr';
-					body = { enforced: true, document: { version, locale: url.searchParams.get('locale'), status: 'published', title: french ? 'Conditions d’utilisation — exemple de test' : 'Terms of Use — test example', documentHash: `${version}-${url.searchParams.get('locale')}`, sections: [{ heading: french ? 'Utilisation scolaire' : 'School use', paragraphs: [french ? 'Lisez ces conditions avant de les accepter.' : 'Read these terms before accepting.', ...Array.from({ length: 12 }, (_, index) => french ? `Section ${index + 1} : Utilisez le service scolaire de manière responsable et protégez les informations de votre compte.` : `Section ${index + 1}: Use the school service responsibly and protect your account information.`)] }] } };
+					body = { enforced: true, document: { version, locale: url.searchParams.get('locale'), status: 'published', title: french ? 'Conditions d’utilisation — exemple de test' : 'Terms of Use — test example', documentHash: `${version}-${url.searchParams.get('locale')}`, sourceUrl: french ? 'https://edayaplus.com/conditions-utilisation/' : 'https://edayaplus.com/en/terms/', html: `<h1>${french ? 'Conditions' : 'Terms'}</h1><p>${french ? 'Texte publié' : 'Published text'}</p><a href="https://edayaplus.com/" target="_blank" rel="noopener noreferrer">EDAYA</a>${'<p>EDAYA</p>'.repeat(35)}`, sections: [{ heading: french ? 'Utilisation scolaire' : 'School use', paragraphs: [french ? 'Lisez ces conditions avant de les accepter.' : 'Read these terms before accepting.', ...Array.from({ length: 12 }, (_, index) => french ? `Section ${index + 1} : Utilisez le service scolaire de manière responsable et protégez les informations de votre compte.` : `Section ${index + 1}: Use the school service responsibly and protect your account information.`)] }] } };
 				}
 				else if (url.pathname.endsWith('/methods')) {
 					body = { methods: [] };
@@ -72,6 +72,11 @@ try {
 			assert.equal(await dialog.getByTestId('auth-terms-content').isVisible(), true);
 			assert.equal(await active.evaluate(element => element.getBoundingClientRect().height), formHeight, 'opening terms must not expand the login form');
 			assert.equal(await checkbox.isChecked(), false);
+			const reader = dialog.frameLocator('iframe');
+			await reader.getByText(locale === 'fr' ? 'Texte publié' : 'Published text', { exact: true }).waitFor();
+			assert.equal(await reader.getByRole('link').getAttribute('target'), '_blank');
+			assert.doesNotMatch(await page.locator('body').innerText(), /Draft preview|Aperçu du projet/);
+			await reader.getByRole('link').focus();
 			await page.screenshot({ path: `${output}/${panel}-${locale}-default.png`, fullPage: true });
 			await page.keyboard.press('Escape');
 			await dialog.waitFor({ state: 'hidden' });
@@ -131,7 +136,7 @@ try {
 	}
 	assert.deepEqual(errors, []);
 	const fingerprint = createHash('sha256');
-	for (const file of ['src/app.css', 'src/lib/components/auth/TermsAcceptance.svelte', 'src/lib/smart-components/passwordless-panel/PasswordlessPanel.svelte', 'src/lib/smart-components/passwordless-panel/passwordless-panel-state.svelte.ts', 'src/lib/auth/client.ts']) fingerprint.update(await readFile(file));
+	for (const file of ['src/app.css', 'src/lib/components/auth/TermsAcceptance.svelte', 'src/lib/components/auth/terms-reader.ts', 'src/lib/smart-components/passwordless-panel/PasswordlessPanel.svelte', 'src/lib/smart-components/passwordless-panel/passwordless-panel-state.svelte.ts', 'src/lib/auth/client.ts']) fingerprint.update(await readFile(file));
 	await writeFile(`${output}/evidence.json`, JSON.stringify({ sourceFingerprint: fingerprint.digest('hex'), localMockApi: true, viewport: [390, 844], textScale: ['100%', '200%'], colorPreference: 'dark', applicationPalette: 'default', locales: ['en', 'fr'], panels: ['signin', 'signup'], result: '4 scenarios passed' }, null, 2));
 }
 finally { await browser.close(); }
