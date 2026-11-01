@@ -89,7 +89,7 @@
 
 <Dialog.Root {open} onOpenChange={changeOpen}>
 	<div class="flex min-w-0 items-center gap-1" data-testid="academic-year-selector">
-		{#if !collapsed}<p class="min-w-0 flex-1 truncate text-sm leading-5 text-muted-foreground" title={triggerLabel} data-testid="academic-year-label"><span class="sr-only">{$t('academic.yearSwitcher.contextLabel')}: </span><span data-testid="academic-year-value">{triggerLabel}</span></p>{/if}
+		{#if !collapsed}<p class="min-w-0 truncate text-sm leading-5 text-muted-foreground" title={triggerLabel} data-testid="academic-year-label"><span class="sr-only">{$t('academic.yearSwitcher.contextLabel')}: </span><span data-testid="academic-year-value">{triggerLabel}</span></p>{/if}
 		<Dialog.Trigger disabled={!ready || !years.length}>
 			{#snippet child({ props })}
 				<Button {...props} variant="ghost" size="icon" iconTreatment={collapsed ? 'circle' : 'quiet'}
