@@ -510,6 +510,7 @@ export interface AcademicYear {
 }
 
 export interface AcademicPeriod {
+	type?: 'trimester' | 'semester' | 'other';
 	id: string;
 	schoolId: string;
 	academicYearId: string;

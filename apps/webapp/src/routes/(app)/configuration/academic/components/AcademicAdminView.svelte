@@ -15,8 +15,10 @@
 	import { ChevronRight, Plus } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { hasPermission } from '$lib/permissions';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
+	import { tick, untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getAcademicPageState } from '../academic-page.svelte';
 	import {
@@ -24,6 +26,8 @@
 		isAcademicModalTargetValid,
 		snapshotAcademicMutationTarget,
 	} from '../lib/academic-modal-surface';
+	import AcademicCalendarForm from './AcademicCalendarForm.svelte';
+	import AcademicRecordMenu from './AcademicRecordMenu.svelte';
 	import AcademicYearCreateModal from './AcademicYearCreateModal.svelte';
 
 	const academicPage = getAcademicPageState();
@@ -33,10 +37,20 @@
 		owned: ACADEMIC_MODAL_NAMES,
 		getUrl: () => $page.url,
 	});
+	// PageQuery may mount this view after navigation has already completed.
+	$effect(() => modals.hydrate());
 	const createOpen = bindUrlModal(modals, 'create');
 	const archiveOpen = bindUrlModal(modals, 'archive-year');
 	const publishYearOpen = bindUrlModal(modals, 'publish-year');
 	const publishPeriodOpen = bindUrlModal(modals, 'publish-period');
+	const editYearOpen = bindUrlModal(modals, 'edit-year');
+	const createPeriodOpen = bindUrlModal(modals, 'create-period');
+	const editPeriodOpen = bindUrlModal(modals, 'edit-period');
+	const deleteYearOpen = bindUrlModal(modals, 'delete-year');
+	const deletePeriodOpen = bindUrlModal(modals, 'delete-period');
+	let deleteBusy = $state(false);
+	const canConfigure = $derived(hasPermission('SCHOOL_CONFIGURE'));
+	const canManageLifecycle = $derived(hasPermission('SCHOOL_LIFECYCLE_MANAGE'));
 
 	let archiveBusy = $state(false);
 	let publishYearBusy = $state(false);
@@ -49,6 +63,7 @@
 		})),
 		periods: academicContext.periods.map(entry => ({
 			id: entry.id,
+			academicYearId: entry.academicYearId,
 			status: entry.status,
 		})),
 	});
@@ -59,7 +74,7 @@
 	);
 	const targetedPeriod = $derived(
 		modals.target
-			? academicContext.periods.find(entry => entry.id === modals.target) ?? null
+			? academicContext.canonicalPeriods.find(entry => entry.id === modals.target) ?? null
 			: null,
 	);
 	const archiveTarget = $derived.by(() => {
@@ -86,15 +101,44 @@
 			? targetedPeriod
 			: null;
 	});
-	afterNavigate(() => {
-		modals.hydrate();
-		academicPage.hydrateExpandedYear();
-		if (!academicPage.slice || !academicContext.shellReady) {
+	const periodYear = $derived(targetedPeriod ? academicContext.years.find(year => year.id === targetedPeriod.academicYearId) : undefined);
+	const targetValid = $derived(isAcademicModalTargetValid(modals.active, modals.target, modalCatalog));
+	const deleteTarget = $derived(targetValid ? (modals.active === 'delete-year' ? targetedYear : modals.active === 'delete-period' ? targetedPeriod : null) : null);
+	$effect(() => {
+		if (!modals.ready || !modals.active || !academicPage.slice || !academicContext.shellReady || archiveBusy || publishYearBusy || publishPeriodBusy || deleteBusy) {
 			return;
 		}
-		if (!isAcademicModalTargetValid(modals.active, modals.target, modalCatalog)) {
-			modals.close();
+		const lifecycle = ['archive-year', 'publish-year', 'publish-period'].includes(modals.active);
+		if (!targetValid || !(lifecycle ? canManageLifecycle : canConfigure)) {
+			untrack(() => modals.close());
 		}
+	});
+	let restoreMenuTarget: string | null = null;
+	function openAction(action: AcademicModalName, target: string) {
+		restoreMenuTarget = target;
+		modals.open(action, { target });
+	}
+	async function confirmDelete() {
+		if (!deleteTarget || deleteBusy || !canConfigure)
+			return;
+		const id = deleteTarget.id;
+		const isYear = modals.active === 'delete-year';
+		deleteBusy = true;
+		try {
+			if (await academicPage.deleteRecord(id, isYear, get(t)('academic.toastDeleted')))
+				modals.close();
+		}
+		finally { deleteBusy = false; }
+	}
+
+	afterNavigate(() => {
+		modals.hydrate();
+		if (!modals.active && restoreMenuTarget) {
+			const target = restoreMenuTarget;
+			restoreMenuTarget = null;
+			void tick().then(() => document.querySelector<HTMLButtonElement>(`[data-academic-menu="${CSS.escape(target)}"] button`)?.focus());
+		}
+		academicPage.hydrateExpandedYear();
 	});
 
 	const statusOptions = $derived([
@@ -104,18 +148,14 @@
 		{ value: 'archived', label: $t('academic.archived') },
 	]);
 
-	const publishedYearId = $derived(
-		academicContext.years.find(year => year.status === 'published')?.id ?? null,
-	);
-
 	function yearStatusLabel(status: string): string {
 		if (status === 'published') {
-			return get(t)('academic.published');
+			return $t('academic.published');
 		}
 		if (status === 'archived') {
-			return get(t)('academic.archived');
+			return $t('academic.archived');
 		}
-		return get(t)('academic.draft');
+		return $t('academic.draft');
 	}
 
 	const sortedYears = $derived(
@@ -149,7 +189,7 @@
 	}
 
 	async function confirmPublishYear() {
-		if (!publishYearTarget || publishYearBusy) {
+		if (!publishYearTarget || publishYearBusy || !canManageLifecycle) {
 			return;
 		}
 		const target = snapshotAcademicMutationTarget(publishYearTarget);
@@ -167,12 +207,8 @@
 		}
 	}
 
-	function openArchiveYear(yearId: string) {
-		modals.open('archive-year', { target: yearId });
-	}
-
 	async function confirmArchiveYear() {
-		if (!archiveTarget || archiveBusy) {
+		if (!archiveTarget || archiveBusy || !canManageLifecycle) {
 			return;
 		}
 		const target = snapshotAcademicMutationTarget(archiveTarget);
@@ -191,7 +227,7 @@
 	}
 
 	async function confirmPublishPeriod() {
-		if (!publishPeriodTarget || publishPeriodBusy) {
+		if (!publishPeriodTarget || publishPeriodBusy || !canManageLifecycle) {
 			return;
 		}
 		const target = snapshotAcademicMutationTarget(publishPeriodTarget);
@@ -233,10 +269,10 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
-			<Button size="sm" onclick={() => modals.open('create')}>
+			{#if canConfigure}<Button size="sm" onclick={() => modals.open('create')}>
 				<Plus class="mr-1 h-4 w-4" />
 				{$t('academic.createYear')}
-			</Button>
+			</Button>{/if}
 		{/snippet}
 		{#snippet more()}
 			<ListMoreMenu
@@ -255,6 +291,11 @@
 		{/snippet}
 	</ListPageHeader>
 
+	{#if academicPage.refreshFailed}
+		<div role="alert" class="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
+			<p>{$t('mutation.savedRefreshFailed')}</p><Button variant="outline" disabled={academicPage.refreshBusy} onclick={() => academicPage.retryRefresh()}>{$t('dataState.retry')}</Button>
+		</div>
+	{/if}
 	<div class="space-y-3">
 		{#each filteredYears as year (year.id)}
 			{@const open = academicPage.expandedYear === year.id}
@@ -292,39 +333,16 @@
 							</p>
 						</div>
 					</button>
-					{#if year.status === 'published'}
-						<div class="ml-auto py-2 pr-2">
-							<Button
-								size="sm"
-								variant="outline"
-
-								onclick={() => openArchiveYear(year.id)}
-							>
-								{$t('academic.archiveYear')}
-							</Button>
-						</div>
-					{/if}
+					<AcademicRecordMenu id={year.id} label={year.label} catalog={modalCatalog} onAction={openAction} />
 				</div>
 
 				{#if open}
 					<div id={`academic-year-periods-${year.id}`} class="border-t border-border px-5 py-4">
-						{#if year.status !== 'published'}
-							<div class="mb-4 flex justify-end">
-								<Button
-									size="sm"
-
-									disabled={publishedYearId !== null}
-									title={publishedYearId !== null ? $t('academic.publishBlocked') : undefined}
-									onclick={() => modals.open('publish-year', { target: year.id })}
-								>
-									{$t('academic.publishYear')}
-								</Button>
-							</div>
-						{/if}
 
 						<p class="mb-3 font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 							{$t('academic.periods')}
 						</p>
+						{#if yearPeriods.length === 0}<p class="mb-3 text-sm text-muted-foreground">{$t('academic.emptyPeriods')}</p>{/if}
 						<ul class="space-y-2">
 							{#each yearPeriods as period (period.id)}
 								<li
@@ -351,16 +369,7 @@
 												? $t('academic.published')
 												: $t('academic.draft')}
 										</span>
-										{#if period.status === 'draft'}
-											<Button
-												size="sm"
-												variant="outline"
-
-												onclick={() => modals.open('publish-period', { target: period.id })}
-											>
-												{$t('academic.publishPeriod')}
-											</Button>
-										{/if}
+										<AcademicRecordMenu id={period.id} label={period.label} period catalog={modalCatalog} onAction={openAction} />
 									</div>
 								</li>
 							{/each}
@@ -372,9 +381,9 @@
 	</div>
 </div>
 
-<AcademicYearCreateModal bind:open={createOpen.open} onCreated={handleYearCreated} />
+{#if canConfigure}<AcademicYearCreateModal bind:open={createOpen.open} onCreated={handleYearCreated} />{/if}
 
-{#if archiveOpen.open && archiveTarget}
+{#if canManageLifecycle && archiveOpen.open && archiveTarget}
 	<ConfirmModal
 		bind:open={archiveOpen.open}
 		title={$t('academic.archiveYear')}
@@ -388,7 +397,7 @@
 	/>
 {/if}
 
-{#if publishYearOpen.open && publishYearTarget}
+{#if canManageLifecycle && publishYearOpen.open && publishYearTarget}
 	<ConfirmModal
 		bind:open={publishYearOpen.open}
 		title={$t('academic.publishYear')}
@@ -400,7 +409,7 @@
 	/>
 {/if}
 
-{#if publishPeriodOpen.open && publishPeriodTarget}
+{#if canManageLifecycle && publishPeriodOpen.open && publishPeriodTarget}
 	<ConfirmModal
 		bind:open={publishPeriodOpen.open}
 		title={$t('academic.publishPeriod')}
@@ -410,4 +419,25 @@
 		variant="default"
 		onConfirm={confirmPublishPeriod}
 	/>
+{/if}
+
+{#if canConfigure && targetValid}
+	{#if editYearOpen.open && targetedYear}
+		{#key targetedYear.id}<AcademicCalendarForm bind:open={editYearOpen.open} year={targetedYear} editingYear />{/key}
+	{:else if createPeriodOpen.open && targetedYear}
+		{#key targetedYear.id}<AcademicCalendarForm bind:open={createPeriodOpen.open} year={targetedYear} />{/key}
+	{:else if editPeriodOpen.open && targetedPeriod && periodYear}
+		{#key targetedPeriod.id}<AcademicCalendarForm bind:open={editPeriodOpen.open} year={periodYear} period={targetedPeriod} />{/key}
+	{/if}
+	{#if deleteTarget}
+		<ConfirmModal
+			bind:open={() => deleteYearOpen.open || deletePeriodOpen.open, (value) => {
+ if (!value)
+modals.close();
+}}
+			title={$t(modals.active === 'delete-year' ? 'academic.deleteYear' : 'academic.deletePeriod')}
+			description={$t('academic.deleteConfirm', { label: deleteTarget.label })}
+			confirmLabel={$t('common.delete')} busy={deleteBusy} onConfirm={confirmDelete}
+		/>
+	{/if}
 {/if}

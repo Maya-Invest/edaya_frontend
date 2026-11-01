@@ -236,6 +236,11 @@ export const ROUTE_MODAL_CATALOG = [
 		modalNames: [
 			'create',
 			'archive-year',
+			'edit-year',
+			'create-period',
+			'edit-period',
+			'delete-year',
+			'delete-period',
 			'publish-year',
 			'publish-period',
 		],

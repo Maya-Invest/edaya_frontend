@@ -23,6 +23,7 @@ async function main() {
   page.on('console', message => { if (message.type() === 'error') console.error(message.text()); });
   page.on('response', response => { if (response.status() >= 400) { resourceErrors.push(new URL(response.url()).pathname); console.error('Failed fixture resource', response.status(), response.url()); } });
   const trigger = page.getByTestId('academic-year-trigger');
+  const yearValue = page.getByTestId('academic-year-value');
   const dialog = page.getByTestId('academic-year-dialog');
   const choice = page.getByTestId('academic-year-choice');
   const apply = page.getByTestId('academic-year-apply');
@@ -34,8 +35,11 @@ async function main() {
     await page.goto(server.url);
     await trigger.waitFor();
     await page.evaluate(() => document.fonts.ready);
-    assert.equal(await trigger.innerText(), '2026–2027');
-    assert.equal(await page.locator('#app-sidebar').getByTestId('academic-year-label').innerText(), 'School year');
+    assert.equal(await yearValue.innerText(), '2026–2027');
+    assert.equal(await trigger.innerText(), '', 'Year switching uses an icon button');
+    assert.equal(await page.getByTestId('sidebar-school-name').innerText(), 'Oak School');
+    assert.equal(await page.getByTestId('academic-year-label').locator('button, a').count(), 0, 'Year text is not a link or button');
+    assert((await page.getByTestId('sidebar-header').boundingBox())!.height <= 90, 'Expanded identity stays compact');
     assert.equal(await page.locator('#app-sidebar').getByTestId('school-selector').count(), 0);
     assert.equal(await page.getByTestId('header-school').innerText(), 'Oak School');
     assert.equal(await trigger.getAttribute('aria-haspopup'), 'dialog');
@@ -43,6 +47,7 @@ async function main() {
     assert.equal(triggerStyle.border, '0px');
     assert.equal(triggerStyle.padding, '0px');
     assert(triggerStyle.height >= 44);
+    await page.getByTestId('sidebar-header').screenshot({ path: resolve(output, 'sidebar-header-compact-en.png') });
     await trigger.focus();
     await page.keyboard.press('Enter');
     await dialog.waitFor();
@@ -140,13 +145,13 @@ async function main() {
     await trigger.waitFor();
     await external('loading', true);
     assert(await trigger.isDisabled());
-    assert((await trigger.innerText()).includes('Loading'));
+    assert((await yearValue.innerText()).includes('Loading'));
     await external('loading', false);
     await external('missing');
-    assert.equal(await trigger.innerText(), 'Select academic year', 'No first-year fallback may impersonate a missing selection');
+    assert.equal(await yearValue.innerText(), 'Select academic year', 'No first-year fallback may impersonate a missing selection');
     await external('empty');
     assert(await trigger.isDisabled());
-    assert.equal(await trigger.innerText(), 'No school year available');
+    assert.equal(await yearValue.innerText(), 'No school year available');
     await external('school', 'school');
 
     await external('multipleSchools');
@@ -158,7 +163,7 @@ async function main() {
     await page.getByRole('option', { name: 'Oak School', exact: true }).click();
     assert.equal((await scope()).school, 'school');
 
-    // The same trigger DOM node survives text/calendar changes, including hover pinning.
+    // The same trigger DOM node survives overflow/calendar changes, including hover pinning.
     await page.getByTestId('toggle-sidebar').click();
     await page.mouse.move(1000, 100);
     await page.locator('#app-sidebar').evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
@@ -213,6 +218,7 @@ async function main() {
       await page.getByTestId(`language-option-${language}`).click();
       if (width < 1024) await page.getByTestId('navigation-toggle').click();
       await trigger.waitFor();
+      assert(await page.getByTestId('sidebar-header').evaluate(element => element.scrollWidth <= element.clientWidth), 'Sidebar identity remains bounded');
       if (width === 1280 && scale === 1) await page.locator('#app-sidebar').screenshot({ path: resolve(output, `sidebar-${language}-1280.png`) });
       await external('longLabel');
       await open();

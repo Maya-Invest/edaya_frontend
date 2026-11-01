@@ -52,6 +52,7 @@
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
+	const schoolName = $derived(authSession.school?.shortName?.trim() || authSession.activeStaffMembership?.schoolShortName?.trim() || authSession.activeStaffMembership?.schoolName || $t('sidebar.module'));
 	let hoverExpanded = $state(false);
 	let yearDialogExpanded = $state(false);
 
@@ -120,9 +121,12 @@
 		collapsed && (hoverExpanded || yearDialogExpanded) && 'absolute left-0 top-0 z-50 shadow-panel',
 	)}
 >
-	<div class={cn('flex flex-col border-b border-border', showExpanded ? 'items-start px-4 py-3' : 'items-center py-3')}>
-		<BrandLogo variant={showExpanded ? 'horizontal' : 'symbol'} width={showExpanded ? 144 : 32} />
-		<AcademicYearSelector collapsed={!showExpanded} onOpenChange={open => yearDialogExpanded = open && hoverExpanded} />
+	<div data-testid="sidebar-header" class={cn('flex items-center border-b border-border py-3', showExpanded ? 'gap-2 px-3' : 'flex-col')}>
+		<BrandLogo variant="symbol" width={showExpanded ? 40 : 32} />
+		<div class={showExpanded ? 'min-w-0 flex-1' : undefined}>
+			{#if showExpanded}<p class="truncate pr-12 text-sm font-semibold leading-5" title={schoolName} data-testid="sidebar-school-name">{schoolName}</p>{/if}
+			<AcademicYearSelector collapsed={!showExpanded} onOpenChange={open => yearDialogExpanded = open && hoverExpanded} />
+		</div>
 	</div>
 
 	<nav class={cn('scrollbar-thin flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>

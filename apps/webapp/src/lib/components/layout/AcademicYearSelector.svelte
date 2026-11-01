@@ -8,7 +8,7 @@
 	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
-	import { CalendarRange, X } from '$lib/icons';
+	import { CalendarRange, MoreHorizontal, X } from '$lib/icons';
 	import { getDirtyWork } from '$lib/interaction/dirty-work.svelte';
 	import { onDestroy, tick } from 'svelte';
 
@@ -88,14 +88,15 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={changeOpen}>
-	<div class="min-w-0" data-testid="academic-year-selector">
-		{#if !collapsed}<p class="ui-workspace-year-label" data-testid="academic-year-label">{$t('academic.yearSwitcher.contextLabel')}</p>{/if}
+	<div class="flex min-w-0 items-center gap-1" data-testid="academic-year-selector">
+		{#if !collapsed}<p class="min-w-0 flex-1 truncate text-sm leading-5 text-muted-foreground" title={triggerLabel} data-testid="academic-year-label"><span class="sr-only">{$t('academic.yearSwitcher.contextLabel')}: </span><span data-testid="academic-year-value">{triggerLabel}</span></p>{/if}
 		<Dialog.Trigger disabled={!ready || !years.length}>
 			{#snippet child({ props })}
-				<Button {...props} variant={collapsed ? 'ghost' : 'link'} size={collapsed ? 'icon' : 'default'} class={collapsed ? undefined : 'ui-workspace-year-link'}
+				<Button {...props} variant="ghost" size="icon" iconTreatment={collapsed ? 'circle' : 'quiet'}
+					class={collapsed ? undefined : 'ui-workspace-year-trigger'}
 					data-testid="academic-year-trigger" data-school-id={authSession.schoolId} data-year-id={ready ? current?.id ?? '' : ''}
 					aria-label={$t('academic.yearSwitcher.trigger', { year: triggerLabel })} aria-describedby={!ready || !years.length ? `${uid}-availability` : undefined} disabled={!ready || !years.length}>
-					{#if collapsed}<CalendarRange class="h-4 w-4" aria-hidden="true" />{:else}{triggerLabel}{/if}
+					{#if collapsed}<CalendarRange class="h-4 w-4" aria-hidden="true" />{:else}<MoreHorizontal class="h-4 w-4" aria-hidden="true" />{/if}
 				</Button>
 			{/snippet}
 		</Dialog.Trigger>

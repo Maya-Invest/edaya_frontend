@@ -8,7 +8,7 @@ import {
 
 const modalCatalog: AcademicModalCatalog = {
 	years: [{ id: 'year-1', status: 'draft' }],
-	periods: [{ id: 'period-1', status: 'draft' }],
+	periods: [{ id: 'period-1', academicYearId: 'year-1', status: 'draft' }],
 };
 
 describe('academic route helpers', () => {
@@ -27,6 +27,11 @@ describe('academic route helpers', () => {
 	it('owns the year and period modal keys', () => {
 		expect(ACADEMIC_MODAL_NAMES).toEqual([
 			'create',
+			'edit-year',
+			'create-period',
+			'edit-period',
+			'delete-year',
+			'delete-period',
 			'archive-year',
 			'publish-year',
 			'publish-period',
@@ -37,7 +42,7 @@ describe('academic route helpers', () => {
 		const publishedCatalog: AcademicModalCatalog = {
 			...modalCatalog,
 			years: [{ id: 'year-1', status: 'published' }],
-			periods: [{ id: 'period-1', status: 'published' }],
+			periods: [{ id: 'period-1', academicYearId: 'year-1', status: 'published' }],
 		};
 		const archivedCatalog: AcademicModalCatalog = {
 			...modalCatalog,
@@ -55,7 +60,7 @@ describe('academic route helpers', () => {
 		expect(isAcademicModalTargetValid('archive-year', 'year-1', archivedCatalog)).toBe(false);
 		expect(isAcademicModalTargetValid('archive-year', 'year-1', publishedCatalog)).toBe(true);
 		expect(isAcademicModalTargetValid('publish-year', 'year-1', modalCatalog)).toBe(true);
-		expect(isAcademicModalTargetValid('publish-year', 'year-1', archivedCatalog)).toBe(true);
+		expect(isAcademicModalTargetValid('publish-year', 'year-1', archivedCatalog)).toBe(false);
 		expect(isAcademicModalTargetValid('publish-year', 'year-1', publishedCatalog)).toBe(false);
 		expect(isAcademicModalTargetValid('publish-year', 'year-1', blockedPublishCatalog)).toBe(false);
 		expect(isAcademicModalTargetValid('publish-period', 'period-1', publishedCatalog)).toBe(false);

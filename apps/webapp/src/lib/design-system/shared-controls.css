@@ -107,8 +107,8 @@ tr.ui-collection-row[data-open-record=true] > td:first-child { box-shadow:inset 
 .ui-section-tab[aria-selected=true] { color:hsl(var(--primary)); border-bottom-color:hsl(var(--primary)); }
 @media(min-width:768px) { .ui-section-tabs { padding:0 24px; gap:24px; } .ui-dialog.ui-account-dialog { border-radius:var(--radius-dialog); } }
 
-/* X-SCHOOL-YEAR-SWITCHER: a workspace link, without field or action-face chrome. */
-.ui-action.ui-workspace-year-link { justify-content:flex-start; padding:0; border-radius:0; text-align:start; }
+/* Keep the year line compact while preserving the overflow button's full hit area. */
+.ui-action.ui-workspace-year-trigger { margin-block:-12px; }
 
 /* Shell identity stays left; language and account share the rightmost grid cell at every size. */
 .ui-app-header { container:app-header / inline-size; display:grid; grid-template-columns:44px minmax(0,1fr) auto; align-items:center; gap:8px; min-height:56px; flex-shrink:0; padding:8px 12px; border-bottom:1px solid hsl(var(--border)); background:hsl(var(--card)); }
@@ -118,7 +118,6 @@ tr.ui-collection-row[data-open-record=true] > td:first-child { box-shadow:inset 
 .ui-app-header-profile { display:flex; flex-shrink:0; align-items:center; gap:8px; min-height:44px; padding:2px 4px; border:1px solid hsl(var(--border)); border-radius:var(--radius-action); background:hsl(var(--card)); text-align:start; }
 .ui-app-header-profile:hover { background:hsl(var(--secondary)); }
 .ui-app-header-profile-label { display:none; min-width:0; max-width:14rem; flex-direction:column; padding-right:8px; overflow-wrap:anywhere; }
-.ui-workspace-year-label { margin-bottom:4px; font-size:.75rem; line-height:1.5; color:hsl(var(--muted-foreground)); }
 @media(min-width:1024px) { .ui-app-header { padding:0 24px; } }
 @container app-header (max-width:32rem) { .ui-app-header-school { grid-column:1 / -1; grid-row:2; } }
 @container app-header (min-width:48rem) { .ui-app-header-profile-label { display:flex; } }
