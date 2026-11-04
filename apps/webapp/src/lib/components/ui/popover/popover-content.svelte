@@ -6,8 +6,9 @@
 		class: className,
 		align = 'center',
 		children,
+		zIndex = 50,
 		...restProps
-	}: PopoverPrimitive.ContentProps = $props();
+	}: Omit<PopoverPrimitive.ContentProps, 'child'> & { zIndex?: number } = $props();
 </script>
 
 <PopoverPrimitive.Portal>
@@ -19,6 +20,11 @@
 		)}
 		{...restProps}
 	>
-		{@render children?.()}
+		{#snippet child({ props, wrapperProps })}
+			<!-- Keep the positioned layer stable when a popup reopens before Bits' measurement frame. -->
+			<div {...wrapperProps} style:z-index={zIndex}>
+				<div {...props}>{@render children?.()}</div>
+			</div>
+		{/snippet}
 	</PopoverPrimitive.Content>
 </PopoverPrimitive.Portal>

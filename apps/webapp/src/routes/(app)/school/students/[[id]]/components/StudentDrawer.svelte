@@ -11,7 +11,7 @@
 	import { LoaderCircle, X } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { hasPermission } from '$lib/permissions';
+	import { canOpenStudentClassForm, hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import StudentAbsenceModal from '../(tabs)/attendance/components/StudentAbsenceModal.svelte';
 	import StudentIncidentModal from '../(tabs)/incidents/components/StudentIncidentModal.svelte';
@@ -24,7 +24,7 @@
 	import StudentDetailHeader from './StudentDetailHeader.svelte';
 	import StudentDetailTabBar from './StudentDetailTabBar.svelte';
 
-	type StudentDrawerModal = 'change-status' | 'edit-profile' | 'edit-annual-profile' | 'remove-annual-profile' | 'guardian-relationship' | 'enrollment-progression' | 'edit-health' | 'change-class' | 'link-guardian' | 'note' | 'edit-note' | 'add-absence' | 'add-incident' | 'approve-photo' | 'reject-photo';
+	type StudentDrawerModal = 'placement-history' | 'change-status' | 'edit-profile' | 'edit-annual-profile' | 'remove-annual-profile' | 'guardian-relationship' | 'enrollment-progression' | 'edit-health' | 'change-class' | 'link-guardian' | 'note' | 'edit-note' | 'add-absence' | 'add-incident' | 'approve-photo' | 'reject-photo';
 	const { student, loading = false, onClose, children }: {
 		student?: Student;
 		loading?: boolean;
@@ -36,6 +36,7 @@
 	const modals = createUrlSyncedModals<StudentDrawerModal>({
 		allowed: [
 			'change-status',
+			'placement-history',
 			'edit-profile',
 			'edit-annual-profile',
 			'remove-annual-profile',
@@ -79,7 +80,7 @@
 		}
 		const scope = { classId: student.classId, studentId: student.id };
 		const action = modals.active;
-		if ((['change-status', 'edit-profile', 'note', 'edit-note'].includes(action ?? '') && !hasPermission('STUDENT_MANAGE', scope)) || (action === 'change-class' && !hasPermission('ENROLLMENT_MANAGE', scope)) || (action === 'link-guardian' && !hasPermission('PARENT_MANAGE', scope))) {
+		if ((['change-status', 'edit-profile', 'note', 'edit-note'].includes(action ?? '') && !hasPermission('STUDENT_MANAGE', scope)) || (action === 'change-class' && !canOpenStudentClassForm(student.id, student.classId, modals.target === 'assign')) || (action === 'link-guardian' && !hasPermission('PARENT_MANAGE', scope))) {
 			modals.close();
 			return;
 		}

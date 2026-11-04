@@ -13,10 +13,12 @@
 		children,
 		class: className,
 		label,
+		triggerLabel,
 	}: {
 		children: Snippet;
 		class?: string;
 		label?: string;
+		triggerLabel?: string;
 	} = $props();
 
 	let open = $state(false);
@@ -31,17 +33,17 @@
 			{#snippet child({ props })}
 				<Button
 					{...props}
-					variant="ghost"
-					size="icon"
+					variant={triggerLabel ? 'outline' : 'ghost'}
+					size={triggerLabel ? 'sm' : 'icon'}
 					iconTreatment="quiet"
-					class={cn('h-8 w-8 rounded-full p-0', className)}
-					aria-label={label ?? $t('list.rowActions')}
+					class={cn(!triggerLabel && 'h-8 w-8 rounded-full p-0', className)}
+					aria-label={label ?? triggerLabel ?? $t('list.rowActions')}
 				>
-					<MoreHorizontal class="h-4 w-4" />
+					{#if triggerLabel}{triggerLabel}{:else}<MoreHorizontal class="h-4 w-4" />{/if}
 				</Button>
 			{/snippet}
 		</Popover.PopoverTrigger>
-		<Popover.PopoverContent class="w-44 p-1" align="end">
+		<Popover.PopoverContent class="w-44 p-1" zIndex={triggerLabel ? 100 : 50} align="end">
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div class="p-1" role="menu" tabindex="-1" use:actionMenu onclick={(event) => {
 				const action = (event.target as Element).closest('button');

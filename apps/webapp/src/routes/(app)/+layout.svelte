@@ -11,12 +11,11 @@
 	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
 	import { authSession } from '$lib/auth/session.svelte';
 	import AppHeader from '$lib/components/layout/AppHeader.svelte';
+	import AppLoading from '$lib/components/layout/AppLoading.svelte';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
 	import MobileSidebar from '$lib/components/layout/MobileSidebar.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import { entityVersions } from '$lib/entity-versions.svelte';
-	import { t } from '$lib/i18n';
-	import { LoaderCircle } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import {
 		MODAL_QUERY_KEY,
@@ -48,6 +47,7 @@
 	setAccountState(accountState);
 	const { children }: { children: Snippet } = $props();
 	const desktop = new MediaQuery('(min-width: 1024px)');
+	let headerHeight = $state<number>();
 	let mobileSidebarOpen = $state(false);
 	function toggleNavigation() {
 		if (desktop.current)
@@ -178,7 +178,7 @@
 {#if authSession.ready && authSession.isLoggedIn && me}
 	<div
 		class="flex h-dvh w-full overflow-hidden bg-background text-foreground"
-		data-testid="app-shell"
+		data-testid="app-shell" style:--app-header-height={headerHeight ? `${headerHeight}px` : undefined}
 		data-school-id={academicContext.schoolScopeId}
 		data-year-id={academicContext.shellReady ? academicContext.yearId : ''}
 	>
@@ -209,7 +209,7 @@
 		{/if}
 
 		<div class="flex min-w-0 flex-1 flex-col">
-			<AppHeader actor={me} {navigationOpen} profileOpen={profileOpen.open}
+			<AppHeader bind:height={headerHeight} actor={me} {navigationOpen} profileOpen={profileOpen.open}
 				onToggleNavigation={toggleNavigation}
 				onOpenProfile={() => (profileOpen.open = true)} />
 
@@ -223,11 +223,5 @@
 
 	<AccountProfileModal bind:open={profileOpen.open} actor={me} section={accountModals.tab ?? 'profile'} onSectionChange={section => accountModals.setTab(section)} onLogout={() => accountState.logout()} />
 {:else}
-	<div
-		class="flex h-screen w-full items-center justify-center bg-background text-foreground"
-		data-testid="app-shell-pending"
-	>
-		<LoaderCircle class="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-		<span class="sr-only">{$t('dataState.loading')}</span>
-	</div>
+	<AppLoading />
 {/if}

@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
 import { chooseOption } from './support/custom-select';
+import { checkStudentReportCards } from './support/student-report-card-checks';
 import { createFixtureServer } from './support/fixture-server';
 
 process.env.PUBLIC_API_URL = 'http://localhost:9999';
@@ -18,14 +19,20 @@ async function main() {
 	page.setDefaultTimeout(15000);
 	const errors: string[] = []; page.on('pageerror', error => errors.push(error.stack ?? error.message));
 	const requests: { path: string; body: any }[] = [];
-	const fixture = { healthRead: true, enrollmentRead: true, guardianCount: 2, failHealth: false, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
+	const fixture = { studentManage: true, emptyHealth: false, healthRead: true, enrollmentRead: true, enrollmentManage: true, guardianCount: 2, failHealth: 0, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
+	let newHealth: Record<string, unknown> | undefined;
 	const clinicalNotes = 'Clinical note';
 	const lastVisit = '2026-10-02T15:45:00.000Z';
 	let releaseHealth: (() => void) | undefined;
 	let releaseNotes: (() => void) | undefined;
 	const student = { id: 'child', schoolId: 'school', firstName: 'Aminata', lastName: 'Koné', sourceFullName: 'KONE Aminata Mariam', matricule: 'S-0042', nationalMatricule: 'CI-2042', birthDate: '2012-05-18', gender: 'female', nationality: 'Ivoirienne', placeOfBirth: 'Abidjan', enrollmentDate: '2025-09-01', status: 'active', email: 'student@example.test', photoUrl: '/core/files/published/content', photoAttachmentId: 'published' };
-	const years = [{ id: 'year', schoolId: 'school', name: '2026–2027', startDate: '2026-09-01', endDate: '2027-06-30', status: 'published' }];
-	const enrollment = { id: 'placement', schoolId: 'school', studentId: 'child', classGroupId: 'class', academicYearId: 'year', enrolledAt: '2026-09-01', status: 'active' };
+	const years = [{ id: 'old-year', schoolId: 'school', name: '2025–2026', startDate: '2025-09-01', endDate: '2026-06-30', status: 'archived' }, { id: 'year', schoolId: 'school', name: '2026–2027', startDate: '2026-09-01', endDate: '2027-06-30', status: 'published' }];
+	const enrollment = { id: 'placement', enrollmentIndex: 1, schoolId: 'school', studentId: 'child', classGroupId: 'class', academicYearId: 'year', enrolledAt: '2026-09-01', status: 'active' };
+	let hasPlacement = true;
+	let previousPlacements = false;
+	let holdPlacementRead = false;
+	let releasePlacementRead: (() => void) | undefined;
+	let assignmentResult: 'fail' | 'conflict' | 'success' = 'success';
 	const guardian = { id: 'guardian', schoolId: 'school', firstName: 'Mariam', lastName: 'Koné', email: 'guardian@example.test', phone: '+225 0102030405', occupation: 'Enseignante' };
 	const link = { id: 'link', studentId: 'child', guardianId: 'guardian', relationship: 'mother', isPrimary: true, legalGuardian: true, canPickup: true, receivesAcademicReports: true, receivesAttendanceAlerts: true, isBillingContact: false, emergencyContactPriority: 1 };
 	const medical = `Full medical instructions: preserve every line.\n${'Long medical information and emergency instructions. '.repeat(15)}`;
@@ -34,12 +41,18 @@ async function main() {
 		const path = new URL(route.request().url()).pathname;
 		const input = route.request().headers()['content-type']?.includes('application/json') && route.request().postData() ? route.request().postDataJSON() : {};
 		requests.push({ path, body: input });
-		if (path.endsWith('/download-url'))
-			return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ downloadUrl: `http://localhost:9999${path.replace('/download-url', '/content')}` }) });
-		if (path.includes('/files/'))
-			return route.fulfill({ contentType: 'image/png', body: png });
+		if (path.includes('/core/files/')) {
+			const headers = route.request().headers();
+			if (!headers.authorization || headers['x-school-id'] !== 'school' || headers['x-actor-id'] !== 'secretary' || headers['x-actor-kind'] !== 'staff')
+				return route.fulfill({ status: 403 });
+			if (path.endsWith('/download-url'))
+				return route.fulfill({ json: { downloadUrl: `http://localhost:9999/core/files/memory/${path.split('/')[3]}` } });
+			if (path.startsWith('/core/files/memory/'))
+				return route.fulfill({ contentType: 'image/png', body: png });
+			return route.fulfill({ status: 404 });
+		}
 		let response: any = []; let status = 200;
-		const grants = ['STUDENT_READ', 'STUDENT_MANAGE', 'STUDENT_HEALTH_UPDATE', 'PARENT_READ', 'PARENT_MANAGE', ...(fixture.enrollmentRead ? ['ENROLLMENT_READ'] : []), 'ENROLLMENT_MANAGE', 'STAFF_READ', 'DOCUMENT_READ', ...(fixture.healthRead ? ['STUDENT_HEALTH_READ'] : [])].map(permission => ({ permission, scopes: [{ kind: 'school' }] }));
+		const grants = ['STUDENT_READ', ...(fixture.studentManage ? ['STUDENT_MANAGE'] : []), 'REPORT_CARD_GENERATE', 'DOCUMENT_VOID', 'STUDENT_HEALTH_UPDATE', 'PARENT_READ', 'PARENT_MANAGE', ...(fixture.enrollmentRead ? ['ENROLLMENT_READ'] : []), ...(fixture.enrollmentManage ? ['ENROLLMENT_MANAGE'] : []), 'STAFF_READ', 'DOCUMENT_READ', ...(fixture.healthRead ? ['STUDENT_HEALTH_READ'] : [])].map(permission => ({ permission, scopes: previousPlacements && !hasPlacement && permission === 'ENROLLMENT_MANAGE' ? [{ kind: 'class_group', classGroupId: 'class' }] : [{ kind: 'school' }] }));
 		if (path.endsWith('/access-token'))
 			response = { accessToken: 'fixture.payload.signature', expiresAt: new Date(Date.now() + 3600000).toISOString() };
 		if (path.endsWith('/session'))
@@ -66,6 +79,10 @@ async function main() {
 			response = years;
 		if (path.endsWith('/class-groups/list'))
 			response = [{ id: 'class', schoolId: 'school', academicYearId: 'year', name: '6ème 2', gradeLevelId: 'level' }];
+		if (path.endsWith('/class-groups/list') && previousPlacements && !input.id) {
+			response.push({ ...response[0], id: 'other-year-class', academicYearId: 'old-year', name: 'Old year' },
+				{ ...response[0], id: 'other-class', name: 'Other class' });
+		}
 		if (path.endsWith('/grade-levels/list'))
 			response = [{ id: 'level', schoolId: 'school', name: '6ème', label: '6ème', sequenceOrder: 1 }];
 		if (path.endsWith('/students/list')) {
@@ -78,10 +95,32 @@ async function main() {
 		if (path.endsWith('/enrollments/list')) {
 			const ids = input.studentId?.$in ?? (input.studentId ? [input.studentId] : []);
 			response = [enrollment, { ...enrollment, id: 'placement2', studentId: 'child2' }].filter(row => !ids.length || ids.includes(row.studentId));
+			if (ids.length === 1 && ids[0] === student.id && !input.status) {
+				if (holdPlacementRead && !releasePlacementRead) await new Promise<void>(resolve => { releasePlacementRead = resolve; });
+				response = hasPlacement ? [enrollment] : [];
+				if (response.length && enrollment.enrolledAt === '') response[0] = { ...response[0], enrolledAt: null, createdAt: '2026-10-10' };
+				if (previousPlacements) response.push(
+					{ ...enrollment, id: 'older', academicYearId: 'old-year', status: 'closed', endReason: 'completed', enrolledAt: '2025-09-01', endedAt: '2026-06-30' },
+					{ ...enrollment, id: 'old', status: 'closed', endReason: 'transferred', enrolledAt: '2026-08-15', endedAt: '2026-09-01', progressionNotes: 'Recorded placement note.' });
+			}
 			if (fixture.failHistory && ids.length === 1 && ids[0] === student.id) {
 				response = { message: 'History unavailable' };
 				status = 503;
 			}
+		}
+		if (path.endsWith('/transfer-student')) {
+			enrollment.id = input.nextEnrollmentId;
+			enrollment.classGroupId = input.nextClassGroupId;
+			response = enrollment;
+		}
+		if (path.endsWith('/enroll-student')) {
+			if (assignmentResult === 'fail') status = 503;
+			else {
+				hasPlacement = true;
+				if (assignmentResult === 'conflict') status = 409;
+				else enrollment.id = input.id;
+			}
+			response = status === 200 ? enrollment : { message: 'Unable to assign class' };
 		}
 		if (path.endsWith('/guardians/list')) {
 			response = Array.from({ length: fixture.guardianCount }, (_, i) => i ? { ...guardian, id: `guardian-${i}`, firstName: `Guardian ${i}` } : guardian);
@@ -99,13 +138,33 @@ async function main() {
 			if (fixture.delayHealth)
 				await new Promise<void>(resolve => releaseHealth = resolve);
 			response = [{ id: 'health', schoolId: 'school', studentId: JSON.stringify(input).includes('child2') ? 'child2' : 'child', bloodType: 'A+', medicalConditions: medical, allergies: 'Peanuts', medications: 'Prescribed medication', emergencyProtocols: 'Contact the emergency team.', clinicalNotes, lastVisit }];
-			if (fixture.failHealth) { status = 403; response = { message: 'Restricted medical records' }; }
+			if (fixture.emptyHealth) response = newHealth ? [newHealth] : [];
+			if (fixture.failHealth) { status = fixture.failHealth; response = { message: 'Restricted medical records' }; }
 		}
 		if (path.endsWith('/student-notes/list')) {
 			if (fixture.delayNotes) await new Promise<void>(resolve => releaseNotes = resolve);
 			response = [{ id: 'note', studentId: 'child', body: 'Steady progress in class.', authorStaffId: 'author', createdAt: '2026-10-03T12:00:00Z', category: 'progress', visibility: 'staff' }];
 		}
-		if (path.includes('upsert-student-health-profile')) { response = { id: 'health', schoolId: 'school', ...input }; }
+		if (path.includes('upsert-student-health-profile')) { response = { id: 'health', schoolId: 'school', ...input }; if (fixture.emptyHealth) newHealth = response; }
+		if (path.endsWith('/list-document-templates')) {
+			response = [
+				['student-id-card.v1', 'Student card', 'Carte scolaire'],
+				['schooling-certificate.v1', 'Certificate', 'Certificat'],
+				['enrollment-record.v1', 'Enrollment record', 'Fiche d’inscription'],
+				['withdrawal-certificate.v1', 'Withdrawal certificate', 'Certificat de radiation'],
+				['annual-report-card.v1', 'Annual report', 'Bulletin annuel'],
+			].map(([templateKey, en, fr]) => ({ templateKey, titles: { en, fr } }));
+		}
+		if (path.endsWith('/get-document-issuance') && input.id === 'requested')
+			response = { id: 'requested', status: 'failed', failureCode: 'FIXTURE_RENDERER_OFFLINE' };
+		if (path.endsWith('/request-document-issuance'))
+			response = { id: 'requested', ...input, status: 'requested' };
+		if (path.endsWith('/list-document-issuances')) {
+			response = ['failed', 'ready'].map((status, index) => ({
+				id: `copy-${index}`, templateKey: 'schooling-certificate.v1', status,
+				createdAt: `2026-10-0${index+1}T00:00:00Z`, locale: 'fr', studentId: 'child', academicYearId: 'year',
+			}));
+		}
 		if (path.includes('get-student-subject-enrollments'))
 			response = { studentId: 'child', placements: [enrollment], offerings: [], enrollments: [], periods: [] };
 		if (path.includes('update-student-status')) {
@@ -132,12 +191,17 @@ async function main() {
 	});
 	const profile = page.getByTestId('student-profile');
 	try {
+		await checkStudentReportCards(page, new URL(server.url).origin, output);
+		if (process.env.REPORT_CARD_ONLY) { assert.deepEqual(errors, []); return; }
 		const tabs = page.getByTestId('drawer-tab-bar');
 		const enrollmentTab = page.getByTestId('student-enrollment');
+		const placementDate = page.getByTestId('student-placement-date');
+		const historyPopup = page.getByTestId('student-placement-history');
+		const overflow = page.locator('.ui-student-identity').getByRole('button', { name: 'More actions', exact: true });
 		console.log('Checking separate Profile and Enrollment tabs in both drawers');
 		for (const prefix of ['/school/students/child', '/classes/class/students/child']) {
 			await page.goto(`${new URL(server.url).origin}${prefix}/profile?q=preserved#schooling`);
-			await enrollmentTab.getByTestId('student-placement-history').waitFor();
+			await placementDate.getByText('Enrolled Sep 1, 2026', { exact: true }).waitFor();
 			assert.equal(new URL(page.url()).pathname, `${prefix}/enrollments`);
 			assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
 			assert.deepEqual(await tabs.getByRole('link').allTextContents().then(labels => labels.map(label => label.trim())), ['Profile', 'Enrollment', 'Attendance', 'Grades', 'Report card', 'Incidents', 'Finance', 'Documents']);
@@ -147,13 +211,26 @@ async function main() {
 			await tabs.getByRole('link', { name: 'Profile', exact: true }).click();
 			await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
 			assert.equal(requests.filter(row => row.path.includes('get-student-subject-enrollments')).length, count);
-			assert.deepEqual(await profile.locator('[data-profile-section]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-profile-section'))), ['portrait', 'health', 'personal', 'guardians', 'account', 'notes']);
+			assert.deepEqual(await profile.locator('[data-profile-section]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-profile-section'))), ['portrait', 'personal', 'health', 'guardians', 'account', 'notes']);
 			await profile.locator('[data-profile-section=health]').getByText('A+').waitFor();
 			assert.deepEqual(await profile.locator('[data-profile-section=health] .ui-drawer-field-label').allTextContents(), ['Blood type', 'Allergies', 'Medications', 'Chronic conditions']);
 			assert.equal(await profile.getByText('S-0042', { exact: true }).count(), 0);
 			assert.equal(await profile.getByText(medical, { exact: true }).count(), 1);
-			await profile.locator('[data-profile-section=portrait] img').waitFor();
+			await page.waitForFunction(() => ['.ui-student-identity img', '[data-profile-section=portrait] img']
+				.every(selector => (document.querySelector<HTMLImageElement>(selector)?.naturalWidth ?? 0) > 0));
 			assert.equal(await profile.locator('[data-profile-section=portrait] img').count(), 1, 'Only proposed portrait is repeated in body');
+			const photoBefore = await page.locator('.ui-student-identity img').getAttribute('src');
+			const photoReads = () => requests.filter(row => row.path === '/core/files/published/download-url').length;
+			const readsBefore = photoReads();
+			const placementReads = requests.filter(row => row.path.endsWith('/enrollments/list')).length;
+			await tabs.getByRole('link', { name: 'Enrollment', exact: true }).click();
+			await placementDate.getByText('Enrolled Sep 1, 2026', { exact: true }).waitFor();
+			await page.waitForFunction(() => (document.querySelector<HTMLImageElement>('.ui-student-identity img')?.naturalWidth ?? 0) > 0);
+			assert.equal(await page.locator('.ui-student-identity img').getAttribute('src'), photoBefore, 'Switching tabs keeps the published portrait');
+			assert.equal(photoReads(), readsBefore, 'Switching tabs does not request the portrait again');
+			assert.equal(requests.filter(row => row.path.endsWith('/enrollments/list')).length, placementReads);
+			assert.equal(await page.locator('.ui-student-identity').getByText('2026–2027', { exact: true }).count(), 0);
+			await tabs.getByRole('link', { name: 'Profile', exact: true }).click();
 			await profile.getByRole('button', { name: 'Mariam Koné', exact: true }).click();
 			await page.getByRole('button', { name: 'Back', exact: true }).click();
 			const guardianLink = profile.getByRole('button', { name: 'Mariam Koné', exact: true });
@@ -163,6 +240,58 @@ async function main() {
 			assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
 			await page.getByTestId('student-drawer-body').screenshot({ path: resolve(output, `${prefix.startsWith('/school') ? 'school' : 'class'}-profile.png`) });
 		}
+		for (const prefix of ['/school/students/child', '/classes/class/students/child']) {
+			await page.goto(`${new URL(server.url).origin}${prefix}/documents`);
+			const unissued = page.locator('[data-document-type="student-id-card.v1"]');
+			await unissued.getByText('Not issued').waitFor();
+			await unissued.getByRole('button').press('Enter');
+			await page.getByTestId('document-generate').click();
+			await page.getByTestId('form-modal').getByText('Student card', { exact: true }).waitFor();
+			await page.getByTestId('form-modal-cancel').click();
+			for (const key of ['schooling-certificate.v1', 'enrollment-record.v1', 'withdrawal-certificate.v1'])
+				assert.equal(await page.locator(`[data-document-type="${key}"]`).count(), 1);
+			const certificate = page.locator('[data-document-type="schooling-certificate.v1"]');
+			await certificate.getByRole('button').click();
+			await page.getByTestId('document-download-copy-1').waitFor();
+			assert(await page.getByTestId('document-generate').isEnabled());
+			await page.getByTestId('document-generate').click();
+			await page.getByTestId('form-modal-submit').click();
+			await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
+			const issuance = requests.findLast(row => row.path.endsWith('/request-document-issuance'))?.body;
+			assert.equal(issuance.sourceId, enrollment.id);
+			assert.equal(issuance.academicYearId, 'year');
+			await certificate.getByRole('button').click();
+			await page.getByRole('menuitem', { name: 'View history' }).click();
+			await certificate.locator('[data-issuance-id="copy-0"]').getByRole('button').click();
+			await page.getByRole('menuitem', { name: 'Retry', exact: true }).waitFor();
+			await page.keyboard.press('Escape');
+			await page.locator('[data-document-type="annual-report-card.v1"]').getByRole('button').click();
+			await page.getByTestId('annual-report-card-open').click();
+			await page.getByTestId('form-modal').waitFor();
+			await page.goto(`${new URL(server.url).origin}${prefix}/profile`);
+			await profile.getByRole('button', { name: 'Link guardian', exact: true }).click();
+			await page.getByTestId('form-modal').waitFor();
+			await page.getByTestId('form-modal-cancel').click();
+		}
+		fixture.studentManage = false;
+		await page.reload();
+		await page.locator('.ui-student-identity').getByRole('button', { name: 'More actions' }).click();
+		await page.getByRole('button', { name: 'Change class', exact: true }).waitFor();
+		assert.equal(await page.getByRole('button', { name: 'Edit profile', exact: true }).count(), 0);
+		fixture.studentManage = true;
+		fixture.emptyHealth = true;
+		await page.reload();
+		const emptyHealth = profile.locator('[data-profile-section=health]');
+		await emptyHealth.getByText('Not provided', { exact: true }).first().waitFor();
+		assert.equal(await emptyHealth.getByText('Not provided', { exact: true }).count(), 4);
+		await emptyHealth.getByRole('button').click();
+		await page.getByTestId('form-modal').getByLabel('Blood type').fill('O+');
+		await page.getByTestId('form-modal-submit').click();
+		await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
+		await page.reload();
+		await emptyHealth.getByText('O+', { exact: true }).waitFor();
+		fixture.emptyHealth = false;
+		await page.reload();
 		const guardians = profile.locator('[data-profile-section=guardians]');
 		for (const count of [0, 2, 3]) {
 			fixture.guardianCount = count;
@@ -206,10 +335,87 @@ async function main() {
 			assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
 			await page.getByTestId('form-modal-cancel').click();
 			await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
-			await enrollmentTab.getByRole('button', { name: 'Completion and progression', exact: true }).click();
-			await page.getByTestId('form-modal').waitFor();
-			await page.getByTestId('form-modal-cancel').click();
-			await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
+			await page.goto(`${new URL(server.url).origin}${prefix}/profile?modal=enrollment-progression&modalTarget=placement`);
+			await placementDate.getByText('Enrolled Sep 1, 2026', { exact: true }).waitFor();
+			assert.equal(await page.getByTestId('form-modal').count(), 0);
+			assert.equal(await enrollmentTab.locator('#class-history').count(), 0);
+			await overflow.click();
+			assert.equal(await page.getByRole('button', { name: 'Placement history', exact: true }).count(), 0);
+			await page.keyboard.press('Escape');
+			previousPlacements = true;
+			fixture.studentManage = false;
+			fixture.enrollmentManage = false;
+			await page.reload();
+			await placementDate.getByText('Enrolled Sep 1, 2026', { exact: true }).waitFor();
+			await overflow.press('Enter');
+			assert.equal(await page.getByRole('button', { name: 'Change class', exact: true }).count(), 0);
+			assert.equal(await page.getByRole('button', { name: 'Edit profile', exact: true }).count(), 0);
+			await page.getByRole('button', { name: 'Placement history', exact: true }).press('Enter');
+			await historyPopup.getByRole('heading', { name: 'Placement history · Aminata Koné', exact: true }).waitFor();
+			assert.deepEqual(await historyPopup.locator('[data-placement-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-placement-id'))), [enrollment.id, 'old', 'older']);
+			assert(await historyPopup.getByText('2025–2026', { exact: true }).isVisible());
+			assert(await historyPopup.getByText('Recorded placement note.', { exact: true }).isVisible());
+			await page.goBack();
+			await historyPopup.waitFor({ state: 'hidden' });
+			await page.goForward();
+			await historyPopup.waitFor();
+			await page.keyboard.press('Escape');
+			await historyPopup.waitFor({ state: 'hidden' });
+			await overflow.waitFor();
+			assert(await overflow.evaluate(element => element === document.activeElement));
+			enrollment.enrolledAt = '';
+			await page.reload();
+			await placementDate.getByText('Enrollment date not provided', { exact: true }).waitFor();
+			enrollment.enrolledAt = '2026-09-01';
+			fixture.studentManage = true;
+			fixture.enrollmentManage = true;
+			hasPlacement = false;
+			holdPlacementRead = true;
+			await page.reload({ waitUntil: 'domcontentloaded' });
+			const deadline = Date.now() + 15000;
+			while (!releasePlacementRead && Date.now() < deadline) await page.waitForTimeout(20);
+			assert(releasePlacementRead);
+			assert.equal(await page.getByRole('button', { name: 'Assign class', exact: true }).count(), 0);
+			holdPlacementRead = false;
+			releasePlacementRead();
+			releasePlacementRead = undefined;
+			await placementDate.getByText('No active class placement', { exact: true }).waitFor();
+			await overflow.click();
+			await page.getByRole('button', { name: 'Assign class', exact: true }).click();
+			const form = page.getByTestId('form-modal');
+			await form.getByRole('heading', { name: 'Assign class' }).waitFor();
+			assert(await form.getByTestId('form-modal-submit').isDisabled());
+			await form.locator('[aria-haspopup=listbox]').click();
+			await page.getByRole('option').first().waitFor();
+			assert.equal(await page.getByRole('option').count(), 1);
+			await page.getByRole('option').click();
+			assignmentResult = 'fail';
+			await form.getByTestId('form-modal-submit').click();
+			await form.getByRole('alert').waitFor();
+			assignmentResult = prefix.startsWith('/classes') ? 'conflict' : 'success';
+			await form.getByTestId('form-modal-submit').click();
+			if (assignmentResult === 'conflict') {
+				await form.getByText(/^Current class:/i).waitFor();
+				assert(await form.getByTestId('form-modal-submit').isDisabled());
+				await form.getByTestId('form-modal-cancel').click();
+			}
+			await form.waitFor({ state: 'hidden' });
+			await page.reload();
+			await placementDate.getByText('Enrolled Sep 1, 2026', { exact: true }).waitFor();
+			await page.locator('.ui-student-identity').getByRole('button', { name: 'More actions' }).click();
+			await page.getByRole('button', { name: 'Change class', exact: true }).click();
+			await form.locator('[aria-haspopup=listbox]').click();
+			await page.getByRole('option', { name: /Other class/ }).click();
+			const sourceEnrollmentId = enrollment.id;
+			const transfer = page.waitForRequest(request => request.url().endsWith('/transfer-student'));
+			await form.getByTestId('form-modal-submit').click();
+			const transferInput = (await transfer).postDataJSON();
+			assert.equal(transferInput.enrollmentId, sourceEnrollmentId);
+			assert.equal(transferInput.nextClassGroupId, 'other-class');
+			await form.waitFor({ state: 'hidden' });
+			await placementDate.getByText('Enrolled Sep 1, 2026', { exact: true }).waitFor();
+			enrollment.classGroupId = 'class';
+			previousPlacements = false;
 		}
 		// A valid note deep link must wait for its independent section query.
 		fixture.delayNotes = true;
@@ -229,9 +435,16 @@ async function main() {
 		await page.waitForURL(url => !url.searchParams.has('modal'));
 
 		// A health read failure must not blank pedagogical notes or guardians.
-		fixture.failHealth = true; await page.reload(); await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
+		fixture.failHealth = 503;
+		await page.reload();
+		const healthSection = profile.locator('[data-profile-section=health]');
+		await healthSection.getByRole('button', { name: 'Try again' }).waitFor();
+		fixture.failHealth = 0;
+		await healthSection.getByRole('button', { name: 'Try again' }).click();
+		await healthSection.getByText(medical, { exact: true }).waitFor();
+		fixture.failHealth = 403; await page.reload(); await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
 		await profile.locator('[data-profile-section=health]').getByText('Access denied', { exact: false }).waitFor();
-		fixture.failHealth = false; fixture.healthRead = false; const before = requests.filter(row => row.path.endsWith('/student-health-profiles/list')).length;
+		fixture.failHealth = 0; fixture.healthRead = false; const before = requests.filter(row => row.path.endsWith('/student-health-profiles/list')).length;
 		await page.reload(); await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
 		assert.equal(await profile.locator('[data-profile-section=health]').count(), 0);
 		assert.equal(requests.filter(row => row.path.endsWith('/student-health-profiles/list')).length, before, 'No medical request without the health-read grant');
@@ -241,14 +454,25 @@ async function main() {
 		await profile.locator('[data-profile-section=guardians]').getByRole('button', { name: 'Try again', exact: true }).click();
 		await retriedGuardians;
 		await profile.getByRole('button', { name: 'Mariam Koné', exact: true }).waitFor();
-		fixture.failHistory = true; await tabs.getByRole('link', { name: 'Enrollment', exact: true }).click();
-		await enrollmentTab.getByRole('button', { name: 'Try again', exact: true }).last().waitFor();
-		fixture.failHistory = false; await enrollmentTab.getByRole('button', { name: 'Try again', exact: true }).last().click();
-		await page.getByTestId('student-placement-history').waitFor();
+		fixture.failHistory = true;
+		await page.goto(`${new URL(server.url).origin}/school/students/child/profile?modal=placement-history`);
+		await historyPopup.getByRole('button', { name: 'Try again', exact: true }).waitFor();
+		fixture.failHistory = false;
+		await historyPopup.getByRole('button', { name: 'Try again', exact: true }).click();
+		await historyPopup.locator('[data-placement-id]').first().waitFor();
+		await historyPopup.getByRole('button', { name: 'Close', exact: true }).click();
+		await historyPopup.waitFor({ state: 'hidden' });
+		await page.waitForURL(url => !url.searchParams.has('modal'));
+		await tabs.getByRole('link', { name: 'Enrollment', exact: true }).click();
+		await enrollmentTab.getByText('No optional subjects are offered for this class.', { exact: true }).waitFor();
 		fixture.enrollmentRead = false;
 		const subjectRequests = requests.filter(row => row.path.includes('get-student-subject-enrollments')).length;
 		await page.reload();
 		await enrollmentTab.waitFor();
+		await page.goto(`${new URL(server.url).origin}/school/students/child/enrollments?modal=placement-history`);
+		await historyPopup.getByText('Access denied', { exact: true }).waitFor();
+		assert.equal(await historyPopup.locator('[data-placement-id]').count(), 0);
+		await historyPopup.getByRole('button', { name: 'Close', exact: true }).click();
 		assert.equal(await enrollmentTab.locator('#optional-subjects,#class-history').count(), 0);
 		assert.equal(requests.filter(row => row.path.includes('get-student-subject-enrollments')).length, subjectRequests);
 		fixture.enrollmentRead = true;
@@ -271,14 +495,16 @@ async function main() {
 		await page.getByTestId('confirm-submit').click();
 		await page.getByTestId('confirm-modal').waitFor({ state: 'hidden' });
 		assert.equal(fixture.pending, false);
-		await profile.getByText('No portrait awaiting review.', { exact: true }).waitFor();
+		await profile.locator('[data-profile-section=portrait]').waitFor({ state: 'detached' });
 		fixture.pending = true; await page.reload(); await profile.getByRole('button', { name: 'Reject', exact: true }).click();
 		const reject = page.getByTestId('student-photo-reject-modal');
 		await reject.getByRole('textbox').fill('Please upload a clearer portrait.');
 		await reject.getByRole('button', { name: 'Reject', exact: true }).click();
 		await reject.waitFor({ state: 'hidden' });
 		assert.equal(requests.findLast(row => row.path.includes('review-student-photo'))?.body.rejectionReason, 'Please upload a clearer portrait.');
-		await profile.locator('input[type=file]').setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: png });
+		const chooser = page.waitForEvent('filechooser');
+		await page.locator('.ui-student-identity button[aria-label]').first().press('Enter');
+		await (await chooser).setFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: png });
 		const crop = page.getByTestId('profile-photo-crop-dialog');
 		fixture.failPublish = true;
 		const failedPublication = page.waitForResponse(response => response.url().includes('publish-student-photo') && response.status() === 503);
@@ -301,21 +527,77 @@ async function main() {
 		releaseHealth(); releaseHealth = undefined;
 		await profile.locator('[data-profile-section=health]').getByText('A+', { exact: true }).waitFor();
 		assert((await page.locator('.ui-student-identity').innerText()).includes('Other Student'));
+		// An earlier student's delayed placement response must not seed the next drawer.
+		holdPlacementRead = true;
+		await page.goto(`${new URL(server.url).origin}/school/students/child/profile?modal=placement-history`, { waitUntil: 'domcontentloaded' });
+		const historyDeadline = Date.now() + 15000;
+		while (!releasePlacementRead && Date.now() < historyDeadline) await page.waitForTimeout(20);
+		assert(releasePlacementRead);
+		holdPlacementRead = false;
+		await page.goto(`${new URL(server.url).origin}/school/students/child2/profile?modal=placement-history`);
+		releasePlacementRead();
+		releasePlacementRead = undefined;
+		await historyPopup.locator('[data-placement-id="placement2"]').waitFor();
+		assert.equal(await historyPopup.locator('[data-placement-id]').count(), 1);
+		await historyPopup.getByRole('heading', { name: 'Placement history · Other Student' }).waitFor();
+		await historyPopup.getByRole('button', { name: 'Close', exact: true }).click();
 		guardian.email = 'mariam.kone.long.contact.address@ecole-abidjan.example.test';
 		console.log('Checking responsive Profile with full medical text and compact guardian rows');
 		for (const language of ['en', 'fr']) {
+			await page.goto(`${new URL(server.url).origin}/school/students`);
+			await page.getByTestId('language-selector').click();
+			await page.getByTestId(`language-option-${language}`).click();
+			for (const prefix of ['/school/students/child', '/classes/class/students/child']) {
+				hasPlacement = false;
+				await page.goto(`${new URL(server.url).origin}${prefix}/enrollments`);
+				await placementDate.getByText(language === 'fr' ? 'Aucune affectation en classe active' : 'No active class placement', { exact: true }).waitFor();
+				await page.locator('.ui-student-identity button[aria-haspopup]').click();
+				await page.getByRole('button', { name: language === 'fr' ? 'Affecter à une classe' : 'Assign class', exact: true }).waitFor();
+				assert.equal(await page.getByRole('button', { name: language === 'fr' ? 'Historique des affectations' : 'Placement history', exact: true }).count(), 0);
+				await page.keyboard.press('Escape');
+				await page.goto(`${new URL(server.url).origin}${prefix}/enrollments?modal=placement-history`);
+				await historyPopup.getByText(language === 'fr' ? 'Aucune inscription enregistrée.' : 'No enrollments recorded.', { exact: true }).waitFor();
+				await historyPopup.getByRole('button', { name: language === 'fr' ? 'Fermer' : 'Close', exact: true }).click();
+				previousPlacements = true;
+				await page.setViewportSize({ width: 390, height: 844 });
+				await page.goto(`${new URL(server.url).origin}${prefix}/profile?modal=placement-history&q=preserved`);
+				await historyPopup.locator('[data-placement-id="older"]').waitFor();
+				await page.evaluate(() => document.documentElement.style.fontSize = '32px');
+				assert(await historyPopup.evaluate(element => element.scrollWidth <= element.clientWidth));
+				await historyPopup.getByRole('heading', { name: language === 'fr' ? 'Historique des affectations · Aminata Koné' : 'Placement history · Aminata Koné' }).waitFor();
+				await historyPopup.getByRole('button', { name: language === 'fr' ? 'Fermer' : 'Close', exact: true }).click();
+				await historyPopup.waitFor({ state: 'hidden' });
+				assert.equal(new URL(page.url()).pathname, `${prefix}/profile`);
+				assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
+				previousPlacements = false;
+				await page.setViewportSize({ width: 1440, height: 1000 });
+				await page.evaluate(() => document.documentElement.style.fontSize = '16px');
+
+				hasPlacement = true;
+				await page.goto(`${new URL(server.url).origin}${prefix}/documents`);
+				const row = page.locator('[data-document-type="student-id-card.v1"]');
+				await row.getByText(language === 'fr' ? 'Non émis' : 'Not issued', { exact: true }).waitFor();
+				await row.getByText(language === 'fr' ? 'Carte scolaire' : 'Student card', { exact: true }).waitFor();
+				const headingSize = await page.locator('.ui-student-section-title').evaluate(el => getComputedStyle(el).fontSize);
+				await page.goto(`${new URL(server.url).origin}${prefix}/profile`);
+				assert.equal(await profile.locator('#student-personal-heading').evaluate(el => getComputedStyle(el).fontSize), headingSize);
+			}
 			for (const width of [360, 768, 1440]) {
 				for (const scale of [1, 2]) {
 					await page.setViewportSize({ width, height: 900 });
 					await page.goto(`${new URL(server.url).origin}/school/students`);
 					await page.getByTestId('language-selector').click(); await page.getByTestId(`language-option-${language}`).click();
-					await page.goto(`${new URL(server.url).origin}/school/students/child/profile`);
+					await page.goto(`${new URL(server.url).origin}${scale === 1 ? '/school' : '/classes/class'}/students/child/profile`);
 					await profile.waitFor();
 					await page.evaluate(scale => document.documentElement.style.fontSize = `${16 * scale}px`, scale);
 					await profile.locator('[data-profile-section=notes]').getByText('Steady progress in class.', { exact: true }).waitFor();
 					await page.evaluate(() => document.fonts.ready);
 					const body = page.getByTestId('student-drawer-body');
 					assert(await body.evaluate(element => element.scrollWidth <= element.clientWidth), `${language}/${width}/${scale}: no horizontal profile overflow`);
+					const matricules = page.locator('.ui-student-identity .grid > span');
+					const tops = await matricules.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().top));
+					assert.equal(tops.length, 2);
+					assert.equal(tops[0], tops[1]);
 					const healthGrid = profile.locator('[data-profile-section=health] .ui-student-facts');
 					assert(await healthGrid.evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length === (element.clientWidth >= 480 ? 2 : 1)));
 					assert(await healthGrid.evaluate(element => {

@@ -27,7 +27,7 @@ export const goto = appGoto;
 export const appPath = (path: string) => path;
 export const appHref = (path: string) => path;
 const periods = [{ id: 'past', academicYearId: 'year', name: 'Completed term', startDate: '2020-01-01', endDate: '2020-06-30' }, { id: 'term', academicYearId: 'year', name: 'Term 1', startDate: '2026-09-01', endDate: '2035-12-31' }, { id: 'future', academicYearId: 'year', name: 'Term 2', startDate: '2036-01-01', endDate: '2036-06-30' }];
-const offerings = $state(['music', 'art'].map(id => ({ id, subjectId: `${id}-subject`, classGroupId: 'class', name: id === 'music' ? 'Music' : 'Art', isOptional: true, isOffered: true, participationRevision: 3 })));
+const offerings = $state(['music', 'art', 'dance'].map(id => ({ id, subjectId: `${id}-subject`, classGroupId: 'class', name: id[0]!.toUpperCase() + id.slice(1), isOptional: true, isOffered: true, participationRevision: 3 })));
 const saved = $state<Data['enrollments']>([]);
 function participation(studentId: string): Data {
   return $state.snapshot({ studentId, periods, enrollments: saved.filter(row => row.studentClassEnrollmentId === `placement-${studentId}`), placements: [{ id: `placement-${studentId}`, studentId, classGroupId: studentId === 'third' ? 'other' : 'class', academicYearId: 'year', status: 'active' }], offerings }) as unknown as Data;

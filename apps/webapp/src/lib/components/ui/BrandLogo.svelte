@@ -14,9 +14,9 @@
 	} = $props();
 
 	const names = { horizontal: 'horizontal', vertical: 'vertical', symbol: 'symbole' };
-	const minimum = { horizontal: 128, vertical: 88, symbol: 32 };
+	const minimum = { horizontal: 128, vertical: 88, symbol: 26 };
 	const clearSpace = { horizontal: 0.1, vertical: 0.2, symbol: 0.15 };
-	const size = $derived(Math.max(width ?? minimum[variant], minimum[variant]));
+	const size = $derived(Math.max(width ?? (variant === 'symbol' ? 32 : minimum[variant]), minimum[variant]));
 </script>
 
 <span class="inline-flex shrink-0 items-center justify-center" style:padding={`${size * clearSpace[variant]}px`}>

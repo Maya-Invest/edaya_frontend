@@ -19,7 +19,7 @@
 		name: string;
 		initials: string;
 		photoUrl?: string | null;
-		size?: 'xs' | 'sm' | 'md' | 'list' | 'lg';
+		size?: 'xs' | 'sm' | 'md' | 'list' | 'lg' | 'studentHeader';
 		disabled?: boolean;
 		trigger?: 'avatar' | 'button';
 		label?: string;
@@ -37,6 +37,7 @@
 			sm: 'rounded-full',
 			md: 'rounded-full',
 			list: 'rounded-lg',
+			studentHeader: 'rounded-full',
 			lg: 'rounded-lg',
 		}[size],
 	);
@@ -84,7 +85,7 @@
 					busy && 'opacity-100',
 				)}
 				disabled={busy}
-				aria-label={$t('profilePhoto.change')}
+				aria-label={label ?? $t('profilePhoto.change')}
 				onclick={() => inputEl?.click()}
 			>
 				{#if busy}

@@ -6,7 +6,6 @@
 	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import { formatMinorUnits } from '$lib/finance/money';
 	import { FINANCIAL_REPORT_READ_PERMISSION } from '$lib/finance/permissions';
 	import { billingStatusTone } from '$lib/finance/status';
@@ -42,7 +41,7 @@
 	}
 </script>
 
-<div class="space-y-4">
+<div>
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-collection border border-border bg-card p-4 shadow-soft">
 			<p class="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -72,7 +71,7 @@
 			</p>
 		</div>
 	</div>
-	<div class="flex flex-wrap gap-2">
+	<div class="mt-4 flex flex-wrap gap-2">
 		<DocumentPdfButton onRequestDocumentIssuance={financesTab.performRequestDocumentIssuance}
 			templateKey="account-statement.v1"
 			sourceId={accountSourceId}
@@ -95,11 +94,11 @@
 			classId={s.classId}
 		/>
 	</div>
-	<div>
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+	<div class="ui-student-tab-section">
+		<h3 class="ui-student-section-title">
 			{$t('finance.billing')} · {charges.length}
-		</Label>
-		<div class="mt-2 space-y-2">
+		</h3>
+		<div class="space-y-2">
 			{#if charges.length === 0}
 				<DrawerEmptyState label={$t('finance.noInvoices')}>
 					{#snippet icon()}
@@ -129,11 +128,11 @@
 			{/if}
 		</div>
 	</div>
-	<div>
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+	<div class="ui-student-tab-section">
+		<h3 class="ui-student-section-title">
 			{$t('finance.statement')}
-		</Label>
-		<div class="mt-2 space-y-2">
+		</h3>
+		<div class="space-y-2">
 			{#if entries.length === 0}
 				<DrawerEmptyState label={$t('finance.noInvoices')}>
 					{#snippet icon()}

@@ -67,7 +67,7 @@ export function mapStudentEnrollmentHistory(
 			className: classNames.get(enrollment.classGroupId) ?? enrollment.classGroupId,
 			academicYearId: enrollment.academicYearId,
 			status: enrollment.status,
-			enrolledAt: formatDate(enrollment.enrolledAt ?? enrollment.createdAt),
+			enrolledAt: formatDate(enrollment.enrolledAt),
 			endedAt: enrollment.endedAt ? formatDate(enrollment.endedAt) : undefined,
 			endReason: enrollment.endReason ?? null,
 			progressionDecision: enrollment.progressionDecision,

@@ -8,9 +8,9 @@
 	import { authSession } from '$lib/auth/session.svelte';
 	import AcademicYearSelector from '$lib/components/layout/AcademicYearSelector.svelte';
 	import ClassSelector from '$lib/components/layout/ClassSelector.svelte';
-	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
-	import { Crown, ChevronDown } from '$lib/icons';
+	import { Crown, ChevronDown, PanelLeft, PanelLeftClose } from '$lib/icons';
 	import {
 		DASHBOARD_HREF,
 		MODULES,
@@ -24,7 +24,6 @@
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { getMessageCount } from '$lib/shell/message-count.svelte';
 	import { cn } from '$lib/utils';
-	import { tick } from 'svelte';
 
 	const {
 		hierarchy,
@@ -33,7 +32,7 @@
 		staffCount,
 		teacherCount,
 		forceExpanded = false,
-		headerAction,
+		footerAction,
 	}: {
 		hierarchy: HierarchyGroup[];
 		studentCount: number;
@@ -41,7 +40,7 @@
 		staffCount: number;
 		teacherCount: number;
 		forceExpanded?: boolean;
-		headerAction?: Snippet;
+		footerAction?: Snippet;
 	} = $props();
 
 	const messageCount = getMessageCount();
@@ -56,7 +55,7 @@
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
-	const schoolName = $derived(authSession.school?.shortName?.trim() || authSession.activeStaffMembership?.schoolShortName?.trim() || authSession.activeStaffMembership?.schoolName || $t('sidebar.module'));
+
 	let hoverExpanded = $state(false);
 	let yearDialogExpanded = $state(false);
 
@@ -104,13 +103,8 @@
 		return MODULES.find(mod => mod.key === key)?.href ?? DASHBOARD_HREF;
 	}
 
-	async function onYearDialogChange(open: boolean) {
-		const restoreToggleFocus = !open && yearDialogExpanded && collapsed && !hoverExpanded;
+	function onYearDialogChange(open: boolean) {
 		yearDialogExpanded = open && hoverExpanded;
-		if (restoreToggleFocus) {
-			await tick();
-			document.getElementById('app-navigation-toggle')?.focus();
-		}
 	}
 
 	function onSidebarEnter() {
@@ -134,16 +128,11 @@
 		collapsed && (hoverExpanded || yearDialogExpanded) && 'absolute left-0 top-0 z-50 shadow-panel',
 	)}
 >
-	<div data-testid="sidebar-header" class={cn('flex items-center border-b border-border py-3', showExpanded ? 'gap-2 px-3' : 'flex-col')}>
-		<BrandLogo variant="symbol" width={showExpanded ? 40 : 32} />
-		<div class={showExpanded ? 'min-w-0 flex-1' : undefined}>
-			{#if showExpanded}<p class="truncate text-sm font-semibold leading-5" title={schoolName} data-testid="sidebar-school-name">{schoolName}</p>{/if}
-			<AcademicYearSelector collapsed={!showExpanded} onOpenChange={onYearDialogChange} />
-		</div>
-		{@render headerAction?.()}
+	<div data-testid="sidebar-header" class="shrink-0 border-b border-border lg:h-[var(--app-header-height,3.5rem)]">
+		<AcademicYearSelector collapsed={!showExpanded} onOpenChange={onYearDialogChange} />
 	</div>
 
-	<nav class={cn('scrollbar-thin flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>
+	<nav class={cn('scrollbar-thin min-h-0 flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>
 		<ul class="space-y-1">
 			<li>
 				<a
@@ -283,4 +272,14 @@
 			{/each}
 		</ul>
 	</nav>
+	<footer data-testid="sidebar-footer" class={cn('flex shrink-0 border-t border-border p-1', showExpanded ? 'justify-end' : 'justify-center')}>
+		{#if footerAction}
+			{@render footerAction()}
+		{:else}
+			<Button variant="ghost" size="icon" data-testid="sidebar-pin" onclick={() => shellContext.toggleSidebar()}
+				aria-label={$t(shellContext.sidebarOpen ? 'sidebar.unpin' : 'sidebar.pin')} aria-pressed={shellContext.sidebarOpen} aria-controls="app-sidebar">
+				{#if shellContext.sidebarOpen}<PanelLeftClose class="h-4 w-4" />{:else}<PanelLeft class="h-4 w-4" />{/if}
+			</Button>
+		{/if}
+	</footer>
 </aside>

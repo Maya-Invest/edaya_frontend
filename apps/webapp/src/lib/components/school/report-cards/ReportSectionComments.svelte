@@ -14,9 +14,11 @@
 		onWriteReportSectionComments,
 		result,
 		onSaved,
+		canEdit = true,
 	}: {
 		onWriteReportSectionComments: typeof writeReportSectionCommentsMutation;
 		result: ReportCardResult;
+		canEdit?: boolean;
 		onSaved: (sections: ReportCommentSection[], version: number) => void | Promise<void>;
 	} = $props();
 	const modals = createUrlSyncedModals<'report-comments'>({ allowed: ['report-comments'], getUrl: () => $page.url });
@@ -62,7 +64,7 @@
 	{#each result.commentSections ?? [] as section (section.sectionId)}
 		{#if section.comment}<p class="text-sm"><strong>{section.name}</strong> — {section.comment}</p>{/if}
 	{/each}
-	{#if result.status !== 'published' && result.commentSections?.length}
+	{#if canEdit && result.status !== 'published' && result.commentSections?.length}
 		<Button variant="outline" size="sm" onclick={() => modal.open = true}>{$t('reportCards.sectionComments')}</Button>
 	{/if}
 </section>

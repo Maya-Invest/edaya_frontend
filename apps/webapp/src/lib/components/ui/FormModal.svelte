@@ -25,6 +25,7 @@
 		bodyClass,
 		children,
 		footer,
+		onCloseAutoFocus,
 		onCancel,
 		onOpenChange,
 		onSubmit,
@@ -49,6 +50,7 @@
 			busy: boolean;
 			submitDisabled: boolean;
 		}]>;
+		onCloseAutoFocus?: (event: Event) => void;
 		onCancel?: () => void;
 		onOpenChange?: (open: boolean) => void;
 		onSubmit: () => void | Promise<void>;
@@ -167,6 +169,7 @@
 	{#if open}
 		<Dialog.Content
 			data-testid="form-modal"
+			{onCloseAutoFocus}
 			onOpenAutoFocus={async (event) => {
 				event.preventDefault();
 				await tick();

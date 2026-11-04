@@ -11,7 +11,7 @@
 	import { LoaderCircle, X } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { hasPermission } from '$lib/permissions';
+	import { canOpenStudentClassForm, hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import StudentAbsenceModal from '../../../../../school/students/[[id]]/(tabs)/attendance/components/StudentAbsenceModal.svelte';
 	import StudentIncidentModal from '../../../../../school/students/[[id]]/(tabs)/incidents/components/StudentIncidentModal.svelte';
@@ -24,7 +24,8 @@
 	import ClassStudentDetailTabBar from './ClassStudentDetailTabBar.svelte';
 
 	type StudentDrawerModal
-		= | 'change-status'
+		= | 'placement-history'
+			| 'change-status'
 			| 'edit-profile'
 			| 'edit-health'
 			| 'change-class'
@@ -53,6 +54,7 @@
 	const modals = createUrlSyncedModals<StudentDrawerModal>({
 		allowed: [
 			'change-status',
+			'placement-history',
 			'edit-profile',
 			'edit-health',
 			'change-class',
@@ -100,7 +102,7 @@
 		}
 		const scope = { classId: student.classId, studentId: student.id };
 		const action = modals.active;
-		if ((['change-status', 'edit-profile', 'note', 'edit-note'].includes(action ?? '') && !hasPermission('STUDENT_MANAGE', scope)) || (action === 'change-class' && !hasPermission('ENROLLMENT_MANAGE', scope)) || (action === 'link-guardian' && !hasPermission('PARENT_MANAGE', scope))) {
+		if ((['change-status', 'edit-profile', 'note', 'edit-note'].includes(action ?? '') && !hasPermission('STUDENT_MANAGE', scope)) || (action === 'change-class' && !canOpenStudentClassForm(student.id, student.classId, modals.target === 'assign')) || (action === 'link-guardian' && !hasPermission('PARENT_MANAGE', scope))) {
 			modals.close();
 			return;
 		}

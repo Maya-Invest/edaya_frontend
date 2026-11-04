@@ -39,23 +39,30 @@
 </script>
 {#if !legacyEnrollment}
 	<div class="ui-student-profile" data-testid="student-profile">
-		<section aria-labelledby="student-portrait-heading" data-profile-section="portrait"><h3 id="student-portrait-heading">{$t('student.profile.portrait')}</h3><StudentProfileSectionQuery section="portrait"><StudentPortraitReviewCard {s} /></StudentProfileSectionQuery></section>
-		{#if readHealth}<section aria-labelledby="student-health-heading" data-profile-section="health">
-			<div class="ui-student-section-heading"><h3 id="student-health-heading">{$t('student.profile.health')}</h3>{#if editHealth && owner.statusFor('health', s.id)?.status === 'ready'}<Button variant="outline" onclick={() => modals?.open('edit-health')}>{$t('student.editHealth')}</Button>{/if}</div>
-			<StudentProfileSectionQuery section="health">
-				{#if health}<div class="ui-student-facts">
-					<DrawerField label={$t('student.bloodType')}><p>{health.bloodType === '—' ? $t('profile.notProvided') : health.bloodType}</p></DrawerField>
-					<DrawerField label={$t('student.allergies')}><p>{health.allergiesText || health.allergies.join(', ') || $t('profile.notProvided')}</p></DrawerField>
-					<DrawerField label={$t('student.medications')}><p>{health.medicationsText || health.medications.join(', ') || $t('profile.notProvided')}</p></DrawerField>
-					<DrawerField label={$t('student.conditions')}><p>{health.medicalConditionsText || health.chronicConditions.join(', ') || $t('profile.notProvided')}</p></DrawerField>
-				</div>{:else}<p class="text-sm text-muted-foreground">{$t('student.profile.noHealth')}</p>{/if}
-				{#if healthOpen?.open && editHealth}<StudentHealthEditModal {s} bind:open={healthOpen.open} />{/if}
-			</StudentProfileSectionQuery>
-		</section>{/if}
+		<StudentProfileSectionQuery section="portrait">
+			{#if owner.host.pendingPhotoFor(s.id)}
+				<section aria-labelledby="student-portrait-heading" data-profile-section="portrait">
+					<h3 id="student-portrait-heading">{$t('student.profile.portrait')}</h3>
+					<StudentPortraitReviewCard {s} />
+				</section>
+			{/if}
+		</StudentProfileSectionQuery>
 		<section aria-labelledby="student-personal-heading" data-profile-section="personal"><h3 id="student-personal-heading">{$t('student.profile.personal')}</h3>
 			<PersonProfileDetails kind="student" person={s} exclude={['matricule', 'nationalMatricule', 'enrollmentDate', 'gender']} />
 			<div class="ui-student-facts"><DrawerField label={$t('drawer.birthDate')}><p>{s.birthdate ? formatLocaleDate(s.birthdate, $locale, { year: 'numeric', month: 'long', day: 'numeric' }) : $t('profile.notProvided')}</p></DrawerField><DrawerField label={$t('student.gender')}><p>{studentGenderLabelKey(s.gender) ? $t(studentGenderLabelKey(s.gender)!) : s.gender || $t('profile.notProvided')}</p></DrawerField><div class="ui-student-full-fact"><DrawerField label={$t('common.email')}><p>{s.email || $t('profile.notProvided')}</p></DrawerField></div></div>
 		</section>
+		{#if readHealth}<section aria-labelledby="student-health-heading" data-profile-section="health">
+			<div class="ui-student-section-heading"><h3 id="student-health-heading">{$t('student.profile.health')}</h3>{#if editHealth && owner.statusFor('health', s.id)?.status === 'ready'}<Button variant="outline" onclick={() => modals?.open('edit-health')}>{$t('student.editHealth')}</Button>{/if}</div>
+			<StudentProfileSectionQuery section="health">
+				<div class="ui-student-facts">
+					<DrawerField label={$t('student.bloodType')}><p>{!health?.bloodType || health.bloodType === '—' ? $t('profile.notProvided') : health.bloodType}</p></DrawerField>
+					<DrawerField label={$t('student.allergies')}><p>{health?.allergiesText || health?.allergies.join(', ') || $t('profile.notProvided')}</p></DrawerField>
+					<DrawerField label={$t('student.medications')}><p>{health?.medicationsText || health?.medications.join(', ') || $t('profile.notProvided')}</p></DrawerField>
+					<DrawerField label={$t('student.conditions')}><p>{health?.medicalConditionsText || health?.chronicConditions.join(', ') || $t('profile.notProvided')}</p></DrawerField>
+				</div>
+				{#if healthOpen?.open && editHealth}<StudentHealthEditModal {s} bind:open={healthOpen.open} />{/if}
+			</StudentProfileSectionQuery>
+		</section>{/if}
 		{#if hasPermission('PARENT_READ', scope)}<section aria-label={$t('people.guardians')} data-profile-section="guardians"><StudentGuardiansSection {s} /></section>{/if}
 		<section aria-labelledby="student-account-heading" data-profile-section="account"><h3 id="student-account-heading">{$t('student.profile.account')}</h3><AccountLinkingSection flat kind="student" targetId={s.id} subjectId={s.subjectId} contactEmail={s.email} displayName={s.name} /></section>
 		<section aria-labelledby="student-notes-heading" data-profile-section="notes"><StudentNotesSection {s} /></section>

@@ -5,41 +5,35 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
 	import { getStudentDocumentsTabState } from '../student-documents-tab.svelte';
 
 	let {
 		open = $bindable(false),
 		studentId,
+		templateKey,
 	}: {
 		open?: boolean;
 		studentId: string;
+		templateKey: DocumentTemplateKey;
 	} = $props();
 
 	const documentsTab = getStudentDocumentsTabState();
 	const templates = $derived(documentsTab.generateTemplatesFor(studentId));
 
-	let templateKey = $state<DocumentTemplateKey>('schooling-certificate.v1');
 	let recipient = $state('');
 	let date = $state('');
 	let location = $state('');
 	let reason = $state('');
 	let busy = $state(false);
 
-	const selected = $derived(templates.find(entry => entry.templateKey === templateKey) ?? templates[0]);
-	const isConvocation = $derived((selected?.templateKey ?? templateKey) === CONVOCATION_TEMPLATE);
-	const sourceId = $derived(documentsTab.resolveSourceId(studentId, selected?.templateKey ?? templateKey));
+	const selected = $derived(templates.find(entry => entry.templateKey === templateKey));
+	const isConvocation = $derived(templateKey === CONVOCATION_TEMPLATE);
+	const sourceId = $derived(documentsTab.resolveSourceId(studentId, templateKey));
 	const selectedLabel = $derived(
 		selected ? ($lang === 'en' ? selected.titles.en : selected.titles.fr) : '',
 	);
 	const canSubmit = $derived(Boolean(sourceId) && (!isConvocation || (recipient.trim() && date.trim() && location.trim() && reason.trim())));
-
-	$effect(() => {
-		if (open && templates.length > 0 && !templates.some(entry => entry.templateKey === templateKey)) {
-			templateKey = templates[0].templateKey;
-		}
-	});
 
 	async function submit() {
 		if (!sourceId || !canSubmit || busy) {
@@ -48,7 +42,7 @@
 		busy = true;
 		try {
 			const result = await documentsTab.performRequestDocumentIssuance({
-				templateKey: selected?.templateKey ?? templateKey,
+				templateKey,
 				sourceId,
 				studentId,
 				staffFields: isConvocation
@@ -69,7 +63,7 @@
 <FormModal
 	bind:open
 	title={$t('documents.generateTitle')}
-	description={$t('documents.generateDescription')}
+	description={$t('documents.generateSelectedDescription')}
 	submitLabel={$t('documents.generatePdf')}
 	cancelLabel={$t('common.cancel')}
 	{busy}
@@ -81,20 +75,7 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('documents.template')}
 			</Label>
-			<Select.Root type="single" value={templateKey} onValueChange={v => v && (templateKey = v as DocumentTemplateKey)}>
-				<Select.Trigger>
-					<Select.Value placeholder={$t('documents.templatePlaceholder')}>
-						{selectedLabel}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content class="z-[100]">
-					{#each templates as template (template.templateKey)}
-						<Select.Item value={template.templateKey} label={$lang === 'en' ? template.titles.en : template.titles.fr}>
-							{$lang === 'en' ? template.titles.en : template.titles.fr}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
+			<p>{selectedLabel}</p>
 		</div>
 		{#if !sourceId}
 			<p class="text-xs text-destructive">{$t('documents.sourceMissing')}</p>

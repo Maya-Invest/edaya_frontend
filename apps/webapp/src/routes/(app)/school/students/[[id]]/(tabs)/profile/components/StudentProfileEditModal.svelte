@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import PersonProfileFields from '$lib/components/school/shared/PersonProfileFields.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -11,10 +10,8 @@
 	import { get } from 'svelte/store';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
-	let { s, disabled = false, title, open = $bindable(false) }: {
+	let { s, open = $bindable(false) }: {
 		s: Student;
-		disabled?: boolean;
-		title?: string;
 		open?: boolean;
 	} = $props();
 	let busy = $state(false);
@@ -56,10 +53,6 @@
 		}
 	}
 </script>
-
-<Button variant="outline" size="sm" {disabled} {title} onclick={() => (open = true)}>
-	{$t('student.editProfile')}
-</Button>
 
 <FormModal contentClass="max-w-3xl"
 	bind:open

@@ -1,3 +1,4 @@
+import { chooseOption, selectOptions } from '../../support/custom-select';
 import type { Browser } from 'playwright';
 import { uniqueOnboardingEmail, uniqueOnboardingPassword } from '../support/capture';
 import { expectAppDashboard } from '../support/auth';
@@ -42,37 +43,35 @@ export async function runInvitedStaffSecondSchool(
 				throw new Error(`Second-school staff invite landed on onboarding: ${page.url()}`);
 			}
 
-			const menu = page.getByTestId('school-selector-menu');
-			await menu.waitFor({ state: 'visible', timeout: 20_000 });
+			const menu = page.getByTestId('academic-year-trigger');
 			await menu.click();
-			const options = page.getByTestId('school-selector-option');
-			await options.first().waitFor({ state: 'visible', timeout: 10_000 });
-			if (await options.count() < 2) {
-				throw new Error(`Expected two staff schools in the sidebar popup, found ${await options.count()}`);
+			const schoolChoice = page.getByTestId('workspace-school-choice');
+			const schoolIds = await selectOptions(schoolChoice).evaluateAll(nodes => nodes.map(node => (node as HTMLOptionElement).value));
+			const shell = page.getByTestId('app-shell');
+			const currentSchoolId = await shell.getAttribute('data-school-id');
+			const targetSchoolId = schoolIds.find(id => id !== currentSchoolId);
+			if (!currentSchoolId || !targetSchoolId || targetSchoolId === currentSchoolId) {
+				throw new Error('School switch requires two distinct school IDs');
 			}
 
-			const currentSchoolId = await page.getByTestId('app-shell').getAttribute('data-school-id');
-			const other = page.getByRole('option', { selected: false }).first();
-			const targetSchoolId = await other.getAttribute('data-school-id');
-			if (!targetSchoolId || targetSchoolId === currentSchoolId) throw new Error('School switch must select a different school');
-			const [grantsResponse] = await Promise.all([
-				page.waitForResponse(response =>
-					response.url().endsWith('/core/authorization/effective-grants')
-					&& response.request().headers()['x-school-id'] === targetSchoolId, { timeout: 30_000 }),
-				other.click(),
-			]);
-			if (!grantsResponse.ok()) {
-				const yearId = grantsResponse.request().headers()['x-academic-year-id'] ?? 'none';
-				throw new Error(`School switch grants failed: HTTP ${grantsResponse.status()}, school=${targetSchoolId}, year=${yearId}`);
+			async function selectSchool(schoolId: string) {
+				await chooseOption(schoolChoice, schoolId);
+				const [grants] = await Promise.all([
+					page.waitForResponse(response =>
+						response.url().endsWith('/core/authorization/effective-grants')
+						&& response.request().headers()['x-school-id'] === schoolId, { timeout: 30_000 }),
+					page.getByTestId('academic-year-apply').click(),
+				]);
+				if (!grants.ok()) throw new Error(`School switch grants failed: HTTP ${grants.status()}, school=${schoolId}`);
+				await page.locator(`[data-testid="app-shell"][data-school-id="${schoolId}"]`).waitFor();
 			}
-			await page.waitForFunction(schoolId =>
-				document.querySelector('[data-testid="app-shell"]')?.getAttribute('data-school-id') === schoolId,
-				targetSchoolId, { timeout: 30_000 });
+
+			await selectSchool(targetSchoolId);
 			await page.reload({ waitUntil: 'domcontentloaded' });
 			await expectAppDashboard(page);
-			await page.waitForFunction(schoolId =>
-				document.querySelector('[data-testid="app-shell"]')?.getAttribute('data-school-id') === schoolId,
-				targetSchoolId, { timeout: 30_000 });
+			await page.locator(`[data-testid="app-shell"][data-school-id="${targetSchoolId}"]`).waitFor();
+			await menu.click();
+			await selectSchool(currentSchoolId);
 		});
 	});
 }

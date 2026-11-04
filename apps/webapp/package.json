@@ -28,6 +28,7 @@
 		"test:integration:coverage": "bun test tests/lib/catalog-drift.test.ts && bun scripts/integration-coverage.ts",
 		"test:integration:webadmin": "bun scripts/webadmin-integration.ts",
 		"test:integration:availability": "bun scripts/phone-availability-browser.ts",
+		"test:integration:owner-school-switching": "bun scripts/focused-integration-run.ts owner-school-switching",
 		"test:integration:attendance-ui": "bun scripts/focused-integration-run.ts attendance-ui",
 		"test:integration:inbox-pages-ui": "bun scripts/focused-integration-run.ts inbox-pages-ui",
 		"test:integration:messaging-ui": "bun scripts/focused-integration-run.ts messaging-ui",

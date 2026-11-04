@@ -1,10 +1,10 @@
+import type { PageLoadMeta } from '$lib/page/load-state';
 import type { components } from '$lib/api/schema';
 import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { listAllEntityPages } from '$lib/api/entity-list-filters';
-import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
@@ -31,15 +31,35 @@ export class StudentEnrollmentsTabState {
   private readonly queries = Object.fromEntries(['history', 'subjects'].map(section => [section, new VersionedRouteQuery(new RouteVersionSnapshot(['students', 'enrollments', 'subjectEnrollments', 'subjects', 'attendance', 'evaluations', 'reportCards', 'planning']))])) as Record<'history' | 'subjects', VersionedRouteQuery>;
   invalidateIfStale = async () => { await Promise.all(Object.values(this.queries).map(query => query.invalidateIfStale())); };
   private generation = 0;
+  private historyLoad = $state<({ identity: string } & PageLoadMeta) | null>(null);
+  private historyUrl?: URL;
+  historyStatusFor(studentId: string): PageLoadMeta {
+    if (!hasPermission('ENROLLMENT_READ', { studentId, classId: this.getPage().findStudent(studentId)?.classId }))
+      return { status: 'denied' };
+    return this.historyLoad?.identity === this.identity(studentId) ? this.historyLoad : { status: 'loading' };
+  }
+  async retryHistory() {
+    if (this.historyUrl) await this.query('history')(this.historyUrl);
+  }
+  activePlacementFor(studentId: string) {
+    if (this.historyStatusFor(studentId).status !== 'ready') return undefined;
+    return this.enrollmentsFor(studentId).find(row => row.academicYearId === academicContext.yearId && row.status === 'active');
+  }
+  hasPreviousPlacements(studentId: string) {
+    if (this.historyStatusFor(studentId).status !== 'ready') return false;
+    const year = academicContext.years.find(row => row.id === academicContext.yearId);
+    return this.enrollmentsFor(studentId).some(row => row.status === 'closed'
+      || (year && row.academicYearId !== year.id && row.enrolledAt < year.startDate));
+  }
   private identity(studentId: string) { return JSON.stringify([this.generation, authSession.authUserId, authSession.schoolId, academicContext.yearId, studentId, authSession.grants]); }
-  performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
   slice = $state<StudentEnrollmentsTabSlice | null>(null);
   constructor(private readonly getPage: () => StudentDetailHost) {
   }
 
   clear() {
     this.generation++;
-    this.progressionClasses = [];
+    this.historyLoad = null;
+    this.historyUrl = undefined;
     Object.values(this.queries).forEach(query => query.clear());
     this.slice = null;
   }
@@ -61,11 +81,16 @@ export class StudentEnrollmentsTabState {
   }
 
   query(section: 'history' | 'subjects' = 'history') {
-    return this.queries[section].track((url: URL, request?: PageQueryRequest) => {
+    return this.queries[section].track(async (url: URL, request?: PageQueryRequest): Promise<PageLoadMeta> => {
       const id = studentDetailIdFromPathname(url.pathname);
+      const capturedIdentity = id ? this.identity(id) : '';
+      if (section === 'history') {
+        this.historyUrl = url;
+        this.historyLoad = { identity: capturedIdentity, status: 'loading' };
+      }
       if (!hasPermission('ENROLLMENT_READ', { studentId: id ?? undefined, classId: id ? this.getPage().findStudent(id)?.classId : undefined }))
 return Promise.resolve({ status: 'denied' as const });
-      return resolveStudentPageLoad(url, {
+      const result = await resolveStudentPageLoad(url, {
       empty: () => ({}),
       load: async (signal) => {
         const studentId = studentDetailIdFromPathname(url.pathname);
@@ -83,51 +108,44 @@ throw new DOMException('Context changed', 'AbortError');
         this.seed(studentId, data);
         if ('enrollments' in data) {
           const active = data.enrollments?.find(row => row.academicYearId === academicContext.yearId && row.status === 'active');
-          if (active)
-this.getPage().patchStudent(studentId, { classId: active.classGroupId, enrollmentId: active.id });
+          if (active && (student?.classId !== active.classGroupId || student.enrollmentId !== active.id))
+            this.getPage().patchStudent(studentId, { classId: active.classGroupId, enrollmentId: active.id });
         }
         return {};
       },
       hasItems: () => true,
     }, request);
+      if (section === 'history' && id && capturedIdentity === this.identity(id) && !request?.signal.aborted)
+        this.historyLoad = { identity: capturedIdentity, ...result };
+      return result;
     });
   }
 
-  progressionClasses = $state<components['schemas']['ClassGroup'][]>([]);
-  async loadProgressionClasses(studentId: string) {
+  async readPlacement(studentId: string, yearId: string) {
     const captured = this.identity(studentId);
-    const schoolId = authSession.schoolId;
-    this.progressionClasses = [];
-    const rows = await listAllEntityPages(query => getBrowserSchoolClient().entities.classGroups.list(query), { baseQuery: { schoolId: schoolId ?? '' } });
-    if (captured === this.identity(studentId))
-      this.progressionClasses = rows;
+    const rows = await loadStudentEnrollmentHistory(getBrowserSchoolClient(), studentId);
+    if (captured !== this.identity(studentId) || academicContext.yearId !== yearId || (this.historyUrl && studentDetailIdFromPathname(this.historyUrl.pathname) !== studentId))
+      throw new DOMException('Context changed', 'AbortError');
+    this.seed(studentId, { enrollments: rows });
+    this.historyLoad = { identity: captured, status: 'ready' };
+    const active = rows.find(row => row.academicYearId === yearId && row.status === 'active');
+    const current = this.getPage().findStudent(studentId);
+    if (active && (current?.classId !== active.classGroupId || current.enrollmentId !== active.id))
+      this.getPage().patchStudent(studentId, { classId: active.classGroupId, enrollmentId: active.id });
+    return active;
   }
 
-  async updateProgression(input: {
-    enrollmentId: string;
-    action: 'complete' | 'withdraw' | 'graduate' | 'promote' | 'decision';
-    decision: 'promoted' | 'retained' | 'graduated';
-    effectiveAt: string;
-    notes?: string;
-    nextClassGroupId?: string;
-  }) {
-    const client = getBrowserSchoolClient();
+  async assignClass(studentId: string, classGroupId: string, enrollmentId: string) {
+    const captured = this.identity(studentId);
     const result = await runStudentRouteMutation({
-      request: () => {
-        if (input.action === 'decision')
-          return client.commands.recordProgressionDecision({ enrollmentId: input.enrollmentId, decision: input.decision, notes: input.notes || undefined });
-        if (input.action === 'graduate')
-          return client.commands.graduateStudent({ enrollmentId: input.enrollmentId, effectiveAt: input.effectiveAt, notes: input.notes || undefined });
-        if (input.action === 'promote')
-          return client.commands.promoteStudent({ enrollmentId: input.enrollmentId, nextEnrollmentId: crypto.randomUUID(), nextClassGroupId: input.nextClassGroupId!, effectiveAt: input.effectiveAt, notes: input.notes || undefined });
-        return client.commands.closeEnrollment({ enrollmentId: input.enrollmentId, endReason: input.action === 'withdraw' ? 'withdrawn' : 'completed', endedAt: input.effectiveAt });
-      },
-      versionKeys: ['students', 'enrollments', 'subjectEnrollments', 'subjects', 'attendance', 'evaluations', 'reportCards', 'planning'],
+      request: () => getBrowserSchoolClient().commands.enrollStudent({ id: enrollmentId, studentId, classGroupId, createdAt: new SvelteDate().toISOString() }),
+      versionKeys: ['students', 'enrollments', 'subjectEnrollments'],
     });
-    if (!result)
-      return false;
-    await this.invalidateIfStale();
-    return true;
+    if (result && captured === this.identity(studentId)) {
+      this.getPage().patchStudent(studentId, { classId: result.classGroupId, enrollmentId: result.id });
+      await this.invalidateIfStale();
+    }
+    return result !== null;
   }
 
   async previewTransfer(studentId: string, enrollmentId: string, nextClassGroupId: string) {
@@ -174,6 +192,7 @@ this.getPage().patchStudent(studentId, { classId: active.classGroupId, enrollmen
         }
       },
     });
+    if (result !== null) await this.invalidateIfStale();
     return result !== null;
   }
 }

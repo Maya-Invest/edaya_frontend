@@ -5,7 +5,6 @@
 	import { guardianRelationLabel } from '$lib/components/school/shared/drawer-constants';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListEntityCards from '$lib/components/ui/ListEntityCards.svelte';
-	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import { t } from '$lib/i18n';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { hasPermission } from '$lib/permissions';
@@ -30,9 +29,12 @@
 	});
 </script>
 <StudentProfileSectionQuery section="guardians">
-	<ListPageHeader level="section" surface="related" title={`${$t('people.guardians')} · ${rows.length}`}>
-		{#snippet primary()}{#if hasPermission('PARENT_MANAGE', { classId: s.classId, studentId: s.id })}<Button variant="ghost" onclick={() => modals?.open('link-guardian')}>{$t('student.linkGuardian')}</Button>{/if}{/snippet}
-	</ListPageHeader>
+	<div class="ui-student-section-heading">
+		<h3>{$t('people.guardians')} · {rows.length}</h3>
+		{#if hasPermission('PARENT_MANAGE', { classId: s.classId, studentId: s.id })}
+			<Button variant="outline" onclick={() => modals?.open('link-guardian')}>{$t('student.linkGuardian')}</Button>
+		{/if}
+	</div>
 	<ListEntityCards showEndSummary={false} {columns} {rows} total={rows.length} visibleCount={rows.length} emptyLabel={$t('drawer.noGuardian')}>
 		{#snippet field(guardian)}
 			{@const link = guardian.links?.find(link => link.studentId === s.id)}

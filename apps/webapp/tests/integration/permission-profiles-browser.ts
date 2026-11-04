@@ -42,7 +42,7 @@ let manualSaved = false;
 let profileSaved = false;
 let defaultsChanged = false;
 async function request(path: string, data: unknown, method = 'POST') {
-	const response = await apiFetch(page, base, `/core/${path}`, { method, data, schoolId, academicYearId: year });
+	const response = await apiFetch(page, base, `/core/${path}`, { method, data, headers: { 'x-actor-kind': 'staff' }, schoolId, academicYearId: year });
 	assert(response.ok(), `${path}: HTTP ${response.status()} ${(await response.text()).slice(0, 200)}`);
 	return await response.json() as any;
 }

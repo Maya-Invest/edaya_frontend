@@ -9,7 +9,7 @@ import { appGoto } from '$lib/navigation/app-navigation';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
-export async function completeAuthSignIn(successMessage?: string): Promise<boolean> {
+export async function completeAuthSignIn(successMessage?: string, navigation?: { replaceState: boolean }): Promise<boolean> {
 	resetAppShellBootstrap();
 	const { session, pendingOnboarding } = await bootstrapSessionAfterInvite();
 
@@ -18,7 +18,7 @@ export async function completeAuthSignIn(successMessage?: string): Promise<boole
 			toast.success(successMessage);
 		}
 		markAuthGatePassed();
-		await appGoto(resolvePostAuthPath({ session: null, pendingOnboarding: true }));
+		await appGoto(resolvePostAuthPath({ session: null, pendingOnboarding: true }), navigation);
 		return true;
 	}
 
@@ -47,7 +47,7 @@ export async function completeAuthSignIn(successMessage?: string): Promise<boole
 		session,
 		pendingOnboarding: false,
 		authUserId: authSession.authUserId,
-	}));
+	}), navigation);
 	return true;
 }
 

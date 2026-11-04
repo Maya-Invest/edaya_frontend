@@ -27,7 +27,7 @@ try {
 	const year = await page.getByTestId('academic-year-trigger').getAttribute('data-year-id');
 	assert(year);
 	async function request(path: string, data: unknown) {
-		const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data, schoolId: 'sch-edaya-ci-cocody', academicYearId: year! });
+		const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data, headers: { 'x-actor-kind': 'staff' }, schoolId: 'sch-edaya-ci-cocody', academicYearId: year! });
 		assert(response.ok(), `${path}: ${response.status()} ${await response.text()}`);
 		return response.json();
 	}

@@ -31,6 +31,10 @@ export type ReportModule = components['schemas']['ReportModule'];
 export type ReportCardResultStatus = 'draft' | 'generated' | 'published';
 
 export interface ReportCardSubjectMark {
+	sectionId: string;
+	rank?: number;
+	participantCount?: number;
+	comment?: string;
 	grading?: components['schemas']['ReportCardResult']['grading'];
 	subjectId: string;
 	subjectName: string;
@@ -42,9 +46,12 @@ export interface ReportCardSubjectMark {
 }
 
 export interface ReportCardSectionResult {
+	rank?: number;
+	participantCount?: number;
+	comment?: string;
 	name: string;
 	sectionKind: 'module' | 'subject';
-	weight: number;
+	weight?: number;
 	weightingMode?: 'subject_coefficients' | 'explicit';
 	explicitWeight?: number;
 	grading?: components['schemas']['ReportCardResult']['grading'];
@@ -128,4 +135,15 @@ export function reportCardAvailability(result: ReportCardResult): { missingValue
 		missingValues: formatReportRank(result) === '—' || grades.some(grade => !grade.grading && grade.value === undefined),
 		missingGrading: grades.some(grade => !grade.grading && grade.value !== undefined),
 	};
+}
+
+/** Numeric drawer scores keep their appreciation on a separate line. */
+export function formatReportMark(grading: ReportCardResult['grading'], value: number | undefined): string {
+	if (grading?.mode === 'numeric-first')
+		return `${grading.reportedValue.toFixed(grading.decimalPlaces)} / ${grading.maximum}`;
+	return formatPersistedGrade(grading, value);
+}
+
+export function formatSectionRank(section: { rank?: number; participantCount?: number }): string {
+	return section.rank && section.rank > 0 ? `${section.rank} / ${section.participantCount ?? '—'}` : '—';
 }

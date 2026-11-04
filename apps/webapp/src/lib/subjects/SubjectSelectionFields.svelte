@@ -5,9 +5,10 @@
 	import { isoToZonedDateAndTime } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 
-	let { selection = $bindable<SubjectSelection>({ scope: 'annual' }), periods, zone, completedPeriodIds = [], onChange }: {
+	let { selection = $bindable<SubjectSelection>({ scope: 'annual' }), periods, zone, showWithdrawalTools = false, completedPeriodIds = [], onChange }: {
 		selection: SubjectSelection;
 		periods: EnrollmentPeriod[];
+		showWithdrawalTools?: boolean;
 		zone: string;
 		completedPeriodIds?: string[];
 		onChange?: () => void;
@@ -44,9 +45,13 @@
 			{/if}
 		{/each}
 	{/if}
-	<Button size="sm" variant="ghost" onclick={() => {
-		selection = { scope: 'none' };
-		onChange?.();
-	}}>{$t('participation.clearSelection')}</Button>
-	<p class="text-sm text-muted-foreground">{$t(selection.scope === 'none' ? 'participation.withdrawExplanation' : 'participation.selectionExplanation')}</p>
+	{#if showWithdrawalTools}
+		<Button size="sm" variant="ghost" onclick={() => {
+			selection = { scope: 'none' };
+			onChange?.();
+		}}>{$t('participation.clearSelection')}</Button>
+	{/if}
+	{#if showWithdrawalTools && selection.scope === 'none'}
+		<p class="text-sm text-muted-foreground">{$t('participation.withdrawExplanation')}</p>
+	{/if}
 </div>

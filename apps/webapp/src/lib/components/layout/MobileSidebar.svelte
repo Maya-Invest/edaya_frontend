@@ -6,7 +6,7 @@
 	import { Dialog } from 'bits-ui';
 	import AppSidebar from './AppSidebar.svelte';
 
-	let { open = $bindable(false), ...sidebar }: Omit<ComponentProps<typeof AppSidebar>, 'forceExpanded' | 'headerAction'> & { open?: boolean } = $props();
+	let { open = $bindable(false), ...sidebar }: Omit<ComponentProps<typeof AppSidebar>, 'forceExpanded' | 'footerAction'> & { open?: boolean } = $props();
 </script>
 
 <Dialog.Root bind:open>
@@ -19,7 +19,7 @@
 		>
 			<Dialog.Title class="sr-only">{$t('sidebar.navigationTitle')}</Dialog.Title>
 			<AppSidebar {...sidebar} forceExpanded>
-				{#snippet headerAction()}
+				{#snippet footerAction()}
 					<Dialog.Close>
 						{#snippet child({ props })}
 							<Button {...props} variant="ghost" size="icon" aria-label={$t('sidebar.hide')}>

@@ -1,11 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import type { StaffSchoolMembership } from '$lib/auth/types';
+import * as kitNavigation from '$app/navigation';
 import * as schoolClient from '$lib/api/school-client';
 import * as bootstrap from '$lib/auth/bootstrap';
 import * as appNavigation from '$lib/navigation/app-navigation';
 import * as navPermissions from '$lib/navigation/nav-permissions';
 import * as pageQueryCache from '$lib/queries/page-query-cache';
-import * as kitNavigation from '$app/navigation';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 
 const schoolA: StaffSchoolMembership = {
 	kind: 'staff',
@@ -23,11 +23,13 @@ const schoolB: StaffSchoolMembership = {
 };
 
 const setSchoolScope = mock((_schoolId: string) => {});
+const setYear = mock((_yearId: string) => {});
+const catalog = [{ schoolId: schoolB.schoolId, id: 'destination-year' }];
 mock.module('$lib/academic/context.svelte', () => ({
-	academicContext: { shellReady: false, yearId: '', setSchoolScope },
+	academicContext: { shellReady: false, yearId: '', years: catalog, setYear, setSchoolScope },
 }));
 mock.module('$lib/academic/context.svelte.ts', () => ({
-	academicContext: { shellReady: false, yearId: '', setSchoolScope },
+	academicContext: { shellReady: false, yearId: '', years: catalog, setYear, setSchoolScope },
 }));
 
 const authSession = {
@@ -90,6 +92,7 @@ describe('switchActiveSchool', () => {
 		authSession.staffMemberships = [schoolA, schoolB];
 		authSession.selectStaffMembership.mockClear();
 		setSchoolScope.mockClear();
+		setYear.mockClear();
 		bootstrapAppShell.mockClear();
 		resetAppShellBootstrap.mockClear();
 		invalidateAppShellBootstrapCache.mockClear();
@@ -101,7 +104,7 @@ describe('switchActiveSchool', () => {
 		canAccessPathSpy = spyOn(navPermissions, 'canAccessPath').mockImplementation(() => true);
 		spies.push(
 			spyOn(bootstrap, 'bootstrapSession').mockImplementation(async () => ({
-				session: null,
+				session: { kind: 'staff', assuranceLevel: 'standard', actorId: schoolB.actorId, schoolId: schoolB.schoolId, grants: [] },
 				staffProfile: null,
 				guardianSettings: null,
 				pendingOnboarding: false,
@@ -141,10 +144,20 @@ describe('switchActiveSchool', () => {
 		expect(resetAppShellBootstrap).toHaveBeenCalled();
 		expect(invalidateAppShellBootstrapCache).toHaveBeenCalled();
 		expect(pageQueryCache.invalidatePageQueryCache).toHaveBeenCalled();
-		expect(bootstrap.bootstrapSession).toHaveBeenCalledWith({ silent: true });
+		expect(bootstrap.bootstrapSession).toHaveBeenCalledWith();
 		expect(bootstrapAppShell).toHaveBeenCalled();
 		expect(kitNavigation.invalidateAll).toHaveBeenCalled();
 		expect(appNavigation.appGoto).not.toHaveBeenCalled();
+	});
+
+	it('applies the chosen year from the destination catalog', async () => {
+		await switchActiveSchool(schoolB.schoolId, 'destination-year');
+		expect(setYear).toHaveBeenCalledWith('destination-year');
+	});
+
+	it('keeps the destination shell default when a previewed year is no longer available', async () => {
+		await switchActiveSchool(schoolB.schoolId, 'removed-year');
+		expect(setYear).not.toHaveBeenCalled();
 	});
 
 	it('sends the staff to dashboard when the current path is not allowed in the new school', async () => {

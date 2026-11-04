@@ -98,6 +98,8 @@
 		}
 
 		const pathname = $page.url.pathname;
+		if (pathname === '/')
+			return; // The entry page resolves the session before choosing a destination.
 		if (shouldBootstrapAuthOnly(pathname)) {
 			void bootstrapAuthOnly();
 			return;

@@ -167,6 +167,11 @@ function mapAcademicYearFromApi(year: {
 	};
 }
 
+export async function fetchSchoolYears(client: SchoolClient, schoolId: string): Promise<AcademicYear[]> {
+	const years = await schoolCatalogPages(query => client.entities.academicYears.list(query), schoolId);
+	return years.map(mapAcademicYearFromApi);
+}
+
 async function fetchSupplementalShellForSchool(
 	client: SchoolClient,
 	schoolId: string,

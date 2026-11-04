@@ -3,9 +3,9 @@
 	import { t } from '$lib/i18n';
 	import { reportCardAvailability } from '$lib/types/report-cards';
 
-	const { results }: { results: readonly ReportCardResult[] } = $props();
+	const { results, showMissingValues = true }: { results: readonly ReportCardResult[]; showMissingValues?: boolean } = $props();
 	const availability = $derived(results.map(reportCardAvailability));
-	const missingValues = $derived(availability.some(result => result.missingValues));
+	const missingValues = $derived(showMissingValues && availability.some(result => result.missingValues));
 	const missingGrading = $derived(availability.some(result => result.missingGrading));
 </script>
 

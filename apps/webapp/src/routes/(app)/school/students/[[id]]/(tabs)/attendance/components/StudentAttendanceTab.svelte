@@ -4,7 +4,6 @@
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { Clock, Plus } from '$lib/icons';
@@ -31,7 +30,7 @@
 	};
 </script>
 
-<div class="space-y-4">
+<div>
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-collection bg-primary/10 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.attendancePresent')}</p>
@@ -46,11 +45,11 @@
 			<p class="mt-1 font-display text-2xl">{attendanceData.late}</p>
 		</div>
 	</div>
-	<div>
+	<div class="ui-student-tab-section">
 		<div class="flex items-center justify-between gap-3">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			<h3 class="ui-student-section-title">
 				{$t('student.attendanceHistory')} · {attendanceData.records.length}
-			</Label>
+			</h3>
 			{#if isDailyAttendance}
 				<PermissionGate
 					permission="ATTENDANCE_RECORD"
@@ -83,7 +82,7 @@
 		{#if attendanceMode === 'session'}
 			<p class="mt-2 text-xs text-muted-foreground">{$t('student.sessionAttendanceHint')}</p>
 		{/if}
-		<div class="mt-2 space-y-2">
+		<div class="space-y-2">
 			{#if attendanceData.records.length === 0}
 				<DrawerEmptyState label={$t('student.noAttendanceRecords')}>
 					{#snippet icon()}

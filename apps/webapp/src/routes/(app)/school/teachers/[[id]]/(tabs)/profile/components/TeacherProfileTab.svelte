@@ -1,4 +1,5 @@
 <script lang="ts">
+	import TeacherQuickLogin from "./TeacherQuickLogin.svelte";
 	import type { Teacher } from '$lib/types/school';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonProfileDetails from '$lib/components/school/shared/PersonProfileDetails.svelte';
@@ -87,4 +88,9 @@
 		contactEmail={teacher.email}
 		displayName={teacher.name}
 	/>
+  {#if teacher.subjectId && teacher.isActive}
+    <PermissionGate permission="ACCESS_CONTROL_MANAGE">
+      {#snippet children()}{#key teacher.id}<TeacherQuickLogin teacherId={teacher.id} />{/key}{/snippet}
+    </PermissionGate>
+  {/if}
 </div>

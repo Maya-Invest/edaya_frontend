@@ -1,4 +1,4 @@
-import { chooseOption, selectControl } from '../tests/integration/support/custom-select';
+import { chooseOption, selectControl, selectOptions } from '../tests/integration/support/custom-select';
 import { openViewSurface } from '../tests/integration/support/view-workflow';
 import { bindBrowserScenarioContext } from '../tests/integration/support/browser-scenario';
 import { captureIntegrationCheckpoint } from '../tests/integration/support/visual-artifacts';
@@ -296,17 +296,24 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	if (action.includes('Sélecteur école')) {
 		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
     await waitForAppShell(page);
+    const schoolId = await page.getByTestId('app-shell').getAttribute('data-school-id');
+    const profiles = await apiFetch(page, base, '/core/authorization/profiles');
+    assert(profiles.ok());
+    const { profiles: identities } = await profiles.json() as { profiles: { kind: string; schoolId: string; schoolShortName: string }[] };
+    const memberships = identities.filter(profile => profile.kind === 'staff');
+    const selected = memberships.find(profile => profile.schoolId === schoolId);
+    assert(selected, 'Active school must be a staff membership');
     const trigger = page.getByTestId('academic-year-trigger');
-    await trigger.waitFor();
-    const schoolId = await trigger.getAttribute('data-school-id');
-    assert(schoolId, 'Required active school missing');
-    const response = await apiFetch(page,base,`/core/entities/schools/${schoolId}`);
-    assert(response.ok());
-    const school = await response.json() as {name:string};
-    const label = (await page.getByTestId('school-selector').innerText()).trim();
-    assert(label.length > 0 && school.name.startsWith(label), 'School selector must identify the persisted active school');
-    assert.equal(await page.getByTestId('school-selector-menu').count(),0, 'A single-school fixture must not offer a school switch');
-    return ok(row,'Verified the active school label against persisted data; multi-school switching executes in invited-staff-second-school');
+    assert.equal(await trigger.getAttribute('data-school-id'), selected.schoolId);
+    await trigger.click();
+    const schoolChoice = page.getByTestId('workspace-school-choice');
+    assert.equal(await schoolChoice.count(), memberships.length > 1 ? 1 : 0);
+    if (memberships.length > 1) {
+      const ids = await selectOptions(schoolChoice).evaluateAll(items => items.map(item => (item as HTMLOptionElement).value));
+      assert.deepEqual(ids.sort(), memberships.map(profile => profile.schoolId).sort());
+    }
+    await page.keyboard.press('Escape');
+    return ok(row, 'Verified the selected school and available memberships against the signed-in account');
 	}
 
 	if (action.includes('année scolaire')) {

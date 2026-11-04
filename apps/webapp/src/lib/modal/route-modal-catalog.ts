@@ -8,6 +8,8 @@ export interface RouteModalCatalogEntry {
 
 const STUDENT_DETAIL_MODALS = [
 	'change-status',
+	'placement-history',
+	'report-comments',
 	'edit-profile',
 	'edit-annual-profile',
 	'remove-annual-profile',
