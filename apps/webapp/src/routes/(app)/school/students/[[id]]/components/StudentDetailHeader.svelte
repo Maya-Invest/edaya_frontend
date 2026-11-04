@@ -5,19 +5,19 @@
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
+	import PageQuery from '$lib/components/ui/PageQuery.svelte';
+	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { canOpenStudentClassForm, hasPermission } from '$lib/permissions';
+	import { getStudentEnrollmentsTabState } from '../(tabs)/enrollments/student-enrollments-tab.svelte';
 	import StudentProfileEditModal from '../(tabs)/profile/components/StudentProfileEditModal.svelte';
 	import StudentStatusModal from '../(tabs)/profile/components/StudentStatusModal.svelte';
 	import { getStudentProfileTabState } from '../(tabs)/profile/student-profile-tab.svelte';
-	import { formatLocaleDate } from '$lib/date/format';
-	import PageQuery from '$lib/components/ui/PageQuery.svelte';
-	import DataState from '$lib/components/ui/DataState.svelte';
-	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
-	import { getStudentEnrollmentsTabState } from '../(tabs)/enrollments/student-enrollments-tab.svelte';
-	import StudentPlacementHistoryModal from './StudentPlacementHistoryModal.svelte';
 	import ChangeClassButton from './ChangeClassButton.svelte';
+	import StudentPlacementHistoryModal from './StudentPlacementHistoryModal.svelte';
 
 	const {
 		student,
@@ -67,14 +67,12 @@
 				{#if studentClass && !noPlacement}<span class="text-sm text-muted-foreground">{studentClass.name}</span>{/if}
 				<div class="text-sm text-muted-foreground" data-testid="student-placement-date">
 					<PageQuery compactLoading query={historyQuery} cache={false} cacheKey={() => `student-placement:${student.id}:${academicContext.yearId}`}>
-						{#snippet children()}
-							<DataState compact {...placementStatus} onRetry={() => void enrollment.retryHistory()}>
-								{#if !academicContext.yearId}{$t('academic.selectYear')}
-								{:else if activePlacement}
-									{activePlacement.enrolledAt ? $t('student.enrolledAt', { date: formatLocaleDate(activePlacement.enrolledAt, $locale, { year: 'numeric', month: 'short', day: 'numeric' }) }) : $t('student.enrollmentDateMissing')}
-								{:else}{$t('student.noPlacement')}{/if}
-							</DataState>
-						{/snippet}
+						<DataState compact {...placementStatus} onRetry={() => void enrollment.retryHistory()}>
+							{#if !academicContext.yearId}{$t('academic.selectYear')}
+							{:else if activePlacement}
+								{activePlacement.enrolledAt ? $t('student.enrolledAt', { date: formatLocaleDate(activePlacement.enrolledAt, $locale, { year: 'numeric', month: 'short', day: 'numeric' }) }) : $t('student.enrollmentDateMissing')}
+							{:else}{$t('student.noPlacement')}{/if}
+						</DataState>
 					</PageQuery>
 				</div>
 				<span class="rounded bg-secondary px-2 py-1 text-xs font-medium">{$t(`studentStatus.${student.status}`)}</span>

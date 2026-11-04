@@ -30,8 +30,8 @@
 	let attempt = $state(0);
 	const requestId = crypto.randomUUID();
 	const canTransfer = $derived(placement && hasPermission('ENROLLMENT_MANAGE', { studentId: s.id, classId: placement.classGroupId }));
-	const classes = $derived(academicContext.classes.filter(c => c.academicYearId === academicContext.yearId &&
-		(!placement || canTransfer) && hasPermission('ENROLLMENT_MANAGE', { studentId: s.id, classId: c.id })));
+	const classes = $derived(academicContext.classes.filter(c => c.academicYearId === academicContext.yearId
+		&& (!placement || canTransfer) && hasPermission('ENROLLMENT_MANAGE', { studentId: s.id, classId: c.id })));
 
 	const currentClass = $derived(academicContext.classes.find(c => c.id === placement?.classGroupId));
 	const targetClass = $derived(classes.find(c => c.id === target));
@@ -47,19 +47,28 @@
 		let cancelled = false;
 		ready = false;
 		loadError = '';
-		if (!open || !yearId) return;
+		if (!open || !yearId)
+			return;
 		if (!retry) {
 			target = '';
 			saveError = '';
 		}
-		void enrollmentsTab.readPlacement(studentId, yearId).then(row => {
-			if (cancelled) return;
-			if (retry && row && !placement) saveError = get(t)('student.placementChanged');
+		void enrollmentsTab.readPlacement(studentId, yearId).then((row) => {
+			if (cancelled)
+				return;
+			if (retry && row && !placement)
+				saveError = get(t)('student.placementChanged');
 			placement = row;
-			if (row || !retry) target = row?.classGroupId ?? '';
+			if (row || !retry)
+				target = row?.classGroupId ?? '';
 			ready = true;
-		}).catch(error => { if (!cancelled) loadError = error.message || get(t)('dataState.errorDefault'); });
-		return () => { cancelled = true; };
+		}).catch((error) => {
+			if (!cancelled)
+				loadError = error.message || get(t)('dataState.errorDefault');
+		});
+		return () => {
+			cancelled = true;
+		};
 	});
 	$effect(() => {
 		const destination = target;
@@ -86,27 +95,33 @@
 	});
 
 	async function savePlacement() {
-		if (!ready || busy || !targetClass || target === placement?.classGroupId) return;
+		if (!ready || busy || !targetClass || target === placement?.classGroupId)
+			return;
 		busy = true;
 		try {
-			const ok = placement ? await enrollmentsTab.transferClass({
-				enrollmentId: placement.id,
-				studentId: s.id,
-				nextClassGroupId: target,
-				acknowledgedDroppedSubjectIds: acknowledged ? unsupported.map(row => row.subjectId) : [],
-				successMessage: get(t)('student.transferSuccess', {
-					name: s.name,
-					class: targetClass?.name ?? get(t)('student.newClass'),
-				}),
-			}) : await enrollmentsTab.assignClass(s.id, target, requestId);
+			const ok = placement
+				? await enrollmentsTab.transferClass({
+					enrollmentId: placement.id,
+					studentId: s.id,
+					nextClassGroupId: target,
+					acknowledgedDroppedSubjectIds: acknowledged ? unsupported.map(row => row.subjectId) : [],
+					successMessage: get(t)('student.transferSuccess', {
+						name: s.name,
+						class: targetClass?.name ?? get(t)('student.newClass'),
+					}),
+				})
+				: await enrollmentsTab.assignClass(s.id, target, requestId);
 
 			if (ok) {
 				open = false;
-			} else {
-				saveError = get(t)('mutation.failed');
-				if (!placement) attempt++;
 			}
-		} finally {
+			else {
+				saveError = get(t)('mutation.failed');
+				if (!placement)
+					attempt++;
+			}
+		}
+		finally {
 			busy = false;
 		}
 	}
@@ -115,10 +130,12 @@
 <FormModal
 	bind:open
 	title={ready && !placement ? $t('student.assignClass') : $t('student.changeClassTitle', { name: s.name })}
-	description={ready && placement ? $t('student.currentClass', {
-		name: currentClass?.name ?? '—',
-		level: currentClass?.level ?? '',
-	}) : ''}
+	description={ready && placement
+		? $t('student.currentClass', {
+			name: currentClass?.name ?? '—',
+			level: currentClass?.level ?? '',
+		})
+		: ''}
 	submitLabel={$t('common.confirm')}
 	{busy}
 	dirty={ready && Boolean(target) && target !== placement?.classGroupId}
@@ -129,39 +146,39 @@
 	{:else if ready && placement && !canTransfer}<p role="alert">{$t('dataState.denied')}</p>
 	{:else if !ready}<p role="status">{$t('dataState.loading')}</p>
 	{:else}
-	<div class="space-y-2 py-2">
-		{#if saveError}<p role="alert">{saveError}</p>{/if}
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('student.newClass')}
-		</Label>
-		<Select.Root type="single" value={target} onValueChange={v => v && (target = v)}>
-			<Select.Trigger>
-				<Select.Value placeholder={$t('student.newClass')}>
-					{targetClassLabel}
-				</Select.Value>
-			</Select.Trigger>
-			<Select.Content class="z-[100]">
-				{#each classes as c (c.id)}
-					<Select.Item value={c.id} label={c.name}>
-						{c.name}
-						<span class="ml-1 text-muted-foreground">· {c.level}</span>
-					</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-		{#if previewError}<p role="alert" class="text-sm text-destructive">{previewError}</p>{/if}
-		{#if previewReady && unsupported.length}
-			<div class="space-y-2 rounded-collection border p-3">
-				<p>{$t('participation.unsupported')}</p>
-				{#each unsupported as subject (subject.subjectId)}<p class="text-sm">{subject.name}</p>{/each}
-				<label class="flex gap-2"><input type="checkbox" bind:checked={acknowledged} />{$t('participation.acknowledge')}</label>
-			</div>
-		{/if}
-		{#if placement && targetClass && target !== placement.classGroupId}
-			<p class="text-xs text-muted-foreground">
-				{$t('student.transferPreview', { name: s.name, class: targetClass.name })}
-			</p>
-		{/if}
-	</div>
+		<div class="space-y-2 py-2">
+			{#if saveError}<p role="alert">{saveError}</p>{/if}
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('student.newClass')}
+			</Label>
+			<Select.Root type="single" value={target} onValueChange={v => v && (target = v)}>
+				<Select.Trigger>
+					<Select.Value placeholder={$t('student.newClass')}>
+						{targetClassLabel}
+					</Select.Value>
+				</Select.Trigger>
+				<Select.Content class="z-[100]">
+					{#each classes as c (c.id)}
+						<Select.Item value={c.id} label={c.name}>
+							{c.name}
+							<span class="ml-1 text-muted-foreground">· {c.level}</span>
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			{#if previewError}<p role="alert" class="text-sm text-destructive">{previewError}</p>{/if}
+			{#if previewReady && unsupported.length}
+				<div class="space-y-2 rounded-collection border p-3">
+					<p>{$t('participation.unsupported')}</p>
+					{#each unsupported as subject (subject.subjectId)}<p class="text-sm">{subject.name}</p>{/each}
+					<label class="flex gap-2"><input type="checkbox" bind:checked={acknowledged} />{$t('participation.acknowledge')}</label>
+				</div>
+			{/if}
+			{#if placement && targetClass && target !== placement.classGroupId}
+				<p class="text-xs text-muted-foreground">
+					{$t('student.transferPreview', { name: s.name, class: targetClass.name })}
+				</p>
+			{/if}
+		</div>
 	{/if}
 </FormModal>

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import ListEntityCards from '$lib/components/ui/ListEntityCards.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import ListEntityCards from '$lib/components/ui/ListEntityCards.svelte';
 	import { t } from '$lib/i18n';
 	import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { hasPermission } from '$lib/permissions';

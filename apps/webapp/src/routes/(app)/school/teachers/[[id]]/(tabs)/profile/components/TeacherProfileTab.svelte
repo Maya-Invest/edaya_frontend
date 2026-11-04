@@ -1,6 +1,6 @@
 <script lang="ts">
-	import TeacherQuickLogin from "./TeacherQuickLogin.svelte";
 	import type { Teacher } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonProfileDetails from '$lib/components/school/shared/PersonProfileDetails.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -12,6 +12,7 @@
 	import AnnualProfile from '$lib/smart-components/annual-profile/AnnualProfile.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
+	import TeacherQuickLogin from './TeacherQuickLogin.svelte';
 
 	const { teacher }: {
 		teacher: Teacher;
@@ -88,9 +89,9 @@
 		contactEmail={teacher.email}
 		displayName={teacher.name}
 	/>
-  {#if teacher.subjectId && teacher.isActive}
-    <PermissionGate permission="ACCESS_CONTROL_MANAGE">
-      {#snippet children()}{#key teacher.id}<TeacherQuickLogin teacherId={teacher.id} />{/key}{/snippet}
-    </PermissionGate>
-  {/if}
+	{#if teacher.subjectId && teacher.isActive}
+		<PermissionGate permission="ACCESS_CONTROL_MANAGE">
+			{#key `${teacher.id}:${academicContext.scopeGeneration}`}<TeacherQuickLogin teacherId={teacher.id} />{/key}
+		</PermissionGate>
+	{/if}
 </div>

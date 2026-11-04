@@ -31,9 +31,11 @@
 		}
 	}
 	const description = $derived.by(() => {
-		if (!context) return '';
+		if (!context)
+			return '';
 		const parts = [context.className, context.yearName];
-		if (!context.chooseStudents) parts.push($t('list.selectedCount', { n: context.students.length }));
+		if (!context.chooseStudents)
+			parts.push($t('list.selectedCount', { n: context.students.length }));
 		return parts.join(' · ');
 	});
 	const submitLabel = $derived($t(workflow.operations.length > 0 && workflow.withdrawalCount === workflow.operations.length ? 'participation.withdraw' : 'participation.apply'));

@@ -54,8 +54,11 @@
 		</div></details>{/if}
 	</div>
 {/snippet}
-<Dialog.Root open onOpenChange={open => { if (!open) onClose(); }}>
-	<Dialog.Content data-testid="student-placement-history" class="flex flex-col overflow-hidden" onCloseAutoFocus={event => {
+<Dialog.Root open onOpenChange={(open) => {
+	if (!open)
+		onClose();
+}}>
+	<Dialog.Content data-testid="student-placement-history" class="flex flex-col overflow-hidden" onCloseAutoFocus={(event) => {
 		const trigger = document.querySelector<HTMLButtonElement>('.ui-student-identity button[aria-haspopup]');
 		if (trigger) {
 			event.preventDefault();
