@@ -11,7 +11,7 @@ import { apiFetch } from '../tests/integration/setup/journey-api';
 import { exerciseRegisteredRead } from '../tests/integration/support/read-workflows';
 import { exerciseDashboard } from '../tests/integration/support/dashboard-workflows';
 import { scenarioForSurface } from '../tests/integration/support/coverage-contract';
-import { exerciseStudentDocument } from '../tests/integration/support/document-workflows';
+import { exerciseStudentDocument, exerciseTeacherDocument } from '../tests/integration/support/document-workflows';
 import { exerciseStudentPhoto, exerciseStudentStatus, exerciseStudentTransfer } from '../tests/integration/support/student-workflows';
 import { exerciseActivityCreateEdit, exerciseReportModuleLifecycle, exerciseCatalogCrud, exerciseEvaluationEditDelete, exerciseFeeEditArchive, exerciseGradeLevelEditDelete } from '../tests/integration/support/catalog-workflows';
 import { exerciseFinanceMutation, exerciseReconciliation, financeFixture } from '../tests/integration/support/finance-workflows';
@@ -872,7 +872,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
     return ok(row, await exerciseFinanceMutation(page, ctx.base, entities.classId, action === 'Imputer le solde' ? 'allocate' : 'reverse'));
   }
   if (action === 'Rapprochement financier' || action === 'Contrôles financiers') return ok(row, await exerciseReconciliation(page, ctx.base));
-  if (action === 'Documents' && row.endpoint.endsWith('/documents')) return ok(row, await exerciseStudentDocument(page, ctx.base));
+  if (action === 'Documents' && row.endpoint.includes('/school/teachers/[id]/documents')) return ok(row, await exerciseTeacherDocument(page, ctx.base));
   if (row.endpoint.includes('/school/teachers/[id]/') && ['Emploi du temps', 'Évaluations', 'Retour des familles'].includes(action)) return ok(row, await exerciseTeacherRead(page, ctx.base, action, entities));
   if (row.endpoint.endsWith('/configuration/structure/details?gradeLevel=[id]') && action === 'Niveau sélectionné — éditer / supprimer') return ok(row, await exerciseGradeLevelEditDelete(page, ctx.base));
   if (row.endpoint.includes('/evaluations') && action === 'Éditer / supprimer') {

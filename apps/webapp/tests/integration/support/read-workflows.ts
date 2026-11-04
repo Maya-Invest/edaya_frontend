@@ -73,6 +73,8 @@ const documents: ReadScenario = async ctx => {
   const rows = await list(ctx, 'document-issuances', {studentId:ctx.entities.studentId});
   const issuance = rows.find(row => row.status === 'ready' || row.status === 'voided');
   assert(issuance, 'Required rendered document fixture missing');
+  await ctx.page.locator(`[data-document-type="${issuance.templateKey}"]`).getByRole('button').click();
+  await ctx.page.getByRole('menuitem', { name: /view history|voir l[’']historique/i }).click();
   await ctx.page.locator(`[data-issuance-id="${issuance.id}"]`).waitFor({state:'visible'});
 };
 const attendance: ReadScenario = async ctx => {
