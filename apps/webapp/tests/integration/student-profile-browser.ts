@@ -19,7 +19,7 @@ async function main() {
 	page.setDefaultTimeout(15000);
 	const errors: string[] = []; page.on('pageerror', error => errors.push(error.stack ?? error.message));
 	const requests: { path: string; body: any }[] = [];
-	const fixture = { studentManage: true, emptyHealth: false, healthRead: true, enrollmentRead: true, enrollmentManage: true, guardianCount: 2, failHealth: 0, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
+	const fixture = { hasPlacement: true, previousPlacements: false, studentManage: true, emptyHealth: false, healthRead: true, enrollmentRead: true, enrollmentManage: true, guardianCount: 2, failHealth: 0, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
 	let newHealth: Record<string, unknown> | undefined;
 	const clinicalNotes = 'Clinical note';
 	const lastVisit = '2026-10-02T15:45:00.000Z';
@@ -28,8 +28,6 @@ async function main() {
 	const student = { id: 'child', schoolId: 'school', firstName: 'Aminata', lastName: 'Koné', sourceFullName: 'KONE Aminata Mariam', matricule: 'S-0042', nationalMatricule: 'CI-2042', birthDate: '2012-05-18', gender: 'female', nationality: 'Ivoirienne', placeOfBirth: 'Abidjan', enrollmentDate: '2025-09-01', status: 'active', email: 'student@example.test', photoUrl: '/core/files/published/content', photoAttachmentId: 'published' };
 	const years = [{ id: 'old-year', schoolId: 'school', name: '2025–2026', startDate: '2025-09-01', endDate: '2026-06-30', status: 'archived' }, { id: 'year', schoolId: 'school', name: '2026–2027', startDate: '2026-09-01', endDate: '2027-06-30', status: 'published' }];
 	const enrollment = { id: 'placement', enrollmentIndex: 1, schoolId: 'school', studentId: 'child', classGroupId: 'class', academicYearId: 'year', enrolledAt: '2026-09-01', status: 'active' };
-	let hasPlacement = true;
-	let previousPlacements = false;
 	let holdPlacementRead = false;
 	let releasePlacementRead: (() => void) | undefined;
 	let assignmentResult: 'fail' | 'conflict' | 'success' = 'success';
@@ -52,7 +50,7 @@ async function main() {
 			return route.fulfill({ status: 404 });
 		}
 		let response: any = []; let status = 200;
-		const grants = ['STUDENT_READ', ...(fixture.studentManage ? ['STUDENT_MANAGE'] : []), 'REPORT_CARD_GENERATE', 'DOCUMENT_VOID', 'STUDENT_HEALTH_UPDATE', 'PARENT_READ', 'PARENT_MANAGE', ...(fixture.enrollmentRead ? ['ENROLLMENT_READ'] : []), ...(fixture.enrollmentManage ? ['ENROLLMENT_MANAGE'] : []), 'STAFF_READ', 'DOCUMENT_READ', ...(fixture.healthRead ? ['STUDENT_HEALTH_READ'] : [])].map(permission => ({ permission, scopes: previousPlacements && !hasPlacement && permission === 'ENROLLMENT_MANAGE' ? [{ kind: 'class_group', classGroupId: 'class' }] : [{ kind: 'school' }] }));
+		const grants = ['STUDENT_READ', ...(fixture.studentManage ? ['STUDENT_MANAGE'] : []), 'REPORT_CARD_GENERATE', 'DOCUMENT_VOID', 'STUDENT_HEALTH_UPDATE', 'PARENT_READ', 'PARENT_MANAGE', ...(fixture.enrollmentRead ? ['ENROLLMENT_READ'] : []), ...(fixture.enrollmentManage ? ['ENROLLMENT_MANAGE'] : []), 'STAFF_READ', 'DOCUMENT_READ', ...(fixture.healthRead ? ['STUDENT_HEALTH_READ'] : [])].map(permission => ({ permission, scopes: fixture.previousPlacements && !fixture.hasPlacement && permission === 'ENROLLMENT_MANAGE' ? [{ kind: 'class_group', classGroupId: 'class' }] : [{ kind: 'school' }] }));
 		if (path.endsWith('/access-token'))
 			response = { accessToken: 'fixture.payload.signature', expiresAt: new Date(Date.now() + 3600000).toISOString() };
 		if (path.endsWith('/session'))
@@ -79,7 +77,7 @@ async function main() {
 			response = years;
 		if (path.endsWith('/class-groups/list'))
 			response = [{ id: 'class', schoolId: 'school', academicYearId: 'year', name: '6ème 2', gradeLevelId: 'level' }];
-		if (path.endsWith('/class-groups/list') && previousPlacements && !input.id) {
+		if (path.endsWith('/class-groups/list') && fixture.previousPlacements && !input.id) {
 			response.push({ ...response[0], id: 'other-year-class', academicYearId: 'old-year', name: 'Old year' },
 				{ ...response[0], id: 'other-class', name: 'Other class' });
 		}
@@ -97,9 +95,9 @@ async function main() {
 			response = [enrollment, { ...enrollment, id: 'placement2', studentId: 'child2' }].filter(row => !ids.length || ids.includes(row.studentId));
 			if (ids.length === 1 && ids[0] === student.id && !input.status) {
 				if (holdPlacementRead && !releasePlacementRead) await new Promise<void>(resolve => { releasePlacementRead = resolve; });
-				response = hasPlacement ? [enrollment] : [];
+				response = fixture.hasPlacement ? [enrollment] : [];
 				if (response.length && enrollment.enrolledAt === '') response[0] = { ...response[0], enrolledAt: null, createdAt: '2026-10-10' };
-				if (previousPlacements) response.push(
+				if (fixture.previousPlacements) response.push(
 					{ ...enrollment, id: 'older', academicYearId: 'old-year', status: 'closed', endReason: 'completed', enrolledAt: '2025-09-01', endedAt: '2026-06-30' },
 					{ ...enrollment, id: 'old', status: 'closed', endReason: 'transferred', enrolledAt: '2026-08-15', endedAt: '2026-09-01', progressionNotes: 'Recorded placement note.' });
 			}
@@ -116,7 +114,7 @@ async function main() {
 		if (path.endsWith('/enroll-student')) {
 			if (assignmentResult === 'fail') status = 503;
 			else {
-				hasPlacement = true;
+				fixture.hasPlacement = true;
 				if (assignmentResult === 'conflict') status = 409;
 				else enrollment.id = input.id;
 			}
@@ -342,7 +340,7 @@ async function main() {
 			await overflow.click();
 			assert.equal(await page.getByRole('button', { name: 'Placement history', exact: true }).count(), 0);
 			await page.keyboard.press('Escape');
-			previousPlacements = true;
+			fixture.previousPlacements = true;
 			fixture.studentManage = false;
 			fixture.enrollmentManage = false;
 			await page.reload();
@@ -369,7 +367,7 @@ async function main() {
 			enrollment.enrolledAt = '2026-09-01';
 			fixture.studentManage = true;
 			fixture.enrollmentManage = true;
-			hasPlacement = false;
+			fixture.hasPlacement = false;
 			holdPlacementRead = true;
 			await page.reload({ waitUntil: 'domcontentloaded' });
 			const deadline = Date.now() + 15000;
@@ -415,7 +413,7 @@ async function main() {
 			await form.waitFor({ state: 'hidden' });
 			await placementDate.getByText('Enrolled Sep 1, 2026', { exact: true }).waitFor();
 			enrollment.classGroupId = 'class';
-			previousPlacements = false;
+			fixture.previousPlacements = false;
 		}
 		// A valid note deep link must wait for its independent section query.
 		fixture.delayNotes = true;
@@ -548,7 +546,7 @@ async function main() {
 			await page.getByTestId('language-selector').click();
 			await page.getByTestId(`language-option-${language}`).click();
 			for (const prefix of ['/school/students/child', '/classes/class/students/child']) {
-				hasPlacement = false;
+				fixture.hasPlacement = false;
 				await page.goto(`${new URL(server.url).origin}${prefix}/enrollments`);
 				await placementDate.getByText(language === 'fr' ? 'Aucune affectation en classe active' : 'No active class placement', { exact: true }).waitFor();
 				await page.locator('.ui-student-identity button[aria-haspopup]').click();
@@ -558,7 +556,7 @@ async function main() {
 				await page.goto(`${new URL(server.url).origin}${prefix}/enrollments?modal=placement-history`);
 				await historyPopup.getByText(language === 'fr' ? 'Aucune inscription enregistrée.' : 'No enrollments recorded.', { exact: true }).waitFor();
 				await historyPopup.getByRole('button', { name: language === 'fr' ? 'Fermer' : 'Close', exact: true }).click();
-				previousPlacements = true;
+				fixture.previousPlacements = true;
 				await page.setViewportSize({ width: 390, height: 844 });
 				await page.goto(`${new URL(server.url).origin}${prefix}/profile?modal=placement-history&q=preserved`);
 				await historyPopup.locator('[data-placement-id="older"]').waitFor();
@@ -569,11 +567,11 @@ async function main() {
 				await historyPopup.waitFor({ state: 'hidden' });
 				assert.equal(new URL(page.url()).pathname, `${prefix}/profile`);
 				assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
-				previousPlacements = false;
+				fixture.previousPlacements = false;
 				await page.setViewportSize({ width: 1440, height: 1000 });
 				await page.evaluate(() => document.documentElement.style.fontSize = '16px');
 
-				hasPlacement = true;
+				fixture.hasPlacement = true;
 				await page.goto(`${new URL(server.url).origin}${prefix}/documents`);
 				const row = page.locator('[data-document-type="student-id-card.v1"]');
 				await row.getByText(language === 'fr' ? 'Non émis' : 'Not issued', { exact: true }).waitFor();

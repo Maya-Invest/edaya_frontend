@@ -2,7 +2,7 @@
 export const FOCUSED_BROWSER_SUITES = [
   { name: 'student-profile', script: 'student-profile-browser.ts', seeded: false },
   { name: 'grading-entry', script: 'grading-entry-browser.ts', seeded: false },
-  { name: 'owner-school-switching', script: 'owner-school-switching-browser.ts', seeded: true },
+  { name: 'owner-school-switching', script: 'owner-school-switching-browser.ts', seeded: true, runtime: 'node' },
   { name: 'school-year-switcher', script: 'school-year-switcher-browser.ts', seeded: false },
   { name: 'shared-design', script: 'shared-design-browser.ts', seeded: false },
   { name: 'guardian-profile', script: 'guardian-profile-browser.ts', seeded: false },

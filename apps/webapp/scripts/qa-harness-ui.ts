@@ -1369,7 +1369,12 @@ function yearCardByLabel(page: Page, label: string): Locator {
 }
 
 function yearCards(page: Page): Locator {
-	return page.locator('section.overflow-hidden.rounded-2xl');
+	return page.locator('section').filter({ has: page.locator('[data-academic-menu]') }).filter({ has: page.locator(':scope > div > button[aria-expanded]') });
+}
+
+async function openYearActions(yearSection: Locator): Promise<void> {
+	await yearSection.locator('[data-academic-menu]').first().getByRole('button').click();
+	await yearSection.page().getByRole('menu').waitFor({ state: 'visible' });
 }
 
 async function expandYearSection(yearSection: Locator): Promise<void> {
@@ -1449,7 +1454,8 @@ async function archivePublishedYears(page: Page): Promise<void> {
 				continue;
 			}
 			await expandYearSection(card);
-			const archiveBtn = card.getByRole('button', { name: archiveYearButtonName }).first();
+			await openYearActions(card);
+			const archiveBtn = page.getByRole('menu').getByRole('menuitem', { name: archiveYearButtonName }).first();
 			if (!(await archiveBtn.isVisible({ timeout: 2_000 }).catch(() => false))) {
 				continue;
 			}
@@ -1467,11 +1473,7 @@ async function archivePublishedYears(page: Page): Promise<void> {
 }
 
 async function academicYearUiLooksPublished(yearSection: Locator): Promise<boolean> {
-	if ((await yearHeaderStatus(yearSection)) === 'published') {
-		return true;
-	}
-	const archiveInSection = yearSection.getByRole('button', { name: archiveYearButtonName });
-	return archiveInSection.isVisible({ timeout: 2_000 }).catch(() => false);
+	return (await yearHeaderStatus(yearSection)) === 'published';
 }
 
 /**
@@ -1501,7 +1503,8 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 			return true;
 		}
 
-		const publishBtn = yearSection.getByRole('button', { name: publishYearButtonName }).first();
+		await openYearActions(yearSection);
+		const publishBtn = page.getByRole('menu').getByRole('menuitem', { name: publishYearButtonName }).first();
 		const publishVisible = await publishBtn.isVisible({ timeout: 2_000 }).catch(() => false);
 		const publishDisabled = publishVisible && await publishBtn.isDisabled().catch(() => false);
 		console.log(`academic-year publish attempt ${attempt + 1}: status=${status} visible=${publishVisible} disabled=${publishDisabled}`);
