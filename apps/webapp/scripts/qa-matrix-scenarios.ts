@@ -873,6 +873,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
   }
   if (action === 'Rapprochement financier' || action === 'Contrôles financiers') return ok(row, await exerciseReconciliation(page, ctx.base));
   if (action === 'Documents' && row.endpoint.includes('/school/teachers/[id]/documents')) return ok(row, await exerciseTeacherDocument(page, ctx.base));
+  if (action === 'Documents' && row.endpoint.endsWith('/documents')) return ok(row, await exerciseStudentDocument(page, ctx.base));
   if (row.endpoint.includes('/school/teachers/[id]/') && ['Emploi du temps', 'Évaluations', 'Retour des familles'].includes(action)) return ok(row, await exerciseTeacherRead(page, ctx.base, action, entities));
   if (row.endpoint.endsWith('/configuration/structure/details?gradeLevel=[id]') && action === 'Niveau sélectionné — éditer / supprimer') return ok(row, await exerciseGradeLevelEditDelete(page, ctx.base));
   if (row.endpoint.includes('/evaluations') && action === 'Éditer / supprimer') {

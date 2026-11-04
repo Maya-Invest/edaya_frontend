@@ -19,18 +19,12 @@ async function main() {
 	page.setDefaultTimeout(15000);
 	const errors: string[] = []; page.on('pageerror', error => errors.push(error.stack ?? error.message));
 	const requests: { path: string; body: any }[] = [];
-	const fixture = { hasPlacement: true, previousPlacements: false, studentManage: true, emptyHealth: false, healthRead: true, enrollmentRead: true, enrollmentManage: true, guardianCount: 2, failHealth: 0, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
-	let newHealth: Record<string, unknown> | undefined;
+	const fixture = { newHealth: undefined as Record<string, unknown> | undefined, releaseHealth: undefined as (() => void) | undefined, releaseNotes: undefined as (() => void) | undefined, holdPlacementRead: false, releasePlacementRead: undefined as (() => void) | undefined, assignmentResult: 'success' as 'fail' | 'conflict' | 'success', hasPlacement: true, previousPlacements: false, studentManage: true, emptyHealth: false, healthRead: true, enrollmentRead: true, enrollmentManage: true, guardianCount: 2, failHealth: 0, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
 	const clinicalNotes = 'Clinical note';
 	const lastVisit = '2026-10-02T15:45:00.000Z';
-	let releaseHealth: (() => void) | undefined;
-	let releaseNotes: (() => void) | undefined;
 	const student = { id: 'child', schoolId: 'school', firstName: 'Aminata', lastName: 'Koné', sourceFullName: 'KONE Aminata Mariam', matricule: 'S-0042', nationalMatricule: 'CI-2042', birthDate: '2012-05-18', gender: 'female', nationality: 'Ivoirienne', placeOfBirth: 'Abidjan', enrollmentDate: '2025-09-01', status: 'active', email: 'student@example.test', photoUrl: '/core/files/published/content', photoAttachmentId: 'published' };
 	const years = [{ id: 'old-year', schoolId: 'school', name: '2025–2026', startDate: '2025-09-01', endDate: '2026-06-30', status: 'archived' }, { id: 'year', schoolId: 'school', name: '2026–2027', startDate: '2026-09-01', endDate: '2027-06-30', status: 'published' }];
 	const enrollment = { id: 'placement', enrollmentIndex: 1, schoolId: 'school', studentId: 'child', classGroupId: 'class', academicYearId: 'year', enrolledAt: '2026-09-01', status: 'active' };
-	let holdPlacementRead = false;
-	let releasePlacementRead: (() => void) | undefined;
-	let assignmentResult: 'fail' | 'conflict' | 'success' = 'success';
 	const guardian = { id: 'guardian', schoolId: 'school', firstName: 'Mariam', lastName: 'Koné', email: 'guardian@example.test', phone: '+225 0102030405', occupation: 'Enseignante' };
 	const link = { id: 'link', studentId: 'child', guardianId: 'guardian', relationship: 'mother', isPrimary: true, legalGuardian: true, canPickup: true, receivesAcademicReports: true, receivesAttendanceAlerts: true, isBillingContact: false, emergencyContactPriority: 1 };
 	const medical = `Full medical instructions: preserve every line.\n${'Long medical information and emergency instructions. '.repeat(15)}`;
@@ -94,7 +88,7 @@ async function main() {
 			const ids = input.studentId?.$in ?? (input.studentId ? [input.studentId] : []);
 			response = [enrollment, { ...enrollment, id: 'placement2', studentId: 'child2' }].filter(row => !ids.length || ids.includes(row.studentId));
 			if (ids.length === 1 && ids[0] === student.id && !input.status) {
-				if (holdPlacementRead && !releasePlacementRead) await new Promise<void>(resolve => { releasePlacementRead = resolve; });
+				if (fixture.holdPlacementRead && !fixture.releasePlacementRead) await new Promise<void>(resolve => { fixture.releasePlacementRead = resolve; });
 				response = fixture.hasPlacement ? [enrollment] : [];
 				if (response.length && enrollment.enrolledAt === '') response[0] = { ...response[0], enrolledAt: null, createdAt: '2026-10-10' };
 				if (fixture.previousPlacements) response.push(
@@ -112,10 +106,10 @@ async function main() {
 			response = enrollment;
 		}
 		if (path.endsWith('/enroll-student')) {
-			if (assignmentResult === 'fail') status = 503;
+			if (fixture.assignmentResult === 'fail') status = 503;
 			else {
 				fixture.hasPlacement = true;
-				if (assignmentResult === 'conflict') status = 409;
+				if (fixture.assignmentResult === 'conflict') status = 409;
 				else enrollment.id = input.id;
 			}
 			response = status === 200 ? enrollment : { message: 'Unable to assign class' };
@@ -134,16 +128,16 @@ async function main() {
 			response = fixture.pending ? [{ id: 'proposal', schoolId: 'school', studentId: 'child', attachmentId: 'proposed', status: 'pending', version: 1 }] : [];
 		if (path.endsWith('/student-health-profiles/list')) {
 			if (fixture.delayHealth)
-				await new Promise<void>(resolve => releaseHealth = resolve);
+				await new Promise<void>(resolve => fixture.releaseHealth = resolve);
 			response = [{ id: 'health', schoolId: 'school', studentId: JSON.stringify(input).includes('child2') ? 'child2' : 'child', bloodType: 'A+', medicalConditions: medical, allergies: 'Peanuts', medications: 'Prescribed medication', emergencyProtocols: 'Contact the emergency team.', clinicalNotes, lastVisit }];
-			if (fixture.emptyHealth) response = newHealth ? [newHealth] : [];
+			if (fixture.emptyHealth) response = fixture.newHealth ? [fixture.newHealth] : [];
 			if (fixture.failHealth) { status = fixture.failHealth; response = { message: 'Restricted medical records' }; }
 		}
 		if (path.endsWith('/student-notes/list')) {
-			if (fixture.delayNotes) await new Promise<void>(resolve => releaseNotes = resolve);
+			if (fixture.delayNotes) await new Promise<void>(resolve => fixture.releaseNotes = resolve);
 			response = [{ id: 'note', studentId: 'child', body: 'Steady progress in class.', authorStaffId: 'author', createdAt: '2026-10-03T12:00:00Z', category: 'progress', visibility: 'staff' }];
 		}
-		if (path.includes('upsert-student-health-profile')) { response = { id: 'health', schoolId: 'school', ...input }; if (fixture.emptyHealth) newHealth = response; }
+		if (path.includes('upsert-student-health-profile')) { response = { id: 'health', schoolId: 'school', ...input }; if (fixture.emptyHealth) fixture.newHealth = response; }
 		if (path.endsWith('/list-document-templates')) {
 			response = [
 				['student-id-card.v1', 'Student card', 'Carte scolaire'],
@@ -368,15 +362,15 @@ async function main() {
 			fixture.studentManage = true;
 			fixture.enrollmentManage = true;
 			fixture.hasPlacement = false;
-			holdPlacementRead = true;
+			fixture.holdPlacementRead = true;
 			await page.reload({ waitUntil: 'domcontentloaded' });
 			const deadline = Date.now() + 15000;
-			while (!releasePlacementRead && Date.now() < deadline) await page.waitForTimeout(20);
-			assert(releasePlacementRead);
+			while (!fixture.releasePlacementRead && Date.now() < deadline) await page.waitForTimeout(20);
+			assert(fixture.releasePlacementRead);
 			assert.equal(await page.getByRole('button', { name: 'Assign class', exact: true }).count(), 0);
-			holdPlacementRead = false;
-			releasePlacementRead();
-			releasePlacementRead = undefined;
+			fixture.holdPlacementRead = false;
+			fixture.releasePlacementRead();
+			fixture.releasePlacementRead = undefined;
 			await placementDate.getByText('No active class placement', { exact: true }).waitFor();
 			await overflow.click();
 			await page.getByRole('button', { name: 'Assign class', exact: true }).click();
@@ -387,12 +381,12 @@ async function main() {
 			await page.getByRole('option').first().waitFor();
 			assert.equal(await page.getByRole('option').count(), 1);
 			await page.getByRole('option').click();
-			assignmentResult = 'fail';
+			fixture.assignmentResult = 'fail';
 			await form.getByTestId('form-modal-submit').click();
 			await form.getByRole('alert').waitFor();
-			assignmentResult = prefix.startsWith('/classes') ? 'conflict' : 'success';
+			fixture.assignmentResult = prefix.startsWith('/classes') ? 'conflict' : 'success';
 			await form.getByTestId('form-modal-submit').click();
-			if (assignmentResult === 'conflict') {
+			if (fixture.assignmentResult === 'conflict') {
 				await form.getByText(/^Current class:/i).waitFor();
 				assert(await form.getByTestId('form-modal-submit').isDisabled());
 				await form.getByTestId('form-modal-cancel').click();
@@ -419,12 +413,12 @@ async function main() {
 		fixture.delayNotes = true;
 		await page.goto(`${new URL(server.url).origin}/school/students/child/profile?modal=edit-note&modalTarget=note`);
 		const noteDeadline = Date.now() + 15000;
-		while (!releaseNotes && Date.now() < noteDeadline) await page.waitForTimeout(20);
-		assert(releaseNotes, 'Delayed note request must start');
+		while (!fixture.releaseNotes && Date.now() < noteDeadline) await page.waitForTimeout(20);
+		assert(fixture.releaseNotes, 'Delayed note request must start');
 		await profile.locator('[data-profile-section=health]').getByRole('button', { name: /edit health/i }).waitFor();
 		assert.equal(new URL(page.url()).searchParams.get('modal'), 'edit-note');
 		fixture.delayNotes = false;
-		releaseNotes();
+		fixture.releaseNotes();
 		await page.getByTestId('form-modal').locator('textarea').waitFor();
 		assert.equal(await page.getByTestId('form-modal').locator('textarea').inputValue(), 'Steady progress in class.');
 		await page.keyboard.press('Escape');
@@ -518,23 +512,23 @@ async function main() {
 		fixture.delayHealth = true;
 		await page.goto(`${new URL(server.url).origin}/school/students/child/profile`);
 		await page.waitForFunction(() => !!document.querySelector('[data-testid=student-profile]'));
-		for (let attempt = 0; !releaseHealth && attempt < 100; attempt++) await page.waitForTimeout(10);
-		assert(releaseHealth, 'Delayed medical request was issued');
+		for (let attempt = 0; !fixture.releaseHealth && attempt < 100; attempt++) await page.waitForTimeout(10);
+		assert(fixture.releaseHealth, 'Delayed medical request was issued');
 		fixture.delayHealth = false;
 		await page.goto(`${new URL(server.url).origin}/school/students/child2/profile`);
-		releaseHealth(); releaseHealth = undefined;
+		fixture.releaseHealth(); fixture.releaseHealth = undefined;
 		await profile.locator('[data-profile-section=health]').getByText('A+', { exact: true }).waitFor();
 		assert((await page.locator('.ui-student-identity').innerText()).includes('Other Student'));
 		// An earlier student's delayed placement response must not seed the next drawer.
-		holdPlacementRead = true;
+		fixture.holdPlacementRead = true;
 		await page.goto(`${new URL(server.url).origin}/school/students/child/profile?modal=placement-history`, { waitUntil: 'domcontentloaded' });
 		const historyDeadline = Date.now() + 15000;
-		while (!releasePlacementRead && Date.now() < historyDeadline) await page.waitForTimeout(20);
-		assert(releasePlacementRead);
-		holdPlacementRead = false;
+		while (!fixture.releasePlacementRead && Date.now() < historyDeadline) await page.waitForTimeout(20);
+		assert(fixture.releasePlacementRead);
+		fixture.holdPlacementRead = false;
 		await page.goto(`${new URL(server.url).origin}/school/students/child2/profile?modal=placement-history`);
-		releasePlacementRead();
-		releasePlacementRead = undefined;
+		fixture.releasePlacementRead();
+		fixture.releasePlacementRead = undefined;
 		await historyPopup.locator('[data-placement-id="placement2"]').waitFor();
 		assert.equal(await historyPopup.locator('[data-placement-id]').count(), 1);
 		await historyPopup.getByRole('heading', { name: 'Placement history · Other Student' }).waitFor();
