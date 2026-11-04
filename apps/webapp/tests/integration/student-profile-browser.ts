@@ -16,10 +16,11 @@ async function main() {
 	const browser = await chromium.launch({ headless: true });
 	const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 	page.setDefaultTimeout(15000);
-	const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+	const errors: string[] = []; page.on('pageerror', error => errors.push(error.stack ?? error.message));
 	const requests: { path: string; body: any }[] = [];
-	const fixture = { healthRead: true, failHealth: false, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
-	let clinicalNotes = 'Clinical note';
+	const fixture = { healthRead: true, enrollmentRead: true, guardianCount: 2, failHealth: false, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
+	const clinicalNotes = 'Clinical note';
+	const lastVisit = '2026-10-02T15:45:00.000Z';
 	let releaseHealth: (() => void) | undefined;
 	let releaseNotes: (() => void) | undefined;
 	const student = { id: 'child', schoolId: 'school', firstName: 'Aminata', lastName: 'Koné', sourceFullName: 'KONE Aminata Mariam', matricule: 'S-0042', nationalMatricule: 'CI-2042', birthDate: '2012-05-18', gender: 'female', nationality: 'Ivoirienne', placeOfBirth: 'Abidjan', enrollmentDate: '2025-09-01', status: 'active', email: 'student@example.test', photoUrl: '/core/files/published/content', photoAttachmentId: 'published' };
@@ -38,7 +39,7 @@ async function main() {
 		if (path.includes('/files/'))
 			return route.fulfill({ contentType: 'image/png', body: png });
 		let response: any = []; let status = 200;
-		const grants = ['STUDENT_READ', 'STUDENT_MANAGE', 'STUDENT_HEALTH_UPDATE', 'PARENT_READ', 'PARENT_MANAGE', 'ENROLLMENT_READ', 'ENROLLMENT_MANAGE', 'STAFF_READ', 'DOCUMENT_READ', ...(fixture.healthRead ? ['STUDENT_HEALTH_READ'] : [])].map(permission => ({ permission, scopes: [{ kind: 'school' }] }));
+		const grants = ['STUDENT_READ', 'STUDENT_MANAGE', 'STUDENT_HEALTH_UPDATE', 'PARENT_READ', 'PARENT_MANAGE', ...(fixture.enrollmentRead ? ['ENROLLMENT_READ'] : []), 'ENROLLMENT_MANAGE', 'STAFF_READ', 'DOCUMENT_READ', ...(fixture.healthRead ? ['STUDENT_HEALTH_READ'] : [])].map(permission => ({ permission, scopes: [{ kind: 'school' }] }));
 		if (path.endsWith('/access-token'))
 			response = { accessToken: 'fixture.payload.signature', expiresAt: new Date(Date.now() + 3600000).toISOString() };
 		if (path.endsWith('/session'))
@@ -67,31 +68,44 @@ async function main() {
 			response = [{ id: 'class', schoolId: 'school', academicYearId: 'year', name: '6ème 2', gradeLevelId: 'level' }];
 		if (path.endsWith('/grade-levels/list'))
 			response = [{ id: 'level', schoolId: 'school', name: '6ème', label: '6ème', sequenceOrder: 1 }];
-		if (path.endsWith('/students/list'))
-			response = JSON.stringify(input).includes('child2') ? [{ ...student, id: 'child2', firstName: 'Other', lastName: 'Student' }] : [student];
+		if (path.endsWith('/students/list')) {
+			const secondStudent = { ...student, id: 'child2', firstName: 'Other', lastName: 'Student' };
+			const ids = input.id?.$in ?? (input.id ? [input.id] : []);
+			response = [student, secondStudent].filter(row => !ids.length || ids.includes(row.id));
+		}
 		if (path.endsWith('/students/count'))
-			response = { count: 1 };
-		if (path.endsWith('/enrollments/list')) { response = [JSON.stringify(input).includes('child2') ? { ...enrollment, studentId: 'child2' } : enrollment]; if (fixture.failHistory) { response = { message: 'History unavailable' }; status = 503; } }
-		if (path.endsWith('/guardians/list')) { response = [guardian]; if (fixture.failGuardians) { response = { message: 'Guardian failure' }; status = 503; } }
+			response = { count: 2 };
+		if (path.endsWith('/enrollments/list')) {
+			const ids = input.studentId?.$in ?? (input.studentId ? [input.studentId] : []);
+			response = [enrollment, { ...enrollment, id: 'placement2', studentId: 'child2' }].filter(row => !ids.length || ids.includes(row.studentId));
+			if (fixture.failHistory && ids.length === 1 && ids[0] === student.id) {
+				response = { message: 'History unavailable' };
+				status = 503;
+			}
+		}
+		if (path.endsWith('/guardians/list')) {
+			response = Array.from({ length: fixture.guardianCount }, (_, i) => i ? { ...guardian, id: `guardian-${i}`, firstName: `Guardian ${i}` } : guardian);
+			if (fixture.failGuardians) { response = { message: 'Guardian failure' }; status = 503; }
+		}
 		if (path.endsWith('/guardians/guardian'))
 			response = guardian;
 		if (path.endsWith('/guardians/count'))
 			response = { count: 1 };
 		if (path.endsWith('/guardian-links/list'))
-			response = [link];
+			response = Array.from({ length: fixture.guardianCount }, (_, i) => i ? { ...link, id: `link-${i}`, guardianId: `guardian-${i}` } : link);
 		if (path.endsWith('/student-photo-submissions/list'))
 			response = fixture.pending ? [{ id: 'proposal', schoolId: 'school', studentId: 'child', attachmentId: 'proposed', status: 'pending', version: 1 }] : [];
 		if (path.endsWith('/student-health-profiles/list')) {
 			if (fixture.delayHealth)
 				await new Promise<void>(resolve => releaseHealth = resolve);
-			response = [{ id: 'health', schoolId: 'school', studentId: JSON.stringify(input).includes('child2') ? 'child2' : 'child', bloodType: 'A+', medicalConditions: medical, allergies: 'Peanuts', medications: 'Prescribed medication', emergencyProtocols: 'Contact the emergency team.', clinicalNotes, lastVisit: '2026-10-02' }];
+			response = [{ id: 'health', schoolId: 'school', studentId: JSON.stringify(input).includes('child2') ? 'child2' : 'child', bloodType: 'A+', medicalConditions: medical, allergies: 'Peanuts', medications: 'Prescribed medication', emergencyProtocols: 'Contact the emergency team.', clinicalNotes, lastVisit }];
 			if (fixture.failHealth) { status = 403; response = { message: 'Restricted medical records' }; }
 		}
 		if (path.endsWith('/student-notes/list')) {
 			if (fixture.delayNotes) await new Promise<void>(resolve => releaseNotes = resolve);
 			response = [{ id: 'note', studentId: 'child', body: 'Steady progress in class.', authorStaffId: 'author', createdAt: '2026-10-03T12:00:00Z', category: 'progress', visibility: 'staff' }];
 		}
-		if (path.includes('upsert-student-health-profile')) { clinicalNotes = input.clinicalNotes; response = { id: 'health', schoolId: 'school', ...input }; }
+		if (path.includes('upsert-student-health-profile')) { response = { id: 'health', schoolId: 'school', ...input }; }
 		if (path.includes('get-student-subject-enrollments'))
 			response = { studentId: 'child', placements: [enrollment], offerings: [], enrollments: [], periods: [] };
 		if (path.includes('update-student-status')) {
@@ -118,28 +132,50 @@ async function main() {
 	});
 	const profile = page.getByTestId('student-profile');
 	try {
-		console.log('Checking merged school/class profile, independent sections and legacy URLs');
+		const tabs = page.getByTestId('drawer-tab-bar');
+		const enrollmentTab = page.getByTestId('student-enrollment');
+		console.log('Checking separate Profile and Enrollment tabs in both drawers');
 		for (const prefix of ['/school/students/child', '/classes/class/students/child']) {
-			await page.goto(`${server.url.replace('/school/students/child/profile', '')}${prefix}/enrollments?q=preserved`);
-			await profile.waitFor();
-			assert(new URL(page.url()).pathname.endsWith('/profile'));
+			await page.goto(`${new URL(server.url).origin}${prefix}/profile?q=preserved#schooling`);
+			await enrollmentTab.getByTestId('student-placement-history').waitFor();
+			assert.equal(new URL(page.url()).pathname, `${prefix}/enrollments`);
 			assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
+			assert.deepEqual(await tabs.getByRole('link').allTextContents().then(labels => labels.map(label => label.trim())), ['Profile', 'Enrollment', 'Attendance', 'Grades', 'Report card', 'Incidents', 'Finance', 'Documents']);
+			assert.equal(await tabs.getByRole('link', { name: 'Enrollment' }).getAttribute('aria-current'), 'page');
+			assert.equal(new URL(await tabs.getByRole('link', { name: 'Enrollment' }).getAttribute('href') ?? '', page.url()).pathname, `${prefix}/enrollments`);
+			const count = requests.filter(row => row.path.includes('get-student-subject-enrollments')).length;
+			await tabs.getByRole('link', { name: 'Profile', exact: true }).click();
 			await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
-			assert.deepEqual(await profile.locator('[data-profile-section]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-profile-section'))), ['portrait', 'health', 'personal', 'schooling', 'guardians', 'account', 'notes']);
-			assert.equal(await page.getByTestId('drawer-tab-bar').getByRole('link').count(), 7);
+			assert.equal(requests.filter(row => row.path.includes('get-student-subject-enrollments')).length, count);
+			assert.deepEqual(await profile.locator('[data-profile-section]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-profile-section'))), ['portrait', 'health', 'personal', 'guardians', 'account', 'notes']);
+			await profile.locator('[data-profile-section=health]').getByText('A+').waitFor();
+			assert.deepEqual(await profile.locator('[data-profile-section=health] .ui-drawer-field-label').allTextContents(), ['Blood type', 'Allergies', 'Medications', 'Chronic conditions']);
 			assert.equal(await profile.getByText('S-0042', { exact: true }).count(), 0);
 			assert.equal(await profile.getByText(medical, { exact: true }).count(), 1);
 			await profile.locator('[data-profile-section=portrait] img').waitFor();
 			assert.equal(await profile.locator('[data-profile-section=portrait] img').count(), 1, 'Only proposed portrait is repeated in body');
-			await profile.getByText('2026–2027', { exact: true }).first().waitFor();
+			await profile.getByRole('button', { name: 'Mariam Koné', exact: true }).click();
+			await page.getByRole('button', { name: 'Back', exact: true }).click();
+			const guardianLink = profile.getByRole('button', { name: 'Mariam Koné', exact: true });
+			await guardianLink.waitFor();
+			await page.waitForFunction(() => document.activeElement?.getAttribute('data-guardian-id') === 'guardian');
+			assert.equal(new URL(page.url()).pathname, `${prefix}/profile`);
+			assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
 			await page.getByTestId('student-drawer-body').screenshot({ path: resolve(output, `${prefix.startsWith('/school') ? 'school' : 'class'}-profile.png`) });
 		}
 		const guardians = profile.locator('[data-profile-section=guardians]');
+		for (const count of [0, 2, 3]) {
+			fixture.guardianCount = count;
+			await page.reload();
+			await guardians.getByRole('heading', { name: `Guardians · ${count}` }).waitFor();
+			assert.equal(await guardians.locator('[data-guardian-id]').count(), count);
+			assert.equal(await guardians.locator('input').count(), 0);
+		}
 		const guardianCard = guardians.getByRole('group', { name: `${guardian.firstName} ${guardian.lastName}`, exact: true });
 		await guardianCard.getByText('Mother', { exact: true }).waitFor();
 		assert.equal(await guardianCard.locator('details').count(), 0, 'Guardian card shows a relationship badge without a rights disclosure');
 		assert.equal(await guardianCard.getByText('Primary guardian', { exact: true }).count(), 0);
-		assert.equal(await guardians.getByText('1 results', { exact: true }).count(), 0, 'No redundant result footer');
+		assert.equal(await guardians.getByText(`${fixture.guardianCount} results`, { exact: true }).count(), 0, 'No redundant result footer');
 		assert.equal(await guardianCard.getByRole('button', { name: 'Edit', exact: true }).count(), 0, 'Edit belongs to the shared row menu');
 		await guardianCard.getByRole('button', { name: 'Row actions · Mariam Koné', exact: true }).click();
 		await page.getByRole('menu').getByRole('menuitem', { name: 'Edit', exact: true }).click();
@@ -148,23 +184,29 @@ async function main() {
 		assert(await relationshipDialog.getByLabel('Primary guardian', { exact: true }).isChecked(), 'Full relationship rights remain in the editing form');
 		await relationshipDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await relationshipDialog.waitFor({ state: 'hidden' });
-		console.log('Checking health text preservation and annual/progression forms in merged Profile');
+		console.log('Checking health text preservation and annual/progression forms in Enrollment');
 		await profile.getByRole('button', { name: 'Edit health profile', exact: true }).click();
 		const healthDialog = page.getByTestId('form-modal');
 		assert.equal(await healthDialog.getByLabel('Chronic conditions', { exact: true }).inputValue(), medical);
-		await healthDialog.getByLabel('Clinical notes', { exact: true }).fill('Updated clinical note');
+		assert.deepEqual(await healthDialog.locator('form label').allTextContents(), ['Blood type', 'Allergies', 'Medications', 'Chronic conditions']);
+		await healthDialog.getByLabel('Blood type', { exact: true }).fill('B+');
 		await healthDialog.getByTestId('form-modal-submit').click();
 		await healthDialog.waitFor({ state: 'hidden' });
 		assert.equal(requests.findLast(row => row.path.includes('upsert-student-health-profile'))?.body.medicalConditions, medical.trim(), 'Medical text is not flattened or split during edits');
+		const savedHealth = requests.findLast(row => row.path.includes('upsert-student-health-profile'))?.body;
+		assert.equal(savedHealth.bloodType, 'B+');
+		assert.equal(savedHealth.clinicalNotes, clinicalNotes);
+		assert.equal(savedHealth.emergencyProtocols, 'Contact the emergency team.');
+		assert.equal(savedHealth.lastVisit, lastVisit);
 		// Legacy enrollment links keep URL-backed forms functional in both origins.
 		for (const prefix of ['/school/students/child', '/classes/class/students/child']) {
-			await page.goto(`${new URL(server.url).origin}${prefix}/enrollments?modal=edit-annual-profile&q=preserved`);
+			await page.goto(`${new URL(server.url).origin}${prefix}/profile?modal=edit-annual-profile&q=preserved`);
 			await page.getByTestId('form-modal').waitFor();
-			assert(new URL(page.url()).pathname.endsWith('/profile'));
+			assert(new URL(page.url()).pathname.endsWith('/enrollments'));
 			assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
 			await page.getByTestId('form-modal-cancel').click();
 			await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
-			await profile.getByRole('button', { name: 'Completion and progression', exact: true }).click();
+			await enrollmentTab.getByRole('button', { name: 'Completion and progression', exact: true }).click();
 			await page.getByTestId('form-modal').waitFor();
 			await page.getByTestId('form-modal-cancel').click();
 			await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
@@ -199,11 +241,19 @@ async function main() {
 		await profile.locator('[data-profile-section=guardians]').getByRole('button', { name: 'Try again', exact: true }).click();
 		await retriedGuardians;
 		await profile.getByRole('button', { name: 'Mariam Koné', exact: true }).waitFor();
-		fixture.failHistory = true; await page.reload();
-		await profile.locator('[data-profile-section=schooling]').getByRole('button', { name: 'Try again', exact: true }).last().waitFor();
-		await profile.getByText('Steady progress in class.', { exact: true }).waitFor();
-		fixture.failHistory = false; await profile.locator('[data-profile-section=schooling]').getByRole('button', { name: 'Try again', exact: true }).last().click();
+		fixture.failHistory = true; await tabs.getByRole('link', { name: 'Enrollment', exact: true }).click();
+		await enrollmentTab.getByRole('button', { name: 'Try again', exact: true }).last().waitFor();
+		fixture.failHistory = false; await enrollmentTab.getByRole('button', { name: 'Try again', exact: true }).last().click();
 		await page.getByTestId('student-placement-history').waitFor();
+		fixture.enrollmentRead = false;
+		const subjectRequests = requests.filter(row => row.path.includes('get-student-subject-enrollments')).length;
+		await page.reload();
+		await enrollmentTab.waitFor();
+		assert.equal(await enrollmentTab.locator('#optional-subjects,#class-history').count(), 0);
+		assert.equal(requests.filter(row => row.path.includes('get-student-subject-enrollments')).length, subjectRequests);
+		fixture.enrollmentRead = true;
+		await page.goto(`${new URL(server.url).origin}/school/students/child/profile`);
+		await profile.waitFor();
 		// Status changes remain explicit; a failed save preserves the draft for retry.
 		await page.getByTestId('student-drawer-body').evaluate(element => element.scrollTop = 0);
 		await page.locator('.ui-student-drawer-context').getByRole('button', { name: 'More actions', exact: true }).click();
@@ -215,12 +265,6 @@ async function main() {
 		assert.equal(student.status, 'active'); fixture.failStatus = false;
 		await statusDialog.getByTestId('form-modal-submit').click(); await statusDialog.waitFor({ state: 'hidden' });
 		assert.equal(student.status, 'inactive');
-		// School/class source and guardian identity survive contextual Back.
-		await profile.getByRole('button', { name: 'Mariam Koné', exact: true }).click();
-		await page.getByRole('button', { name: 'Back', exact: true }).waitFor();
-		await page.getByRole('button', { name: 'Back', exact: true }).click();
-		await profile.getByRole('button', { name: 'Mariam Koné', exact: true }).waitFor();
-		assert(await profile.getByRole('button', { name: 'Mariam Koné', exact: true }).evaluate(element => element === document.activeElement));
 		console.log('Checking portrait approval, rejection and replacement');
 		await page.getByTestId('student-drawer-body').evaluate(element => element.scrollTop = 0);
 		await profile.getByRole('button', { name: 'Approve', exact: true }).click();
@@ -272,8 +316,20 @@ async function main() {
 					await page.evaluate(() => document.fonts.ready);
 					const body = page.getByTestId('student-drawer-body');
 					assert(await body.evaluate(element => element.scrollWidth <= element.clientWidth), `${language}/${width}/${scale}: no horizontal profile overflow`);
+					const healthGrid = profile.locator('[data-profile-section=health] .ui-student-facts');
+					assert(await healthGrid.evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length === (element.clientWidth >= 480 ? 2 : 1)));
+					assert(await healthGrid.evaluate(element => {
+						const label = element.querySelector('label')!;
+						const value = label.nextElementSibling!;
+						return parseFloat(getComputedStyle(label).fontSize) < parseFloat(getComputedStyle(value).fontSize) && getComputedStyle(label).color !== getComputedStyle(value).color;
+					}));
 					await body.evaluate(element => element.scrollTop = 0);
 					await page.screenshot({ path: resolve(output, `${language}-${width}-${scale}.png`) });
+					await profile.locator('[data-profile-section=health]').getByRole('button').click();
+					const editGrid = page.getByTestId('form-modal').locator('.ui-student-health-fields');
+					assert(await editGrid.evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length === (element.clientWidth >= 480 ? 2 : 1)));
+					await page.getByTestId('form-modal-cancel').click();
+					await page.getByTestId('form-modal').waitFor({ state: 'hidden' });
 					await guardianCard.scrollIntoViewIfNeeded();
 					assert(await guardianCard.evaluate(element => element.scrollWidth <= element.clientWidth), `${language}/${width}/${scale}: guardian card reflows without horizontal overflow`);
 					await guardianCard.getByText(guardian.email, { exact: true }).waitFor();
@@ -281,7 +337,7 @@ async function main() {
 					const detailPositions = await guardianCard.getByTestId('guardian-contact-details').locator(':scope > div').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
 					assert.equal(detailPositions.length, 3);
 					assert(Math.max(...detailPositions) - Math.min(...detailPositions) < 1, 'All three contact facts occupy the second row');
-					assert.equal(await guardians.getByText(/1 (results|résultats)/).count(), 0);
+					assert.equal(await guardians.getByText(/\d+ (results|résultats)/).count(), 0);
 					const identity = await guardianCard.getByRole('button', { name: 'Mariam Koné', exact: true }).boundingBox();
 					const contact = await guardianCard.getByText(guardian.email, { exact: true }).boundingBox();
 					assert(identity && contact && contact.y >= identity.y + identity.height, 'Contact details follow guardian identity');
@@ -293,7 +349,7 @@ async function main() {
 		}
 		assert.deepEqual(errors, []);
 		writeFileSync(resolve(output, 'capture-conditions.json'), JSON.stringify({ tokenVersion: JSON.parse(readFileSync(resolve(root, '../../design-system/tokens.json'), 'utf8')).version, locales: ['en', 'fr'], viewportWidths: [360, 768, 1440], textScales: [1, 2], source: 'execution.json', data: 'isolated API fixtures with production school/class drawers' }, null, 2));
-		console.log('PASS: merged school/class profile, legacy URLs, independent permissions/errors/retry, explicit status changes, guardian Back/focus and FR/EN 200% text');
+		console.log('PASS: school/class profile and enrollment, legacy URLs, independent permissions/errors/retry, explicit status changes, guardian Back/focus and FR/EN 200% text');
 	}
 	catch (error) {
 		await page.screenshot({ path: resolve(output, 'failure.png') });

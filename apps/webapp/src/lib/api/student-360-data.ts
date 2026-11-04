@@ -2,7 +2,6 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { HealthRecord, PedagogicalNote } from '$lib/types/school';
 import { recordsForStudent } from '$lib/api/entity-list-filters';
-import { formatDateInput } from '$lib/date/format';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -68,7 +67,7 @@ export function mapHealthProfiles(profilesRaw: StudentHealthProfileRaw[]): Recor
 			medicalConditionsText: profile.medicalConditions ?? '',
 			allergiesText: profile.allergies ?? '',
 			medicationsText: profile.medications ?? '',
-			lastVisit: formatDateInput(profile.lastVisit),
+			lastVisit: typeof profile.lastVisit === 'string' ? profile.lastVisit : profile.lastVisit instanceof Date ? profile.lastVisit.toISOString() : '',
 			emergencyProtocols: profile.emergencyProtocols ?? '',
 			notes: profile.clinicalNotes ?? '',
 		};

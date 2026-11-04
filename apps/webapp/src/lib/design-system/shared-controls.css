@@ -46,6 +46,10 @@
 .ui-search.ui-search { display:block; position:relative; min-height:44px; padding-block:4px; cursor:text; }
 .ui-search input[type=search] { min-height:36px; height:auto; padding:6px 12px 6px 36px; border-radius:var(--radius-action); font-size:.875rem; line-height:1.5; }
 .ui-search > svg { width:16px; height:16px; left:12px; }
+@keyframes mobile-sidebar-slide { from { transform:translateX(-100%); } to { transform:translateX(0); } }
+@media (prefers-reduced-motion:no-preference) {
+	.ui-mobile-sidebar[data-state=open] { animation:mobile-sidebar-slide var(--motion-enter) ease-out; }
+}
 .ui-dialog.ui-dialog { border-radius:var(--radius-dialog); padding:24px; gap:24px; }
 .ui-dialog.rounded-none { border-radius:0; }
 .ui-popover.ui-popover { max-width:calc(100vw - 32px); border-radius:var(--radius-menu); }
@@ -141,10 +145,16 @@ tr.ui-collection-row[data-open-record=true] > td:first-child { box-shadow:inset 
 .ui-student-profile :is(p,dd,h4,span) { overflow-wrap:anywhere; }
 .ui-student-profile p { white-space:pre-wrap; }
 .ui-student-facts,.ui-student-profile .ui-person-facts { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+/* Secondary labels and full-size values for student read-only facts. */
+.ui-student-drawer-body :is(.ui-drawer-field-label,.ui-student-guardian-contacts dt) { display:block; color:hsl(var(--muted-foreground)); font-size:.75rem; font-weight:400; line-height:1.35; letter-spacing:normal; text-transform:none; }
+.ui-student-drawer-body :is(.ui-drawer-field-label + p,.ui-student-guardian-contacts dd) { color:hsl(var(--foreground)); font-size:.875rem; }
+.ui-student-health-form { container:student-health-form / inline-size; }
+@container student-health-form (min-width:480px) { .ui-student-health-fields { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .ui-student-full-fact { grid-column:1 / -1; }
 .ui-student-facts p { font-size:.875rem; }
 .ui-student-audit > summary { min-height:44px; display:list-item; align-content:center; cursor:pointer; overflow-wrap:anywhere; }
 .ui-student-audit > summary:focus-visible { outline:2px solid hsl(var(--primary)); outline-offset:2px; }
+.ui-student-enrollment { container:student-profile / inline-size; }
 @container student-profile (min-width:480px) { .ui-student-facts,.ui-student-profile .ui-person-facts { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(min-width:768px) { .ui-student-drawer-context { padding:24px 24px 0; } .ui-student-drawer-content { padding:24px; } }
 

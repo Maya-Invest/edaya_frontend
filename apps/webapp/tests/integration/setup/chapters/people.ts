@@ -30,7 +30,7 @@ import {
 	type UiJourney,
 } from '../journey-context';
 
-const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'] as const;
+const STUDENT_TABS = ['profile', 'enrollments', 'attendance', 'grades', 'report-card', 'incidents', 'finances', 'documents'] as const;
 const STUDENT_CREATE_BUTTON = /add student|ajouter un élève/i;
 
 async function openStudentCreateModal(journey: UiJourney): Promise<boolean> {

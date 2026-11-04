@@ -5,7 +5,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import MobileSidebar from '$lib/components/layout/MobileSidebar.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -22,6 +22,12 @@
 	const dirtyWork = provideDirtyWork();
 	const desktop = new MediaQuery('(min-width: 1024px)');
 	let mobileOpen = $state(false);
+	function toggleNavigation() {
+		if (desktop.current)
+			shellContext.toggleSidebar();
+		else
+			mobileOpen = !mobileOpen;
+	}
 	let profileOpen = $state(false);
 	let actor = $state<AccountActor>({ id: 'staff', kind: 'staff', name: 'Aminata Koné', initials: 'AK', subtitleKey: 'staff.role.owner', subjectId: 'login' });
 	let draft = $state('');
@@ -61,11 +67,10 @@
 
 <div class="flex h-dvh overflow-hidden bg-background">
 	{#if desktop.current}<div class="relative h-full shrink-0" style:width={shellContext.sidebarOpen ? '256px' : '56px'}><AppSidebar hierarchy={[]} studentCount={0} guardianCount={0} staffCount={0} teacherCount={0} /></div>
-	{:else}<Dialog.Root bind:open={mobileOpen}><Dialog.Content data-testid="mobile-navigation" class="left-0 top-0 flex h-dvh max-h-dvh w-[min(85vw,320px)] translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0"><Dialog.Title class="sr-only">Navigation</Dialog.Title><Dialog.Description class="sr-only">Fixture navigation</Dialog.Description><AppSidebar forceExpanded hierarchy={[]} studentCount={0} guardianCount={0} staffCount={0} teacherCount={0} /></Dialog.Content></Dialog.Root>{/if}
+	{:else}<MobileSidebar bind:open={mobileOpen} hierarchy={[]} studentCount={0} guardianCount={0} staffCount={0} teacherCount={0} />{/if}
 	<main class="min-w-0 flex-1">
-		<AppHeader {actor} navigationOpen={desktop.current ? shellContext.sidebarOpen : mobileOpen} {profileOpen} onToggleNavigation={() => desktop.current ? shellContext.toggleSidebar() : mobileOpen = !mobileOpen} onOpenProfile={() => profileOpen = true} />
+		<AppHeader {actor} navigationOpen={desktop.current ? shellContext.sidebarOpen : mobileOpen} {profileOpen} onToggleNavigation={toggleNavigation} onOpenProfile={() => profileOpen = true} />
 		<div class="space-y-4 p-4">
-		<Button data-testid="toggle-sidebar" onclick={() => shellContext.toggleSidebar()}>Toggle sidebar</Button>
 		<Label for="fixture-draft">Fixture draft</Label><Input id="fixture-draft" bind:value={draft} />
 		<Button data-testid="seed-cache" onclick={() => { setPageQueryCache('/fixture', { status: 'ready', items: [{ id: 'old-scope' }] }); cacheVersion++; }}>Seed read cache</Button>
 		<output data-testid="scope">{JSON.stringify({ year: academicContext.yearId, period: academicContext.periodId, school: academicContext.schoolScopeId, generation: academicContext.scopeGeneration, cache: cachePresent })}</output>

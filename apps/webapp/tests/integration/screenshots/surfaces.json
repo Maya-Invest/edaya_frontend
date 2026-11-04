@@ -232,6 +232,14 @@
     "identity": "owner"
   },
   {
+    "id": "view.classes.class.students.record.enrollments",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/enrollments",
+    "title": "/classes/[classId]/students/[id]/enrollments",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
     "id": "view.classes.class.students.record.documents",
     "feature": "classes",
     "path": "/classes/[classId]/students/[id]/documents",
@@ -540,6 +548,14 @@
     "feature": "school",
     "path": "/school/students/[id]/profile",
     "title": "/school/students/[id]/profile",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.enrollments",
+    "feature": "school",
+    "path": "/school/students/[id]/enrollments",
+    "title": "/school/students/[id]/enrollments",
     "kind": "page",
     "identity": "owner"
   },

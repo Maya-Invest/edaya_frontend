@@ -12,11 +12,11 @@
 	import { authSession } from '$lib/auth/session.svelte';
 	import AppHeader from '$lib/components/layout/AppHeader.svelte';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
+	import MobileSidebar from '$lib/components/layout/MobileSidebar.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
-	import { Dialog, DialogContent, DialogTitle, Close as DialogClose } from '$lib/components/ui/dialog';
 	import { entityVersions } from '$lib/entity-versions.svelte';
 	import { t } from '$lib/i18n';
-	import { LoaderCircle, PanelLeftClose } from '$lib/icons';
+	import { LoaderCircle } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import {
 		MODAL_QUERY_KEY,
@@ -49,6 +49,12 @@
 	const { children }: { children: Snippet } = $props();
 	const desktop = new MediaQuery('(min-width: 1024px)');
 	let mobileSidebarOpen = $state(false);
+	function toggleNavigation() {
+		if (desktop.current)
+			shellContext.toggleSidebar();
+		else
+			mobileSidebarOpen = !mobileSidebarOpen;
+	}
 	const navigationOpen = $derived(desktop.current ? shellContext.sidebarOpen : mobileSidebarOpen);
 	afterNavigate(() => {
 		mobileSidebarOpen = false;
@@ -192,22 +198,19 @@
 				/>
 			</div>
 		{:else}
-			<Dialog bind:open={mobileSidebarOpen}>
-				<DialogContent class="left-0 top-0 flex h-dvh max-h-none w-[min(85vw,320px)] translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0">
-					<div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-2">
-						<DialogTitle class="text-base">{$t('sidebar.navigationTitle')}</DialogTitle>
-						<DialogClose class="control-focus flex h-11 w-11 items-center justify-center rounded-collection hover:bg-secondary" aria-label={$t('sidebar.hide')}><PanelLeftClose class="h-5 w-5" /></DialogClose>
-					</div>
-					<div class="min-h-0 flex-1">
-						<AppSidebar forceExpanded hierarchy={academicContext.hierarchy} studentCount={academicContext.studentCount} guardianCount={academicContext.guardianCount} staffCount={academicContext.staffCount} teacherCount={academicContext.teacherCount} />
-					</div>
-				</DialogContent>
-			</Dialog>
+			<MobileSidebar
+				bind:open={mobileSidebarOpen}
+				hierarchy={academicContext.hierarchy}
+				studentCount={academicContext.studentCount}
+				guardianCount={academicContext.guardianCount}
+				staffCount={academicContext.staffCount}
+				teacherCount={academicContext.teacherCount}
+			/>
 		{/if}
 
 		<div class="flex min-w-0 flex-1 flex-col">
 			<AppHeader actor={me} {navigationOpen} profileOpen={profileOpen.open}
-				onToggleNavigation={() => desktop.current ? shellContext.toggleSidebar() : mobileSidebarOpen = !mobileSidebarOpen}
+				onToggleNavigation={toggleNavigation}
 				onOpenProfile={() => (profileOpen.open = true)} />
 
 			{#if pathAllowed}

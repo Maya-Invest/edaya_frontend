@@ -5,7 +5,7 @@
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import { defaultSubjectCategoryId } from '$lib/api/subject-categories-data';
 	import { authSession } from '$lib/auth/session.svelte';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
+	import SubjectTypeField from '$lib/components/school/academics/SubjectTypeField.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -165,6 +165,7 @@
 		</Label>
 		<Input bind:value={name} />
 	</div>
+	<SubjectTypeField bind:isOptional />
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -207,7 +208,6 @@
 	<Label class="block space-y-2"><span>{$t('common.code')}</span><Input bind:value={code} /></Label>
 	<Label class="block space-y-2"><span>{$t('profile.shortName')}</span><Input bind:value={shortName} /></Label>
 	<Label class="block space-y-2"><span>{$t('eval.coefficient')}</span><Input type="number" min="0" step="any" bind:value={coefficient} /></Label>
-	<Label class="flex items-center gap-2"><Checkbox bind:checked={isOptional} />{$t('profile.isOptional')}</Label>
 	{#if canConfigureModule}<Label class="block space-y-2"><span>{$t('modules.module')}</span><Select.Root type="single" bind:value={reportModuleId}><Select.Trigger><Select.Value>{reportModules.find(module => module.id === reportModuleId)?.name ?? $t('modules.ungrouped')}</Select.Value></Select.Trigger><Select.Content><Select.Item value="ungrouped">{$t('modules.ungrouped')}</Select.Item>{#each reportModules as module (module.id)}<Select.Item value={module.id}>{module.name}</Select.Item>{/each}</Select.Content></Select.Root></Label>{/if}
 
 </FormModal>

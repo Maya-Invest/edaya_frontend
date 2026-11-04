@@ -17,7 +17,7 @@
 </script>
 
 <header class="ui-app-header" data-testid="app-header">
-	<Button variant="ghost" size="icon" class="ui-app-header-navigation" data-testid="navigation-toggle" onclick={onToggleNavigation} aria-label={navigationOpen ? $t('sidebar.hide') : $t('sidebar.show')} aria-expanded={navigationOpen} aria-controls="app-sidebar">
+	<Button variant="ghost" size="icon" class="ui-app-header-navigation" id="app-navigation-toggle" data-testid="navigation-toggle" onclick={onToggleNavigation} aria-label={navigationOpen ? $t('sidebar.hide') : $t('sidebar.show')} aria-expanded={navigationOpen} aria-controls="app-sidebar">
 		{#if navigationOpen}<PanelLeftClose class="h-4 w-4" />{:else}<PanelLeft class="h-4 w-4" />{/if}
 	</Button>
 	<div class="ui-app-header-school" data-testid="header-school"><SchoolSelector /></div>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ModuleKey } from '$lib/navigation';
 	import type { HierarchyGroup } from '$lib/types/school';
+	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
 	import { resolveActiveClassId } from '$lib/academic/class-selection';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -23,6 +24,7 @@
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { getMessageCount } from '$lib/shell/message-count.svelte';
 	import { cn } from '$lib/utils';
+	import { tick } from 'svelte';
 
 	const {
 		hierarchy,
@@ -31,6 +33,7 @@
 		staffCount,
 		teacherCount,
 		forceExpanded = false,
+		headerAction,
 	}: {
 		hierarchy: HierarchyGroup[];
 		studentCount: number;
@@ -38,6 +41,7 @@
 		staffCount: number;
 		teacherCount: number;
 		forceExpanded?: boolean;
+		headerAction?: Snippet;
 	} = $props();
 
 	const messageCount = getMessageCount();
@@ -100,6 +104,15 @@
 		return MODULES.find(mod => mod.key === key)?.href ?? DASHBOARD_HREF;
 	}
 
+	async function onYearDialogChange(open: boolean) {
+		const restoreToggleFocus = !open && yearDialogExpanded && collapsed && !hoverExpanded;
+		yearDialogExpanded = open && hoverExpanded;
+		if (restoreToggleFocus) {
+			await tick();
+			document.getElementById('app-navigation-toggle')?.focus();
+		}
+	}
+
 	function onSidebarEnter() {
 		if (collapsed) {
 			hoverExpanded = true;
@@ -124,9 +137,10 @@
 	<div data-testid="sidebar-header" class={cn('flex items-center border-b border-border py-3', showExpanded ? 'gap-2 px-3' : 'flex-col')}>
 		<BrandLogo variant="symbol" width={showExpanded ? 40 : 32} />
 		<div class={showExpanded ? 'min-w-0 flex-1' : undefined}>
-			{#if showExpanded}<p class="truncate pr-12 text-sm font-semibold leading-5" title={schoolName} data-testid="sidebar-school-name">{schoolName}</p>{/if}
-			<AcademicYearSelector collapsed={!showExpanded} onOpenChange={open => yearDialogExpanded = open && hoverExpanded} />
+			{#if showExpanded}<p class="truncate text-sm font-semibold leading-5" title={schoolName} data-testid="sidebar-school-name">{schoolName}</p>{/if}
+			<AcademicYearSelector collapsed={!showExpanded} onOpenChange={onYearDialogChange} />
 		</div>
+		{@render headerAction?.()}
 	</div>
 
 	<nav class={cn('scrollbar-thin flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>

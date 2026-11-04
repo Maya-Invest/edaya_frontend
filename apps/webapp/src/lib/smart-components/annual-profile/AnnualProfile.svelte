@@ -2,6 +2,7 @@
 	import type { components } from '$lib/api/schema';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -86,8 +87,10 @@
 		<PageQuery compactLoading={flat} cache={false} query={profileState.query} cacheKey={() => profileState.identity()} loadingTitle={$t('profile.yearInformation')}>
 			{#snippet children(data)}<DataState compact={flat} status={data.status} errorMessage={data.errorMessage} preserveShell>
 				{#if kind === 'student'}
-					<p class="text-sm">{$t('profile.placementStatuses')}: {profileState.options.find(option => option.id === profileState.student?.placementStatusId)?.label ?? $t('profile.notProvided')}</p>
-					<p class="text-sm">{$t('profile.repeating')}: {profileState.student?.isRepeating == null ? $t('profile.notProvided') : $t(profileState.student.isRepeating ? 'common.yes' : 'common.no')}</p>
+					<div class="ui-student-facts">
+						<DrawerField label={$t('profile.placementStatuses')}><p class="text-sm">{profileState.options.find(option => option.id === profileState.student?.placementStatusId)?.label ?? $t('profile.notProvided')}</p></DrawerField>
+						<DrawerField label={$t('profile.repeating')}><p class="text-sm">{profileState.student?.isRepeating == null ? $t('profile.notProvided') : $t(profileState.student.isRepeating ? 'common.yes' : 'common.no')}</p></DrawerField>
+					</div>
 				{:else}
 					<p class="text-sm">{$t('profile.academicDisciplines')}: {profileState.teacher?.disciplineIds.map(id => profileState.options.find(option => option.id === id)?.label ?? id).join(', ') || $t('profile.notProvided')}</p>
 					<p class="text-sm">{$t('profile.declaredHours')}: {profileState.teacher?.declaredHours ?? $t('profile.notProvided')} · {$t(`profile.period.${profileState.teacher?.hoursPeriod ?? 'unspecified'}`)} {profileState.teacher?.hoursPeriodLabel ?? ''}</p>

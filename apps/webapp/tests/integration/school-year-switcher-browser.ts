@@ -163,17 +163,17 @@ async function main() {
     await page.getByRole('option', { name: 'Oak School', exact: true }).click();
     assert.equal((await scope()).school, 'school');
 
-    // The same trigger DOM node survives overflow/calendar changes, including hover pinning.
-    await page.getByTestId('toggle-sidebar').click();
+    const navigationToggle = page.getByTestId('navigation-toggle');
+    assert.equal(await page.getByTestId('sidebar-header').getByRole('button', { name: /pin menu/i }).count(), 0);
+    await navigationToggle.click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('edaya:sidebarOpen')), 'false');
+    await navigationToggle.click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('edaya:sidebarOpen')), 'true');
+    await navigationToggle.click();
     await page.mouse.move(1000, 100);
     await page.locator('#app-sidebar').evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
-    assert.equal(await trigger.innerText(), '');
-    await trigger.focus();
-    await page.keyboard.press('Enter');
-    await dialog.waitFor();
-    await page.keyboard.press('Escape');
-    await dialog.waitFor({ state: 'hidden' });
-    assert(await trigger.evaluate(element => element === document.activeElement));
+    assert.equal(await trigger.count(), 0, 'Collapsed sidebar has no year button');
+    assert.equal(await page.getByTestId('sidebar-header').getByRole('button').count(), 0);
     await page.mouse.move(20, 100);
     await page.waitForFunction(() => document.querySelector('#app-sidebar')!.getBoundingClientRect().width > 200);
     await open();
@@ -181,7 +181,8 @@ async function main() {
     assert((await page.locator('#app-sidebar').boundingBox())!.width > 200, 'Opening from hover pins expanded navigation');
     await page.keyboard.press('Escape');
     await dialog.waitFor({ state: 'hidden' });
-    assert(await trigger.evaluate(element => element === document.activeElement));
+    assert.equal(await trigger.count(), 0);
+    assert(await navigationToggle.evaluate(element => element === document.activeElement));
 
     for (const language of ['en', 'fr']) for (const width of [360, 768, 1280]) for (const scale of [1, 2]) {
       await page.setViewportSize({ width, height: 900 });
@@ -216,7 +217,35 @@ async function main() {
       assert(await page.getByTestId('language-selector').evaluate(element => element === document.activeElement), 'Language dismissal returns focus to its trigger');
       await page.getByTestId('language-selector').click();
       await page.getByTestId(`language-option-${language}`).click();
-      if (width < 1024) await page.getByTestId('navigation-toggle').click();
+      if (width < 1024) {
+        const navigation = page.getByTestId('mobile-navigation');
+        const toggle = page.getByTestId('navigation-toggle');
+        const reducedMotion = scale === 2;
+        await page.emulateMedia({ reducedMotion: reducedMotion ? 'reduce' : 'no-preference' });
+        await toggle.click();
+        await navigation.waitFor();
+        const layout = await navigation.evaluate(async sheet => {
+          const animation = getComputedStyle(sheet).animationName;
+          await Promise.all(sheet.getAnimations().map(animation => animation.finished));
+          const bounds = sheet.getBoundingClientRect();
+          const header = sheet.querySelector('[data-testid=sidebar-header]')!.getBoundingClientRect();
+          return { animation, left: bounds.left, top: header.top, headerWidth: header.width, width: bounds.width };
+        });
+        assert.equal(layout.animation, reducedMotion ? 'none' : 'mobile-sidebar-slide');
+        assert.equal(layout.left, 0);
+        assert.equal(layout.top, 0);
+        assert(layout.width - layout.headerWidth <= 1, 'School identity fills the sheet up to its edge border');
+        if (language === 'en' && width === 360 && scale === 1) {
+          await page.screenshot({ path: resolve(output, 'compact-navigation.png') });
+          assert.equal(await navigation.getByRole('button', { name: /pin menu/i }).count(), 0);
+          await navigation.getByRole('button', { name: 'Collapse menu' }).click();
+          await navigation.waitFor({ state: 'hidden' });
+          await toggle.click();
+          await page.mouse.click(width - 2, 200);
+          await navigation.waitFor({ state: 'hidden' });
+          await toggle.click();
+        }
+      }
       await trigger.waitFor();
       assert(await page.getByTestId('sidebar-header').evaluate(element => element.scrollWidth <= element.clientWidth), 'Sidebar identity remains bounded');
       if (width === 1280 && scale === 1) await page.locator('#app-sidebar').screenshot({ path: resolve(output, `sidebar-${language}-1280.png`) });

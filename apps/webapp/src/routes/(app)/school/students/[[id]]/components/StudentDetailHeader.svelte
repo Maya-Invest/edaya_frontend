@@ -45,7 +45,7 @@
 			{/if}
 			<span class="text-sm text-muted-foreground">{academicContext.year?.label ?? $t('academic.selectYear')}</span>
 			<span class="rounded bg-secondary px-2 py-1 text-xs font-medium">{$t(`studentStatus.${student.status}`)}</span>
-		</div><div class="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground"><span>{$t('profile.matricule')}: {student.matricule || $t('profile.notProvided')}</span><span>{$t('profile.nationalMatricule')}: {student.nationalMatricule || $t('profile.notProvided')}</span></div>{/snippet}
+		</div><div class="flex flex-wrap gap-x-4 gap-y-2 text-sm"><span><span class="text-xs text-muted-foreground">{$t('profile.matricule')}:</span> {student.matricule || $t('profile.notProvided')}</span><span><span class="text-xs text-muted-foreground">{$t('profile.nationalMatricule')}:</span> {student.nationalMatricule || $t('profile.notProvided')}</span></div>{/snippet}
 
 		{#snippet actions()}
 			<PermissionGate permission="STUDENT_MANAGE" classId={student.classId} studentId={student.id} mode="hide" tooltip={$t('student.permissionUpdate')}>
