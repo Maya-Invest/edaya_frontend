@@ -251,7 +251,6 @@ test('execution submits only the reviewed revision and digest, and rejects stale
 		source: { fileId: 'file', revisionId: 'revision', row: 2 },
 		raw: {},
 		values: {},
-		generatedCode: null,
 		targetId: 'student',
 		sourceKey: 'stable-row',
 		effectiveMode: 'M',

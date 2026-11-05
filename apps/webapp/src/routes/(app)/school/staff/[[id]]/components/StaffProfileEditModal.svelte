@@ -123,5 +123,5 @@
 			</Select.Content>
 		</Select.Root>
 	</div>
-	<PersonProfileFields kind="staff" bind:values={additional} />
+	<PersonProfileFields kind="staff" entityId={s.id} bind:values={additional} />
 </FormModal>

@@ -148,7 +148,7 @@ export function buildTimetableRangePresets(input: {
 			endDate: yearEnd,
 		});
 	}
-	return presets;
+	return presets.sort((a, b) => Number(a.id === 'full-year') - Number(b.id === 'full-year') || a.startDate.localeCompare(b.startDate));
 }
 
 export function summarizeClassGeneration(result: GenerateClassResult) {

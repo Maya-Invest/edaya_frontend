@@ -2,6 +2,7 @@
 	import type { GradeLevel, GradingPolicy } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -29,22 +30,14 @@
 
 	let busy = $state(false);
 	let name = $state('');
-	let label = $state('');
+	let shortName = $state('');
 	let cycle = $state('');
 	let order = $state('1');
-	/** Once the user edits the label, it stops mirroring the name. */
-	let labelEdited = $state(false);
 
 	const levelId = $derived(gradeLevel?.id);
 	const isEdit = $derived(levelId !== undefined);
 	const validDetails = $derived(
-		name.trim().length > 0 && label.trim().length > 0 && Number(order) >= 1,
-	);
-	const existingClassCount = $derived(
-		gradeLevel ? gradeLevelsPage.classCountFor(gradeLevel.id) : 0,
-	);
-	const showLabelWarning = $derived(
-		isEdit && existingClassCount > 0 && label.trim() !== gradeLevel?.label,
+		name.trim().length > 0 && shortName.trim().length > 0 && Number(order) >= 1,
 	);
 
 	let editingYearId = $state('');
@@ -72,17 +65,16 @@
 	let savedDetails = $state('');
 	let initialGrading = $state('');
 	let partialSave = $state(false);
-	const detailSnapshot = $derived(JSON.stringify({ name: name.trim(), label: label.trim(), cycle: cycle.trim(), order: Number(order) }));
+	const detailSnapshot = $derived(JSON.stringify({ name: name.trim(), shortName: shortName.trim(), cycle: cycle.trim(), order: Number(order) }));
 	const gradingSnapshot = $derived(JSON.stringify({ scaleId, mode, aggregateLabel, equivalents }));
 	const detailsChanged = $derived(canEditDetails && detailSnapshot !== savedDetails);
 	const gradingChanged = $derived(canEditGrading && initialized && gradingSnapshot !== initialGrading);
 	const canSubmit = $derived(validDetails && (isEdit || canEditDetails) && (detailsChanged || gradingChanged) && (!canEditGrading || initialized) && (!gradingChanged || validGrading) && editingYearId === academicContext.yearId);
 
 	function resetForm() {
-		labelEdited = false;
 		if (gradeLevel) {
 			name = gradeLevel.name;
-			label = gradeLevel.label;
+			shortName = gradeLevel.shortName;
 			cycle = gradeLevel.cycle;
 			order = String(gradeLevel.order);
 		}
@@ -91,17 +83,9 @@
 				? Math.max(...academicContext.gradeLevels.map(level => level.order)) + 1
 				: 1;
 			name = '';
-			label = '';
+			shortName = '';
 			cycle = '';
 			order = String(nextOrder);
-		}
-	}
-
-	function onNameInput(event: Event) {
-		const value = (event.currentTarget as HTMLInputElement).value;
-		name = value;
-		if (!isEdit && !labelEdited) {
-			label = value;
 		}
 	}
 
@@ -152,7 +136,7 @@
 				const ok = await gradeLevelsPage.saveGradeLevel({
 					id: formId,
 					name: name.trim(),
-					label: label.trim(),
+					shortName: shortName.trim(),
 					cycle,
 					order: Math.max(1, Math.trunc(Number(order) || 1)),
 					successMessage: gradingChanged ? undefined : get(t)(isEdit ? 'gradeLevels.toastUpdated' : 'gradeLevels.toastCreated', { name: name.trim() }),
@@ -200,23 +184,9 @@
 		<fieldset disabled={!canEditDetails || busy} class="grid gap-4 sm:grid-cols-2">
 			<label class="space-y-1.5 text-sm">
 				<span class="text-muted-foreground">{$t('gradeLevels.name')}</span>
-				<Input bind:value={name} oninput={onNameInput} required />
+				<Input bind:value={name} required />
 			</label>
-			<label class="space-y-1.5 text-sm">
-				<span class="text-muted-foreground">{$t('gradeLevels.label')}</span>
-				<Input
-					bind:value={label}
-					oninput={() => (labelEdited = true)}
-					class="rounded-collection"
-					required
-				/>
-				<span class="block text-xs text-muted-foreground">{$t('gradeLevels.labelHint')}</span>
-				{#if showLabelWarning}
-					<span class="block text-xs text-amber-600 dark:text-amber-500">
-						{$t('gradeLevels.labelEditWarning', { n: existingClassCount })}
-					</span>
-				{/if}
-			</label>
+			<ShortNameField {name} bind:value={shortName} creating={!isEdit} />
 			<label class="space-y-1.5 text-sm">
 				<span class="text-muted-foreground">{$t('gradeLevels.cycle')}</span>
 				<Input bind:value={cycle} placeholder="Middle School" />

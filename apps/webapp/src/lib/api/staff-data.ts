@@ -37,8 +37,8 @@ export function mapStaffRole(
 	return 'staff';
 }
 
-function inferSubjectCategory(name: string, code?: string | null): SubjectCategory {
-	const label = `${name} ${code ?? ''}`.toLowerCase();
+function inferSubjectCategory(name: string, identifier?: string | null): SubjectCategory {
+	const label = `${name} ${identifier ?? ''}`.toLowerCase();
 
 	if (/english|anglais|espagnol|allemand|langue/.test(label)) {
 		return 'Langues';
@@ -127,7 +127,7 @@ export function mapDepartment(
 		const departments = [...new Set(catalogSubjectIds.map((subjectId) => {
 			const subject = subjects.find(entry => entry.id === subjectId);
 			return categoryToDepartment(
-				inferSubjectCategory(subject?.name ?? subjectId, subject?.code),
+				inferSubjectCategory(subject?.name ?? subjectId, subject?.shortName),
 			);
 		}))];
 		return departments.length === 1 ? departments[0]! : departments[0] ?? 'Sciences';
@@ -169,7 +169,7 @@ export function mapStaffMembers(
 			id: member.id,
 			firstName: member.firstName ?? null,
 			lastName: member.lastName ?? null,
-			code: member.code ?? null,
+			identifier: member.identifier ?? null,
 
 			name: `${member.firstName} ${member.lastName}`,
 			initials: `${member.firstName[0] ?? ''}${member.lastName[0] ?? ''}`,
@@ -326,7 +326,7 @@ export async function fetchSessionStaffProfile(
 				id: staff.id,
 				firstName: staff.firstName ?? null,
 				lastName: staff.lastName ?? null,
-				code: staff.code ?? null,
+				identifier: staff.identifier ?? null,
 
 				name: `${staff.firstName} ${staff.lastName}`,
 				initials: `${staff.firstName[0] ?? ''}${staff.lastName[0] ?? ''}`,

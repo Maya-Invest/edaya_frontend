@@ -1,4 +1,4 @@
-import { chooseOption } from './custom-select';
+import { chooseOption, selectControl } from './custom-select';
 import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
 import { apiFetch, resolveSchoolId } from '../setup/journey-api';
@@ -49,70 +49,77 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
   const academicYear = await get('academic-years', year);
   const effectiveDate = String(academicYear.startDate).slice(0, 10);
   const unique = `Import-${type}-${crypto.randomUUID().slice(0, 8)}`;
+  const identifier = `QA-${crypto.randomUUID().slice(0, 12)}`.toUpperCase();
+  async function createHuman(_group: 'students' | 'teachers' | 'guardians', command: string) {
+    const id = crypto.randomUUID();
+    await request(`/core/commands/${command}`, { id, schoolId, requestId: id, identifier, firstName: 'Integration', lastName: unique, sendAccountInvitation: false });
+    return id;
+  }
   const klass = await get('class-groups', entities.classId);
   const level = await get('grade-levels', String(klass.gradeLevelId));
   let csv: Row;
+  let selectedClassId: string | undefined;
   let collection = '';
   let expectedCreated = '1';
   let matches: (row: Row) => boolean = () => false;
   if (type === 'students') {
-    csv = { prenom: 'Integration', nom: unique, classe: klass.name, matricule: unique, enrollment_effective_date: effectiveDate };
-    collection = 'students'; matches = row => row.matricule === unique;
+    selectedClassId = crypto.randomUUID();
+    for (const [id, shortName] of [[selectedClassId, 'Left'], [crypto.randomUUID(), 'Right']]) {
+      await request('/core/commands/create-class-group', { id, schoolId, academicYearId: year, gradeLevelId: level.id, name: unique, shortName, capacity: 30 });
+    }
+    csv = { first_name: 'Integration', last_name: unique, class_name: unique, identifier, enrollment_effective_date: effectiveDate };
+    collection = 'students'; matches = row => row.identifier === identifier;
   } else if (type === 'classes') {
-    csv = { nom: unique, niveau: level.name, capacite: '30' };
+    csv = { name: unique, grade_id: level.id, capacity: '30' };
     collection = 'class-groups'; matches = row => row.name === unique;
   } else if (type === 'academic_disciplines' || type === 'placement_statuses') {
-    csv = { code: unique, [type === 'academic_disciplines' ? 'name' : 'label']: unique, is_active: true };
-    collection = type === 'academic_disciplines' ? 'academic-disciplines' : 'placement-statuses'; matches = row => String(row.code).toLowerCase() === unique.toLowerCase();
+    csv = { name: unique, short_name: identifier, is_active: true };
+    collection = type === 'academic_disciplines' ? 'academic-disciplines' : 'placement-statuses'; matches = row => row.name === unique;
   } else if (type === 'class_offerings') {
     const teaching = await get('class-subjects', entities.teachingId);
-    csv = { classe: klass.id, subject_id: teaching.subjectId, is_offered: !teaching.isOffered };
+    csv = { target_id: teaching.id, class_id: klass.id, subject_id: teaching.subjectId, is_offered: !teaching.isOffered };
     collection = 'class-subjects'; matches = row => row.id === teaching.id && row.isOffered === !teaching.isOffered;
     expectedCreated = '0';
   } else if (type === 'subjects') {
     const disciplineId = crypto.randomUUID();
-    await request('/core/commands/configure-academic-discipline', { id: disciplineId, schoolId, code: unique, name: unique, isActive: true });
+    await request('/core/commands/configure-academic-discipline', { id: disciplineId, schoolId, shortName: identifier, name: unique, isActive: true });
     const category = (await list('subject-categories'))[0];
     assert(category, 'Subject import requires a persisted category');
-    csv = { nom: unique, niveau: level.id, abbreviation: unique, coefficient: '2', discipline_code: unique, category: category.id };
+    csv = { name: unique, grade_id: level.id, short_name: identifier, coefficient: '2', discipline_id: disciplineId, category_id: category.id };
     collection = 'subjects'; matches = row => row.name === unique;
   } else if (type === 'staff' || type === 'teachers') {
-    csv = { code: unique, prenom: 'Integration', nom: unique, email: `${unique}@integration.edaya.test`, ...(type === 'staff' ? { role: 'Secrétaire', phone: '00000123' } : {}) };
-    collection = type === 'staff' ? 'staff-members' : 'teachers'; matches = row => row.code === unique && (type !== 'staff' || row.phone === '00000123');
+    csv = { identifier, first_name: 'Integration', last_name: unique, email: `${unique}@integration.edaya.test`, ...(type === 'staff' ? { role: 'Secrétaire', phone: '00000123' } : {}) };
+    collection = type === 'staff' ? 'staff-members' : 'teachers'; matches = row => row.identifier === identifier && (type !== 'staff' || row.phone === '00000123');
   } else if (type === 'teacher_assignments') {
-    const teacherId = crypto.randomUUID();
-    await request('/core/commands/register-teacher', { id: teacherId, schoolId, code: unique, firstName: 'Integration', lastName: unique, email: null, phone: null, subjectId: null, isActive: true });
+    const teacherId = await createHuman('teachers', 'register-teacher');
     const teaching = await get('class-subjects', entities.teachingId);
     const subject = await get('subjects', String(teaching.subjectId));
-    csv = { code: unique, classe: klass.name, subject_id: subject.id };
+    csv = { teacher_id: teacherId, class_id: klass.id, subject_id: subject.id };
     collection = 'teacher-assignments'; matches = row => row.teacherId === teacherId && row.classSubjectId === teaching.id;
   } else if (type === 'chapters') {
     const subject = (await list('subjects', { gradeLevelId: level.id, academicYearId: year }))[0];
     assert(subject, 'Required subject fixture missing for the selected grade and academic year');
     const chapters = await list('subject-matters', { subjectId: subject.id });
-    csv = { niveau: level.id, subject_id: subject.id, titre: unique, sequence: Math.max(0, ...chapters.map(row => Number(row.sequenceOrder ?? 0))) + 1, description: 'Integration chapter' };
+    csv = { grade_id: level.id, subject_id: subject.id, name: unique, sequence: Math.max(0, ...chapters.map(row => Number(row.sequenceOrder ?? 0))) + 1, description: 'Integration chapter' };
     collection = 'subject-matters'; matches = row => row.name === unique;
   } else {
     // A new student per scenario avoids mutating the baseline or depending on another import.
-    const studentId = crypto.randomUUID();
-    await request('/core/commands/register-student', { id: studentId, schoolId, firstName: 'Integration', lastName: unique, sendAccountInvitation: false, createdAt: new Date().toISOString() });
-    await request('/core/commands/update-student-profile', { studentId, firstName: 'Integration', lastName: unique, matricule: unique });
+    const studentId = await createHuman('students', 'register-student');
     await request('/core/commands/enroll-student', { id: crypto.randomUUID(), studentId, classGroupId: klass.id, enrolledAt: effectiveDate, createdAt: new Date().toISOString() });
     if (type === 'guardians') {
-      csv = { code: unique, prenom: 'Integration', nom: unique, eleve_matricule: unique, email: `${unique}@integration.edaya.test` };
-      collection = 'guardians'; matches = row => row.code === unique;
+      csv = { identifier, first_name: 'Integration', last_name: unique, student_ids: studentId, email: `${unique}@integration.edaya.test` };
+      collection = 'guardians'; matches = row => row.identifier === identifier;
     } else if (type === 'guardian_relationships') {
-      const guardianId = crypto.randomUUID();
-      await request('/core/commands/register-guardian', { id: guardianId, schoolId, code: unique, firstName: 'Integration', lastName: unique, sendAccountInvitation: false });
-      csv = { guardian: unique, student: unique, legal_guardian: false, can_pickup: true, notes: 'Per-child rights' };
+      const guardianId = await createHuman('guardians', 'register-guardian');
+      csv = { guardian_id: guardianId, student_id: studentId, legal_guardian: false, can_pickup: true, notes: 'Per-child rights' };
       collection = 'guardian-links'; matches = row => row.guardianId === guardianId && row.studentId === studentId && row.legalGuardian === false;
     } else if (type === 'billing') {
       const fee = (await list('catalog-services'))[0];
       assert(fee, 'Required catalog service fixture missing');
-      csv = { matricule: unique, type_frais: fee.name, montant: '1000' };
+      csv = { student_id: studentId, catalog_service_id: fee.id, amount: '1000' };
       collection = 'student-service-enrollments'; matches = row => row.studentId === studentId && row.catalogServiceId === fee.id;
     } else {
-      csv = { matricule: unique, reference: unique, montant: '1000', mode: 'espèces', date: new Date().toISOString().slice(0, 10) };
+      csv = { student_id: studentId, reference: unique, montant: '1000', mode: 'espèces', date: new Date().toISOString().slice(0, 10) };
       collection = 'payments'; matches = row => row.reference === unique;
     }
   }
@@ -131,8 +138,13 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
       const downloaded = page.waitForEvent('download');
       await page.getByTestId('import-template-xlsx').click();
       const template = await downloaded;
-      assert.equal(template.suggestedFilename(), 'students-v1.xlsx');
+      assert.equal(template.suggestedFilename(), 'students-v2.xlsx');
       assert.equal(await template.failure(), null);
+      const exporting = page.waitForEvent('download');
+      await modal.getByRole('button', { name: /Export existing records|Exporter les enregistrements existants/i }).click();
+      const exported = await exporting;
+      assert.match(exported.suggestedFilename(), /students.*\.xlsx$/);
+      assert.equal(await exported.failure(), null);
     }
     await page.getByTestId('import-file-input').waitFor({ state: 'visible' });
     await page.getByTestId('import-file-input').setInputFiles({ name: `${type}.csv`, mimeType: 'text/csv', buffer: Buffer.from(encode(row)) });
@@ -151,6 +163,17 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
   assert(Number(await page.getByTestId('import-progress').getAttribute('data-blocked')) > 0);
   await page.keyboard.press('Escape');
   const modal = await upload(csv);
+  if (selectedClassId) {
+    assert.equal(await page.getByTestId('import-progress').getAttribute('data-blocked'), '1');
+    await modal.getByRole('button', { name: /Review matches|Examiner les correspondances/i }).click();
+    await chooseOption(selectControl(modal, { name: /Select a record|Choisir un enregistrement/i }), selectedClassId);
+    await modal.getByRole('button', { name: /Use this record|Utiliser cet enregistrement/i }).click();
+    await page.locator('[data-testid="import-progress"][data-blocked="0"]').waitFor();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPageQuery(page);
+    await page.locator('[data-testid="import-progress"][data-state="validated"][data-blocked="0"]').waitFor();
+    await page.getByTestId('task-step-preview').click();
+  }
   assert.equal(await page.getByTestId('import-progress').getAttribute('data-blocked'), '0', `${type}: valid fixture rejected: ${await modal.innerText()}`);
   if (type === 'students') {
     await page.getByTestId('task-step-history').click();
@@ -169,5 +192,10 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
   await page.locator('[data-testid="import-progress"][data-state="completed"]').waitFor({ state: 'visible', timeout: 30000 });
   const persisted = (await list(collection)).filter(matches);
   assert.equal(persisted.length, 1, `${type}: exactly one imported record must persist after reload`);
+  if (selectedClassId) {
+    const enrollments = await list('enrollments', { studentId: persisted[0].id });
+    assert.equal(enrollments.length, 1);
+    assert.equal(enrollments[0].classGroupId, selectedClassId, 'Execution must use the class selected before refresh');
+  }
   return `${type}: invalid row rejected; one valid row imported and read back after reload`;
 }

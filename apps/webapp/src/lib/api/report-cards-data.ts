@@ -47,7 +47,7 @@ export function subjectLabelForCatalogId(
 	if (!subject) {
 		return catalogSubjectId;
 	}
-	return catalogSubjectName(subject.name, get(lang), subject.code);
+	return catalogSubjectName(subject.name, get(lang), subject.shortName);
 }
 
 function formatDate(value: unknown): string | undefined {
@@ -91,6 +91,7 @@ export function mapGradeScales(scalesRaw: (Omit<GradeScaleRaw, 'revision' | 'rou
 		id: scale.id,
 		schoolId: scale.schoolId,
 		name: scale.name,
+		shortName: scale.shortName,
 		minScore: scale.minScore,
 		maxScore: scale.maxScore,
 		isDefault: scale.isDefault,
@@ -148,7 +149,7 @@ export function mapSubjectMark(
 		subjectName: capturedLabel
 			? catalogSubjectName(capturedLabel, get(lang))
 			: subject
-				? catalogSubjectName(subject.name, get(lang), subject.code)
+				? catalogSubjectName(subject.name, get(lang), subject.shortName)
 				: subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
 		average: subjectResult.average,
 		grading: subjectResult.grading,

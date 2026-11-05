@@ -40,7 +40,7 @@
 	const generationStep = $derived(
 		TIMETABLE_GENERATION_STEPS.includes(modals.step as TimetableGenerationStep)
 			? modals.step as TimetableGenerationStep
-			: 'range',
+			: 'setup',
 	);
 	const generationTab = $derived(
 		TIMETABLE_SETUP_TABS.includes(modals.tab as (typeof TIMETABLE_SETUP_TABS)[number])
@@ -109,7 +109,7 @@
 
 			<div class="mt-auto flex flex-wrap gap-2">
 				<Button
-					onclick={() => modals.open('generate-timetable', { step: 'range', tab: 'subjects' })}
+					onclick={() => modals.open('generate-timetable', { step: 'setup', tab: 'subjects' })}
 					data-testid="timetable-planning-action"
 				>
 					{$t('tools.timetablePlanning.card.action')}
@@ -140,7 +140,7 @@
 	retainsDraft={destination => retainsGenerationDraft($page.url, destination)}
 	phase={generationStep}
 	setupTab={generationTab}
-	onPhaseChange={step => modals.setStep(step)}
+	onPhaseChange={step => modals.open('generate-timetable', { step, tab: modals.tab ?? 'subjects' })}
 	onSetupTabChange={tab => modals.setTab(tab)}
 	onInvalidPhase={step => toolsPage.replaceWorkflowStep(step)}
 />

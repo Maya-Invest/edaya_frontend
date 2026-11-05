@@ -30,13 +30,20 @@ describe('draft-storage', () => {
 			const draft = createEmptyDraft();
 			expect(draft.school.country).toBe("Côte d'Ivoire");
 			expect(draft.school.timezone).toBe('Africa/Abidjan');
+			expect(draft.school.shortName).toBe('');
 			draft.school.name = 'Collège Test';
+			draft.school.shortName = 'CT École';
+			draft.ownerIdentifier = 'OWNER-001';
+			draft.staffInvites = [{ id: 'invite', identifier: 'STAFF-002', email: 'staff@example.test', role: 'secretary' }];
 			draft.maxReachedStep = 2;
 
 			saveDraft(authUserId, draft);
 			const loaded = loadDraft(authUserId);
 
 			expect(loaded?.school.name).toBe('Collège Test');
+			expect(loaded?.school.shortName).toBe('CT École');
+			expect(loaded?.ownerIdentifier).toBe('OWNER-001');
+			expect(loaded?.staffInvites[0]?.identifier).toBe('STAFF-002');
 			expect(loaded?.maxReachedStep).toBe(2);
 			expect(storage.has(draftStorageKey(authUserId))).toBe(true);
 		}

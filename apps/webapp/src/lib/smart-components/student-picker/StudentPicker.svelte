@@ -31,7 +31,7 @@
 		isSelectable,
 	}: {
 		/** Optional bounded workflow projection; disables directory loading. */
-		students?: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'matricule' | 'email' | 'photoUrl'>[];
+		students?: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'identifier' | 'email' | 'photoUrl'>[];
 		value?: string;
 		values?: string[];
 		mode?: 'single' | 'multi';
@@ -108,13 +108,13 @@
 				subtitle: studentPickerSubtitle({
 					classLabel: className,
 					classId: student.classId,
-					matricule: student.matricule,
+					identifier: student.identifier,
 				}),
 				searchText: studentPickerSearchText({
 					email: student.email,
 					classLabel: className,
 					classId: student.classId,
-					matricule: student.matricule,
+					identifier: student.identifier,
 				}),
 			};
 		}),

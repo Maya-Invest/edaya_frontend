@@ -77,7 +77,7 @@ export class SchoolPageState {
             const rows = await listAllEntityPages(query => getBrowserSchoolClient().entities.periodDefinitions.list(query), { baseQuery: { schoolId } });
             signal.throwIfAborted();
             if (schoolId === this.raw?.id)
-                this.periodChoices = rows.map(row => ({ id: row.id, label: `${row.label} · ${row.startTime}–${row.endTime}` }));
+                this.periodChoices = rows.map(row => ({ id: row.id, label: `${row.name} · ${row.startTime}–${row.endTime}` }));
             return {};
         },
     }, request);

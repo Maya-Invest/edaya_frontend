@@ -39,7 +39,7 @@
 		dirty?: boolean;
 		retainsDraft?: (destination: URL) => boolean;
 		navigation?: Snippet;
-		presentation?: 'form' | 'task';
+		presentation?: 'form' | 'task' | 'assistant';
 		submitDisabled?: boolean;
 		contentClass?: string;
 		bodyClass?: string;
@@ -183,15 +183,15 @@
 				event.preventDefault();
 				close();
 			}}
-			class={cn('flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg flex-col gap-4 p-4', contentClass, presentation === 'task' && 'inset-0 h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 rounded-none')}
+			class={cn('flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg flex-col gap-4 p-4', contentClass, presentation === 'assistant' && 'assistant-shell', presentation === 'task' && 'inset-0 h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 rounded-none')}
 		>
 			<div class="max-h-[35dvh] shrink-0 space-y-4 overflow-y-auto">
 				<Dialog.Header>
 					<div class="flex items-start justify-between gap-4 text-left"><Dialog.Title id={headingId} tabindex={-1} class="min-w-0 flex-1 break-words">{title}</Dialog.Title>
-						{#if presentation === 'task'}<Button class="shrink-0" variant="ghost" size="icon" aria-label={$t('common.close')} onclick={close}><X aria-hidden="true" /></Button>{/if}
+						{#if presentation !== 'form'}<Button class="shrink-0" variant="ghost" size="icon" aria-label={$t('common.close')} onclick={close}><X aria-hidden="true" /></Button>{/if}
 					</div>
 				</Dialog.Header>
-				{#if navigation}<div>{@render navigation()}</div>{/if}
+				{#if navigation && presentation !== 'assistant'}<div>{@render navigation()}</div>{/if}
 			</div>
 			<!-- IME Enter must never trigger an implicit form submit. -->
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -206,12 +206,15 @@
 				}}
 				oncompositionstart={() => composing = true} oncompositionend={() => composing = false}
 				onfocusin={recordBaseline} oninput={recordChange} onchange={recordChange} onreset={recordChange}>
-				<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-2', bodyClass)}>
-					{#if description}<Dialog.Description class="break-words">{description}</Dialog.Description>{/if}
-					{@render children?.()}
+				<div class:assistant-work={presentation === 'assistant'} class="min-h-0 flex flex-1 flex-col">
+					{#if navigation && presentation === 'assistant'}<aside class="assistant-navigation">{@render navigation()}</aside>{/if}
+					<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-2', bodyClass)}>
+						{#if description}<Dialog.Description class="break-words">{description}</Dialog.Description>{/if}
+						{@render children?.()}
+					</div>
 				</div>
 				{#if validationMessage}<p role="alert" class="text-sm text-destructive">{validationMessage}</p>{/if}
-				<Dialog.Footer class="max-h-[25dvh] shrink-0 overflow-y-auto">
+				<Dialog.Footer class={cn(presentation === 'assistant' && 'border-t px-6 py-4', 'max-h-[25dvh] shrink-0 overflow-y-auto')}>
 					{#if footer}
 						{@render footer({ close, submit, busy: pending, submitDisabled })}
 					{:else}
@@ -223,3 +226,21 @@
 		</Dialog.Content>
 	{/if}
 </Dialog.Root>
+
+<style>
+ :global(.ui-dialog.assistant-shell) { width:calc(100% - 32px); max-width:900px; height:calc(100dvh - 32px); max-height:calc(100dvh - 32px); border-radius:12px; gap:0; padding:0; overflow:clip; }
+ :global(.assistant-shell)>div:first-child { padding:20px 24px; border-bottom:1px solid hsl(var(--border)); }
+ :global(.assistant-shell) form { gap:0; }
+ :global(.assistant-shell) .assistant-work>div:last-child { padding:24px; min-width:0; }
+
+ .assistant-navigation { padding:12px; border-bottom:1px solid hsl(var(--border)); background:hsl(var(--secondary)); }
+ @media(min-width:1024px) { :global(.ui-dialog.assistant-shell) { width:calc(100% - 64px); height:calc(100dvh - 64px); max-height:calc(100dvh - 64px); } .assistant-work { flex-direction:column; } .assistant-navigation { flex-shrink:0; overflow:auto; } .assistant-navigation :global(ol) { flex-direction:row; } .assistant-navigation :global(nav) { max-height:none; } }
+ @media(max-width:767px) {
+ :global(.assistant-shell)>div:first-child { padding:16px; }
+ :global(.assistant-shell) .assistant-work>div:last-child { padding:16px; }
+ .assistant-navigation :global(ol) { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .assistant-navigation :global(.ui-nav-target) { width:100%; font-size:.75rem; padding:8px; }
+ :global(.ui-dialog.assistant-shell .ui-dialog-footer) { flex-direction:row; flex-wrap:wrap; padding:12px 16px; }
+ :global(.ui-dialog.assistant-shell .ui-dialog-footer > button) { width:auto; }
+ }
+</style>

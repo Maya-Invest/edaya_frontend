@@ -16,6 +16,8 @@ import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 export interface CompleteSummaryLevelRow {
 	gradeLevelId: string;
 	code: string;
+	name: string;
+	shortName: string;
 	templateId: string;
 	classCount: number;
 	classNames: string[];
@@ -108,6 +110,8 @@ export function buildCompleteStepSummary(
 		levels.push({
 			gradeLevelId: level.gradeLevelId,
 			code: catalogLevel?.code ?? level.gradeLevelId,
+			name: catalogLevel?.name ?? '',
+			shortName: catalogLevel?.shortLabel ?? '',
 			templateId: catalogLevel?.templateId ?? '',
 			classCount: level.classCount,
 			classNames,

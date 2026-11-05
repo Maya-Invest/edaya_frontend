@@ -42,7 +42,7 @@
 	let removeCatalogBusy = $state(false);
 
 	const isCatalogSubject = $derived(Boolean(subject.gradeLevelId));
-	const localizedName = $derived(catalogSubjectName(subject.name, $lang, subject.code));
+	const localizedName = $derived(catalogSubjectName(subject.name, $lang, subject.shortName));
 
 	const teacherInitials = $derived(
 		subject.teacher

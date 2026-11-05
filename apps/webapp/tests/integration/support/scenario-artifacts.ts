@@ -25,9 +25,11 @@ export function observeScenarioPage(page: Page): void {
     const path = new URL(request.url()).pathname;
     if (path.startsWith('/core/') || path.startsWith('/auth/')) capture.http.push(redactDiagnostic(`${request.method()} ${path}: ${request.failure()?.errorText}`));
   };
+  const pageError = (error: Error) => capture.http.push(redactDiagnostic(`Page error: ${error.message}`));
+  page.on('pageerror', pageError);
   page.on('response', response);
   page.on('requestfailed', failed);
-  capture.cleanup.push(() => { page.off('response', response); page.off('requestfailed', failed); });
+  capture.cleanup.push(() => { page.off('pageerror', pageError); page.off('response', response); page.off('requestfailed', failed); });
 }
 /** Preserve an isolated session's actual page before its context is disposed. */
 export async function captureScenarioPage(page: Page): Promise<void> {

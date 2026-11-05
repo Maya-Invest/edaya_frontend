@@ -15,7 +15,7 @@ export class AnnualProfileState {
     options = $state<{
         id: string;
         label: string;
-        code: string;
+        shortName?: string;
         isActive: boolean;
     }[]>([]);
 
@@ -51,7 +51,7 @@ export class AnnualProfileState {
                 return {};
             this.student = profiles[0] ?? null;
             this.teacher = null;
-            this.options = options;
+            this.options = options.map(option => ({ ...option, label: option.name }));
         }
         else {
             const [profiles, options] = await Promise.all([client.entities.teacherAcademicYearProfiles.list({ schoolId, academicYearId, teacherId: personId }), listAllEntityPages(query => client.entities.academicDisciplines.list(query), { baseQuery: { schoolId } })]);

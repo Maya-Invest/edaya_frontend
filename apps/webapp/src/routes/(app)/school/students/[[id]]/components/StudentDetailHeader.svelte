@@ -78,8 +78,8 @@
 				<span class="rounded bg-secondary px-2 py-1 text-xs font-medium">{$t(`studentStatus.${student.status}`)}</span>
 			</div>
 			<div class="grid grid-cols-2 gap-x-4 text-sm [overflow-wrap:anywhere]">
-				<span><span class="text-xs text-muted-foreground">{$t('profile.matricule')}:</span> {student.matricule || $t('profile.notProvided')}</span>
-				<span><span class="text-xs text-muted-foreground">{$t('profile.nationalMatricule')}:</span> {student.nationalMatricule || $t('profile.notProvided')}</span>
+				<span><span class="text-xs text-muted-foreground">{$t('profile.identifier')}:</span> {student.identifier || $t('profile.notProvided')}</span>
+				<span><span class="text-xs text-muted-foreground">{$t('profile.globalIdentifier')}:</span> {student.globalIdentifier || $t('profile.notProvided')}</span>
 			</div>
 		{/snippet}
 	</DrawerEntityHeader>

@@ -58,12 +58,12 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	await gotoApp(journey, '/configuration/other/academic-disciplines?modal=create');
 	const disciplineDialog = page.getByRole('dialog');
 	await disciplineDialog.waitFor({ state: 'visible' });
-	const disciplineCode = `QA-${Date.now()}`;
-	await disciplineDialog.getByLabel(/^code$/i).fill(disciplineCode);
+	const disciplineShortName = `QA-${Date.now()}`;
 	await disciplineDialog.getByLabel(/^(name|nom)$/i).fill('QA academic discipline');
+	await disciplineDialog.getByLabel(/^(short name|nom court)$/i).fill(disciplineShortName);
 	await submitDialog(page);
 	assert.ok(await waitForDialogClosed(page), 'Academic discipline creation must succeed');
-	assert.ok(await assertListContains(page, disciplineCode, true, 20_000));
+	assert.ok(await assertListContains(page, disciplineShortName, true, 20_000));
 
 	// Subjects require a persisted category; provision that catalog first.
 	await visitCovered(journey, '/configuration/other/subject-categories', '/configuration/other/subject-categories');
@@ -121,7 +121,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	if (subjectOpened) {
 		const dialog = page.getByRole('dialog');
 		await dialog.locator('input').first().fill(subjectName);
-		await chooseOption(selectControl(dialog, { name: /discipline/i }), { label: `${disciplineCode} · QA academic discipline` });
+		await chooseOption(selectControl(dialog, { name: /discipline/i }), { label: `${disciplineShortName} · QA academic discipline` });
 		if (!(await waitForSubmitEnabled(page, 12_000))) {
 			coverCompletedModal(journey, '/configuration/structure/subjects', 'create-subject', {
 				opened: true,
@@ -179,7 +179,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		if (catalogOpened) {
 			const catalogDialog = page.getByRole('dialog');
 			await catalogDialog.locator('input').first().fill('Mathématiques');
-			await chooseOption(selectControl(catalogDialog, { name: /discipline/i }), { label: `${disciplineCode} · QA academic discipline` });
+			await chooseOption(selectControl(catalogDialog, { name: /discipline/i }), { label: `${disciplineShortName} · QA academic discipline` });
 			if (await waitForSubmitEnabled(page, 12_000)) {
 				await submitDialog(page);
 				await waitForDialogClosed(page);

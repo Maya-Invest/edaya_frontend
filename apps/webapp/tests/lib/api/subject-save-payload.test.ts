@@ -2,13 +2,12 @@ import { buildSubjectSavePayload } from '$lib/api/subject-save-payload';
 import { describe, expect, it } from 'bun:test';
 
 describe('buildSubjectSavePayload', () => {
-	it('omits blank code and non-positive coefficient', () => {
+	it('omits omitted short name and non-positive coefficient', () => {
 		const payload = buildSubjectSavePayload(
 			{
 				id: 'subj-golf',
 				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0,
 				name: 'GOLF',
-				code: '',
 				coefficient: 0,
 				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',
@@ -25,13 +24,13 @@ describe('buildSubjectSavePayload', () => {
 		});
 	});
 
-	it('keeps valid code and coefficient', () => {
+	it('keeps short name and coefficient', () => {
 		const payload = buildSubjectSavePayload(
 			{
 				id: 'subj-math',
 				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0,
 				name: 'Mathematics',
-				code: 'MATH',
+				shortName: 'MATH',
 				coefficient: 3,
 				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',
@@ -41,7 +40,7 @@ describe('buildSubjectSavePayload', () => {
 		);
 
 		expect(payload).toMatchObject({
-			code: 'MATH',
+			shortName: 'MATH',
 			coefficient: 3,
 			color: 'sky',
 			name: 'Maths',

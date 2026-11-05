@@ -25,9 +25,9 @@ describe('studentMatchesSearchQuery', () => {
 		expect(studentMatchesSearchQuery(student(), 'school.test')).toBe(true);
 	});
 
-	test('matches matricule case-insensitively', () => {
-		expect(studentMatchesSearchQuery(student({ matricule: 'CI-2025-001' }), 'ci-2025-001')).toBe(true);
-		expect(studentMatchesSearchQuery(student({ matricule: 'CI-2025-001' }), 'CI-2025')).toBe(true);
+	test('matches identifier case-insensitively', () => {
+		expect(studentMatchesSearchQuery(student({ identifier: 'CI-2025-001' }), 'ci-2025-001')).toBe(true);
+		expect(studentMatchesSearchQuery(student({ identifier: 'CI-2025-001' }), 'CI-2025')).toBe(true);
 	});
 
 	test('returns true for empty query', () => {

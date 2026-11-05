@@ -144,6 +144,7 @@ export class FeesPageState {
 
     async createFee(input: {
         name: string;
+        shortName?: string;
         description?: string | null;
         billingTerms?: Fee['billingTerms'];
         category: Fee['category'];
@@ -154,6 +155,7 @@ export class FeesPageState {
     }): Promise<string | null> {
         const id = await createCatalogServiceMutation({
             name: input.name,
+            shortName: input.shortName,
             description: input.description,
             billingTerms: input.billingTerms,
             category: input.category,
@@ -169,6 +171,7 @@ export class FeesPageState {
             this.appendFee({
                 id,
                 name: input.name.trim(),
+                shortName: input.shortName,
                 description: input.description ?? undefined,
                 billingTerms: input.billingTerms,
                 category: input.category,
@@ -185,6 +188,7 @@ export class FeesPageState {
     async updateFee(input: {
         feeId: string;
         name: string;
+        shortName?: string;
         description?: string | null;
         billingTerms?: Fee['billingTerms'];
         category: Fee['category'];
@@ -196,6 +200,7 @@ export class FeesPageState {
         const ok = await updateCatalogServiceMutation({
             id: input.feeId,
             name: input.name,
+            shortName: input.shortName,
             description: input.description,
             billingTerms: input.billingTerms,
             category: input.category,
@@ -208,6 +213,7 @@ export class FeesPageState {
                 this.autoBillingFeeId = input.feeId;
             this.patchFee(input.feeId, {
                 name: input.name.trim(),
+                shortName: input.shortName,
                 description: input.description ?? undefined,
                 billingTerms: input.billingTerms,
                 category: input.category,

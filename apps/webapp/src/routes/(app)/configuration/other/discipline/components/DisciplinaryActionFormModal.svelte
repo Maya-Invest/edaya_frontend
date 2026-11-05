@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { DisciplinaryActionCatalogItem, DisciplinaryActionKind } from '$lib/types/discipline';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import * as Select from '$lib/components/ui/select';
@@ -19,6 +20,7 @@
 
 	let busy = $state(false);
 	let name = $state('');
+	let shortName = $state('');
 	let kind = $state<DisciplinaryActionKind>('sanction');
 	let severity = $state('');
 	let defaultDurationDays = $state('');
@@ -45,6 +47,7 @@
 	function resetForm() {
 		if (action) {
 			name = action.name;
+			shortName = action?.shortName ?? action?.name ?? '';
 			kind = action.kind;
 			severity = action.severity !== undefined ? String(action.severity) : '';
 			defaultDurationDays = action.defaultDurationDays !== undefined
@@ -54,6 +57,7 @@
 			return;
 		}
 		name = '';
+		shortName = '';
 		kind = 'sanction';
 		severity = '';
 		defaultDurationDays = '';
@@ -76,6 +80,7 @@
 			const trimmedName = name.trim();
 			const payload = {
 				name: trimmedName,
+				shortName,
 				kind,
 				severity: optionalNumber(severity),
 				defaultDurationDays: optionalNumber(defaultDurationDays),
@@ -147,4 +152,5 @@
 		<span class="text-muted-foreground">{$t('disciplinaryCatalog.description')}</span>
 		<Input bind:value={description} />
 	</label>
+	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

@@ -1,3 +1,4 @@
+import { prepareHumanFixture } from './prepare-human';
 import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
 import { apiFetch } from '../setup/journey-api';
@@ -15,7 +16,7 @@ export async function exerciseStudentList(page: Page, base: string, scenarioId: 
   for (let index = count - 1; index >= 0; index--) {
     const id = crypto.randomUUID();
     const response = await apiFetch(page, base, '/core/commands/register-student', { method: 'POST', data: {
-      id, schoolId, firstName: 'Integration', lastName: `${prefix}${String(index).padStart(3, '0')}`, sendAccountInvitation: false,
+      ...await prepareHumanFixture(page, base, 'students', id), id, schoolId, firstName: 'Integration', lastName: `${prefix}${String(index).padStart(3, '0')}`, sendAccountInvitation: false,
     } });
     assert(response.ok(), `Student list fixture ${index}: HTTP ${response.status()}`);
     ids.unshift(id);

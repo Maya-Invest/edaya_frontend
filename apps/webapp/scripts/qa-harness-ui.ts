@@ -813,18 +813,18 @@ export async function waitForGradeLevelSelectOptions(
 	throw new Error('Grade level select has no options — shell may not include created levels yet');
 }
 
-/** GradeLevelFormModal — name and label are both required (label may mirror name on input). */
+/** GradeLevelFormModal — name and short name are required. */
 export async function fillGradeLevelCreateDialog(page: Page, levelName: string): Promise<void> {
 	const dialog = page.getByRole('dialog');
 	const nameInput = dialog.getByRole('textbox', { name: /^(grade level name|nom du niveau)$/i });
-	const labelInput = dialog.getByRole('textbox', { name: /short label|libellé court/i });
+	const shortNameInput = dialog.getByRole('textbox', { name: /^(short name|nom court)$/i });
 	const submit = dialog.getByRole('button', { name: /enregistrer|save changes|^save$/i }).last();
 
 	await nameInput.waitFor({ state: 'visible', timeout: 15_000 });
 
 	const fillFields = async () => {
 		await nameInput.fill(levelName);
-		await labelInput.fill(levelName);
+		await shortNameInput.fill(levelName);
 		const orderInput = dialog.locator('input[type="number"]');
 		if (await orderInput.isVisible().catch(() => false)) {
 			const orderValue = await orderInput.inputValue();
@@ -953,8 +953,8 @@ export async function fillStudentCreateDialog(
 	const dialog = page.getByRole('dialog');
 	const firstName = options.firstName ?? 'E2E';
 	const lastName = options.lastName ?? `Student${Date.now()}`;
-	await dialog.locator('input').nth(0).fill(firstName);
-	await dialog.locator('input').nth(1).fill(lastName);
+	await dialog.getByRole('textbox', { name: /^(first name|prénom)$/i }).fill(firstName);
+	await dialog.getByRole('textbox', { name: /^(last name|nom)$/i }).fill(lastName);
 
 	const noClasses = await dialog.getByText(/no classes|aucune classe|pas de classe/i).isVisible().catch(() => false);
 	if (noClasses) {
@@ -990,8 +990,8 @@ export async function fillPersonCreateDialog(
 	options: { firstName?: string; lastName?: string } = {},
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	await dialog.locator('input').nth(0).fill(options.firstName ?? 'E2E');
-	await dialog.locator('input').nth(1).fill(options.lastName ?? `Person${Date.now()}`);
+	await dialog.getByRole('textbox', { name: /^(first name|prénom)$/i }).fill(options.firstName ?? 'E2E');
+	await dialog.getByRole('textbox', { name: /^(last name|nom)$/i }).fill(options.lastName ?? `Person${Date.now()}`);
 
 	const invite = dialog.locator('#staff-send-invite, #teacher-send-invite, #guardian-send-invite, [id$="-send-invite"]');
 	await invite.first().waitFor({ state: 'visible', timeout: 15_000 });
@@ -1009,8 +1009,8 @@ export async function fillPersonCreateDialogWithInvite(
 	options: { email: string; firstName?: string; lastName?: string },
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	await dialog.locator('input').nth(0).fill(options.firstName ?? 'E2E');
-	await dialog.locator('input').nth(1).fill(options.lastName ?? `Person${Date.now()}`);
+	await dialog.getByRole('textbox', { name: /^(first name|prénom)$/i }).fill(options.firstName ?? 'E2E');
+	await dialog.getByRole('textbox', { name: /^(last name|nom)$/i }).fill(options.lastName ?? `Person${Date.now()}`);
 
 	const invite = dialog.locator('#staff-send-invite, #teacher-send-invite, #guardian-send-invite, [id$="-send-invite"]');
 	const count = await invite.count();

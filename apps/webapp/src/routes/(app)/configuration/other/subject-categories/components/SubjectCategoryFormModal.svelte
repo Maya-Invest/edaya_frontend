@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SubjectCategoryOption } from '$lib/api/subject-categories-data';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
@@ -18,12 +19,14 @@
 	const isEdit = $derived(category !== null);
 	let busy = $state(false);
 	let name = $state('');
+	let shortName = $state('');
 
 	$effect(() => {
 		if (!open) {
 			return;
 		}
 		name = category?.name ?? '';
+		shortName = category?.shortName ?? category?.name ?? '';
 	});
 
 	const canSubmit = $derived(name.trim().length > 0);
@@ -38,6 +41,7 @@
 			const ok = await subjectCategoriesPage.saveCategory({
 				id: category?.id,
 				name: trimmed,
+				shortName,
 				successMessage: get(t)(
 					isEdit ? 'subjectCategories.toastUpdated' : 'subjectCategories.toastCreated',
 					{ name: trimmed },
@@ -66,4 +70,5 @@
 		<span class="text-muted-foreground">{$t('subjectCategories.name')}</span>
 		<Input bind:value={name} />
 	</label>
+	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

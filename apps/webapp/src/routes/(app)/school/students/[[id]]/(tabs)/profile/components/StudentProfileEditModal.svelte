@@ -84,5 +84,5 @@
 		</Label>
 		<Input type="date" bind:value={birthDate} aria-label={$t('drawer.birthDate')} />
 	</div>
-	<PersonProfileFields kind="student" bind:values={additional} />
+	<PersonProfileFields kind="student" entityId={s.id} bind:values={additional} />
 </FormModal>

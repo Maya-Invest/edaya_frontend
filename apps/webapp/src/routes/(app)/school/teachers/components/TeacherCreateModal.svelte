@@ -9,6 +9,7 @@
 	import { t } from '$lib/i18n';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { personFieldDraft } from '$lib/people-profile-fields';
+	import IdentifierInput from '$lib/smart-components/human-identifier/IdentifierInput.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../teachers-page.svelte';
 
@@ -20,7 +21,6 @@
 	let additional = $state<Record<string, string>>(personFieldDraft('teacher'));
 	let firstName = $state('');
 	let lastName = $state('');
-	let code = $state('');
 	let email = $state('');
 	let phone = $state('');
 	let sendAccountInvitation = $state(true);
@@ -28,7 +28,6 @@
 		additional = personFieldDraft('teacher');
 		firstName = '';
 		lastName = '';
-		code = '';
 		email = '';
 		phone = '';
 		sendAccountInvitation = true;
@@ -44,7 +43,6 @@
 			profile: additional,
 			firstName,
 			lastName,
-			code,
 			email,
 			phone,
 			sendAccountInvitation,
@@ -69,6 +67,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	<IdentifierInput bind:profile={additional} />
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -82,12 +81,6 @@
 			</Label>
 			<Input bind:value={lastName} autocomplete="family-name" aria-label={$t('common.lastName')} />
 		</div>
-	</div>
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('common.code')}
-		</Label>
-		<Input bind:value={code} aria-label={$t('common.code')} />
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -110,5 +103,5 @@
 			<p class="text-xs text-muted-foreground">{$t('invitation.createModal.teacherInviteHint')}</p>
 		</div>
 	</div>
-	<details class="space-y-3"><summary class="cursor-pointer text-sm font-medium">{$t('profile.additionalFields')}</summary><PersonProfileFields kind="teacher" bind:values={additional} exclude={['code']} /></details>
+	<details class="space-y-3"><summary class="cursor-pointer text-sm font-medium">{$t('profile.additionalFields')}</summary><PersonProfileFields kind="teacher" bind:values={additional} exclude={['identifier']} /></details>
 </FormModal>

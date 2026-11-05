@@ -1,3 +1,4 @@
+import { prepareHumanFixture } from './prepare-human';
 import type { Page } from 'playwright';
 import assert from 'node:assert/strict';
 import { openUrlModal, waitForPageQuery } from '../../../scripts/qa-harness-ui';
@@ -22,7 +23,7 @@ export async function financeFixture(page: Page, base: string, classId: string) 
 	const year = classroom.academicYearId;
 	assert(year && school.financeCurrency, 'Required finance year/currency missing');
 	const studentId = `student-${crypto.randomUUID()}`;
-	await command(page, base, 'register-student', { id: studentId, schoolId: classroom.schoolId, firstName: 'Integration', lastName: crypto.randomUUID(), sendAccountInvitation: false });
+	await command(page, base, 'register-student', { ...await prepareHumanFixture(page, base, 'students', studentId), id: studentId, schoolId: classroom.schoolId, firstName: 'Integration', lastName: crypto.randomUUID(), sendAccountInvitation: false });
 	await command(page, base, 'enroll-student', { id: `enrollment-${crypto.randomUUID()}`, studentId, classGroupId: classId });
 	const serviceId = `service-${crypto.randomUUID()}`;
 	await command(page, base, 'create-catalog-service', { id: serviceId, academicYearId: year, name: `Integration ${serviceId}`, defaultPrice: 1000, currency: school.financeCurrency, billingTerms: { kind: 'one_time', installments: [] }, status: 'active', autoBilling: { mode: 'off' } });

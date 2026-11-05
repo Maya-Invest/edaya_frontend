@@ -1,7 +1,5 @@
 <script lang="ts">
-	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
-	import { cn } from '$lib/utils';
 
 	let {
 		generationMode = $bindable<'weekly' | 'free'>('weekly'),
@@ -15,20 +13,12 @@
 	];
 </script>
 
-<div class="flex flex-wrap gap-2" role="group" aria-label={$t('timetable.generationMode')}>
-	{#each modes as mode (mode.id)}
-		<Button variant="outline"
-			type="button"
-			aria-pressed={generationMode === mode.id}
-			class={cn(
-				'text-sm',
-				generationMode === mode.id
-					? 'border-primary bg-primary/10 text-primary'
-					: 'border-border bg-background text-foreground/80 hover:bg-secondary',
-			)}
-			onclick={() => (generationMode = mode.id)}
-		>
-			{$t(mode.labelKey)}
-		</Button>
-	{/each}
-</div>
+<fieldset class="space-y-1">
+	<legend class="text-sm">{$t('timetable.generationMode')}</legend>
+	<div class="flex flex-wrap gap-x-4">
+		{#each modes as mode (mode.id)}
+			<label class="flex min-h-11 cursor-pointer items-center gap-2 text-sm"><input type="radio" name="timetable-generation-mode" value={mode.id} bind:group={generationMode} class="accent-primary" />{$t(mode.id === 'weekly' ? 'timetable.weeklyModeLabel' : 'timetable.generationModeFreeShort')}</label>
+		{/each}
+	</div>
+	<p class="text-xs text-muted-foreground">{$t(generationMode === 'weekly' ? 'timetable.weeklyExplanation' : 'timetable.freeExplanation')}</p>
+</fieldset>

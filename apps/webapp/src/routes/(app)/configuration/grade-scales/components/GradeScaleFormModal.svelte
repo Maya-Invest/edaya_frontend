@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { GradeScale } from '$lib/types/report-cards';
 	import { validGradeScalePrecision } from '$lib/api/grade-intervals';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -12,6 +13,7 @@
 	const owner = getGradeScalesPageState();
 	let busy = $state(false);
 	let name = $state('');
+	let shortName = $state('');
 	let description = $state('');
 	let minimum = $state('0');
 	let maximum = $state('20');
@@ -25,6 +27,7 @@
 		if (open && (!wasOpen || openedIdentity !== (scale?.id ?? 'new'))) {
 			openedIdentity = scale?.id ?? 'new';
 			name = scale?.name ?? '';
+			shortName = scale?.shortName ?? scale?.name ?? '';
 			description = scale?.storedDescription ?? '';
 			minimum = String(scale?.minScore ?? 0);
 			maximum = String(scale?.maxScore ?? 20);
@@ -41,7 +44,7 @@
 			return;
 		busy = true;
 		try {
-			if (await owner.configureScale({ id, expectedRevision: revision, action: 'metadata', metadata: { name: name.trim(), description: description.trim() || null, minScore: Number(minimum), maxScore: Number(maximum), decimalPlaces: Number(precision), roundingMode: rounding as 'nearest' | 'truncate' } }))
+			if (await owner.configureScale({ id, expectedRevision: revision, action: 'metadata', metadata: { name: name.trim(), shortName, description: description.trim() || null, minScore: Number(minimum), maxScore: Number(maximum), decimalPlaces: Number(precision), roundingMode: rounding as 'nearest' | 'truncate' } }))
 				open = false;
 		}
 		finally {
@@ -60,4 +63,5 @@
 	</div>
 	{#if !valid && name.trim()}<p role="alert" class="text-sm text-destructive">{$t('grading.invalidMetadata')}</p>{/if}
 	{#if !scale}<p class="text-sm text-muted-foreground">{$t('grading.emptyHelp')}</p>{/if}
+	<ShortNameField name={name} bind:value={shortName} creating={!scale} />
 </FormModal>

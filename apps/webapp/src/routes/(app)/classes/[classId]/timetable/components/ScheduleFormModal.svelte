@@ -42,7 +42,7 @@
 	const activityOptions = $derived(activities);
 	const selectedSubjectName = $derived.by(() => {
 		const subject = classSubjects.find(entry => entry.id === classSubjectId);
-		return subject ? catalogSubjectName(subject.name, $lang, subject.code) : '';
+		return subject ? catalogSubjectName(subject.name, $lang, subject.shortName) : '';
 	});
 	const selectedActivityName = $derived(activityOptions.find(activity => activity.id === activityId)?.name ?? '');
 	const canSubmit = $derived.by(() => {
@@ -216,8 +216,8 @@
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
 					{#each classSubjects as subject (subject.id)}
-						<Select.Item value={subject.id} label={catalogSubjectName(subject.name, $lang, subject.code)}>
-							{catalogSubjectName(subject.name, $lang, subject.code)}
+						<Select.Item value={subject.id} label={catalogSubjectName(subject.name, $lang, subject.shortName)}>
+							{catalogSubjectName(subject.name, $lang, subject.shortName)}
 						</Select.Item>
 					{/each}
 				</Select.Content>

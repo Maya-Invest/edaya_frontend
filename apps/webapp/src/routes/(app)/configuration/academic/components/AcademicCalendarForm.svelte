@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { AcademicPeriod, AcademicYear } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import SelectField from '$lib/components/ui/SelectField.svelte';
@@ -24,6 +25,7 @@
 	const isYear = untrack(() => editingYear);
 	const initialType = originalPeriod ? originalPeriod.type : defaultPeriodType(academicContext.canonicalPeriods.filter(entry => entry.academicYearId === initial.id));
 	let name = $state(isYear ? initial.label : originalPeriod?.label ?? '');
+	let shortName = $state(isYear ? initial.shortName ?? initial.label : originalPeriod?.shortName ?? originalPeriod?.label ?? '');
 	let startDate = $state(isYear ? formatDateInput(initial.startDate) : formatDateInput(originalPeriod?.startDate));
 	let endDate = $state(isYear ? formatDateInput(initial.endDate) : formatDateInput(originalPeriod?.endDate));
 	let type = $state<AcademicPeriod['type']>(initialType);
@@ -34,14 +36,14 @@
 	const currentYear = $derived(academicContext.years.find(entry => entry.id === initial.id));
 	const currentPeriod = $derived(originalPeriod ? academicContext.canonicalPeriods.find(entry => entry.id === originalPeriod.id) : undefined);
 	const error = $derived(!currentYear || currentYear.schoolId !== initial.schoolId || (originalPeriod && (!currentPeriod || currentPeriod.schoolId !== initial.schoolId)) ? 'academic.targetUnavailable' : calendarFormError({ name, startDate, endDate }, currentYear, academicContext.canonicalPeriods, currentPeriod, editingYear));
-	const dirty = $derived(!saved && (name !== (editingYear ? initial.label : originalPeriod?.label ?? '') || startDate !== formatDateInput(editingYear ? initial.startDate : originalPeriod?.startDate) || endDate !== formatDateInput(editingYear ? initial.endDate : originalPeriod?.endDate) || (!editingYear && type !== initialType)));
+	const dirty = $derived(!saved && (shortName !== (isYear ? initial.shortName ?? initial.label : originalPeriod?.shortName ?? originalPeriod?.label ?? '') || name !== (editingYear ? initial.label : originalPeriod?.label ?? '') || startDate !== formatDateInput(editingYear ? initial.startDate : originalPeriod?.startDate) || endDate !== formatDateInput(editingYear ? initial.endDate : originalPeriod?.endDate) || (!editingYear && type !== initialType)));
 	async function submit() {
 		attempted = true;
 		if (busy || error || !hasPermission('SCHOOL_CONFIGURE'))
 			return;
 		busy = true;
 		try {
-			const fields = { name, startDate, endDate, type };
+			const fields = { name, shortName, startDate, endDate, type };
 			const ok = editingYear
 				? await academicPage.updateYear(initial.id, fields, $t('academic.toastUpdated'))
 				: await academicPage.savePeriod(originalPeriod?.id ?? initial.id, fields, !originalPeriod, $t(originalPeriod ? 'academic.toastUpdated' : 'academic.toastPeriodCreated'));
@@ -67,4 +69,5 @@
 		<label class="space-y-1.5 text-sm"><span>{$t('academic.endDate')}</span><Input name="endDate" type="date" bind:value={endDate} required /></label>
 	</div>
 	{#if attempted && error}<p role="alert" class="text-sm text-destructive">{$t(error)}</p>{/if}
+	<ShortNameField {name} bind:value={shortName} creating={!editingYear && !originalPeriod} />
 </FormModal>

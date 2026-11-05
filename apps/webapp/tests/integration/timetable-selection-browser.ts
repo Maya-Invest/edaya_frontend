@@ -26,12 +26,21 @@ async function main() {
 		const box = (id: string) => boxes.and(page.locator(`[data-class-id="${id}"]`));
 		const classButton = (id: string) => page.getByTestId('timetable-workload-class').and(page.locator(`[data-class-id="${id}"]`));
 		const editor = page.getByTestId('timetable-subject-editor');
-		const submit = page.getByTestId('timetable-review-scope');
+		const submit = page.getByTestId('timetable-generate-submit');
 		const search = page.getByTestId('timetable-class-selection').getByRole('searchbox');
 		async function activeClass(name: string) {
 			await page.waitForFunction(value => document.querySelector('[data-testid="timetable-active-class"]')?.textContent?.trim() === value, name);
 		}
 		await boxes.first().waitFor();
+		const radios = page.getByRole('radio');
+		assert.equal(await radios.count(), 2);
+		await radios.first().focus();
+		await page.keyboard.press('ArrowRight');
+		assert(await radios.last().isChecked());
+		await page.keyboard.press('ArrowLeft');
+		assert(await radios.first().isChecked());
+		await page.getByRole('button', { name: 'Full academic year', exact: true }).click();
+		assert.equal(await page.getByRole('button', { name: 'Full academic year', exact: true }).getAttribute('aria-pressed'), 'true');
 		assert.equal(await page.getByTestId('timetable-class-selection').count(), 1);
 		assert.equal(await page.getByRole('searchbox').count(), 1);
 		assert.equal(await boxes.count(), 3);
@@ -44,6 +53,7 @@ async function main() {
 		await activeClass('Class B');
 		for (const box of await boxes.all()) assert(await box.isChecked(), 'Navigating must not toggle inclusion');
 		const fields = editor.locator('input[type="number"]');
+		await editor.locator('summary').first().click();
 		await fields.nth(0).fill('7');
 		await fields.nth(1).fill('2');
 		await fields.nth(2).fill('3');
@@ -90,23 +100,57 @@ async function main() {
 		assert.equal(await page.getByTestId('timetable-workload-class').count(), 3, 'Excluded classes stay available for re-inclusion');
 		assert(await classButton('b').isDisabled());
 		await classButton('a').click();
+		await editor.locator('summary').first().click();
 		await page.getByTestId('timetable-workload-periods').first().fill('4');
 		await boxes.nth(0).uncheck();
 		await boxes.nth(0).check();
 		await page.getByTestId('timetable-workload-class').filter({ hasText: 'Class A' }).click();
 		assert.equal(await page.getByTestId('timetable-workload-periods').first().inputValue(), '4');
-		for (const tab of [1, 2]) {
-			await page.getByRole('tab').nth(tab).click();
-			assert.equal(await page.getByTestId('timetable-class-selection').count(), 0);
-			assert(await submit.isEnabled(), 'Review remains available across settings panels');
-		}
-		await page.getByRole('tab').first().click();
+		if (!(await editor.locator('details').first().getAttribute('open')) && !(await fields.first().isVisible())) await editor.locator('summary').first().click();
+		await fields.first().fill('-1');
+		await page.locator('#timetable-setup-periods').click();
+		assert(await submit.isDisabled(), 'Invalid overrides block generation on another tab');
+		assert((await page.locator('#timetable-setup-subjects').textContent())?.includes('!'));
+		await page.locator('#timetable-setup-subjects').click();
+		if (!(await fields.first().isVisible())) await editor.locator('summary').first().click();
+		await fields.first().fill('4');
+		await page.locator('#timetable-setup-periods').click();
+		assert.equal(await page.getByTestId('period-calendar').count(), 1);
+ const calendar = page.getByTestId('period-calendar');
+ const slots = calendar.getByRole('checkbox');
+ await slots.first().waitFor();
+ assert.equal(await slots.count(), 3);
+ assert.equal(await calendar.locator('.period-action').count(), 0);
+ await slots.first().check();
+ assert(await slots.first().isChecked());
+ await slots.first().focus();
+ await page.keyboard.press('Space');
+ assert(!(await slots.first().isChecked()));
+ await calendar.getByText('Morning', { exact: true }).click();
+ assert(await slots.first().isChecked(), 'Clicking a card toggles its checkbox once');
+ await page.getByRole('button', { name: 'Prefer mornings', exact: true }).click();
+ assert.equal(await slots.evaluateAll(nodes => nodes.filter(node => node.getAttribute('aria-checked') === 'true').length), 2);
+ await page.getByRole('button', { name: /no preferred|no preference/i }).click();
+ assert.equal(await slots.evaluateAll(nodes => nodes.filter(node => node.getAttribute('aria-checked') === 'true').length), 0);
+ if (process.env.TIMETABLE_SELECTION_SCREENSHOT_DIR) {
+ mkdirSync(process.env.TIMETABLE_SELECTION_SCREENSHOT_DIR, { recursive: true });
+ await page.screenshot({ path: join(process.env.TIMETABLE_SELECTION_SCREENSHOT_DIR, 'preferences-calendar.png') });
+ }
+		await page.locator('#timetable-setup-subjects').click();
 		await activeClass('Class A');
 		assert.equal(await fields.first().inputValue(), '4');
-		await submit.click();
 		assert.equal(await page.getByTestId('timetable-generate-submit').textContent(), 'Generate 2 classes');
 		await page.getByTestId('timetable-generate-submit').click();
 		assert.equal(await boxes.count(), 0, 'Selection controls must be hidden during generation');
+		const progress = page.getByTestId('timetable-generation-progress');
+		await progress.waitFor();
+		assert.equal(await progress.getByRole('progressbar').getAttribute('value'), null, 'No invented percentage');
+		assert((await progress.textContent())?.includes('2 selected classes'));
+		assert.equal(await page.getByTestId('timetable-generate-submit').count(), 0, 'Cannot submit twice');
+		await page.waitForFunction(() => !document.querySelector('[data-testid="timetable-generation-progress"]')?.textContent?.includes('0:00'));
+		if (process.env.TIMETABLE_SELECTION_SCREENSHOT_DIR) await page.screenshot({ path: join(process.env.TIMETABLE_SELECTION_SCREENSHOT_DIR, 'generation-progress-en.png') });
+		await page.getByTestId('fixture-refresh').dispatchEvent('click');
+		await progress.getByText('Refreshing timetables…', { exact: true }).waitFor();
 		const requests = JSON.parse(await page.getByTestId('fixture-requests').textContent() ?? '[]');
 		assert.deepEqual(requests[0].classGroupIds, ['c', 'a']);
 		assert.equal(requests[0].periodsPerWeekByClassSubjectId['subject-a'], 4);
@@ -114,16 +158,21 @@ async function main() {
 		assert.equal(requests[0].minPeriodSpanByClassSubjectId['subject-b'], undefined);
 		assert.equal(requests[0].maxPeriodSpanByClassSubjectId['subject-b'], undefined);
 		await page.getByTestId('fixture-finish').dispatchEvent('click');
-		await page.getByRole('button', { name: /run again|relancer/i }).click();
-		await page.getByTestId('task-step-selection').click();
+		await page.getByRole('button', { name: /edit configuration|modifier la configuration/i }).click();
+		await page.locator('#timetable-setup-subjects').click();
 		assert(await boxes.nth(0).isChecked());
 		assert(!(await boxes.nth(1).isChecked()));
 		assert.equal(await page.getByTestId('timetable-workload-periods').first().inputValue(), '4');
 		await box('b').check();
 		await classButton('b').click();
 		assert.deepEqual(await fields.evaluateAll(inputs => inputs.map(input => (input as HTMLInputElement).value)), ['7', '2', '3']);
+		await submit.click();
+		await page.getByTestId('fixture-fail').dispatchEvent('click');
+		await page.getByText('Generation failed', { exact: true }).waitFor();
+		await page.getByRole('button', { name: 'Edit configuration', exact: true }).click();
+		assert.equal(await fields.first().inputValue(), '7');
 		await page.getByTestId('fixture-year').dispatchEvent('click');
-		await page.getByTestId('task-step-selection').click();
+		await page.locator('#timetable-setup-subjects').click();
 		await page.waitForFunction(() => document.querySelector('[data-testid="timetable-class-checkbox"]')?.getAttribute('data-class-id') === 'other-class');
 		assert.equal(await boxes.count(), 1);
 		assert(await boxes.first().isChecked());
@@ -133,7 +182,7 @@ async function main() {
 		assert.equal(await fields.count(), 0);
 		assert(await submit.isDisabled());
 		await page.getByTestId('fixture-school').dispatchEvent('click');
-		await page.getByTestId('task-step-selection').click();
+		await page.locator('#timetable-setup-subjects').click();
 		await page.waitForFunction(() => document.querySelector('[data-testid="timetable-class-checkbox"]')?.getAttribute('aria-checked') === 'true');
 		await page.getByRole('button', { name: /close|fermer/i }).last().click();
 		await page.getByTestId('fixture-open').click();
@@ -148,6 +197,13 @@ async function main() {
 		if (screenshots)
 			mkdirSync(screenshots, { recursive: true });
 		for (const [width, height, language, enlarged] of [
+			[1920, 1080, 'en', false],
+			[1920, 1080, 'fr', false],
+			[1024, 800, 'en', false],
+			[1024, 800, 'fr', false],
+			[768, 800, 'en', false],
+			[768, 800, 'fr', false],
+			[320, 700, 'en', false],
 			[1440, 1000, 'en', false],
 			[1440, 1000, 'fr', false],
 			[390, 844, 'en', false],
@@ -163,7 +219,7 @@ async function main() {
 			await boxes.first().waitFor();
 			await page.getByTestId(`fixture-${language}`).dispatchEvent('click');
 			await page.getByTestId('fixture-many').dispatchEvent('click');
-			await page.getByTestId('task-step-selection').click();
+			await page.locator('#timetable-setup-subjects').click();
 			await page.waitForFunction(() => document.querySelectorAll('[data-testid="timetable-class-checkbox"]').length === 80);
 			if (enlarged)
 				await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
@@ -174,12 +230,26 @@ async function main() {
 			assert(footer && footer.y >= 0 && footer.y + footer.height <= height, `Footer clipped at ${width}/${language}/${enlarged}`);
 			await classButton('many-0').scrollIntoViewIfNeeded();
 			await classButton('many-0').click();
+			await editor.locator('summary').first().click();
 			await fields.first().scrollIntoViewIfNeeded();
 			assert(await editor.evaluate(element => element.scrollWidth <= element.clientWidth + 1), `Editor overflow at ${width}/${language}/${enlarged}`);
 			const input = await fields.first().boundingBox();
 			assert(input && input.y >= 0 && input.y + input.height <= height, 'Subject settings remain reachable');
-			if (screenshots)
-				await page.screenshot({ path: join(screenshots, `${width}-${height}-${language}${enlarged ? '-200pct' : ''}.png`) });
+			if (screenshots) {
+				const prefix = `${width}-${height}-${language}${enlarged ? '-200pct' : ''}`;
+				await page.screenshot({ path: join(screenshots, `${prefix}.png`) });
+				for (const tab of ['periods', 'advanced']) {
+					await page.locator(`#timetable-setup-${tab}`).click();
+					await page.screenshot({ path: join(screenshots, `${prefix}-${tab}.png`) });
+				}
+				await submit.click();
+				await page.getByTestId('timetable-generation-progress').waitFor();
+				await page.screenshot({ path: join(screenshots, `${prefix}-progress.png`) });
+				await page.getByTestId('fixture-finish').dispatchEvent('click');
+				await page.getByRole('button', { name: /edit configuration|modifier la configuration/i }).waitFor();
+				await page.screenshot({ path: join(screenshots, `${prefix}-result.png`) });
+			}
+
 		}
 		assert.deepEqual(pageErrors, []);
 		process.stdout.write('Timetable modal browser checks passed: consolidated grouping, independent inclusion/navigation, search, scoped overrides, empty/single/large lists, retries, scope reset, keyboard, FR/EN, responsive layouts and 200% text.\n');

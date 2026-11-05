@@ -11,6 +11,7 @@ type SubjectMatterRaw = components['schemas']['SubjectMatter'];
 export interface SubjectMatterDrawerRow {
 	id: string;
 	name: string;
+	shortName?: string;
 	description?: string;
 	sequenceOrder: number;
 	estimatedHours?: number;
@@ -63,6 +64,7 @@ function mapSubjectMatterRows(
 			return {
 				id: matter.id,
 				name: matter.name,
+				shortName: matter.shortName,
 				description: matter.description ?? undefined,
 				sequenceOrder: matter.sequenceOrder,
 				estimatedHours: matter.estimatedHours ?? undefined,
@@ -94,19 +96,21 @@ export async function saveSubjectMatterMutation(input: {
 	classSubjectId: string;
 	classGroupId: string;
 	name: string;
+	shortName?: string;
 	description?: string;
 	sequenceOrder: number;
 	estimatedHours?: number;
 	successMessage?: string;
 }): Promise<SubjectMatterDrawerRow | null> {
 	const client = getBrowserSchoolClient();
-	const matterId = input.id ?? `sm-${Date.now().toString(36)}`;
+	const matterId = input.id ?? crypto.randomUUID();
 
 	const saved = await runMutation(
 		() => client.commands.configureSubjectMatter({
 			id: matterId,
 			subjectId: input.subjectId,
 			name: toCanonicalCatalogText(input.name.trim()),
+			shortName: input.shortName,
 			description: input.description?.trim() || null,
 			sequenceOrder: input.sequenceOrder,
 			estimatedHours: input.estimatedHours ?? null,
@@ -121,6 +125,7 @@ export async function saveSubjectMatterMutation(input: {
 	return {
 		id: matterId,
 		name: toCanonicalCatalogText(input.name.trim()),
+		shortName: input.shortName,
 		description: input.description?.trim() || undefined,
 		sequenceOrder: input.sequenceOrder,
 		estimatedHours: input.estimatedHours,

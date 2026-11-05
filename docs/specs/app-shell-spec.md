@@ -174,7 +174,7 @@ The cancellation control remains persistently reachable; confirmations must not 
 
 ### 4.2 Focused task workspace
 
-Imports, timetable generation, grade-entry sessions across students and class/session attendance recording use a URL-addressable full-screen task surface. It replaces ordinary inspection while active; it must not stack another drawer. It has context/name, Return/Close, a step or progress region when the task requires one, a flexible working region and persistent task actions. No unrelated navigation or competing primary action appears inside it.
+Imports and timetable generation use a URL-addressable inset workspace with persistent header and footer. Timetable has one tabbed setup screen and execution/results; import retains horizontal workflow steps. Both use the shared assistant presentation with a visible, inactive application backdrop. Grade-entry sessions across students and class/session attendance recording retain the URL-addressable full-screen task surface. It replaces ordinary inspection while active; it must not stack another drawer. It has context/name, Return/Close, a step or progress region when the task requires one, a flexible working region and persistent task actions. No unrelated navigation or competing primary action appears inside it.
 
 The task must declare its unit of save, validation, pending work and completion. Presentation must not imply atomic batch save where commands are per-record, or create new batch APIs. Partial completion must identify saved versus unsaved work. Bulk archive/delete confirmation and a bounded selection applied to several records remain confirmations/forms, not workspaces merely due to record count.
 

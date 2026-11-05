@@ -9,7 +9,7 @@ import { exerciseImportProgress } from './support/import-progress';
 import { exerciseImport, IMPORT_SCENARIOS } from './support/import-workflows';
 import { passwordlessApiLogin } from './support/passwordless';
 
-const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? '/private/tmp/edaya-import-browser';
+const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? '.focused-run/imports-ui';
 mkdirSync(artifacts, { recursive: true });
 const base = (process.env.WEBAPP_URL ?? 'http://localhost:5173').replace(/\/+$/, '');
 assert(['localhost', '127.0.0.1'].includes(new URL(base).hostname));

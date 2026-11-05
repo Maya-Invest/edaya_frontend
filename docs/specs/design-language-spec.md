@@ -52,6 +52,7 @@ All dimensions below are CSS pixels at the default text size. Text sizes must us
 | Textareas | Same field treatment; multiline height follows required content |
 | Collection containers / cards | 8px outer corners; square rows and row activation regions within the shared outline |
 | Dialog / menu or popover | 12px / 8px radius |
+| Inset assistant | Maximum width 900px; 32px viewport gutters from 1024px, 16px below; 12px corners; height equals the viewport minus the gutters. Persistent header and footer; Wrapping horizontal import steps; timetable uses underlined setup tabs without a step rail. Simple forms are at most 560px wide. Timetable uses a 200px class column from 768px working width, stacking below. Below 768px working width or 700px viewport height, setup dates and tabs scroll with the body; selection calendars use a 320px viewport. |
 | Drawer / full-screen workspace | Square corners; no artificial outer gutter |
 | Menu items / tabs / record activation regions | Square corners; full-width row or tab treatment, not action capsules |
 | Status badges / conversation bubbles | 4px / 12px radius; never styled as action buttons |
@@ -138,6 +139,12 @@ Every visible string, accessible name, validation message and state must have FR
 | Teacher / Teachers | Enseignant / Enseignants | Teaching actor, distinct from staff |
 | Staff member / Staff | Membre du personnel / Personnel | Human staff workspace actor |
 | Guardian / Guardians | Responsable légal / Responsables légaux | Student-associated adult |
+| Identifier | Matricule | Optional human identifier, unique within the school and human group; use Student identifier, Teacher identifier, Guardian identifier or Staff identifier when context needs the group |
+| Global identifier | Matricule national | Optional externally issued student identifier (`globalIdentifier`), such as a ministry identifier; never the school’s matching key |
+| Short name | Nom court | Non-unique compact display name for a non-human entity; accents, spaces and punctuation are allowed |
+| Import reference | Référence d’import | Prefilled internal ID used for stable import targets/relationships; not an extra business label |
+| Resolve reference | Résoudre la référence | Explicitly choose the intended authorized record when scoped text lookup is ambiguous |
+| Create new / Select update target | Créer un nouvel élément / Choisir l’élément à modifier | Explicit import intent for an unbound non-human row; a matching name never silently selects an update |
 | Class / Classes | Classe / Classes | Class group |
 | Grade level / Grade levels | Niveau / Niveaux | Academic level, never a mark |
 | Subject / Subjects | Matière / Matières | Grade/year-owned subject |
@@ -218,7 +225,7 @@ Confirmations must name the record and actual consequence, then use the action v
 
 ## 6. Brand and specialized presentation
 
-All student drawer tabs follow the shared section-title, body, metadata and fact-grid geometry: 24px between sections, 16px internal gaps, and two fact columns only from 480px of available content width. Student read-only facts use smaller, muted labels above primary-text values. The Health section and its edit form arrange blood type, allergies, medications and chronic conditions in reading order with two equal columns from 480px of available content width and one below. Long medical text wraps in full. The drawer has one vertical body scroller; the identity/tab region is pinned only when it occupies no more than half that region and leaves at least 240px for body content. Otherwise identity/actions scroll with the body while Close remains fixed. Proposed portraits use the existing preview size and the 70px published portrait appears in the identity header beside two matricule columns with wrapping values.
+All student drawer tabs follow the shared section-title, body, metadata and fact-grid geometry: 24px between sections, 16px internal gaps, and two fact columns only from 480px of available content width. Student read-only facts use smaller, muted labels above primary-text values. The Health section and its edit form arrange blood type, allergies, medications and chronic conditions in reading order with two equal columns from 480px of available content width and one below. Long medical text wraps in full. The drawer has one vertical body scroller; the identity/tab region is pinned only when it occupies no more than half that region and leaves at least 240px for body content. Otherwise identity/actions scroll with the body while Close remains fixed. Proposed portraits use the existing preview size and the 70px published portrait appears in the identity header beside two identifier columns with wrapping values.
 
 Official outlined EDAYA artwork is authoritative. Use vertical artwork for spacious authentication, horizontal in headers/sidebar, symbol only in compact contexts already identified as EDAYA. Minimum widths are 88/128/32px respectively; favicon sizes may use 16/24/32px. Preserve clear space and aspect ratio; no reconstructed wordmarks, recoloring, stretching, shadow or text overlay. White artwork requires a dark or royal-blue surface.
 

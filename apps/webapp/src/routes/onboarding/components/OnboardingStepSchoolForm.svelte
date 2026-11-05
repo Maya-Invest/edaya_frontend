@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
@@ -106,6 +107,7 @@
 					oninput={persistDraft}
 				/>
 			</div>
+			<ShortNameField name={onboardingContext.draft.school.name} bind:value={onboardingContext.draft.school.shortName} {disabled} />
 			<div class="grid content-start gap-1">
 				<Label for="onboarding-school-city">{$t('onboarding.cityLabel')}</Label>
 				<Input

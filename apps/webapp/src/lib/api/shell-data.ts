@@ -156,11 +156,13 @@ function mapAcademicYearFromApi(year: {
 	startDate: unknown;
 	endDate: unknown;
 	status?: unknown;
+	shortName?: string;
 }): AcademicYear {
 	return {
 		id: year.id,
 		schoolId: year.schoolId,
 		label: year.name,
+		shortName: year.shortName,
 		startDate: typeof year.startDate === 'string' ? year.startDate : String(year.startDate),
 		endDate: typeof year.endDate === 'string' ? year.endDate : String(year.endDate),
 		status: mapAcademicYearStatus(year.status),
@@ -204,7 +206,8 @@ async function fetchSupplementalShellForSchool(
 		id: def.id,
 		schoolId: def.schoolId,
 		academicYearId: def.academicYearId,
-		label: def.label,
+		label: def.name,
+		shortName: def.shortName,
 		dayOfWeek: def.dayOfWeek,
 		order: def.order,
 		startTime: def.startTime,
@@ -219,6 +222,7 @@ async function fetchSupplementalShellForSchool(
 			academicYearId: p.academicYearId,
 			type: p.type,
 			label: p.name,
+			shortName: p.shortName,
 			range: p.name.includes('1') ? 'Sep — Dec' : p.name.includes('2') ? 'Jan — Apr' : 'May — Jul',
 			startDate: typeof p.startDate === 'string' ? p.startDate : String(p.startDate),
 			endDate: typeof p.endDate === 'string' ? p.endDate : String(p.endDate),
@@ -230,7 +234,7 @@ async function fetchSupplementalShellForSchool(
 		gradingPolicies: gl.gradingPolicies,
 		schoolId: gl.schoolId,
 		name: gl.name,
-		label: gl.label,
+		shortName: gl.shortName ?? gl.name,
 		cycle: gl.cycle ?? '',
 		order: gl.order,
 	}));
@@ -245,6 +249,7 @@ async function fetchSupplementalShellForSchool(
 			academicYearId: cg.academicYearId,
 			gradeLevelId: cg.gradeLevelId,
 			name: cg.name,
+			shortName: cg.shortName,
 			level: gradeLevel?.cycle ?? '',
 			studentCount: studentCountByClass[cg.id] ?? 0,
 			capacity: cg.capacity ?? null,
@@ -340,7 +345,8 @@ export async function fetchAppShellData(
 		id: def.id,
 		schoolId: def.schoolId,
 		academicYearId: def.academicYearId,
-		label: def.label,
+		label: def.name,
+		shortName: def.shortName,
 		dayOfWeek: def.dayOfWeek,
 		order: def.order,
 		startTime: def.startTime,
@@ -356,6 +362,7 @@ export async function fetchAppShellData(
 			academicYearId: p.academicYearId,
 			type: p.type,
 			label: p.name,
+			shortName: p.shortName,
 			range: p.name.includes('1') ? 'Sep — Dec' : p.name.includes('2') ? 'Jan — Apr' : 'May — Jul',
 			startDate: typeof p.startDate === 'string' ? p.startDate : String(p.startDate),
 			endDate: typeof p.endDate === 'string' ? p.endDate : String(p.endDate),
@@ -368,7 +375,7 @@ export async function fetchAppShellData(
 		gradingPolicies: gl.gradingPolicies,
 		schoolId: gl.schoolId,
 		name: gl.name,
-		label: gl.label,
+		shortName: gl.shortName ?? gl.name,
 		cycle: gl.cycle ?? '',
 		order: gl.order,
 	}));
@@ -381,6 +388,7 @@ export async function fetchAppShellData(
 			academicYearId: cg.academicYearId,
 			gradeLevelId: cg.gradeLevelId,
 			name: cg.name,
+			shortName: cg.shortName,
 			level: gradeLevel?.cycle ?? '',
 			studentCount: studentCountByClass[cg.id] ?? 0,
 			capacity: cg.capacity ?? null,

@@ -101,5 +101,5 @@
 		</Label>
 		<Input type="tel" bind:value={phone} autocomplete="tel" aria-label={$t('common.phone')} />
 	</div>
-	<PersonProfileFields kind="teacher" bind:values={additional} />
+	<PersonProfileFields kind="teacher" entityId={teacher.id} bind:values={additional} />
 </FormModal>

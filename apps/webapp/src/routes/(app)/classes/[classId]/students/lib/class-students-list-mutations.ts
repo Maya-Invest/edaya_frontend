@@ -2,6 +2,7 @@ import type { ClassStudentsPageState } from '../class-students-page.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { dateInputToIso } from '$lib/date/format';
+import { humanCreationInput } from '$lib/people-profile-fields';
 import { runStudentRouteMutation } from '../../../../school/students/lib/student-route-mutation';
 
 function schoolId(): string {
@@ -10,6 +11,7 @@ function schoolId(): string {
 
 export async function createClassStudentOnPage(state: ClassStudentsPageState, input: {
 	firstName: string;
+	profile?: Record<string, string>;
 	lastName: string;
 	classGroupId: string;
 	birthDate?: string;
@@ -23,7 +25,8 @@ export async function createClassStudentOnPage(state: ClassStudentsPageState, in
 		return null;
 	}
 
-	const studentId = `stu-${Date.now().toString(36)}`;
+	const creation = humanCreationInput(input.profile);
+	const studentId = creation.id;
 	const enrollmentId = `enr-${studentId}`;
 	const now = new Date().toISOString();
 	const birthDate = dateInputToIso(input.birthDate ?? '');
@@ -31,14 +34,13 @@ export async function createClassStudentOnPage(state: ClassStudentsPageState, in
 	const result = await runStudentRouteMutation({
 		request: async () => {
 			await client.commands.registerStudent({
-				id: studentId,
+				...creation,
 				schoolId: resolvedSchoolId,
 				firstName: input.firstName.trim(),
 				lastName: input.lastName.trim(),
 				birthDate,
 				sendAccountInvitation: input.sendAccountInvitation ?? true,
 				...(input.inviteEmail?.trim() ? { inviteEmail: input.inviteEmail.trim() } : {}),
-				createdAt: now,
 			});
 			await client.commands.enrollStudent({
 				id: enrollmentId,

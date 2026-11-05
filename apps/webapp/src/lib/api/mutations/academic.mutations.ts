@@ -59,10 +59,10 @@ export function trimestersForYear(startDate: string, endDate: string) {
 export async function createAcademicYearMutation(
 	startDate: string,
 	endDate: string,
-	options?: CalendarMutationOptions,
+	options?: CalendarMutationOptions & { name?: string; shortName?: string },
 ): Promise<string | null> {
 	const yearId = crypto.randomUUID();
-	const yearName = academicYearLabelFromDates(startDate, endDate);
+	const yearName = options?.name?.trim() || academicYearLabelFromDates(startDate, endDate);
 	const client = getBrowserSchoolClient();
 
 	const created = await runMutation(async () => {
@@ -71,6 +71,7 @@ export async function createAcademicYearMutation(
 			id: yearId,
 			schoolId: sid,
 			name: yearName,
+			shortName: options?.shortName,
 			startDate,
 			endDate,
 		});
@@ -101,6 +102,7 @@ export interface CalendarMutationOptions {
 }
 
 export interface AcademicCalendarFields {
+	shortName?: string;
 	name: string;
 	startDate: string;
 	endDate: string;
@@ -131,7 +133,7 @@ export async function updateAcademicYearMutation(yearId: string, fields: Academi
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(async () => {
 		const current = await client.entities.academicYears.get(yearId);
-		return client.entities.academicYears.save({ ...current, name: fields.name.trim(), startDate: fields.startDate === formatDateInput(current.startDate) ? current.startDate : fields.startDate, endDate: fields.endDate === formatDateInput(current.endDate) ? current.endDate : fields.endDate });
+		return client.entities.academicYears.save({ ...current, name: fields.name.trim(), shortName: fields.shortName ?? current.shortName, startDate: fields.startDate === formatDateInput(current.startDate) ? current.startDate : fields.startDate, endDate: fields.endDate === formatDateInput(current.endDate) ? current.endDate : fields.endDate });
 	}, calendarMutationOptions(options));
 	return result !== null;
 }
@@ -143,6 +145,7 @@ export async function createAcademicPeriodMutation(academicYearId: string, field
 		schoolId: schoolId(),
 		academicYearId,
 		name: fields.name.trim(),
+		shortName: fields.shortName,
 		type: fields.type,
 		startDate: fields.startDate,
 		endDate: fields.endDate,
@@ -155,7 +158,7 @@ export async function updateAcademicPeriodMutation(periodId: string, fields: Aca
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(async () => {
 		const current = await client.entities.academicPeriods.get(periodId);
-		return client.entities.academicPeriods.save({ ...current, name: fields.name.trim(), type: fields.type, startDate: fields.startDate === formatDateInput(current.startDate) ? current.startDate : fields.startDate, endDate: fields.endDate === formatDateInput(current.endDate) ? current.endDate : fields.endDate });
+		return client.entities.academicPeriods.save({ ...current, name: fields.name.trim(), shortName: fields.shortName ?? current.shortName, type: fields.type, startDate: fields.startDate === formatDateInput(current.startDate) ? current.startDate : fields.startDate, endDate: fields.endDate === formatDateInput(current.endDate) ? current.endDate : fields.endDate });
 	}, calendarMutationOptions(options));
 	return result !== null;
 }

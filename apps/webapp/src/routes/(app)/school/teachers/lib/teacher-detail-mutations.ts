@@ -7,7 +7,7 @@ import { updateTeacherProfilePhotoMutation } from '$lib/api/mutations/profile-ph
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { mapTeacher } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
-import { teacherIdentityPayload } from '$lib/people-profile-fields';
+import { humanCreationInput, teacherIdentityPayload } from '$lib/people-profile-fields';
 import { runTeacherRouteMutation } from './teacher-route-mutation';
 import { buildTeacherUnavailabilityPayload } from './teacher-unavailability';
 
@@ -33,7 +33,7 @@ function buildOptimisticTeacher(input: {
 	profile?: Record<string, string>;
 	firstName: string;
 	lastName: string;
-	code?: string;
+	identifier?: string;
 	email?: string;
 	phone?: string;
 }): Teacher {
@@ -49,7 +49,7 @@ function buildOptimisticTeacher(input: {
 		photoUrl: null,
 		email,
 		phone,
-		code: input.code?.trim() || null,
+		identifier: input.identifier?.trim() || null,
 		isActive: true,
 		subjectId: null,
 	};
@@ -61,7 +61,7 @@ export async function createTeacherOnPage(
 		firstName: string;
 		profile?: Record<string, string>;
 		lastName: string;
-		code?: string;
+		identifier?: string;
 		email?: string;
 		phone?: string;
 		sendAccountInvitation?: boolean;
@@ -70,18 +70,20 @@ export async function createTeacherOnPage(
 ): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const email = input.email?.trim() ?? '';
-	const code = input.code?.trim() || undefined;
-	const id = crypto.randomUUID();
-	const optimistic = buildOptimisticTeacher({ id, ...input, code });
+	const identifier = input.profile?.identifier?.trim() || input.identifier?.trim() || undefined;
+	const creation = humanCreationInput(input.profile);
+	const id = creation.id;
+	const optimistic = buildOptimisticTeacher({ id, ...input, identifier });
 
 	const result = await runTeacherRouteMutation({
 		request: () => client.commands.registerTeacher({
+			...creation,
 			id,
 			schoolId: schoolId(),
 			...teacherIdentityPayload(input.profile),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
-			...(code ? { code } : {}),
+			...(identifier ? { identifier } : {}),
 			email: email || null,
 			phone: input.phone?.trim() || null,
 			isActive: true,

@@ -32,6 +32,8 @@ const saved = $state<Data['enrollments']>([]);
 function participation(studentId: string): Data {
   return $state.snapshot({ studentId, periods, enrollments: saved.filter(row => row.studentClassEnrollmentId === `placement-${studentId}`), placements: [{ id: `placement-${studentId}`, studentId, classGroupId: studentId === 'third' ? 'other' : 'class', academicYearId: 'year', status: 'active' }], offerings }) as unknown as Data;
 }
+// The isolated fixture supplies a fixed school client for every request.
+export const configureBrowserSchoolClient = () => undefined;
 export const getBrowserSchoolClient = () => ({ queries: { getStudentSubjectEnrollments: async ({ studentId }: { studentId: string }) => participation(studentId) }, commands: {
   manageStudentSubjectEnrollments: async (command: Command) => {
     controls.requests.push(JSON.parse(JSON.stringify(command)));

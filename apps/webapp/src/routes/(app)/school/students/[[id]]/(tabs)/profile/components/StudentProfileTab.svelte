@@ -48,7 +48,7 @@
 			{/if}
 		</StudentProfileSectionQuery>
 		<section aria-labelledby="student-personal-heading" data-profile-section="personal"><h3 id="student-personal-heading">{$t('student.profile.personal')}</h3>
-			<PersonProfileDetails kind="student" person={s} exclude={['matricule', 'nationalMatricule', 'enrollmentDate', 'gender']} />
+			<PersonProfileDetails kind="student" person={s} exclude={['identifier', 'globalIdentifier', 'enrollmentDate', 'gender']} />
 			<div class="ui-student-facts"><DrawerField label={$t('drawer.birthDate')}><p>{s.birthdate ? formatLocaleDate(s.birthdate, $locale, { year: 'numeric', month: 'long', day: 'numeric' }) : $t('profile.notProvided')}</p></DrawerField><DrawerField label={$t('student.gender')}><p>{studentGenderLabelKey(s.gender) ? $t(studentGenderLabelKey(s.gender)!) : s.gender || $t('profile.notProvided')}</p></DrawerField><div class="ui-student-full-fact"><DrawerField label={$t('common.email')}><p>{s.email || $t('profile.notProvided')}</p></DrawerField></div></div>
 		</section>
 		{#if readHealth}<section aria-labelledby="student-health-heading" data-profile-section="health">

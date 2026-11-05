@@ -4,10 +4,10 @@ import type { Subject } from '$lib/types/school';
 type SubjectEntity = components['schemas']['Subject'];
 type SubjectConfigCommand = components['schemas']['SubjectConfigCommand'];
 
-/** Build a save payload that passes API OpenAPI validation (no blank code, positive coefficient). */
+/** Build a save payload that passes API OpenAPI validation (positive coefficient). */
 export function buildSubjectSavePayload(
 	existing: SubjectEntity,
-	updates: { name: string; categoryId: string; color: Subject['color'] },
+	updates: { name: string; shortName?: string | null; categoryId: string; color: Subject['color'] },
 ): SubjectEntity {
 	const payload: SubjectEntity = {
 		...existing,
@@ -18,12 +18,7 @@ export function buildSubjectSavePayload(
 		color: updates.color,
 	};
 
-	delete payload.code;
 	delete payload.coefficient;
-	const code = typeof existing.code === 'string' ? existing.code.trim() : '';
-	if (code.length > 0) {
-		payload.code = code;
-	}
 
 	if (
 		typeof existing.coefficient === 'number'
@@ -38,7 +33,7 @@ export function buildSubjectSavePayload(
 	}
 
 	if ('shortName' in updates)
-		payload.shortName = (updates as { shortName?: string | null }).shortName?.trim() || null;
+		payload.shortName = updates.shortName?.trim() ?? '';
 	return payload;
 }
 
@@ -50,7 +45,6 @@ export function buildSubjectConfigCommand(
 		categoryId: string;
 		color: Subject['color'];
 		createdAt?: string;
-		code?: string | null;
 		coefficient?: number | null;
 		disciplineId?: string | null;
 		shortName?: string | null;
@@ -69,8 +63,6 @@ export function buildSubjectConfigCommand(
 		payload.disciplineId = updates.disciplineId;
 	if (updates.isOptional !== undefined)
 		payload.isOptional = updates.isOptional;
-	if (updates.code !== undefined)
-		payload.code = updates.code?.trim() || null;
 	if (updates.coefficient !== undefined)
 		payload.coefficient = updates.coefficient;
 	const createdAt = updates.createdAt ?? existing?.createdAt;
@@ -79,6 +71,6 @@ export function buildSubjectConfigCommand(
 	}
 
 	if ('shortName' in updates)
-		payload.shortName = (updates as { shortName?: string | null }).shortName?.trim() || null;
+		payload.shortName = updates.shortName?.trim() ?? '';
 	return payload;
 }

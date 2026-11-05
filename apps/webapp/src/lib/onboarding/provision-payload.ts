@@ -7,8 +7,10 @@ export function buildProvisionPayload(draft: OnboardingDraft) {
 		throw new Error('ONBOARDING_DATASET_REQUIRED');
 	const invites = staffInvitesForSubmit(draft.staffInvites);
 	return {
+		ownerIdentifier: draft.ownerIdentifier?.trim() || undefined,
 		school: {
 			name: draft.school.name.trim(),
+			shortName: draft.school.shortName?.trim() || undefined,
 			timeZone: draft.school.timezone.trim(),
 			financeCurrency: draft.school.financeCurrency?.trim().toUpperCase(),
 			city: draft.school.city.trim(),
@@ -45,8 +47,10 @@ export function buildProvisionPayload(draft: OnboardingDraft) {
 /** A recovered committed request owns the review values, even if the local draft was edited after a lost response. */
 export function restoreProvisionedDraft(draft: OnboardingDraft, payload: ReturnType<typeof buildProvisionPayload>): void {
 	const school = payload.school;
+	draft.ownerIdentifier = payload.ownerIdentifier;
 	draft.school = {
 		name: school.name,
+		shortName: school.shortName,
 		city: school.city,
 		country: school.country,
 		timezone: school.timeZone,

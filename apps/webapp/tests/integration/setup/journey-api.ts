@@ -1583,7 +1583,7 @@ export async function ensureGeneratedTeacherTimetableSession(
 				id: `pd-e2e-${academicYearId.slice(0, 8)}-${day}`,
 				schoolId,
 				academicYearId,
-				label: `Période ${index + 1}`,
+				name: `Période ${index + 1}`,
 				dayOfWeek: day,
 				order: index + 1,
 				startTime: '08:00',

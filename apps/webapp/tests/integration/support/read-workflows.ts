@@ -154,7 +154,7 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     assert(completeDay && /^\d{4}-\d{2}-\d{2}$/.test(completeDay), 'Required complete attendance fixture day missing');
     const day=(offset:number)=>{const value=new Date(`${completeDay}T00:00:00Z`);value.setUTCDate(value.getUTCDate()+offset);return value.toISOString().slice(0,10);};
     for(const [status,offset] of [['marked',0],['partial',1],['unmarked',2]] as const) {
-      await exerciseFilter(ctx,status,ctx.page.locator(`[data-attendance-id="${ctx.entities.classId}:${day(offset)}"]`));
+      await exerciseFilter(ctx,status,ctx.page.locator(`[data-attendance-id="${ctx.entities.classId}:${day(offset)}"]`),'completion');
     }
   },
   'web.scenario.0127': async ctx => {

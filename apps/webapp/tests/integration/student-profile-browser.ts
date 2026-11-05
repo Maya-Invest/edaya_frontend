@@ -22,7 +22,7 @@ async function main() {
 	const fixture = { newHealth: undefined as Record<string, unknown> | undefined, releaseHealth: undefined as (() => void) | undefined, releaseNotes: undefined as (() => void) | undefined, holdPlacementRead: false, releasePlacementRead: undefined as (() => void) | undefined, assignmentResult: 'success' as 'fail' | 'conflict' | 'success', hasPlacement: true, previousPlacements: false, studentManage: true, emptyHealth: false, healthRead: true, enrollmentRead: true, enrollmentManage: true, guardianCount: 2, failHealth: 0, failGuardians: false, failHistory: false, failStatus: false, failPublish: false, pending: true, delayHealth: false, delayNotes: false };
 	const clinicalNotes = 'Clinical note';
 	const lastVisit = '2026-10-02T15:45:00.000Z';
-	const student = { id: 'child', schoolId: 'school', firstName: 'Aminata', lastName: 'Koné', sourceFullName: 'KONE Aminata Mariam', matricule: 'S-0042', nationalMatricule: 'CI-2042', birthDate: '2012-05-18', gender: 'female', nationality: 'Ivoirienne', placeOfBirth: 'Abidjan', enrollmentDate: '2025-09-01', status: 'active', email: 'student@example.test', photoUrl: '/core/files/published/content', photoAttachmentId: 'published' };
+	const student = { id: 'child', schoolId: 'school', firstName: 'Aminata', lastName: 'Koné', sourceFullName: 'KONE Aminata Mariam', identifier: 'S-0042', globalIdentifier: 'CI-2042', birthDate: '2012-05-18', gender: 'female', nationality: 'Ivoirienne', placeOfBirth: 'Abidjan', enrollmentDate: '2025-09-01', status: 'active', email: 'student@example.test', photoUrl: '/core/files/published/content', photoAttachmentId: 'published' };
 	const years = [{ id: 'old-year', schoolId: 'school', name: '2025–2026', startDate: '2025-09-01', endDate: '2026-06-30', status: 'archived' }, { id: 'year', schoolId: 'school', name: '2026–2027', startDate: '2026-09-01', endDate: '2027-06-30', status: 'published' }];
 	const enrollment = { id: 'placement', enrollmentIndex: 1, schoolId: 'school', studentId: 'child', classGroupId: 'class', academicYearId: 'year', enrolledAt: '2026-09-01', status: 'active' };
 	const guardian = { id: 'guardian', schoolId: 'school', firstName: 'Mariam', lastName: 'Koné', email: 'guardian@example.test', phone: '+225 0102030405', occupation: 'Enseignante' };
@@ -76,7 +76,7 @@ async function main() {
 				{ ...response[0], id: 'other-class', name: 'Other class' });
 		}
 		if (path.endsWith('/grade-levels/list'))
-			response = [{ id: 'level', schoolId: 'school', name: '6ème', label: '6ème', sequenceOrder: 1 }];
+			response = [{ id: 'level', schoolId: 'school', name: '6ème', shortName: '6ème', sequenceOrder: 1 }];
 		if (path.endsWith('/students/list')) {
 			const secondStudent = { ...student, id: 'child2', firstName: 'Other', lastName: 'Student' };
 			const ids = input.id?.$in ?? (input.id ? [input.id] : []);
@@ -193,8 +193,8 @@ async function main() {
 		console.log('Checking separate Profile and Enrollment tabs in both drawers');
 		for (const prefix of ['/school/students/child', '/classes/class/students/child']) {
 			await page.goto(`${new URL(server.url).origin}${prefix}/profile?q=preserved#schooling`);
+			await page.waitForURL(url => url.pathname === `${prefix}/enrollments`);
 			await placementDate.getByText('Enrolled Sep 1, 2026', { exact: true }).waitFor();
-			assert.equal(new URL(page.url()).pathname, `${prefix}/enrollments`);
 			assert.equal(new URL(page.url()).searchParams.get('q'), 'preserved');
 			assert.deepEqual(await tabs.getByRole('link').allTextContents().then(labels => labels.map(label => label.trim())), ['Profile', 'Enrollment', 'Attendance', 'Grades', 'Report card', 'Incidents', 'Finance', 'Documents']);
 			assert.equal(await tabs.getByRole('link', { name: 'Enrollment' }).getAttribute('aria-current'), 'page');

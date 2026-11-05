@@ -3,6 +3,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import { suggestNextClassName } from '$lib/academic/next-class-name';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import SelectField from '$lib/components/ui/SelectField.svelte';
@@ -25,6 +26,7 @@
 
 	let busy = $state(false);
 	let name = $state('');
+	let shortName = $state('');
 	let gradeLevelId = $state(academicContext.gradeLevels[0]?.id ?? 'gl-6');
 	let capacity = $state('');
 	let attendanceMode = $state<ClassNode['attendanceMode']>('session');
@@ -46,13 +48,14 @@
 		const siblingNames = academicContext.classes
 			.filter(entry => entry.gradeLevelId === levelId)
 			.map(entry => entry.name);
-		return suggestNextClassName(level.label, siblingNames);
+		return suggestNextClassName(level.shortName, siblingNames);
 	}
 
 	function resetForm() {
 		nameEdited = false;
 		if (classGroup) {
 			name = classGroup.name;
+			shortName = classGroup?.shortName ?? classGroup?.name ?? '';
 			gradeLevelId = classGroup.gradeLevelId;
 			capacity = classGroup.capacity != null ? String(classGroup.capacity) : '';
 			attendanceMode = classGroup.attendanceMode;
@@ -61,6 +64,7 @@
 		else {
 			gradeLevelId = defaultGradeLevelId ?? academicContext.gradeLevels[0]?.id ?? '';
 			name = suggestedNameFor(gradeLevelId);
+			shortName = '';
 			capacity = '';
 			attendanceMode = 'session';
 			homeroomStaffId = '';
@@ -71,6 +75,7 @@
 		gradeLevelId = (event.currentTarget as HTMLSelectElement).value;
 		if (!isEdit && !nameEdited) {
 			name = suggestedNameFor(gradeLevelId);
+			shortName = '';
 		}
 	}
 
@@ -99,6 +104,7 @@
 				const ok = await classesPage.updateClassGroup({
 					classGroupId: classGroup.id,
 					name: trimmedName,
+					shortName,
 					capacity: parsedCapacity,
 					attendanceMode,
 					homeroomStaffId: homeroomStaffId || classGroup.homeroomStaffId || null,
@@ -111,6 +117,7 @@
 			else {
 				const ok = await classesPage.createClassGroup({
 					name: trimmedName,
+					shortName,
 					gradeLevelId,
 					capacity: parsedCapacity,
 					attendanceMode,
@@ -182,4 +189,5 @@
 			<StaffPicker active bind:value={homeroomStaffId} {staff} class="w-full" />
 		</div>
 	</div>
+	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

@@ -10,10 +10,11 @@
 
 	const dirtyWork = provideDirtyWork();
 	let open = $state(true);
-	let phase = $state<TimetableGenerationStep>('selection');
+	let phase = $state<TimetableGenerationStep>('setup');
 	let setupTab = $state<TimetableSetupTab>('subjects');
 	const requests = $state<unknown[]>([]);
 	let finish = () => {};
+	let failNext = false;
 	const planning = $state({
 		get classes() { return academicContext.classes; },
 		get range() { return { startDate: '2026-09-07', endDate: '2026-09-11' }; },
@@ -21,15 +22,17 @@
 		get classSubjects() { return academicContext.classes.map(({ id }) => ({ id: `subject-${id}`, classGroupId: id, subjectId: 'math', periodsPerWeek: 2, isOffered: true })); },
 		subjectLabels: { math: 'Mathematics' },
 		teacherLabelsByClassSubjectId: {},
-		generationProgress: null,
+		generationPhase: 'idle',
 		busy: false,
 		async generate(input: { classGroupIds: string[] }) {
 			requests.push(input);
+			planning.generationPhase = 'generating';
 			planning.busy = true;
 			await new Promise<void>((resolve) => {
 				finish = resolve;
 			});
 			planning.busy = false;
+			if (failNext) { failNext = false; return { ok: false, error: { summary: 'Generation failed', guidanceKeys: [] } }; }
 			return { ok: true, value: { academicYearId: academicContext.yearId, skippedClassGroupIds: [], classGroups: input.classGroupIds.map(classGroupId => ({ classGroupId, sessions: [], placements: [], unmetWorkloads: [] })) } };
 		},
 	});
@@ -37,13 +40,15 @@
 
 <button data-testid="fixture-open" onclick={() => {
 	open = true;
-	phase = 'selection';
+	phase = 'setup';
 }}>Open</button>
 <button data-testid="fixture-finish-later" onclick={() => { setTimeout(finish, 1500); }}>Finish in 1.5 seconds</button>
 <button data-testid="fixture-result" onclick={() => {
 	open = true;
 	phase = 'success';
 }}>Open result address</button>
+<button data-testid="fixture-refresh" onclick={() => { planning.generationPhase = 'refreshing'; }}>Refreshing</button>
+<button data-testid="fixture-fail" onclick={() => { failNext = true; finish(); }}>Fail</button>
 <button data-testid="fixture-finish" onclick={() => finish()}>Finish</button>
 <button data-testid="fixture-year" onclick={() => {
 	academicContext.yearId = 'other-year';

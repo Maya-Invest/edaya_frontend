@@ -50,9 +50,9 @@
 	<DrawerField label={$t('guardian.fullName')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{teacher.name}</div>
 	</DrawerField>
-	<DrawerField label={$t('common.code')}>
+	<DrawerField label={$t('profile.identifier')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
-			{teacher.code || teacher.id}
+			{teacher.identifier || $t('profile.notConfigured')}
 		</div>
 	</DrawerField>
 	<DrawerField label={$t('common.email')}>

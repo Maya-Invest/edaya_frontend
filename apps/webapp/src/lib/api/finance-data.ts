@@ -180,6 +180,7 @@ export function mapFees(raw: readonly unknown[]): Fee[] {
 				description: stringField(fee.description),
 				billingTerms: fee.billingTerms as CatalogServiceRecord['billingTerms'],
 				name: stringField(fee.name),
+				shortName: stringField(fee.shortName),
 				category: mapCategory(fee.category),
 				amount,
 				currency,

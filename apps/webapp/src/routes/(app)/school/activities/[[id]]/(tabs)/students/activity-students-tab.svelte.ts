@@ -11,7 +11,7 @@ const ACTIVITY_STUDENTS_TAB_KEY = Symbol('activity-students-tab');
 export interface ActivityStudentsTabSlice {
 	activityId: string;
 	enrollments: ActivityEnrollment[];
-	students: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'matricule' | 'email' | 'photoUrl'>[];
+	students: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'identifier' | 'email' | 'photoUrl'>[];
 	eligibleStudentIds: string[];
 }
 
@@ -50,7 +50,7 @@ export class ActivityStudentsTabState {
 				if (activity) {
 					page.mergeActivities([activity]);
 					signal.throwIfAborted();
-					this.slice = { activityId, enrollments: activity.enrollments, eligibleStudentIds: roster.eligibleStudentIds, students: roster.students.map(student => ({ id: student.id, name: `${student.firstName} ${student.lastName}`, initials: `${student.firstName[0] ?? ''}${student.lastName[0] ?? ''}`, classId: student.classGroupId ?? '', matricule: student.matricule ?? '', email: '' })) };
+					this.slice = { activityId, enrollments: activity.enrollments, eligibleStudentIds: roster.eligibleStudentIds, students: roster.students.map(student => ({ id: student.id, name: `${student.firstName} ${student.lastName}`, initials: `${student.firstName[0] ?? ''}${student.lastName[0] ?? ''}`, classId: student.classGroupId ?? '', identifier: student.identifier ?? '', email: '' })) };
 				}
 				return {};
 			},

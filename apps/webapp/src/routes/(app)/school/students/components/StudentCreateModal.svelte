@@ -8,6 +8,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
 	import { personFieldDraft } from '$lib/people-profile-fields';
+	import IdentifierInput from '$lib/smart-components/human-identifier/IdentifierInput.svelte';
 	import { get } from 'svelte/store';
 	import { getStudentsPageState } from '../students-page.svelte';
 
@@ -83,6 +84,7 @@
 			const fullName = `${firstName.trim()} ${lastName.trim()}`;
 			const resolvedCreateStudent = createStudent ?? (input => studentsPage.createStudent(input));
 			const studentId = await resolvedCreateStudent({
+				profile: additional,
 				firstName,
 				lastName,
 				classGroupId,
@@ -113,6 +115,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	<IdentifierInput bind:profile={additional} />
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -175,5 +178,5 @@
 			<Input type="email" bind:value={inviteEmail} autocomplete="email" />
 		</div>
 	{/if}
-	<details class="space-y-3"><summary class="cursor-pointer text-sm font-medium">{$t('profile.additionalFields')}</summary><PersonProfileFields kind="student" bind:values={additional} /></details>
+	<details class="space-y-3"><summary class="cursor-pointer text-sm font-medium">{$t('profile.additionalFields')}</summary><PersonProfileFields kind="student" bind:values={additional} exclude={['identifier']} /></details>
 </FormModal>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ReportModule } from '$lib/types/report-cards';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -14,6 +15,7 @@
 	const subjectsPage = getSubjectsPageState();
 	let wasOpen = false;
 	let name = $state('');
+	let shortName = $state('');
 	let order = $state('1');
 	let mode = $state<'subject_coefficients' | 'explicit'>('subject_coefficients');
 	let weight = $state('');
@@ -34,6 +36,7 @@
 			id = module?.id ?? crypto.randomUUID();
 			requestId = crypto.randomUUID();
 			name = module?.name ?? '';
+			shortName = module?.shortName ?? module?.name ?? '';
 			order = String(module?.order ?? config.modules.length + 1);
 			mode = module?.weightingMode ?? 'subject_coefficients';
 			weight = module?.explicitWeight == null ? '' : String(module.explicitWeight);
@@ -48,7 +51,7 @@
 		busy = true;
 		error = '';
 		try {
-			const saved = await subjectsPage.configureModules({ ...scope, requestId, expectedRevision: revision, action, ...(action === 'save' ? { module: { id, name: name.trim(), order: Number(order), weightingMode: mode, explicitWeight: mode === 'explicit' ? Number(weight) : null } } : { moduleId: id }), ...(action === 'assign' ? { assignments: subjectsPage.subjects().filter(subject => members.includes(subject.id) || subject.reportModuleId === id).map(subject => ({ subjectId: subject.id, moduleId: members.includes(subject.id) ? id : null })) } : {}) });
+			const saved = await subjectsPage.configureModules({ ...scope, requestId, expectedRevision: revision, action, ...(action === 'save' ? { module: { id, shortName, name: name.trim(), order: Number(order), weightingMode: mode, explicitWeight: mode === 'explicit' ? Number(weight) : null } } : { moduleId: id }), ...(action === 'assign' ? { assignments: subjectsPage.subjects().filter(subject => members.includes(subject.id) || subject.reportModuleId === id).map(subject => ({ subjectId: subject.id, moduleId: members.includes(subject.id) ? id : null })) } : {}) });
 			if (saved) {
 				open = false;
 			}
@@ -70,6 +73,7 @@
 			{/each}
 		{:else}
 			<Label class="block space-y-2"><span>{$t('modules.name')}</span><Input required bind:value={name} /></Label>
+			<ShortNameField {name} bind:value={shortName} creating={!module} />
 			<Label class="block space-y-2"><span>{$t('modules.order')}</span><Input type="number" min="1" step="1" required bind:value={order} /></Label>
 			<Label class="block space-y-2"><span>{$t('modules.mode')}</span>
 				<Select.Root type="single" bind:value={mode}><Select.Trigger><Select.Value>{$t(mode === 'explicit' ? 'modules.explicit' : 'modules.sum')}</Select.Value></Select.Trigger><Select.Content><Select.Item value="subject_coefficients">{$t('modules.sum')}</Select.Item><Select.Item value="explicit">{$t('modules.explicit')}</Select.Item></Select.Content></Select.Root>

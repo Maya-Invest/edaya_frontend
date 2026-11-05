@@ -117,6 +117,7 @@ export class PermissionProfilesPageState {
 	async saveProfile(input: {
 		id?: string;
 		name: string;
+		shortName?: string;
 		description?: string;
 		permissions: ConfigurePermissionProfileCommand['permissions'];
 		successMessage?: string;
@@ -132,6 +133,7 @@ export class PermissionProfilesPageState {
 			id,
 			schoolId,
 			name: input.name.trim(),
+			shortName: input.shortName,
 			description: input.description?.trim() || undefined,
 			permissions: input.permissions,
 		};
@@ -142,6 +144,7 @@ export class PermissionProfilesPageState {
 				id,
 				schoolId,
 				name: entity.name,
+				shortName: entity.shortName,
 				description: entity.description ?? null,
 				permissions: entity.permissions,
 			}),

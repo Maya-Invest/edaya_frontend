@@ -3,6 +3,7 @@
 	import type { Fee } from '$lib/types/school';
 	import { CATALOG_CATEGORIES } from '$lib/api/finance-types';
 	import { authSession } from '$lib/auth/session.svelte';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -23,6 +24,7 @@
 	const feesPage = getFeesPageState();
 	let busy = $state(false);
 	let name = $state('');
+	let shortName = $state('');
 	let description = $state('');
 	let singleDueDate = $state('');
 	let installments = $state<CatalogInstallmentTemplate[]>([]);
@@ -49,6 +51,7 @@
 	function resetForm() {
 		if (fee) {
 			name = fee.name;
+			shortName = fee?.shortName ?? fee?.name ?? '';
 			description = fee.description ?? '';
 			singleDueDate = fee.billingTerms?.singleDueDate?.slice(0, 10) ?? '';
 			installments = (fee.billingTerms?.installments ?? []).map(row => ({ ...row }));
@@ -62,6 +65,7 @@
 		}
 		else {
 			name = '';
+			shortName = '';
 			description = '';
 			singleDueDate = '';
 			installments = [];
@@ -91,6 +95,7 @@
 				const ok = await feesPage.updateFee({
 					feeId: fee.id,
 					name,
+					shortName,
 					description: description.trim() || null,
 					billingTerms: { kind: 'one_time', singleDueDate: singleDueDate || null, installments },
 					category,
@@ -105,6 +110,7 @@
 			else {
 				const feeId = await feesPage.createFee({
 					name,
+					shortName,
 					description: description.trim() || null,
 					billingTerms: { kind: 'one_time', singleDueDate: singleDueDate || null, installments },
 					category,
@@ -223,4 +229,5 @@
 			<Button variant="outline" onclick={() => installments = [...installments, { label: '', percentage: 100, dueDate: null }]}>{$t('common.add')}</Button>
 		</fieldset>
 	</details>
+	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

@@ -2,6 +2,7 @@
 	import type { PeriodDefinition, PeriodDefinitionDayOfWeek } from '$lib/types/school';
 	import type { PeriodCalendarChanges, PeriodCalendarResult } from '../lib/period-calendar';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -34,6 +35,7 @@
 	let busy = $state(false);
 	let validation = $state<PeriodCalendarResult | null>(null);
 	let label = $state('');
+	let shortName = $state('');
 	let dayOfWeek = $state<PeriodDefinitionDayOfWeek>('monday');
 	let order = $state('1');
 	let startTime = $state('08:00');
@@ -57,6 +59,7 @@
 		validation = null;
 		if (periodDefinition) {
 			label = periodDefinition.label;
+			shortName = periodDefinition?.shortName ?? periodDefinition?.label ?? '';
 			dayOfWeek = periodDefinition.dayOfWeek;
 			order = String(periodDefinition.order);
 			startTime = periodDefinition.startTime;
@@ -68,6 +71,7 @@
 		const existing = academicContext.periodDefinitionsForYear(academicYearId);
 		const nextOrder = existing.length > 0 ? Math.max(...existing.map(entry => entry.order)) + 1 : 1;
 		label = '';
+		shortName = '';
 		dayOfWeek = initialValues?.dayOfWeek ?? 'monday';
 		order = String(nextOrder);
 		startTime = initialValues?.startTime ?? '08:00';
@@ -102,6 +106,7 @@
 			const payload = {
 				academicYearId,
 				label: trimmedLabel,
+				shortName,
 				dayOfWeek,
 				order: numericOrder,
 				startTime: startTime.trim(),
@@ -187,4 +192,5 @@
 		/>
 		<span>{$t('periodDefinitions.isTeachingSlot')}</span>
 	</label>
+	<ShortNameField name={label} bind:value={shortName} creating={!isEdit} />
 </FormModal>

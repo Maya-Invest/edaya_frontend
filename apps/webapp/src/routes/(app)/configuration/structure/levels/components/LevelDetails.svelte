@@ -90,7 +90,7 @@
 
 	<dl class="grid gap-6 rounded-collection border border-border bg-card p-5 shadow-soft sm:grid-cols-2">
 		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.name')}</dt><dd class="mt-1 text-sm font-medium">{live.name}</dd></div>
-		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.label')}</dt><dd class="mt-1 text-sm font-medium">{live.label || '—'}</dd></div>
+		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.label')}</dt><dd class="mt-1 text-sm font-medium">{live.shortName || '—'}</dd></div>
 		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.cycle')}</dt><dd class="mt-1 text-sm font-medium">{live.cycle || '—'}</dd></div>
 		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.order')}</dt><dd class="mt-1 text-sm font-medium">{live.order}</dd></div>
 	</dl>

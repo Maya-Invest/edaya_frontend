@@ -456,16 +456,12 @@ async function expandSidebarModuleForPath(
 
 async function sidebarNavHrefs(page: Page): Promise<string[]> {
 	await waitForAppShell(page);
-	await page.waitForTimeout(1_000);
-	for (const pattern of [/école|school/i, /classe|class/i]) {
-		const toggle = page.locator('aside#app-sidebar button').filter({ hasText: pattern }).first();
-		if (await toggle.isVisible({ timeout: 2_000 }).catch(() => false)) {
-			await toggle.click().catch(() => {});
-			await page.waitForTimeout(400);
-		}
+	const nav = page.locator('aside#app-sidebar').getByRole('navigation');
+	await nav.getByRole('link').first().waitFor();
+	for (const group of await nav.locator('button[aria-expanded]').all()) {
+		if (await group.getAttribute('aria-expanded') === 'false') await group.click();
 	}
-	await page.locator('aside#app-sidebar a[href]').first().waitFor({ timeout: 15_000 }).catch(() => {});
-	const hrefs = await page.locator('aside#app-sidebar a[href]').evaluateAll(
+	const hrefs = await nav.locator('a[href]').evaluateAll(
 		elements => elements
 			.map(element => element.getAttribute('href'))
 			.filter((href): href is string => Boolean(href)),
@@ -1150,7 +1146,8 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
     if (action === 'Générer / télécharger / annuler') return ok(row, await exerciseStudentDocument(page, ctx.base));
 
     if (action.startsWith('Planning EDT')) {
-        return ok(row, await exerciseTimetable(page, ctx.base, scenarioForSurface(row).id === 'web.scenario.0181'));
+        assert(entities.classId, 'The timetable scenario requires a provisioned class');
+        return ok(row, await exerciseTimetable(page, ctx.base, entities.classId, scenarioForSurface(row).id === 'web.scenario.0181'));
     }
 
 	// ── Publish / generate / payment / toggle — smoke only ──

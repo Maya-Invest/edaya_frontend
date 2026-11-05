@@ -37,7 +37,7 @@ export function timetableClassGroups(classes: ClassNode[], gradeLevels: GradeLev
 	const grades = new Map(gradeLevels.map(grade => [grade.id, grade]));
 	const groups = new Map<string, { id: string; label: string; classes: ClassNode[] }>();
 	for (const row of sortTimetableClasses(classes, gradeLevels)) {
-		const label = grades.get(row.gradeLevelId)?.label || grades.get(row.gradeLevelId)?.name || '';
+		const label = grades.get(row.gradeLevelId)?.shortName || grades.get(row.gradeLevelId)?.name || '';
 		if (query && !`${row.name} ${label}`.toLocaleLowerCase().includes(query))
 			continue;
 		const group = groups.get(row.gradeLevelId) ?? { id: row.gradeLevelId, label, classes: [] };

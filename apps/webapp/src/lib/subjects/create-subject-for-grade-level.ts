@@ -11,7 +11,7 @@ export interface CreateSubjectForGradeLevelInput {
 	classSubjectIdsByClassGroupId: Record<string, string>;
 	name: string;
 	disciplineId?: string | null;
-	shortName?: string | null;
+	shortName?: string;
 	isOptional?: boolean;
 
 	code?: string;
@@ -62,7 +62,7 @@ export async function createSubjectForGradeLevel(
 		reportModuleId: input.reportModuleId,
 		expectedReportConfigurationRevision: input.expectedReportConfigurationRevision,
 		disciplineId: input.disciplineId,
-		shortName: input.shortName,
+		shortName: input.shortName ?? undefined,
 		isOptional: input.isOptional,
 		categoryId: input.categoryId,
 		color: input.color ?? 'mint',

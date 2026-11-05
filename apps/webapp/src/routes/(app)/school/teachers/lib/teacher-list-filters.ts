@@ -68,7 +68,7 @@ export function filterTeacherList(
 		if (!needle) {
 			return true;
 		}
-		const haystack = `${teacher.name} ${teacher.email} ${teacher.phone} ${teacher.code ?? ''}`.toLowerCase();
+		const haystack = `${teacher.name} ${teacher.email} ${teacher.phone} ${teacher.identifier ?? ''}`.toLowerCase();
 		return haystack.includes(needle);
 	});
 	return sortTeacherList(filtered, filters.sort, filters.sortDir, assignmentCount);

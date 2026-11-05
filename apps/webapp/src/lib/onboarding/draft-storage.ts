@@ -43,6 +43,7 @@ export function createEmptyDraft(): OnboardingDraft {
 		registeredSchoolId: null,
 		school: {
 			name: '',
+			shortName: '',
 			city: '',
 			country: DEFAULT_ONBOARDING_COUNTRY,
 			timezone: defaultTimezone(),
@@ -142,6 +143,7 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 	return {
 		...empty,
 		name: typeof candidate.name === 'string' ? candidate.name : empty.name,
+		shortName: typeof candidate.shortName === 'string' ? candidate.shortName : '',
 		city: typeof candidate.city === 'string' ? candidate.city : empty.city,
 		country,
 		timezone,
@@ -211,6 +213,7 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 		registeredSchoolId: typeof candidate.registeredSchoolId === 'string'
 			? candidate.registeredSchoolId
 			: empty.registeredSchoolId,
+		ownerIdentifier: typeof candidate.ownerIdentifier === 'string' ? candidate.ownerIdentifier : undefined,
 		school: normalizeSchoolDraft(candidate.school ?? {}, empty.school),
 		structure: {
 			dataset: version < 8 ? { id: 'ci-general-secondary', version: '1.0.0' } : normalizeDatasetReference(candidate.structure?.dataset),
@@ -235,6 +238,7 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 					.map(invite => ({
 						id: typeof invite.id === 'string' ? invite.id : crypto.randomUUID(),
 						email: typeof invite.email === 'string' ? invite.email : '',
+						identifier: typeof invite.identifier === 'string' ? invite.identifier : undefined,
 						role: isOnboardingStaffInviteRole(invite.role) ? invite.role : '' as const,
 					}))
 					.filter(invite => invite.role !== '' || invite.email.trim().length > 0)

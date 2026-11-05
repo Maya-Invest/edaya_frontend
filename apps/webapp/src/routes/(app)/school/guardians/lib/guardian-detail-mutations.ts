@@ -5,7 +5,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { guardianIdentityPayload } from '$lib/people-profile-fields';
+import { humanCreationInput, guardianIdentityPayload } from '$lib/people-profile-fields';
 import { runGuardianRouteMutation } from './guardian-route-mutation';
 
 type ContactInput = Partial<Pick<components['schemas']['Guardian'], 'phone' | 'alternativePhone' | 'email' | 'emailNotificationsEnabled' | 'smsNotificationsEnabled' | 'pushNotificationsEnabled'>>;
@@ -24,7 +24,7 @@ function guardianInitials(firstName: string, lastName: string): string {
 function buildOptimisticGuardian(input: ContactInput & {
 	id: string;
 	profile?: Record<string, string>;
-	code?: string;
+	identifier?: string;
 	firstName: string;
 	lastName: string;
 	hasAccess?: boolean;
@@ -33,7 +33,7 @@ function buildOptimisticGuardian(input: ContactInput & {
 	const phone = input.phone?.trim() ?? '';
 	return {
 		...guardianIdentityPayload(input.profile),
-		code: input.code?.trim() || null,
+		identifier: input.identifier?.trim() || null,
 		id: input.id,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
@@ -57,7 +57,7 @@ export async function createGuardianOnPage(
 		firstName: string;
 		profile?: Record<string, string>;
 		lastName: string;
-		code?: string;
+		identifier?: string;
 		hasAccess?: boolean;
 		sendAccountInvitation?: boolean;
 		successMessage?: string;
@@ -66,24 +66,25 @@ export async function createGuardianOnPage(
 	const client = getBrowserSchoolClient();
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
-	const code = input.code?.trim() || undefined;
-	const id = crypto.randomUUID();
+	const identifier = input.profile?.identifier?.trim() || input.identifier?.trim() || undefined;
+	const creation = humanCreationInput(input.profile);
+	const id = creation.id;
 	const optimistic = buildOptimisticGuardian({ id, ...input });
 
 	const result = await runGuardianRouteMutation({
 		request: () => client.commands.registerGuardian({
+			...creation,
 			id,
 			schoolId: schoolId(),
 			...guardianIdentityPayload(input.profile),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
-			...(code ? { code } : {}),
+			...(identifier ? { identifier } : {}),
 			email: email || null,
 			phone: phone || null,
 			...contactPatch(input),
 			hasAccess: input.hasAccess ?? true,
 			sendAccountInvitation: input.sendAccountInvitation ?? true,
-			createdAt: new Date().toISOString(),
 		}),
 		apply: () => {
 			state.appendGuardian(optimistic);

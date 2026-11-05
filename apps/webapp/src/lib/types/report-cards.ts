@@ -11,6 +11,7 @@ export interface GradeScaleRange {
 }
 
 export interface GradeScale {
+	shortName?: string;
 	ranges?: GradeScaleRange[];
 	revision?: number;
 	roundingMode?: 'nearest' | 'truncate';

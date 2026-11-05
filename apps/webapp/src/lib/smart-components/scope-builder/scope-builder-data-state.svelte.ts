@@ -8,7 +8,7 @@ import { fetchCatalogSubjectsSources } from '$lib/api/subjects-data';
 export class ScopeBuilderDataState {
   students = $state<Student[]>([]);
   activities = $state<Activity[]>([]);
-  gradeSubjects = $state<{ id: string; gradeLevelId: string; name: string; code?: string | null }[]>([]);
+  gradeSubjects = $state<{ id: string; gradeLevelId: string; name: string; shortName?: string | null }[]>([]);
   loading = $state(false);
   loaded = $state(false);
 
@@ -49,7 +49,7 @@ export class ScopeBuilderDataState {
         id: subject.id,
         gradeLevelId: subject.gradeLevelId,
         name: subject.name,
-        code: subject.code,
+        code: subject.shortName,
       }));
       this.loaded = true;
     }

@@ -4,6 +4,7 @@ import { buildProvisionPayload } from '$lib/onboarding/provision-payload';
 const STORAGE_PREFIX = 'edaya:onboarding:provision-attempt';
 
 export interface ProvisionAttemptIdentity {
+	submitted?: boolean;
 	schoolId: string;
 	requestId: string;
 	fingerprint: string;
@@ -61,6 +62,7 @@ function parseAttempt(raw: string | null): ProvisionAttemptIdentity | null {
 		}
 		return {
 			schoolId: parsed.schoolId,
+			submitted: parsed.submitted ?? true,
 			requestId: parsed.requestId,
 			fingerprint: parsed.fingerprint,
 			committed: parsed.committed === true,
@@ -90,7 +92,7 @@ export function fingerprintProvisionDraft(draft: OnboardingDraft): string {
 }
 export function provisionAttemptNeedsReconciliation(authUserId: string, draft: OnboardingDraft): boolean {
 	const existing = loadProvisionAttempt(authUserId);
-	return Boolean(existing && !existing.committed && normalizeProvisionFingerprint(existing.fingerprint) !== fingerprintProvisionDraft(draft));
+	return Boolean(existing && existing.submitted !== false && !existing.committed && normalizeProvisionFingerprint(existing.fingerprint) !== fingerprintProvisionDraft(draft));
 }
 
 export function loadProvisionAttempt(authUserId: string | null | undefined): ProvisionAttemptIdentity | null {
@@ -134,7 +136,7 @@ export function resolveProvisionAttempt(
 		return normalized;
 	}
 
-	if (existing && !reconciled)
+	if (existing && existing.submitted !== false && !reconciled)
 		throw new Error('ONBOARDING_ATTEMPT_RECONCILIATION_REQUIRED');
 	const next: ProvisionAttemptIdentity = {
 		// A late commit must never create a second school after reconciliation.
@@ -143,6 +145,7 @@ export function resolveProvisionAttempt(
 		fingerprint,
 		committed: false,
 		bootstrapReady: false,
+		submitted: false,
 	};
 	saveProvisionAttempt(authUserId, next);
 	return next;

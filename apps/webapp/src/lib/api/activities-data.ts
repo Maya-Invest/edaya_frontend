@@ -96,6 +96,7 @@ export function mapActivities(sources: ActivitySources): Activity[] {
 	return sources.activitiesRaw.map(activity => ({
 		id: activity.id,
 		name: activity.name,
+		shortName: activity.shortName,
 		category: CATEGORY_TO_UI[activity.category] ?? 'Science',
 		coach: activity.coach,
 		schedule: activity.schedule,

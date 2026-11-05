@@ -147,7 +147,6 @@ export function mapCatalogSubjects(sources: CatalogSubjectsSources): Subject[] {
 		description: descriptionForSubject(subject, sources.subjectMattersRaw),
 		categoryId: subject.categoryId,
 		category: subjectCategory(subject, sources.categoryNameById),
-		code: subject.code ?? null,
 		disciplineId: subject.disciplineId ?? null,
 		isOptional: subject.isOptional,
 		shortName: subject.shortName ?? null,
@@ -198,8 +197,8 @@ function descriptionForSubject(
 		return summary;
 	}
 
-	if (subject.code) {
-		return `${subject.name} (${subject.code})`;
+	if (subject.shortName) {
+		return `${subject.name} (${subject.shortName})`;
 	}
 
 	return subject.name;
@@ -313,7 +312,6 @@ export function mapClassSubjects(
 			description: teacher,
 			categoryId: subject.categoryId,
 			category: subjectCategory(subject, sources.categoryNameById),
-			code: subject.code ?? null,
 			disciplineId: subject.disciplineId ?? null,
 			isOptional: subject.isOptional,
 			shortName: subject.shortName ?? null,

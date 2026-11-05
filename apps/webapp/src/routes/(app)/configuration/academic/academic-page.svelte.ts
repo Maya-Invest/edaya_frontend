@@ -136,11 +136,13 @@ export class AcademicPageState {
 	}
 
 	async createYear(input: {
+		name?: string;
+		shortName?: string;
 		startDate: string;
 		endDate: string;
 		successMessage?: string;
 	}): Promise<string | null> {
-		const yearId = await createAcademicYearMutation(input.startDate, input.endDate, this.mutationOptions(input.successMessage));
+		const yearId = await createAcademicYearMutation(input.startDate, input.endDate, { ...this.mutationOptions(input.successMessage), name: input.name, shortName: input.shortName });
 		if (!yearId) {
 			return null;
 		}

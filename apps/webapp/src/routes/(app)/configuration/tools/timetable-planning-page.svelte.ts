@@ -66,6 +66,7 @@ export class TimetablePlanningPageState {
   teacherLabelsByClassSubjectId = $state<Record<string, string>>({});
   generationResult = $state<GenerateSchoolResult | null>(null);
   busy = $state(false);
+  generationPhase = $state<'idle' | 'generating' | 'refreshing'>('idle');
   loadStatus = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
   loadError = $state('');
   activeRange = $state<{ startDate: string; endDate: string } | null>(null);
@@ -148,7 +149,7 @@ export class TimetablePlanningPageState {
       ]);
       this.subjectLabels = Object.fromEntries(subjects.map(subject => [
         subject.id,
-        catalogSubjectName(subject.name, get(lang), subject.code),
+        catalogSubjectName(subject.name, get(lang), subject.shortName),
       ]));
       const teacherIds = [...new SvelteSet(teacherAssignments.map(row => row.teacherId))];
       const teachers = teacherIds.length
@@ -201,7 +202,10 @@ export class TimetablePlanningPageState {
             throw error;
           }
         },
-        onSuccess: () => this.load(),
+        onSuccess: () => {
+          this.generationPhase = 'refreshing';
+          return this.load();
+        },
         versionKeys: ['planning'],
       }, {
         bump: key => entityVersions.bump(key),
@@ -216,7 +220,10 @@ export class TimetablePlanningPageState {
         ? { ok: true, value: result }
         : { ok: false, error: failure! };
     }
-    finally { this.busy = false; }
+    finally {
+      this.busy = false;
+      this.generationPhase = 'idle';
+    }
   }
 
   async generate(input: {
@@ -227,6 +234,7 @@ export class TimetablePlanningPageState {
   } & TimetablePlacementOverrides): Promise<TimetableMutationResult<GenerateSchoolResult>> {
     const academicYearId = academicContext.yearId;
     const schoolId = academicContext.schools[0]?.id;
+    this.generationPhase = 'generating';
     return this.runMutation(async () => {
         let classes: ClassNode[];
         try {
