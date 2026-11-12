@@ -7,6 +7,7 @@ import { describe, expect, it } from 'bun:test';
 const STUDENT_DETAIL_MODALS = [
 	'create',
 	'change-status',
+	'placement-history', 'report-comments',
 	'edit-profile',
 	'edit-annual-profile',
 	'remove-annual-profile',
@@ -133,6 +134,11 @@ const routeCases = [
 		[
 			'create',
 			'archive-year',
+			'edit-year',
+			'create-period',
+			'edit-period',
+			'delete-year',
+			'delete-period',
 			'publish-year',
 			'publish-period',
 		],

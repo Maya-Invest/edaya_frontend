@@ -24,6 +24,7 @@
 		schoolId = '',
 		schoolRaw = $bindable<SchoolRaw | null>(null),
 		showSchoolDefaults = false,
+		onSaved,
 		savingDefaults = $bindable(false),
 	}: {
 		enforceWorkloadFulfillment?: boolean | undefined;
@@ -36,6 +37,7 @@
 		schoolId?: string;
 		schoolRaw?: SchoolRaw | null;
 		showSchoolDefaults?: boolean;
+		onSaved?: () => void;
 		savingDefaults?: boolean;
 	} = $props();
 
@@ -78,6 +80,7 @@
 				minDayGapSameSubject = String(result.school.timetableMinDayGapSameSubject);
 				timetableMinPeriodSpan = String(result.school.timetableMinPeriodSpan);
 				timetableMaxPeriodSpan = String(result.school.timetableMaxPeriodSpan);
+				onSaved?.();
 			}
 		}
 		finally {
@@ -102,23 +105,23 @@
 			<label class="flex items-start gap-2 text-sm"><Checkbox disabled={savingDefaults} class="mt-0.5" checked={useHomeroomTeacherFallback === true} onCheckedChange={value => (useHomeroomTeacherFallback = Boolean(value))} /><span><span class="block">{$t('timetable.homeroomTeacherFallback')}</span><span class="block text-xs text-muted-foreground">{$t('timetable.homeroomTeacherFallbackHint')}</span></span></label>
 		</div>
 
-		{#if showSchoolDefaults}
-			<div class="flex flex-wrap items-start justify-between gap-4 text-sm">
-				<div class="min-w-0 flex-1 space-y-1.5">
-					<span>{$t('timetable.sameSubjectDayGap')}</span>
-					<p class="text-xs text-muted-foreground">{$t('timetable.sameSubjectDayGapHint')}</p>
-				</div>
-				<label class="flex shrink-0 flex-col items-center gap-0.5">
-					<span class="text-xs leading-none text-muted-foreground">{$t('timetable.schoolDefaultDaysShort')}</span>
-					<Input
-						type="number"
-						min="0"
-						class="w-16 text-center text-sm"
-						bind:value={minDayGapSameSubject} disabled={savingDefaults}
-					/>
-				</label>
+		<div class="flex flex-wrap items-start justify-between gap-4 text-sm">
+			<div class="min-w-0 flex-1 space-y-1.5">
+				<span>{$t('timetable.sameSubjectDayGap')}</span>
+				<p class="text-xs text-muted-foreground">{$t('timetable.sameSubjectDayGapHint')}</p>
 			</div>
+			<label class="flex shrink-0 flex-col items-center gap-0.5">
+				<span class="text-xs leading-none text-muted-foreground">{$t('timetable.schoolDefaultDaysShort')}</span>
+				<Input
+					type="number"
+					min="0"
+					class="w-16 text-center text-sm"
+					bind:value={minDayGapSameSubject} disabled={savingDefaults}
+				/>
+			</label>
+		</div>
 
+		{#if showSchoolDefaults}
 			<div class="flex flex-wrap items-start justify-between gap-4 text-sm">
 				<div class="min-w-0 flex-1 space-y-1.5">
 					<span>{$t('timetable.periodsPerSessionRange')}</span>

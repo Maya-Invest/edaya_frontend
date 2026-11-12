@@ -5,6 +5,7 @@ export interface SubjectCategoryOption {
 	id: string;
 	schoolId: string;
 	name: string;
+	shortName?: string;
 }
 
 const SUBJECT_CATEGORY_SCOPE
@@ -22,6 +23,7 @@ export async function loadSubjectCategories(
 			id: row.id,
 			schoolId: row.schoolId,
 			name: row.name,
+			shortName: row.shortName,
 		}))
 		.sort((left, right) => left.name.localeCompare(right.name));
 }

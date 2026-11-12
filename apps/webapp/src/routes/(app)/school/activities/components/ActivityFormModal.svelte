@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Activity } from '$lib/types/school';
 	import { DEFAULT_ACTIVITY_SCHEDULE } from '$lib/api/activity-save-payload';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -33,6 +34,7 @@
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let name = $state('');
+	let shortName = $state('');
 	let category = $state<Activity['category']>('Sport');
 	let coach = $state('');
 	let capacity = $state('20');
@@ -64,6 +66,7 @@
 	function resetForm() {
 		if (activity) {
 			name = activity.name;
+			shortName = activity?.shortName ?? activity?.name ?? '';
 			category = activity.category;
 			coach = activity.coach;
 			capacity = String(activity.capacity);
@@ -75,6 +78,7 @@
 		}
 		else {
 			name = '';
+			shortName = '';
 			category = 'Sport';
 			coach = '';
 			capacity = '20';
@@ -104,6 +108,7 @@
 			const ok = await activitiesPage.updateActivity({
 				activityId: activity.id,
 				name,
+				shortName,
 				category,
 				coach,
 				capacity: numericCapacity,
@@ -122,6 +127,7 @@
 
 		const activityId = await activitiesPage.createActivity({
 			name,
+			shortName,
 			category,
 			coach,
 			capacity: numericCapacity,
@@ -249,4 +255,5 @@
 			<ClassGroupPicker bind:values={linkedClassGroupIds} mode="multi" variant="embedded" active={open} />
 		</div>
 	{/if}
+	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

@@ -4,6 +4,7 @@ import type { getBrowserSchoolClient } from './school-client';
 import { listAllEntityPagesForIdFilters } from './entity-list-filters';
 
 export type AnnualReportResult = components['schemas']['ReportCardResult'];
+export type AnnualReportReview = AnnualReportResult | NonNullable<AnnualReportResult['revisedDraft']>;
 
 export async function loadStudentYearReportResults(
 	client: ReturnType<typeof getBrowserSchoolClient>,
@@ -32,4 +33,18 @@ export function annualReportReadiness(
 			&& !report.calculationStale && !report.pendingCorrectionIds?.length && !report.pendingAssessmentIds?.length);
 		return { id, period, report, ready };
 	});
+}
+
+/** Shared by the preparation form and contextual publication/export actions. */
+export function annualReportPublicationReady(periods: readonly AcademicPeriod[], results: readonly AnnualReportResult[], annual: AnnualReportReview) {
+	const aggregation = annual.aggregation;
+	if (aggregation?.source !== 'report_cards' || !aggregation.sourcePeriodIds.length || new Set(aggregation.sourcePeriodIds).size !== aggregation.sourcePeriodIds.length
+		|| annual.calculationStale || annual.pendingCorrectionIds?.length || annual.pendingAssessmentIds?.length
+		|| periods.find(period => period.id === annual.periodId)?.status !== 'published') {
+		return false;
+	}
+	const readiness = annualReportReadiness(periods, results, aggregation.sourcePeriodIds, annual.periodId);
+	return readiness.every(entry => entry.ready
+		&& Number.isFinite(aggregation.periodWeightsByPeriodId?.[entry.id] ?? 1) && (aggregation.periodWeightsByPeriodId?.[entry.id] ?? 1) > 0
+		&& aggregation.sourceReportVersions?.some(source => source.periodId === entry.id && source.resultId === entry.report?.id && source.version === entry.report?.version));
 }

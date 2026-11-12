@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'bun:test';
 import { createEmptyDraft, saveDraft } from '$lib/onboarding/draft-storage';
 import {
 	mergeOnboardingDraftWithServerStatus,
@@ -9,6 +8,7 @@ import {
 	shouldHoldOnboardingSummary,
 } from '$lib/onboarding/resume-onboarding';
 import { markOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
+import { describe, expect, it } from 'bun:test';
 
 function withSessionStorage<T>(run: () => T): T {
 	const storage = new Map<string, string>();
@@ -217,12 +217,15 @@ describe('resume onboarding', () => {
 		});
 	});
 
-	it('holds the summary after provision until the local wizard is completed', () => {
+	it('does not treat in-flight provisioning progress as a completed school', () => {
 		expect(shouldHoldOnboardingSummary({
 			localWizardCompleted: false,
 			provisionProgressVisible: true,
 			provisionSucceeded: false,
-		})).toBe(true);
+		})).toBe(false);
+	});
+
+	it('holds the summary after provision until the local wizard is completed', () => {
 		expect(shouldHoldOnboardingSummary({
 			localWizardCompleted: false,
 			provisionProgressVisible: false,

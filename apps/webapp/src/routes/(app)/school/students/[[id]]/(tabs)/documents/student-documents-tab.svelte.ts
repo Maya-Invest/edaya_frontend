@@ -19,6 +19,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
+import { hasAnyPermission, hasPermission } from '$lib/permissions';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { AnnualReportCardState } from '../../annual-report-card-state.svelte';
@@ -96,17 +97,38 @@ export class StudentDocumentsTabState {
 		);
 	}
 
+	canIssue(studentId: string, key: DocumentTemplateKey, classId = this.getPage().findStudent(studentId)?.classId) {
+		const scope = { studentId, classId };
+		switch (key) {
+			case 'report-card.v1':
+			case 'annual-report-card.v1': return hasPermission('REPORT_CARD_EXPORT', scope);
+			case 'annual-transcript.v1': return hasPermission('REPORT_CARD_READ', scope);
+			case 'invoice.v1':
+			case 'receipt.v1':
+			case 'settlement-quittance.v1':
+			case 'payment-reminder.v1': return hasPermission('PAYMENT_READ', scope);
+			case 'account-statement.v1': return hasPermission('FINANCIAL_REPORT_READ', scope);
+			case 'class-roster.v1': return hasPermission('CLASS_READ', scope);
+			case 'class-timetable.v1':
+			case 'teacher-timetable.v1': return hasPermission('TIMETABLE_READ', scope);
+			case 'logbook.v1': return hasPermission('CLASS_LOGBOOK_READ', scope);
+			case 'attendance-sheet.v1': return hasPermission('ATTENDANCE_READ', scope);
+			case 'incident-report.v1': return hasPermission('DISCIPLINE_READ', scope);
+			default: return hasAnyPermission(['STUDENT_READ', 'STUDENT_MANAGE', 'ENROLLMENT_READ'], scope);
+		}
+	}
+
 	resolveSourceId(studentId: string, templateKey: DocumentTemplateKey): string | null {
 		const student = this.getPage().findStudent(studentId);
-		const enrollments = this.enrollmentsFor(studentId);
-		const active = enrollments.find(entry => entry.status === 'active') ?? enrollments[0];
+		const enrollments = this.enrollmentsFor(studentId).filter(row => row.academicYearId === academicContext.yearId);
+		const active = enrollments.find(entry => entry.status === 'active');
 		const withdrawn = enrollments.find(entry => entry.status === 'closed' && entry.endReason === 'withdrawn');
 		const schoolId = authSession.schoolId ?? '';
 		const yearId = academicContext.yearId;
 		switch (templateKey) {
 			case 'schooling-certificate.v1':
 			case 'enrollment-record.v1':
-				return student?.enrollmentId || active?.id || null;
+				return active?.id ?? null;
 			case 'withdrawal-certificate.v1':
 				return withdrawn?.id || null;
 			case 'invoice.v1':
@@ -156,7 +178,7 @@ export class StudentDocumentsTabState {
 				const [issuances, templates, enrollments, summary] = await Promise.all([
 					loadDocumentIssuances(client, { studentId, academicYearId }),
 					loadDocumentTemplates(client),
-					loadStudentEnrollmentHistory(client, studentId),
+					hasPermission('ENROLLMENT_READ', { studentId, classId: this.getPage().findStudent(studentId)?.classId }) ? loadStudentEnrollmentHistory(client, studentId) : [],
 					loadStudentFinanceSummary(client, { studentId, academicYearId }),
 				]);
 				signal.throwIfAborted();

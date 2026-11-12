@@ -16,6 +16,7 @@
 	import { readClassAttendanceListFilters, writeClassAttendanceListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getAttendancePageState } from '../attendance-page.svelte';
 
@@ -90,11 +91,8 @@
 	] as const);
 
 	$effect(() => {
-		listFilters.hydrate({
-			completion: completionKeys.includes(initialFilters.completion as CompletionFilter)
-				? initialFilters.completion
-				: 'all',
-		});
+		const next = initialFilters.completion;
+		untrack(() => listFilters.hydrate({ completion: completionKeys.includes(next as CompletionFilter) ? next : 'all' }));
 	});
 
 	$effect(() => {
@@ -127,7 +125,8 @@
 		{#snippet filters()}
 			<FilterPanel activeCount={completionFilterActive} title={$t('attendanceDay.completionFilter')}>
 				<FilterSelect
-					bind:value={listFilters.values.completion}
+					value={completion}
+					onchange={value => listFilters.patchImmediate({ completion: value })}
 					class="h-9 w-full rounded-md text-xs"
 					options={[...completionOptions]}
 				/>

@@ -5,6 +5,7 @@
 	import { formatPermissionGroupLabel, groupCatalogEntries } from '$lib/api/staff-permission-profiles-data';
 	import { authSession } from '$lib/auth/session.svelte';
 	import PermissionResolutionPreview from '$lib/components/school/PermissionResolutionPreview.svelte';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -29,13 +30,14 @@
 	const preview = new PermissionImpactPreviewState();
 	const busy = $derived(saving || preview.loading);
 	let name = $state('');
+	let shortName = $state('');
 	let description = $state('');
 	let permissions = $state<StaffPermissionCode[]>([]);
 
 	const isEdit = $derived(profile !== null && profile !== undefined);
 	const boundCount = $derived(profile ? permissionProfilesPage.boundCount(profile.id) : 0);
 
-	const input = $derived({ id: profile?.id ?? '', name: name.trim(), description: description.trim() || undefined, permissions });
+	const input = $derived({ shortName, id: profile?.id ?? '', name: name.trim(), description: description.trim() || undefined, permissions });
 	const snapshot = $derived({ schoolId: authSession.schoolId ?? academicContext.schools[0]?.id ?? '', ...input });
 	const reviewed = $derived(preview.reviewed(snapshot));
 	$effect(() => preview.synchronize(open, snapshot));
@@ -59,11 +61,13 @@
 		preview.reset();
 		if (profile) {
 			name = profile.name;
+			shortName = profile?.shortName ?? profile?.name ?? '';
 			description = profile.description ?? '';
 			permissions = [...profile.permissions];
 			return;
 		}
 		name = '';
+		shortName = '';
 		description = '';
 		permissions = [];
 	}
@@ -90,7 +94,7 @@
 		saving = true;
 		try {
 			const trimmedName = input.name;
-			const payload = { name: input.name, description: input.description, permissions: input.permissions };
+			const payload = { name: input.name, shortName: input.shortName, description: input.description, permissions: input.permissions };
 
 			const ok = isEdit && profile
 				? await permissionProfilesPage.saveProfile({
@@ -159,4 +163,5 @@
 		{/each}
 	</div>
 	{#if reviewed && preview.report}<PermissionResolutionPreview report={preview.report} />{/if}
+	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

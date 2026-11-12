@@ -47,11 +47,11 @@ describe('student list filters', () => {
 		expect(filterStudentList(roster, filters({ q: 'ada', class: 'class-a', status: 'inactive' })).map(entry => entry.id)).toEqual(['1']);
 		expect(filterStudentList(roster, filters({ q: 'ada.king@school.test' })).map(entry => entry.id)).toEqual(['3']);
 		expect(filterStudentList(
-			[student('4', { name: 'Kouadio Yao', matricule: 'CI-2025-001' })],
+			[student('4', { name: 'Kouadio Yao', identifier: 'CI-2025-001' })],
 			filters({ q: 'ci-2025-004' }),
 		)).toEqual([]);
 		expect(filterStudentList(
-			[student('4', { name: 'Kouadio Yao', matricule: 'CI-2025-001' })],
+			[student('4', { name: 'Kouadio Yao', identifier: 'CI-2025-001' })],
 			filters({ q: 'CI-2025-001' }),
 		).map(entry => entry.id)).toEqual(['4']);
 		expect(filterStudentList(roster, filters({ sort: 'name' })).map(entry => entry.id)).toEqual(['2', '1', '3']);

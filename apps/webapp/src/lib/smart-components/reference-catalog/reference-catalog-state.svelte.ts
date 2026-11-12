@@ -9,7 +9,7 @@ export type ReferenceCatalogueKind = 'academicDisciplines' | 'placementStatuses'
 export interface ReferenceOption {
     id: string;
     schoolId: string;
-    code: string;
+    shortName?: string;
     label: string;
     isActive: boolean;
 }
@@ -28,7 +28,7 @@ export class ReferenceCatalogState {
         const client = getBrowserSchoolClient();
         const rows = this.kind === 'academicDisciplines'
             ? (await listAllEntityPages(query => client.entities.academicDisciplines.list(query), { baseQuery: { schoolId } })).map(row => ({ ...row, label: row.name }))
-            : await listAllEntityPages(query => client.entities.placementStatuses.list(query), { baseQuery: { schoolId } });
+            : (await listAllEntityPages(query => client.entities.placementStatuses.list(query), { baseQuery: { schoolId } })).map(row => ({ ...row, label: row.name }));
         signal?.throwIfAborted();
         if (schoolId !== authSession.schoolId)
             return [];
@@ -39,7 +39,7 @@ export class ReferenceCatalogState {
     query = (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, { empty: () => ({ rows: [] }), hasItems: listPageHasItems, load: async signal => ({ rows: await this.load(signal) }) }, request);
     async save(input: {
         id?: string;
-        code: string;
+        shortName?: string;
         label: string;
         isActive: boolean;
     }) {
@@ -48,8 +48,8 @@ export class ReferenceCatalogState {
             const client = getBrowserSchoolClient();
             const id = input.id ?? crypto.randomUUID();
             const value = await runMutation<unknown>(() => this.kind === 'academicDisciplines'
-                ? client.commands.configureAcademicDiscipline({ id, code: input.code, name: input.label, isActive: input.isActive })
-                : client.commands.configurePlacementStatus({ id, code: input.code, label: input.label, isActive: input.isActive }), { versionKeys: ['subjects', 'teachers', 'students'] });
+                ? client.commands.configureAcademicDiscipline({ id, shortName: input.shortName, name: input.label, isActive: input.isActive })
+                : client.commands.configurePlacementStatus({ id, shortName: input.shortName, name: input.label, isActive: input.isActive }), { versionKeys: ['subjects', 'teachers', 'students'] });
             if (value === null)
                 return false;
             await this.load();

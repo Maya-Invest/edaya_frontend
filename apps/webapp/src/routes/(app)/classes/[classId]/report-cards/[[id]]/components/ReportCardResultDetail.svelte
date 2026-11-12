@@ -100,7 +100,7 @@
 			<div>
 				<p class="mb-2 font-display text-sm font-semibold">
 					{section.name}
-					{#if section.sectionKind === 'module'}<span class="ml-2 text-xs text-muted-foreground">{$t('modules.weight')}: {section.weight} · {$t(section.weightingMode === 'explicit' ? 'modules.explicit' : 'modules.sum')}</span>{/if}
+					{#if section.sectionKind === 'module'}<span class="ml-2 text-xs text-muted-foreground">{$t('modules.weight')}: {section.weight ?? '—'} · {$t(section.weightingMode === 'explicit' ? 'modules.explicit' : 'modules.sum')}</span>{/if}
 					{#if section.sectionAverage !== undefined}
 						<span class="ml-2 font-sans tabular-nums text-xs text-muted-foreground">
 							(moy. {formatPersistedGrade(section.grading, section.sectionAverage)})

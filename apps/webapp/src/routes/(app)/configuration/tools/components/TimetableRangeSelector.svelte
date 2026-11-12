@@ -3,7 +3,6 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
-	import { cn } from '$lib/utils';
 	import { activeRangePresetId } from '../lib/timetable-generation-ui';
 	import TimetableGenerationModeSegment from './TimetableGenerationModeSegment.svelte';
 
@@ -38,65 +37,22 @@
 	}
 </script>
 
-<div class="space-y-4">
-	{#if presets.length > 0 || showGenerationMode}
-		<div
-			class={cn(
-				'grid items-start gap-x-4 gap-y-2',
-				presets.length > 0 && showGenerationMode && 'sm:grid-cols-[minmax(0,1fr)_auto]',
-			)}
-		>
-			{#if presets.length > 0}
-				<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{$t('timetable.rangePresets')}</p>
-			{/if}
-			{#if showGenerationMode}
-				<p
-					class={cn(
-						'text-xs font-medium uppercase tracking-wide text-muted-foreground',
-						presets.length > 0 && 'sm:justify-self-end',
-					)}
-				>
-					{$t('timetable.generationMode')}
-				</p>
-			{/if}
-			{#if presets.length > 0}
-				<div class="flex flex-wrap gap-2">
-					{#each presets as preset (preset.id)}
-						<Button variant="outline"
-							type="button"
-							class={cn(
-								'text-sm',
-								activePresetId === preset.id
-									? 'border-primary bg-primary/10 text-primary'
-									: 'border-border bg-background text-foreground/80 hover:bg-secondary',
-							)}
-							onclick={() => applyPreset(preset)}
-						>
-							{preset.id === 'full-year' ? $t('timetable.fullAcademicYear') : preset.label}
-						</Button>
-					{/each}
-				</div>
-			{/if}
-			{#if showGenerationMode}
-				<div class={cn(presets.length > 0 && 'sm:justify-self-end')}>
-					<TimetableGenerationModeSegment bind:generationMode />
-				</div>
-			{/if}
+<div class="range-controls">
+	<div class="space-y-1">
+		<div class="grid grid-cols-2 gap-3">
+			<label class="min-w-0 space-y-1 text-sm"><span>{$t('common.startDate')}</span><Input type="date" bind:value={startDate} onchange={notifyRangeChange} /></label>
+			<label class="min-w-0 space-y-1 text-sm"><span>{$t('common.endDate')}</span><Input type="date" bind:value={endDate} onchange={notifyRangeChange} /></label>
 		</div>
-	{/if}
-
-	<div class="grid gap-3 sm:grid-cols-2">
-		<label class="space-y-1.5 text-sm">
-			<span>{$t('common.startDate')}</span>
-			<Input type="date" bind:value={startDate} onchange={notifyRangeChange} />
-		</label>
-		<label class="space-y-1.5 text-sm">
-			<span>{$t('common.endDate')}</span>
-			<Input type="date" bind:value={endDate} onchange={notifyRangeChange} />
-		</label>
+		<div class="flex flex-wrap gap-1">
+			{#each presets as preset (preset.id)}
+				<Button variant="ghost" type="button" aria-pressed={activePresetId === preset.id} class={activePresetId === preset.id ? 'bg-primary/10 text-primary' : ''} onclick={() => applyPreset(preset)}>{preset.id === 'full-year' ? $t('timetable.fullAcademicYear') : preset.label}</Button>
+			{/each}
+		</div>
 	</div>
-
-	{#if !validRange}
-		<p class="text-xs text-destructive">{$t('timetable.invalidRange')}</p>
-	{/if}
+	{#if showGenerationMode}<TimetableGenerationModeSegment bind:generationMode />{/if}
 </div>
+{#if !validRange}<p role="alert" class="text-xs text-destructive">{$t('timetable.invalidRange')}</p>{/if}
+<style>
+ .range-controls { display:grid; gap:12px; }
+ @container(min-width:768px) { .range-controls { grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:24px; } }
+</style>

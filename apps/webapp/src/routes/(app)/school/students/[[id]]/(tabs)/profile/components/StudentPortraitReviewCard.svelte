@@ -2,12 +2,10 @@
 	import type { Student } from '$lib/types/school';
 	import { buildProfilePhotoContentUrl } from '$lib/api/profile-photo-upload';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
-	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { hasPermission } from '$lib/permissions';
-	import { get } from 'svelte/store';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
 	const { s }: { s: Student } = $props();
@@ -21,9 +19,8 @@
 	<div class="flex min-w-0 items-start gap-4">
 		{#if pending && proposedUrl}<PersonAvatar name={s.name} initials={s.initials} photoUrl={proposedUrl} size="lg" class="rounded-full" />{/if}
 		<div class="min-w-0 space-y-3">
-			<p class="text-sm text-muted-foreground">{$t(pending ? 'student.photo.pending' : 'student.profile.noProposal')}</p>
+			<p class="text-sm text-muted-foreground">{$t('student.photo.pending')}</p>
 			{#if pending && canReview}<div class="flex flex-wrap gap-2"><Button onclick={() => modals?.open('approve-photo')}>{$t('student.photo.approve')}</Button><Button variant="destructive" onclick={() => modals?.open('reject-photo')}>{$t('student.photo.reject')}</Button></div>{/if}
 		</div>
 	</div>
-	{#if canReview}<ProfilePhotoPicker name={s.name} initials={s.initials} trigger="button" label={$t('student.photo.replace')} onChange={file => owner.updateProfilePhoto({ studentId: s.id, file, successMessage: get(t)('student.photo.replacedToast') })} />{/if}
 </div>

@@ -13,7 +13,7 @@ const { createSubjectForClassMutation, createSubjectForGradeLevelMutation } = aw
 for (const path of ['class', 'grade'] as const) {
 	test(`${path} subject creation sends the discipline and optional form fields to the API`, async () => {
 		configureSubject.mockClear();
-		const input = { name: 'Custom subject', disciplineId: 'discipline', code: '001', coefficient: 2.5, shortName: 'CS', isOptional: false, categoryId: 'category', color: 'mint' as const };
+		const input = { name: 'Custom subject', disciplineId: 'discipline', coefficient: 2.5, shortName: 'CS', isOptional: false, categoryId: 'category', color: 'mint' as const };
 		const result = path === 'class'
 			? await createSubjectForClassMutation({ ...input, classGroupId: 'class' })
 			: await createSubjectForGradeLevelMutation({ ...input, gradeLevelId: 'grade', academicYearId: 'year', classGroupIds: ['class'] });

@@ -23,16 +23,11 @@ describe('school student detail tab routes', () => {
 		expect(STUDENT_DETAIL_TABS.find(tab => tab.key === 'profile')?.segment).toBe('profile');
 	});
 
-	test('lists the seven drawer domains', () => {
-		expect(STUDENT_DETAIL_TABS.map(tab => tab.key)).toEqual([
-			'profile',
-			'grades',
-			'attendance',
-			'incidents',
-			'finances',
-			'reportCard',
-			'documents',
+	test('lists the eight drawer domains in navigation order', () => {
+		expect(STUDENT_DETAIL_TABS.map(tab => tab.segment)).toEqual([
+			'profile', 'enrollments', 'attendance', 'grades', 'report-card', 'incidents', 'finances', 'documents',
 		]);
+		expect(activeStudentDetailTab('/school/students/stu-42/enrollments', 'stu-42')).toBe('enrollments');
 	});
 
 	test('recognizes school and class profile route ids', () => {

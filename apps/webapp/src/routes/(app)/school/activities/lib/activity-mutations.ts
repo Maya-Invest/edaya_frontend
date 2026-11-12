@@ -9,6 +9,7 @@ export async function createActivityOnPage(
 	state: ActivitiesPageState,
 	input: {
 		name: string;
+		shortName?: string;
 		category: Activity['category'];
 		coach: string;
 		capacity: number;
@@ -30,6 +31,7 @@ export async function createActivityOnPage(
 	const optimistic: Activity = {
 		id: activityId,
 		name: input.name.trim(),
+		shortName: input.shortName,
 		category: input.category,
 		coach: input.coach.trim(),
 		schedule,
@@ -47,6 +49,7 @@ export async function createActivityOnPage(
 			buildActivityConfigCommand(null, {
 				id: activityId,
 				name: input.name,
+				shortName: input.shortName,
 				category: input.category,
 				coach: input.coach,
 				capacity: input.capacity,
@@ -75,6 +78,7 @@ export async function updateActivityOnPage(
 	input: {
 		activityId: string;
 		name: string;
+		shortName?: string;
 		category: Activity['category'];
 		coach: string;
 		capacity: number;
@@ -102,6 +106,7 @@ export async function updateActivityOnPage(
 	const schedule = input.schedule?.trim() || previous.schedule || DEFAULT_ACTIVITY_SCHEDULE;
 	const patch = {
 		name: input.name.trim(),
+		shortName: input.shortName,
 		category: input.category,
 		coach: input.coach.trim(),
 		capacity: input.capacity,
@@ -116,6 +121,7 @@ export async function updateActivityOnPage(
 			buildActivityConfigCommand(existing, {
 				id: input.activityId,
 				name: input.name,
+				shortName: input.shortName,
 				category: input.category,
 				coach: input.coach,
 				capacity: input.capacity,

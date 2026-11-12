@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { onDestroy } from 'svelte';
-	import { periodResizeEnd } from '../lib/period-calendar';
-	import { getPeriodCalendarActions } from '../lib/period-calendar-context';
+	import { periodResizeEnd } from './period-calendar';
+	import { getPeriodCalendarActions } from './period-calendar-context';
 
 	const { event, label, onPreview }: { event: Record<string, unknown>; label: string; onPreview: (end: Date | null) => void } = $props();
 	const actions = getPeriodCalendarActions();

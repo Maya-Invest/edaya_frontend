@@ -28,18 +28,6 @@ function schoolId(): string {
   return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
 }
 
-function nextGradeLevelId(name: string): string {
-  const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const base = slug ? `gl-${slug}` : `gl-${Date.now().toString(36)}`;
-  let id = base;
-  let index = 1;
-  while (academicContext.gradeLevels.some(level => level.id === id)) {
-    id = `${base}-${index}`;
-    index += 1;
-  }
-  return id;
-}
-
 export class GradeLevelsPageState {
   private gradingRequest = 0;
   gradingScales = $state<GradeScale[]>([]);
@@ -118,7 +106,7 @@ export class GradeLevelsPageState {
       const [level, scales] = await Promise.all([levelId ? client.entities.gradeLevels.get(levelId) : null, loadGradeScalesCatalogData(client, schoolId())]);
       if (request !== this.gradingRequest || generation !== academicContext.scopeGeneration)
         return;
-      this.gradingLevel = level ? { ...level, cycle: level.cycle ?? '' } : null;
+      this.gradingLevel = level ? { ...level, shortName: level.shortName ?? level.name, cycle: level.cycle ?? '' } : null;
       this.gradingScales = scales;
     }
     catch {
@@ -154,7 +142,7 @@ export class GradeLevelsPageState {
   async saveGradeLevel(input: {
     id?: string;
     name: string;
-    label: string;
+    shortName: string;
     cycle: string;
     order: number;
     successMessage?: string;
@@ -165,12 +153,12 @@ export class GradeLevelsPageState {
       return false;
     }
 
-    const id = input.id ?? nextGradeLevelId(input.name);
+    const id = input.id ?? crypto.randomUUID();
     const entity = {
       id,
       schoolId: sid,
       name: input.name.trim(),
-      label: input.label.trim(),
+      shortName: input.shortName.trim(),
       cycle: input.cycle.trim() || null,
       order: input.order,
     };

@@ -813,18 +813,18 @@ export async function waitForGradeLevelSelectOptions(
 	throw new Error('Grade level select has no options — shell may not include created levels yet');
 }
 
-/** GradeLevelFormModal — name and label are both required (label may mirror name on input). */
+/** GradeLevelFormModal — name and short name are required. */
 export async function fillGradeLevelCreateDialog(page: Page, levelName: string): Promise<void> {
 	const dialog = page.getByRole('dialog');
 	const nameInput = dialog.getByRole('textbox', { name: /^(grade level name|nom du niveau)$/i });
-	const labelInput = dialog.getByRole('textbox', { name: /short label|libellé court/i });
+	const shortNameInput = dialog.getByRole('textbox', { name: /^(short name|nom court)$/i });
 	const submit = dialog.getByRole('button', { name: /enregistrer|save changes|^save$/i }).last();
 
 	await nameInput.waitFor({ state: 'visible', timeout: 15_000 });
 
 	const fillFields = async () => {
 		await nameInput.fill(levelName);
-		await labelInput.fill(levelName);
+		await shortNameInput.fill(levelName);
 		const orderInput = dialog.locator('input[type="number"]');
 		if (await orderInput.isVisible().catch(() => false)) {
 			const orderValue = await orderInput.inputValue();
@@ -953,8 +953,8 @@ export async function fillStudentCreateDialog(
 	const dialog = page.getByRole('dialog');
 	const firstName = options.firstName ?? 'E2E';
 	const lastName = options.lastName ?? `Student${Date.now()}`;
-	await dialog.locator('input').nth(0).fill(firstName);
-	await dialog.locator('input').nth(1).fill(lastName);
+	await dialog.getByRole('textbox', { name: /^(first name|prénom)$/i }).fill(firstName);
+	await dialog.getByRole('textbox', { name: /^(last name|nom)$/i }).fill(lastName);
 
 	const noClasses = await dialog.getByText(/no classes|aucune classe|pas de classe/i).isVisible().catch(() => false);
 	if (noClasses) {
@@ -990,8 +990,8 @@ export async function fillPersonCreateDialog(
 	options: { firstName?: string; lastName?: string } = {},
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	await dialog.locator('input').nth(0).fill(options.firstName ?? 'E2E');
-	await dialog.locator('input').nth(1).fill(options.lastName ?? `Person${Date.now()}`);
+	await dialog.getByRole('textbox', { name: /^(first name|prénom)$/i }).fill(options.firstName ?? 'E2E');
+	await dialog.getByRole('textbox', { name: /^(last name|nom)$/i }).fill(options.lastName ?? `Person${Date.now()}`);
 
 	const invite = dialog.locator('#staff-send-invite, #teacher-send-invite, #guardian-send-invite, [id$="-send-invite"]');
 	await invite.first().waitFor({ state: 'visible', timeout: 15_000 });
@@ -1009,8 +1009,8 @@ export async function fillPersonCreateDialogWithInvite(
 	options: { email: string; firstName?: string; lastName?: string },
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	await dialog.locator('input').nth(0).fill(options.firstName ?? 'E2E');
-	await dialog.locator('input').nth(1).fill(options.lastName ?? `Person${Date.now()}`);
+	await dialog.getByRole('textbox', { name: /^(first name|prénom)$/i }).fill(options.firstName ?? 'E2E');
+	await dialog.getByRole('textbox', { name: /^(last name|nom)$/i }).fill(options.lastName ?? `Person${Date.now()}`);
 
 	const invite = dialog.locator('#staff-send-invite, #teacher-send-invite, #guardian-send-invite, [id$="-send-invite"]');
 	const count = await invite.count();
@@ -1369,7 +1369,12 @@ function yearCardByLabel(page: Page, label: string): Locator {
 }
 
 function yearCards(page: Page): Locator {
-	return page.locator('section.overflow-hidden.rounded-2xl');
+	return page.locator('section').filter({ has: page.locator('[data-academic-menu]') }).filter({ has: page.locator(':scope > div > button[aria-expanded]') });
+}
+
+async function openYearActions(yearSection: Locator): Promise<void> {
+	await yearSection.locator('[data-academic-menu]').first().getByRole('button').click();
+	await yearSection.page().getByRole('menu').waitFor({ state: 'visible' });
 }
 
 async function expandYearSection(yearSection: Locator): Promise<void> {
@@ -1449,7 +1454,8 @@ async function archivePublishedYears(page: Page): Promise<void> {
 				continue;
 			}
 			await expandYearSection(card);
-			const archiveBtn = card.getByRole('button', { name: archiveYearButtonName }).first();
+			await openYearActions(card);
+			const archiveBtn = page.getByRole('menu').getByRole('menuitem', { name: archiveYearButtonName }).first();
 			if (!(await archiveBtn.isVisible({ timeout: 2_000 }).catch(() => false))) {
 				continue;
 			}
@@ -1467,11 +1473,7 @@ async function archivePublishedYears(page: Page): Promise<void> {
 }
 
 async function academicYearUiLooksPublished(yearSection: Locator): Promise<boolean> {
-	if ((await yearHeaderStatus(yearSection)) === 'published') {
-		return true;
-	}
-	const archiveInSection = yearSection.getByRole('button', { name: archiveYearButtonName });
-	return archiveInSection.isVisible({ timeout: 2_000 }).catch(() => false);
+	return (await yearHeaderStatus(yearSection)) === 'published';
 }
 
 /**
@@ -1501,7 +1503,8 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 			return true;
 		}
 
-		const publishBtn = yearSection.getByRole('button', { name: publishYearButtonName }).first();
+		await openYearActions(yearSection);
+		const publishBtn = page.getByRole('menu').getByRole('menuitem', { name: publishYearButtonName }).first();
 		const publishVisible = await publishBtn.isVisible({ timeout: 2_000 }).catch(() => false);
 		const publishDisabled = publishVisible && await publishBtn.isDisabled().catch(() => false);
 		console.log(`academic-year publish attempt ${attempt + 1}: status=${status} visible=${publishVisible} disabled=${publishDisabled}`);

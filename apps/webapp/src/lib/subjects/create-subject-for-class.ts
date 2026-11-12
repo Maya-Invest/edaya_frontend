@@ -10,7 +10,7 @@ export interface CreateSubjectForClassInput {
 	classSubjectId: string;
 	name: string;
 	disciplineId?: string | null;
-	shortName?: string | null;
+	shortName?: string;
 	isOptional?: boolean;
 
 	code?: string;
@@ -41,11 +41,10 @@ export async function createSubjectForClass(
 		academicYearId: classGroup.academicYearId,
 		name: input.name.trim(),
 		disciplineId: input.disciplineId,
-		shortName: input.shortName,
+		shortName: input.shortName ?? undefined,
 		isOptional: input.isOptional,
 		categoryId: input.categoryId,
 		color: input.color ?? 'mint',
-		code: input.code?.trim() || undefined,
 		coefficient: input.coefficient,
 		classSubjectIdsByClassGroupId: { [input.classGroupId]: input.classSubjectId },
 		createdAt: input.createdAt ?? new Date().toISOString(),

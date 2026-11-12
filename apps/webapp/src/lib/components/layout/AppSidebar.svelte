@@ -1,15 +1,16 @@
 <script lang="ts">
 	import type { ModuleKey } from '$lib/navigation';
 	import type { HierarchyGroup } from '$lib/types/school';
+	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
 	import { resolveActiveClassId } from '$lib/academic/class-selection';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { authSession } from '$lib/auth/session.svelte';
 	import AcademicYearSelector from '$lib/components/layout/AcademicYearSelector.svelte';
 	import ClassSelector from '$lib/components/layout/ClassSelector.svelte';
-	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
-	import { Crown, ChevronDown } from '$lib/icons';
+	import { Crown, ChevronDown, PanelLeft, PanelLeftClose } from '$lib/icons';
 	import {
 		DASHBOARD_HREF,
 		MODULES,
@@ -31,6 +32,7 @@
 		staffCount,
 		teacherCount,
 		forceExpanded = false,
+		footerAction,
 	}: {
 		hierarchy: HierarchyGroup[];
 		studentCount: number;
@@ -38,6 +40,7 @@
 		staffCount: number;
 		teacherCount: number;
 		forceExpanded?: boolean;
+		footerAction?: Snippet;
 	} = $props();
 
 	const messageCount = getMessageCount();
@@ -52,6 +55,7 @@
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
+
 	let hoverExpanded = $state(false);
 	let yearDialogExpanded = $state(false);
 
@@ -99,6 +103,10 @@
 		return MODULES.find(mod => mod.key === key)?.href ?? DASHBOARD_HREF;
 	}
 
+	function onYearDialogChange(open: boolean) {
+		yearDialogExpanded = open && hoverExpanded;
+	}
+
 	function onSidebarEnter() {
 		if (collapsed) {
 			hoverExpanded = true;
@@ -120,12 +128,11 @@
 		collapsed && (hoverExpanded || yearDialogExpanded) && 'absolute left-0 top-0 z-50 shadow-panel',
 	)}
 >
-	<div class={cn('flex flex-col border-b border-border', showExpanded ? 'items-start px-4 py-3' : 'items-center py-3')}>
-		<BrandLogo variant={showExpanded ? 'horizontal' : 'symbol'} width={showExpanded ? 144 : 32} />
-		<AcademicYearSelector collapsed={!showExpanded} onOpenChange={open => yearDialogExpanded = open && hoverExpanded} />
+	<div data-testid="sidebar-header" class="shrink-0 border-b border-border lg:h-[var(--app-header-height,3.5rem)]">
+		<AcademicYearSelector collapsed={!showExpanded} onOpenChange={onYearDialogChange} />
 	</div>
 
-	<nav class={cn('scrollbar-thin flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>
+	<nav class={cn('scrollbar-thin min-h-0 flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>
 		<ul class="space-y-1">
 			<li>
 				<a
@@ -265,4 +272,14 @@
 			{/each}
 		</ul>
 	</nav>
+	<footer data-testid="sidebar-footer" class={cn('flex shrink-0 border-t border-border p-1', showExpanded ? 'justify-end' : 'justify-center')}>
+		{#if footerAction}
+			{@render footerAction()}
+		{:else}
+			<Button variant="ghost" size="icon" data-testid="sidebar-pin" onclick={() => shellContext.toggleSidebar()}
+				aria-label={$t(shellContext.sidebarOpen ? 'sidebar.unpin' : 'sidebar.pin')} aria-pressed={shellContext.sidebarOpen} aria-controls="app-sidebar">
+				{#if shellContext.sidebarOpen}<PanelLeftClose class="h-4 w-4" />{:else}<PanelLeft class="h-4 w-4" />{/if}
+			</Button>
+		{/if}
+	</footer>
 </aside>

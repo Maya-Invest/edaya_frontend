@@ -36,7 +36,7 @@
 		<div class={cn('h-8 w-1.5 shrink-0 rounded-full', dotByColor[subject.color])}></div>
 		<div class="min-w-0 flex-1">
 			<div class="flex flex-wrap items-center gap-2">
-				<span class="font-display text-sm font-semibold">{catalogSubjectName(subject.name, $lang, subject.code)}</span>
+				<span class="font-display text-sm font-semibold">{catalogSubjectName(subject.name, $lang, subject.shortName)}</span>
 				<span
 					class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
 				>
@@ -53,7 +53,7 @@
 
 	{#if onEdit}
 		<div class="pr-2">
-			<RowActionMenu label={`${$t('list.rowActions')} · ${catalogSubjectName(subject.name, $lang, subject.code)}`}>
+			<RowActionMenu label={`${$t('list.rowActions')} · ${catalogSubjectName(subject.name, $lang, subject.shortName)}`}>
 				<PermissionGate permission="ACADEMIC_PROGRAM_MANAGE" gradeLevelId={subject.gradeLevelId} subjectId={subject.id} mode="disable">
 					{#snippet children({ disabled, title })}<RowActionMenuItem {disabled} {title} onclick={onEdit}>{$t('common.edit')}</RowActionMenuItem>{/snippet}
 				</PermissionGate>

@@ -1,3 +1,4 @@
+import { prepareHumanFixture } from './prepare-human';
 import { selectControl, chooseOption, selectOptions } from './custom-select';
 import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
@@ -19,7 +20,7 @@ export async function exerciseAssignmentCrud(page: Page, base: string, scenarioI
     assert(response.ok(), `Assignment fixture ${command}: HTTP ${response.status()} ${response.ok() ? "" : await response.text()}`);
   };
   await fixture('create-class-group', { ...classroom, id: classId, name: `Integration assignment ${classId}` });
-  await fixture('register-teacher', { id: teacherId, schoolId: await resolveSchoolId(page, base), firstName: 'Integration', lastName: teacherId, isActive: true });
+  await fixture('register-teacher', { ...await prepareHumanFixture(page, base, 'teachers', teacherId), id: teacherId, schoolId: await resolveSchoolId(page, base), firstName: 'Integration', lastName: teacherId, isActive: true });
   const path = hub ? '/configuration/tools/teacher-assignments' : `/school/teachers/${teacherId}/assignments`;
   await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' });
   await waitForPageQuery(page);

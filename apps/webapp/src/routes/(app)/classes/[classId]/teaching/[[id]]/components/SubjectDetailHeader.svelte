@@ -36,7 +36,7 @@
 	const deleteOpen = bindUrlModal(modals, 'delete');
 
 	let deleteBusy = $state(false);
-	const localizedName = $derived(catalogSubjectName(subject.name, $lang, subject.code));
+	const localizedName = $derived(catalogSubjectName(subject.name, $lang, subject.shortName));
 
 	const teacherInitials = $derived(
 		subject.teacher

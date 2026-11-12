@@ -237,7 +237,7 @@ Run supervised integration suites; selected suites never qualify a release.
 Options:
   -h, --help               Show help for this command.
   --suite <id>
-      Run one suite for diagnosis without qualification evidence. Values: availability, onboarding, provisioned, webadmin, demo, student-profile, grading-entry, school-year-switcher, shared-design, guardian-profile, subject-enrollment, imports-ui, account-settings-ui, inbox-pages-ui, messaging-ui, family-feedback-ui, permission-profiles, teacher-tabs, attendance-ui, assessment-permissions, grading-configuration, timetable-selection.
+      Run one suite for diagnosis without qualification evidence. Values: availability, onboarding, provisioned, webadmin, demo, student-profile, grading-entry, owner-school-switching, school-year-switcher, shared-design, guardian-profile, subject-enrollment, imports-ui, account-settings-ui, inbox-pages-ui, messaging-ui, family-feedback-ui, permission-profiles, teacher-tabs, attendance-ui, assessment-permissions, grading-configuration, timetable-selection.
 
 Examples:
   bun repo test integration
@@ -605,7 +605,7 @@ Run browser suites against the configured services.
 Options:
   -h, --help               Show help for this command.
   --suite <id>
-      Run one suite without full coverage validation. Values: availability, onboarding, provisioned, webadmin, demo, student-profile, grading-entry, school-year-switcher, shared-design, guardian-profile, subject-enrollment, imports-ui, account-settings-ui, inbox-pages-ui, messaging-ui, family-feedback-ui, permission-profiles, teacher-tabs, attendance-ui, assessment-permissions, grading-configuration, timetable-selection.
+      Run one suite without full coverage validation. Values: availability, onboarding, provisioned, webadmin, demo, student-profile, grading-entry, owner-school-switching, school-year-switcher, shared-design, guardian-profile, subject-enrollment, imports-ui, account-settings-ui, inbox-pages-ui, messaging-ui, family-feedback-ui, permission-profiles, teacher-tabs, attendance-ui, assessment-permissions, grading-configuration, timetable-selection.
 
 Examples:
   bun repo ci browser-suites

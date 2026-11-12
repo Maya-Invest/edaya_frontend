@@ -14,6 +14,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
+	import IdentifierInput from '$lib/smart-components/human-identifier/IdentifierInput.svelte';
 	import PermissionScopeSelections from '$lib/smart-components/scope-builder/PermissionScopeSelections.svelte';
 	import {
 		DEFAULT_STAFF_PROFILE_ROLE,
@@ -36,7 +37,7 @@
 	let firstName = $state('');
 	let lastName = $state('');
 	let profileRole = $state<StaffProfileRole>(DEFAULT_STAFF_PROFILE_ROLE);
-	let code = $state('');
+	let additional = $state<Record<string, string>>({});
 	let email = $state('');
 	let phone = $state('');
 	let sendAccountInvitation = $state(true);
@@ -54,7 +55,7 @@
 		firstName = '';
 		lastName = '';
 		profileRole = DEFAULT_STAFF_PROFILE_ROLE;
-		code = '';
+		additional = {};
 		email = '';
 		phone = '';
 		sendAccountInvitation = true;
@@ -85,7 +86,7 @@
 		const staffId = await staffPage.createStaff({
 			firstName,
 			lastName,
-			code,
+			profile: additional,
 			email,
 			phone,
 			profileRole,
@@ -114,6 +115,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	<IdentifierInput bind:profile={additional} />
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -185,12 +187,6 @@
 			<PermissionScopeSelections {subjectClassRequired} bind:scopes={customScopes} grains={scopeGrains} active={open} />
 		{/if}
 	{/if}
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('common.code')}
-		</Label>
-		<Input bind:value={code} aria-label={$t('common.code')} />
-	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('common.email')}

@@ -16,9 +16,9 @@
 			<li class="min-w-0">
 				<button type="button" disabled={step.disabled} aria-current={current === step.key ? 'step' : undefined}
 					aria-describedby={step.disabled && step.reason ? `${id}-${step.key}-reason` : undefined}
-					class={cn('ui-nav-target text-left', current === step.key && 'bg-primary/10 text-primary ring-1 ring-primary')}
+					class={cn('ui-nav-target text-left', current === step.key && 'bg-primary/10 text-primary ring-1 ring-inset ring-primary')}
 					data-testid={`task-step-${step.key}`} onclick={() => onSelect(step.key)}>
-					<span class="tabular-nums" aria-hidden="true">{index + 1}.</span>{step.label}
+					<span class="shrink-0 whitespace-nowrap tabular-nums" aria-hidden="true">{index + 1}.</span>{step.label}
 				</button>
 				{#if step.disabled && step.reason}<p id={`${id}-${step.key}-reason`} class="max-w-64 px-4 text-xs text-muted-foreground">{step.reason}</p>{/if}
 			</li>

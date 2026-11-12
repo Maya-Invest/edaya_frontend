@@ -92,6 +92,7 @@ export class DisciplinePageState {
 	async saveAction(input: {
 		id?: string;
 		name: string;
+		shortName?: string;
 		kind: DisciplinaryActionKind;
 		severity?: number;
 		defaultDurationDays?: number;
@@ -109,6 +110,7 @@ export class DisciplinePageState {
 			id,
 			schoolId,
 			name: input.name.trim(),
+			shortName: input.shortName,
 			kind: input.kind,
 			severity: input.severity,
 			defaultDurationDays: input.defaultDurationDays,
@@ -120,6 +122,7 @@ export class DisciplinePageState {
 			request: () => client.commands.configureDisciplinaryAction({
 				id,
 				name: entity.name,
+				shortName: entity.shortName,
 				kind: entity.kind,
 				severity: entity.severity ?? null,
 				defaultDurationDays: entity.defaultDurationDays ?? null,

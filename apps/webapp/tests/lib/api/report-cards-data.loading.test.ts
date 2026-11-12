@@ -4,6 +4,7 @@ import { CATALOG_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 import {
 	loadClassReportCardResultsData,
 	loadGradeScalesCatalogData,
+	loadStudentYearReportCardsData,
 } from '$lib/api/report-cards-data';
 import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
 
@@ -77,4 +78,14 @@ describe('report-card data loading', () => {
 		}));
 		expect(entityListRequests(requests, 'class-subjects')[0]?.body).toEqual(paged({ classGroupId }));
 	});
+});
+
+it('loads student-year results across placement classes and filters stale scope rows', async () => {
+ const row = { id: 'r', studentId: 'student', academicYearId: 'year', periodId: 'term', classGroupId: 'previous-class', status: 'published', sectionResults: [], gradeLevelId: 'level', reportConfigurationRevision: 1 };
+ const { client, requests } = createRecordingSchoolClient([listEnvelope([row, { ...row, id: 'annual', periodId: 'annual', classGroupId: 'current-class', aggregation: { source: 'report_cards', sourcePeriodIds: ['term'] } }, { ...row, id: 'other-student', studentId: 'other' }, { ...row, id: 'other-year', academicYearId: 'old-year' }]), [], []]);
+ const data = await loadStudentYearReportCardsData(client, 'student', 'year', ['term', 'annual']);
+ expect(data.results.map(result => result.id)).toEqual(['r', 'annual']);
+ expect(data.raw.map(result => result.id)).toEqual(['r', 'annual']);
+ expect(entityListRequests(requests, 'results')[0]?.body).toMatchObject({ studentId: 'student', periodId: { $in: ['term', 'annual'] } });
+ expect(entityListRequests(requests, 'class-subjects').map(request => (request.body as Record<string, unknown>).classGroupId)).toEqual(['previous-class', 'current-class']);
 });

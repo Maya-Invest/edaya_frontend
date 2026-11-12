@@ -2906,18 +2906,18 @@
     "action": "Modal deep-link ?modal=report-settings"
   },
   {
-    "id": "web.student-profile.school.legacy-enrollments",
+    "id": "web.student-profile.school.enrollments",
     "feature": "web.student-profile",
     "module": "École",
     "endpoint": "http://localhost:5173/school/students/[id]/enrollments",
-    "action": "Redirect — cible attendue"
+    "action": "Navigation directe — contenu visible"
   },
   {
-    "id": "web.student-profile.class.legacy-enrollments",
+    "id": "web.student-profile.class.enrollments",
     "feature": "web.student-profile",
     "module": "Classes",
     "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/enrollments",
-    "action": "Redirect — cible attendue"
+    "action": "Navigation directe — contenu visible"
   },
   {
     "id": "web.student-profile.school.status",

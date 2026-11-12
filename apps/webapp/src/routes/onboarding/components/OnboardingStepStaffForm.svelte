@@ -27,6 +27,11 @@
 		onboardingContext.persist();
 	}
 
+	function updateOwnerIdentifier(value: string) {
+		onboardingContext.draft.ownerIdentifier = value;
+		persistDraft();
+	}
+
 	function addInviteRow() {
 		onboardingContext.draft.staffInvites = addStaffInvite(onboardingContext.draft.staffInvites);
 		persistDraft();
@@ -62,6 +67,7 @@
 </script>
 
 <div class="space-y-6">
+	<Label class="block space-y-2"><span>{$t('identifier.owner')}</span><Input value={onboardingContext.draft.ownerIdentifier ?? ''} maxlength={20} {disabled} oninput={event => updateOwnerIdentifier(event.currentTarget.value)} /></Label>
 	<section class="space-y-3">
 		<p class="text-sm text-muted-foreground">{$t('onboarding.staff.hint')}</p>
 		<p class="text-xs text-muted-foreground">{$t('onboarding.staff.ownerEmailHint')}</p>
@@ -124,6 +130,10 @@
 								<Trash2 class="h-4 w-4" />
 							</Button>
 						</div>
+						<Label class="mt-3 block space-y-2"><span>{$t('profile.identifier')}</span><Input value={invite.identifier ?? ''} maxlength={20} {disabled} oninput={(event) => {
+							onboardingContext.draft.staffInvites = updateStaffInvite(onboardingContext.draft.staffInvites, invite.id, { identifier: event.currentTarget.value });
+							persistDraft();
+						}} /></Label>
 					</article>
 				{/each}
 			</div>

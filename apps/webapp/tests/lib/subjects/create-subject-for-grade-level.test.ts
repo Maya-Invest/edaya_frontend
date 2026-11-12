@@ -3,6 +3,7 @@ import {
 	createSubjectImportIdsForGradeLevel,
 } from '$lib/subjects/create-subject-for-grade-level';
 
+import { createRecordingSchoolClient } from '$tests/support/recording-school-client';
 import { describe, expect, it } from 'bun:test';
 
 describe('createSubjectForGradeLevel', () => {
@@ -16,15 +17,7 @@ describe('createSubjectForGradeLevel', () => {
 	});
 
 	it('saves the subject and mirrors in one command', async () => {
-		const calls: string[] = [];
-		const client = {
-			commands: {
-				configureSubject: async () => {
-					calls.push('configureSubject');
-				},
-
-			},
-		} as never;
+		const { client, requests } = createRecordingSchoolClient([{ id: 'subj-1' }]);
 
 		const { classSubjectIds } = await createSubjectForGradeLevel(client, {
 			schoolId: 'school-1',
@@ -33,11 +26,13 @@ describe('createSubjectForGradeLevel', () => {
 			subjectId: 'subj-1',
 			classSubjectIdsByClassGroupId: { 'class-6a': 'cs-1' },
 			name: 'Mathématiques',
+			isOptional: true,
 			categoryId: 'cat-scientifique',
 			color: 'mint',
 		});
 
-		expect(calls).toEqual(['configureSubject']);
+		expect(requests).toHaveLength(1);
+		expect(requests[0]).toMatchObject({ path: '/core/commands/configure-subject', body: { isOptional: true } });
 		expect(classSubjectIds).toEqual(['cs-1']);
 	});
 });

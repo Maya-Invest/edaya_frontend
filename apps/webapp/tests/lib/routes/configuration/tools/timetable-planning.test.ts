@@ -44,7 +44,7 @@ describe('tools timetable planning', () => {
 
 	test('groups searchable class names by grade without changing the input or selection', () => {
 		const classes = [classNode('c', 'C', 'g2'), classNode('b', 'B', 'g1'), classNode('a', 'A', 'g1')];
-		const grades = [{ id: 'g1', label: 'Grade 1', order: 1 }, { id: 'g2', label: 'Grade 2', order: 2 }] as GradeLevel[];
+		const grades = [{ id: 'g1', shortName: 'Grade 1', order: 1 }, { id: 'g2', shortName: 'Grade 2', order: 2 }] as GradeLevel[];
 		expect(timetableClassGroups(classes, grades, '').map(group => group.classes.map(row => row.id))).toEqual([['a', 'b'], ['c']]);
 		expect(timetableClassGroups(classes, grades, 'grade 2')[0]?.classes.map(row => row.id)).toEqual(['c']);
 		expect(timetableClassGroups(classes, grades, ' B ')[0]?.classes.map(row => row.id)).toEqual(['b']);

@@ -8,6 +8,7 @@ import type {
 	ReportCardSectionResult,
 	ReportCardSubjectMark,
 } from '$lib/types/report-cards';
+import { loadStudentYearReportResults } from '$lib/api/annual-report-cards-data';
 import {
 	listAllEntityPages,
 	reportCardResultsForClassPeriod,
@@ -17,6 +18,7 @@ import { fetchClassSubjectsSources } from '$lib/api/subjects-data';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import { lang } from '$lib/i18n';
 import { catalogSubjectName } from '$lib/i18n/catalog-label';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
 
 type GradeScaleRaw = components['schemas']['GradeScale'];
@@ -45,7 +47,7 @@ export function subjectLabelForCatalogId(
 	if (!subject) {
 		return catalogSubjectId;
 	}
-	return catalogSubjectName(subject.name, get(lang), subject.code);
+	return catalogSubjectName(subject.name, get(lang), subject.shortName);
 }
 
 function formatDate(value: unknown): string | undefined {
@@ -89,6 +91,7 @@ export function mapGradeScales(scalesRaw: (Omit<GradeScaleRaw, 'revision' | 'rou
 		id: scale.id,
 		schoolId: scale.schoolId,
 		name: scale.name,
+		shortName: scale.shortName,
 		minScore: scale.minScore,
 		maxScore: scale.maxScore,
 		isDefault: scale.isDefault,
@@ -98,6 +101,8 @@ export function mapGradeScales(scalesRaw: (Omit<GradeScaleRaw, 'revision' | 'rou
 }
 
 interface ApiSectionResult {
+	rank?: number;
+	participantCount?: number;
 	subjectId?: string;
 	moduleId?: string;
 	coefficient?: number;
@@ -136,11 +141,15 @@ export function mapSubjectMark(
 	const capturedLabel = subjectResult.name && subjectResult.name !== catalogSubjectId && subjectResult.name !== classSubjectId ? subjectResult.name : undefined;
 
 	return {
+		sectionId: subjectResult.sectionId ?? '',
+		rank: subjectResult.rank ?? undefined,
+		participantCount: subjectResult.participantCount ?? undefined,
+		comment: subjectResult.comment ?? undefined,
 		subjectId: classSubjectId,
 		subjectName: capturedLabel
 			? catalogSubjectName(capturedLabel, get(lang))
 			: subject
-				? catalogSubjectName(subject.name, get(lang), subject.code)
+				? catalogSubjectName(subject.name, get(lang), subject.shortName)
 				: subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
 		average: subjectResult.average,
 		grading: subjectResult.grading,
@@ -161,9 +170,12 @@ function mapSectionResults(
 ): ReportCardSectionResult[] {
 	return sections.map(section => ({
 		sectionId: section.sectionId ?? '',
+		rank: section.rank ?? undefined,
+		participantCount: section.participantCount ?? undefined,
+		comment: section.comment ?? undefined,
 		name: section.name ?? '',
 		sectionKind: section.sectionKind ?? 'subject',
-		weight: section.weight ?? 0,
+		weight: section.weight,
 		weightingMode: section.weightingMode,
 		explicitWeight: section.explicitWeight,
 		sectionAverage: section.average,
@@ -248,4 +260,26 @@ export async function loadClassReportCardResultsData(
 		fetchClassSubjectsSources(client, classGroupId),
 	]);
 	return mapReportCardResults(resultsRaw ?? [], subjectsSources);
+}
+
+/** Student/year results may refer to an earlier class after a transfer. */
+export async function loadStudentYearReportCardsData(client: SchoolClient, studentId: string, yearId: string, periodIds: string[]) {
+	const raw = (await loadStudentYearReportResults(client, studentId, periodIds))
+		.filter(result => result.studentId === studentId && result.academicYearId === yearId && periodIds.includes(result.periodId));
+	const classIds = [...new Set(raw.map(result => result.classGroupId))];
+	const sources = await Promise.all(classIds.map(async (id): Promise<ClassSubjectsSources> => {
+		try {
+			return await fetchClassSubjectsSources(client, id);
+		}
+		catch (error) {
+			// Captured results remain readable without access to the current curriculum.
+			if (!(error instanceof ApiError) || error.status !== 403)
+				throw error;
+			return { classSubjectsRaw: [], subjectsRaw: [], subjectMattersRaw: [], staffAssignmentsRaw: [], staffMembersRaw: [], teachersRaw: [], teacherAssignmentsRaw: [] };
+		}
+	}));
+	return {
+		raw,
+		results: classIds.flatMap((id, index) => mapReportCardResults(raw.filter(result => result.classGroupId === id), sources[index])),
+	};
 }

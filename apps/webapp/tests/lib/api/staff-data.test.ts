@@ -60,9 +60,9 @@ const classSubjectsRaw = [
 ];
 
 const subjectsRaw = [
-	subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', coefficient: 3 }),
-	subject({ id: 'subj-sci', name: 'Natural Sciences', code: 'SCI', coefficient: 2, category: 'Scientifique', color: 'sky' }),
-	subject({ id: 'subj-hist', name: 'History & Geography', code: 'HIST', coefficient: 2, category: 'Sciences humaines', color: 'warm' }),
+	subject({ id: 'subj-math', name: 'Mathematics', shortName: 'MATH', coefficient: 3 }),
+	subject({ id: 'subj-sci', name: 'Natural Sciences', shortName: 'SCI', coefficient: 2, category: 'Scientifique', color: 'sky' }),
+	subject({ id: 'subj-hist', name: 'History & Geography', shortName: 'HIST', coefficient: 2, category: 'Sciences humaines', color: 'warm' }),
 ];
 
 describe('staff role mapping', () => {

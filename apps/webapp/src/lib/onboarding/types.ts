@@ -15,6 +15,7 @@ export interface OnboardingPeriodDraft {
 }
 
 export interface OnboardingSchoolDraft {
+	shortName?: string;
 	name: string;
 	city: string;
 	country: string;
@@ -49,12 +50,14 @@ export type OnboardingStaffInviteRole
 		| 'accountant';
 
 export interface OnboardingStaffInviteDraft {
+	identifier?: string;
 	id: string;
 	email: string;
 	role: OnboardingStaffInviteRole | '';
 }
 
 export interface OnboardingDraft {
+	ownerIdentifier?: string;
 	version: typeof ONBOARDING_DRAFT_VERSION;
 	updatedAt: string;
 	maxReachedStep: OnboardingStep;

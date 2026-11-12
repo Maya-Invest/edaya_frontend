@@ -11,6 +11,7 @@
 	import { t } from '$lib/i18n';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { personFieldDraft } from '$lib/people-profile-fields';
+	import IdentifierInput from '$lib/smart-components/human-identifier/IdentifierInput.svelte';
 	import { get } from 'svelte/store';
 	import { getGuardiansPageState } from '../guardians-page.svelte';
 
@@ -22,7 +23,6 @@
 	let additional = $state<Record<string, string>>(personFieldDraft('guardian'));
 	let firstName = $state('');
 	let lastName = $state('');
-	let code = $state('');
 	let contacts = $state(guardianContactDraft());
 	let hasAccess = $state(true);
 	let sendAccountInvitation = $state(true);
@@ -30,7 +30,6 @@
 		additional = personFieldDraft('guardian');
 		firstName = '';
 		lastName = '';
-		code = '';
 		contacts = guardianContactDraft();
 		hasAccess = true;
 		sendAccountInvitation = true;
@@ -46,7 +45,6 @@
 			profile: additional,
 			firstName,
 			lastName,
-			code,
 			...guardianContactPayload(contacts),
 			hasAccess,
 			sendAccountInvitation,
@@ -71,6 +69,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	<IdentifierInput bind:profile={additional} />
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -85,12 +84,6 @@
 			<Input bind:value={lastName} autocomplete="family-name" aria-label={$t('common.lastName')} />
 		</div>
 	</div>
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('common.code')}
-		</Label>
-		<Input bind:value={code} aria-label={$t('common.code')} />
-	</div>
 	<GuardianContactFields bind:contacts />
 	<label class="flex items-center gap-2"><Checkbox bind:checked={hasAccess} />{$t('profile.portalAccess')}</label>
 
@@ -103,5 +96,5 @@
 			<p class="text-xs text-muted-foreground">{$t('invitation.createModal.sendInviteHint')}</p>
 		</div>
 	</div>
-	<details class="space-y-3"><summary class="cursor-pointer text-sm font-medium">{$t('profile.additionalFields')}</summary><PersonProfileFields kind="guardian" bind:values={additional} exclude={['code']} /></details>
+	<details class="space-y-3"><summary class="cursor-pointer text-sm font-medium">{$t('profile.additionalFields')}</summary><PersonProfileFields kind="guardian" bind:values={additional} exclude={['identifier']} /></details>
 </FormModal>

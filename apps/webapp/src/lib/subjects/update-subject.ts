@@ -10,11 +10,10 @@ export interface UpdateSubjectInput extends Partial<SubjectWorkload> {
 	subjectId?: string;
 	name: string;
 	disciplineId?: string | null;
-	code?: string | null;
 	coefficient?: number | null;
 	reportModuleId?: string | null;
 	expectedReportConfigurationRevision?: number;
-	shortName?: string | null;
+	shortName?: string;
 	isOptional?: boolean;
 	expectedParticipationRevisions?: Record<string, number>;
 
@@ -24,7 +23,7 @@ export interface UpdateSubjectInput extends Partial<SubjectWorkload> {
 
 export async function updateSubject(client: SchoolClient, input: UpdateSubjectInput) {
 	const subjectId = input.subjectId ?? (await client.entities.classSubjects.get(input.classSubjectId)).subjectId;
-	return client.commands.updateSubject({ subjectId, name: input.name, coefficient: input.coefficient, code: input.code, reportModuleId: input.reportModuleId, expectedReportConfigurationRevision: input.expectedReportConfigurationRevision, disciplineId: input.disciplineId, shortName: input.shortName, isOptional: input.isOptional, expectedParticipationRevisions: input.expectedParticipationRevisions, categoryId: input.categoryId, color: input.color, periodsPerWeek: input.periodsPerWeek, minPeriodSpan: input.minPeriodSpan, maxPeriodSpan: input.maxPeriodSpan });
+	return client.commands.updateSubject({ subjectId, name: input.name, coefficient: input.coefficient, reportModuleId: input.reportModuleId, expectedReportConfigurationRevision: input.expectedReportConfigurationRevision, disciplineId: input.disciplineId, shortName: input.shortName, isOptional: input.isOptional, expectedParticipationRevisions: input.expectedParticipationRevisions, categoryId: input.categoryId, color: input.color, periodsPerWeek: input.periodsPerWeek, minPeriodSpan: input.minPeriodSpan, maxPeriodSpan: input.maxPeriodSpan });
 }
 
 export async function loadSubjectParticipationRevisions(client: SchoolClient, subjectId: string) {

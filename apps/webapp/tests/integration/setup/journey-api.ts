@@ -71,7 +71,9 @@ export async function apiFetch(
 ): Promise<JourneyApiResponse> {
 	const appBase = appOrigin.replace(/\/+$/, '');
 	const apiBase = apiUrl.replace(/\/+$/, '');
-	const schoolId = init.schoolId ?? await readProvisionedFixtureSchoolId();
+	const schoolId = init.schoolId
+		?? await page.getByTestId('app-shell').getAttribute('data-school-id', { timeout: 1000 }).catch(() => null)
+		?? await readProvisionedFixtureSchoolId();
 	const headers: Record<string, string> = {
 		'content-type': 'application/json',
 		'accept': 'application/json',
@@ -154,6 +156,10 @@ export async function resolveSchoolId(
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
 	options?: { classGroupId?: string | null },
 ): Promise<string | null> {
+	const selected = await page.getByTestId('app-shell').getAttribute('data-school-id', { timeout: 1000 }).catch(() => null);
+	if (selected) {
+		return selected;
+	}
 	const fromFixture = await readProvisionedFixtureSchoolId();
 	if (fromFixture) {
 		return fromFixture;
@@ -1577,7 +1583,7 @@ export async function ensureGeneratedTeacherTimetableSession(
 				id: `pd-e2e-${academicYearId.slice(0, 8)}-${day}`,
 				schoolId,
 				academicYearId,
-				label: `Période ${index + 1}`,
+				name: `Période ${index + 1}`,
 				dayOfWeek: day,
 				order: index + 1,
 				startTime: '08:00',

@@ -1,6 +1,8 @@
+import type { StaffSchoolMembership } from '$lib/auth/types';
 import { invalidateAll } from '$app/navigation';
 import { academicContext } from '$lib/academic/context.svelte';
-import { configureBrowserSchoolClient } from '$lib/api/school-client';
+import { configureBrowserSchoolClient, createMembershipSchoolClient } from '$lib/api/school-client';
+import { fetchSchoolYears } from '$lib/api/shell-data';
 import { bootstrapSession, resetBootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { persistSelectedSchoolId } from '$lib/auth/school-membership';
@@ -9,7 +11,11 @@ import { appGoto, appPath } from '$lib/navigation/app-navigation';
 import { canAccessPath } from '$lib/navigation/nav-permissions';
 import { invalidatePageQueryCache } from '$lib/queries/page-query-cache';
 
-export async function switchActiveSchool(schoolId: string): Promise<void> {
+export function previewSchoolYears(membership: StaffSchoolMembership) {
+	return fetchSchoolYears(createMembershipSchoolClient(membership), membership.schoolId);
+}
+
+export async function switchActiveSchool(schoolId: string, yearId?: string): Promise<void> {
 	if (!schoolId || authSession.schoolId === schoolId) {
 		return;
 	}
@@ -29,8 +35,16 @@ export async function switchActiveSchool(schoolId: string): Promise<void> {
 	configureBrowserSchoolClient({
 		getYearId: () => (academicContext.shellReady ? academicContext.yearId : undefined),
 	});
-	await bootstrapSession({ silent: true });
+	const { session } = await bootstrapSession();
+	if (!session)
+		return;
 	await bootstrapAppShell();
+	if (authSession.schoolId !== schoolId)
+		return;
+	if (yearId && academicContext.years.some(year => year.schoolId === schoolId && year.id === yearId))
+		academicContext.setYear(yearId);
+	else if (yearId !== undefined && academicContext.years.length === 0)
+		academicContext.setYear('');
 	await refreshRouteForActiveSchool();
 }
 

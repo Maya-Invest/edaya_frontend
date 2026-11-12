@@ -4,7 +4,7 @@ export const scale = { id: 'points', schoolId: 'school', name: 'Detailed point s
   { id: 'b', letter: 'B', interpretation: 'Good', minScore: 2, maxScore: 3.5, gpaValue: 3 },
   { id: 'a', letter: 'A', interpretation: 'Excellent', minScore: 3.5, maxScore: 4, gpaValue: 4 },
 ] };
-export const level = { id: 'level', schoolId: 'school', name: 'International bilingual programme', label: 'Level', cycle: '', order: 1, gradingPolicies: [{ academicYearId: 'year', revision: 1, mode: 'numeric-first' as const, aggregateLabel: 'Moyenne générale', scale, numericEquivalents: {}, status: 'completed' as const }] };
+export const level = { id: 'level', schoolId: 'school', name: 'International bilingual programme', shortName: 'Level', cycle: '', order: 1, gradingPolicies: [{ academicYearId: 'year', revision: 1, mode: 'numeric-first' as const, aggregateLabel: 'Moyenne générale', scale, numericEquivalents: {}, status: 'completed' as const }] };
 export const evidence = $state({ requests: [] as any[], succeed: true, failGrading: false, savedLevel: null as typeof level | null });
 const record = async (input: unknown) => { evidence.requests.push(input); return evidence.succeed; };
 const scaleState = $state({ scales: [scale, { ...scale, id: 'empty', name: 'New empty scale', revision: 0, ranges: [] }], filters: { values: { q: '' }, ready: true, scheduleSync() {} } });

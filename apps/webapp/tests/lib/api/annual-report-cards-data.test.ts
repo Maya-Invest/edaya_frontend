@@ -1,6 +1,6 @@
 import type { AnnualReportResult } from '$lib/api/annual-report-cards-data';
 import type { AcademicPeriod } from '$lib/types/school';
-import { annualReportReadiness, loadStudentYearReportResults } from '$lib/api/annual-report-cards-data';
+import { annualReportPublicationReady, annualReportReadiness, loadStudentYearReportResults } from '$lib/api/annual-report-cards-data';
 import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
 import { describe, expect, test } from 'bun:test';
 
@@ -25,4 +25,13 @@ describe('annual report-card sources', () => {
 		expect(annualReportReadiness(periods, [report('annual')], ['annual'], 'annual')[0]?.ready).toBe(false);
 		expect(annualReportReadiness(periods.map(row => ({ ...row, status: 'draft' })), [report('s1')], ['s1'], 'annual')[0]?.ready).toBe(false);
 	});
+});
+
+test('annual export retains the preparation workflow source-version and publication guards', () => {
+ const source = report('s1');
+ const annual = report('annual', { aggregation: { source: 'report_cards', sourcePeriodIds: ['s1'], sourceReportVersions: [{ periodId: 's1', resultId: source.id, version: source.version, sourceVersion: 'captured' }] } });
+ expect(annualReportPublicationReady(periods, [source, annual], annual)).toBe(true);
+ for (const patch of [{ status: 'draft' as const }, { version: 2 }, { pendingCorrectionIds: ['correction'] }, { calculationStale: true }])
+  expect(annualReportPublicationReady(periods, [{ ...source, ...patch }, annual], annual)).toBe(false);
+ expect(annualReportPublicationReady(periods, [source, annual], { ...annual, pendingAssessmentIds: ['pending'] })).toBe(false);
 });

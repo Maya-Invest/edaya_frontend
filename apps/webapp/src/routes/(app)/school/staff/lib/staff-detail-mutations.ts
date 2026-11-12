@@ -16,6 +16,7 @@ import {
 import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { humanCreationInput } from '$lib/people-profile-fields';
 import { runStaffRouteMutation } from './staff-route-mutation';
 
 type StaffPermissionAssignmentConfigCommand = components['schemas']['StaffPermissionAssignmentConfigCommand'];
@@ -47,8 +48,9 @@ function toStaffPermissionConfigCommand(
 
 function buildOptimisticStaff(input: {
 	id: string;
-	code?: string;
+	identifier?: string;
 	firstName: string;
+	profile?: Record<string, string>;
 	lastName: string;
 	email?: string;
 	phone?: string;
@@ -56,7 +58,7 @@ function buildOptimisticStaff(input: {
 }): StaffMember {
 	const email = input.email?.trim() ?? '';
 	return {
-		code: input.code?.trim() || null,
+		identifier: input.identifier?.trim() || null,
 		id: input.id,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
@@ -77,8 +79,9 @@ export async function createStaffOnPage(
 	state: StaffPageState,
 	input: {
 		firstName: string;
+		profile?: Record<string, string>;
 		lastName: string;
-		code?: string;
+		identifier?: string;
 		email?: string;
 		phone?: string;
 		profileRole: StaffProfileRole;
@@ -91,16 +94,17 @@ export async function createStaffOnPage(
 ): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const email = input.email?.trim() ?? '';
-	const code = input.code?.trim() || undefined;
-	const id = crypto.randomUUID();
+	const identifier = input.profile?.identifier?.trim() || input.identifier?.trim() || undefined;
+	const creation = humanCreationInput(input.profile);
+	const id = creation.id;
 	const optimistic = buildOptimisticStaff({ id, ...input });
 
 	const payload: components['schemas']['RegisterStaffMemberCommand'] & StaffMemberProfileRolePatch = {
-		id,
+		...creation,
 		schoolId: schoolId(),
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
-		...(code ? { code } : {}),
+		...(identifier ? { identifier } : {}),
 		email: email || null,
 		...(input.phone !== undefined ? { phone: input.phone.trim() || null } : {}),
 		accountKind: 'human',
@@ -108,7 +112,6 @@ export async function createStaffOnPage(
 		serviceElevated: false,
 		profileRole: input.profileRole,
 		sendAccountInvitation: input.sendAccountInvitation ?? true,
-		createdAt: new Date().toISOString(),
 	};
 
 	const result = await runStaffRouteMutation({
@@ -159,7 +162,7 @@ export async function updateStaffProfileOnPage(
 
 	const payload: components['schemas']['UpdateStaffMemberProfileCommand'] & StaffMemberProfileRolePatch = {
 		staffId: input.staffId,
-		...(input.profile && 'code' in input.profile ? { code: input.profile.code?.trim() || null } : {}),
+		...(input.profile && 'identifier' in input.profile ? { identifier: input.profile.identifier?.trim() || undefined } : {}),
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
 		email: email || null,
@@ -174,7 +177,7 @@ export async function updateStaffProfileOnPage(
 			state.patchStaff(input.staffId, {
 				firstName: input.firstName.trim(),
 				lastName: input.lastName.trim(),
-				...(input.profile && 'code' in input.profile ? { code: input.profile.code?.trim() || null } : {}),
+				...(input.profile && 'identifier' in input.profile ? { identifier: input.profile.identifier?.trim() || undefined } : {}),
 				name: nextName,
 				initials: staffInitials(input.firstName, input.lastName),
 				email,

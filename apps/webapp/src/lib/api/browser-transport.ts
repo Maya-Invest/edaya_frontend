@@ -1,3 +1,4 @@
+import type { StaffSchoolMembership } from '$lib/auth/types';
 import type { Transport } from '@maya-invest/edaya-api-client';
 import { PUBLIC_API_URL } from '$env/static/public';
 import { bearerFetch } from '$lib/auth/bearer-fetch';
@@ -6,34 +7,31 @@ import { lang } from '$lib/i18n';
 import { get } from 'svelte/store';
 import { parseApiResponse, resolveApiUrl } from './http';
 
-function applyInteractiveActorHeaders(headers: Headers) {
-	if (!authSession.sessionKind) {
-		return;
-	}
-	headers.set('X-Actor-Kind', authSession.sessionKind);
-	if (authSession.userId) {
-		headers.set('X-Actor-Id', authSession.userId);
-	}
-	if (authSession.schoolId) {
-		headers.set('X-School-Id', authSession.schoolId);
-	}
+export function schoolRequestHeaders(yearId?: string, membership?: StaffSchoolMembership): Headers {
+	const headers = new Headers();
+	if (yearId)
+		headers.set('X-Academic-Year-Id', yearId);
+	const kind = membership?.kind ?? authSession.sessionKind;
+	if (!kind)
+		return headers;
+	headers.set('X-Actor-Kind', kind);
+	const actorId = membership?.actorId ?? authSession.userId;
+	const schoolId = membership?.schoolId ?? authSession.schoolId;
+	if (actorId)
+		headers.set('X-Actor-Id', actorId);
+	if (schoolId)
+		headers.set('X-School-Id', schoolId);
+	return headers;
 }
 
-export function createBrowserTransport(getYearId: () => string | undefined): Transport {
+export function createBrowserTransport(getYearId: () => string | undefined, membership?: StaffSchoolMembership): Transport {
 	return {
 		async request<T>(method: string, path: string, options?: { body?: unknown }): Promise<T> {
-			const headers = new Headers({
-				Accept: 'application/json',
-			});
-			applyInteractiveActorHeaders(headers);
+			const headers = schoolRequestHeaders(getYearId(), membership);
+			headers.set('Accept', 'application/json');
 			headers.set('Accept-Language', get(lang) === 'en' ? 'en-US' : 'fr-FR');
 			if (options?.body !== undefined) {
 				headers.set('Content-Type', 'application/json');
-			}
-
-			const yearId = getYearId();
-			if (yearId) {
-				headers.set('X-Academic-Year-Id', yearId);
 			}
 
 			const base = PUBLIC_API_URL;

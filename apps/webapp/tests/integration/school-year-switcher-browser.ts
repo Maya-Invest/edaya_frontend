@@ -23,26 +23,36 @@ async function main() {
   page.on('console', message => { if (message.type() === 'error') console.error(message.text()); });
   page.on('response', response => { if (response.status() >= 400) { resourceErrors.push(new URL(response.url()).pathname); console.error('Failed fixture resource', response.status(), response.url()); } });
   const trigger = page.getByTestId('academic-year-trigger');
+  const yearValue = page.getByTestId('academic-year-value');
   const dialog = page.getByTestId('academic-year-dialog');
   const choice = page.getByTestId('academic-year-choice');
   const apply = page.getByTestId('academic-year-apply');
   const guard = page.getByTestId('confirm-modal');
   const scope = async () => JSON.parse(await page.getByTestId('scope').innerText()) as { year: string; period: string; school: string; generation: number; cache: boolean };
   const external = (method: string, value?: string | boolean) => page.evaluate(({method, value}) => (window as any).yearFixture[method](value), {method, value});
+  async function assertHeaderAlignment() {
+    await page.waitForFunction(() => {
+      const sidebar = document.querySelector('[data-testid=sidebar-header]')!.getBoundingClientRect();
+      const app = document.querySelector('[data-testid=app-header]')!.getBoundingClientRect();
+      return Math.abs(sidebar.bottom - app.bottom) < 1;
+    }, undefined, { timeout: 3000 });
+  }
   async function open() { await trigger.click(); await dialog.waitFor(); }
   try {
     await page.goto(server.url);
     await trigger.waitFor();
     await page.evaluate(() => document.fonts.ready);
-    assert.equal(await trigger.innerText(), '2026–2027');
-    assert.equal(await page.locator('#app-sidebar').getByTestId('academic-year-label').innerText(), 'School year');
+    assert.equal(await yearValue.innerText(), '2026–2027');
+    assert.equal(await trigger.locator('img').getAttribute('width'), '32');
+    assert.equal(await page.getByTestId('sidebar-school-name').innerText(), 'Oak School');
+    assert((await page.getByTestId('sidebar-header').boundingBox())!.height <= 90, 'Expanded identity stays compact');
     assert.equal(await page.locator('#app-sidebar').getByTestId('school-selector').count(), 0);
-    assert.equal(await page.getByTestId('header-school').innerText(), 'Oak School');
+    assert.equal(await page.getByTestId('header-school').count(), 0);
     assert.equal(await trigger.getAttribute('aria-haspopup'), 'dialog');
     const triggerStyle = await trigger.evaluate(element => ({ border: getComputedStyle(element).borderWidth, padding: getComputedStyle(element).padding, height: element.getBoundingClientRect().height }));
     assert.equal(triggerStyle.border, '0px');
-    assert.equal(triggerStyle.padding, '0px');
     assert(triggerStyle.height >= 44);
+    await page.getByTestId('sidebar-header').screenshot({ path: resolve(output, 'sidebar-header-compact-en.png') });
     await trigger.focus();
     await page.keyboard.press('Enter');
     await dialog.waitFor();
@@ -140,29 +150,73 @@ async function main() {
     await trigger.waitFor();
     await external('loading', true);
     assert(await trigger.isDisabled());
-    assert((await trigger.innerText()).includes('Loading'));
+    assert((await yearValue.innerText()).includes('Loading'));
     await external('loading', false);
     await external('missing');
-    assert.equal(await trigger.innerText(), 'Select academic year', 'No first-year fallback may impersonate a missing selection');
+    assert.equal(await yearValue.innerText(), 'Select academic year', 'No first-year fallback may impersonate a missing selection');
     await external('empty');
     assert(await trigger.isDisabled());
-    assert.equal(await trigger.innerText(), 'No school year available');
+    assert.equal(await yearValue.innerText(), 'No school year available');
     await external('school', 'school');
 
     await external('multipleSchools');
-    await page.getByTestId('school-selector-menu').click();
-    await page.getByRole('option', { name: 'Other school', exact: true }).click();
-    assert.equal((await scope()).school, 'other', 'Relocated school selector retains the existing switch workflow');
-    assert((await page.getByTestId('header-school').innerText()).includes('Other school'));
-    await page.getByTestId('school-selector-menu').click();
-    await page.getByRole('option', { name: 'Oak School', exact: true }).click();
+    const schoolChoice = page.getByTestId('workspace-school-choice');
+    await open();
+    await external('previewMode', 'slow');
+    await chooseOption(schoolChoice, 'other');
+    assert(await apply.isDisabled());
+    await chooseOption(schoolChoice, 'school');
+    await external('releasePreview');
+    assert.equal(await selectOptions(choice).count(), 4, 'Late school response cannot replace current school years');
+    await external('previewMode', 'error');
+    await chooseOption(schoolChoice, 'other');
+    await dialog.getByRole('alert').waitFor();
+    assert(await apply.isDisabled());
+    await external('previewMode', 'normal');
+    await dialog.getByRole('button', { name: /retry|try again/i }).click();
+    await chooseOption(choice, 'other-draft');
     assert.equal((await scope()).school, 'school');
+    await page.keyboard.press('Escape');
+    assert.equal((await scope()).school, 'school');
+    await page.getByLabel('Fixture draft').fill('Unsaved school changes');
+    await open();
+    await chooseOption(schoolChoice, 'other');
+    await chooseOption(choice, 'other-draft');
+    await apply.click();
+    await guard.getByRole('button', { name: 'Keep editing', exact: true }).click();
+    assert.equal((await scope()).school, 'school');
+    await apply.click();
+    await guard.getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    assert.equal((await scope()).year, 'other-draft');
+    await open();
+    await chooseOption(schoolChoice, 'school');
+    await apply.click();
+    await open();
+    await chooseOption(schoolChoice, 'other');
+    assert.equal(await selectOptions(choice).evaluateAll(nodes => (nodes as HTMLOptionElement[]).find(node => node.selected)?.value), 'other-draft');
+    await chooseOption(schoolChoice, 'school');
+    await external('previewMode', 'empty');
+    await chooseOption(schoolChoice, 'other');
+    await apply.click();
+    assert.equal((await scope()).school, 'other');
+    assert.equal((await scope()).year, '');
+    await open();
+    await chooseOption(schoolChoice, 'school');
+    await apply.click();
 
-    // The same trigger DOM node survives text/calendar changes, including hover pinning.
-    await page.getByTestId('toggle-sidebar').click();
+    const navigationToggle = page.getByTestId('sidebar-pin');
+    assert.equal(await page.getByTestId('sidebar-header').getByRole('button', { name: /pin menu/i }).count(), 0);
+    await navigationToggle.click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('edaya:sidebarOpen')), 'false');
+    await navigationToggle.click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('edaya:sidebarOpen')), 'true');
+    await navigationToggle.click();
     await page.mouse.move(1000, 100);
     await page.locator('#app-sidebar').evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
-    assert.equal(await trigger.innerText(), '');
+    await assertHeaderAlignment();
+    assert.equal(await trigger.locator('img').getAttribute('width'), '26');
+    assert.equal(await page.getByTestId('sidebar-header').getByRole('button').count(), 1);
     await trigger.focus();
     await page.keyboard.press('Enter');
     await dialog.waitFor();
@@ -171,11 +225,13 @@ async function main() {
     assert(await trigger.evaluate(element => element === document.activeElement));
     await page.mouse.move(20, 100);
     await page.waitForFunction(() => document.querySelector('#app-sidebar')!.getBoundingClientRect().width > 200);
+    await assertHeaderAlignment();
     await open();
     await page.mouse.move(1000, 400);
     assert((await page.locator('#app-sidebar').boundingBox())!.width > 200, 'Opening from hover pins expanded navigation');
     await page.keyboard.press('Escape');
     await dialog.waitFor({ state: 'hidden' });
+    assert.equal(await trigger.count(), 1);
     assert(await trigger.evaluate(element => element === document.activeElement));
 
     for (const language of ['en', 'fr']) for (const width of [360, 768, 1280]) for (const scale of [1, 2]) {
@@ -185,21 +241,19 @@ async function main() {
       await page.evaluate(scale => { document.documentElement.style.fontSize = `${16 * scale}px`; }, scale);
       await external('longHeaderNames');
       await page.evaluate(() => document.fonts.ready);
+      if (width >= 1024) await assertHeaderAlignment();
       const header = page.getByTestId('app-header');
       const alignment = await header.evaluate(element => {
         const language = element.querySelector('[data-testid=language-selector]')!.getBoundingClientRect().toJSON();
         const profile = element.querySelector('[data-testid=user-menu]')!.getBoundingClientRect().toJSON();
         const actions = element.querySelector('[data-testid=header-actions]')!.getBoundingClientRect().toJSON();
-        const school = element.querySelector('[data-testid=header-school]')!.getBoundingClientRect().toJSON();
-        const nav = element.querySelector('[data-testid=navigation-toggle]')!.getBoundingClientRect().toJSON();
         const box = element.getBoundingClientRect().toJSON();
-        return { language, profile, actions, school, nav, box, padding: Number.parseFloat(getComputedStyle(element).paddingRight), scroll: element.scrollWidth, client: element.clientWidth };
+        return { language, profile, actions, box, padding: Number.parseFloat(getComputedStyle(element).paddingRight), scroll: element.scrollWidth, client: element.clientWidth };
       });
       assert(Math.abs(alignment.language.y + alignment.language.height / 2 - alignment.profile.y - alignment.profile.height / 2) < 1, 'Language and profile stay on the same row');
       assert(Math.abs(alignment.language.right + 8 - alignment.profile.left) < 1, 'Language is grouped beside profile rather than centered');
       assert(Math.abs(alignment.profile.right - alignment.box.right + alignment.padding) < 1, 'Account/language group is pinned to header right');
       assert.equal(alignment.scroll, alignment.client, `${language}/${width}/${scale}: header has no horizontal overflow`);
-      assert(alignment.school.left < alignment.actions.left && alignment.school.right <= alignment.box.right, 'School name stays left and remains bounded');
       await page.screenshot({ path: resolve(output, `header-${language}-${width}-${scale}.png`) });
       await page.getByTestId('language-selector').click();
       const languageMenu = page.getByTestId('language-menu');
@@ -211,9 +265,58 @@ async function main() {
       assert(await page.getByTestId('language-selector').evaluate(element => element === document.activeElement), 'Language dismissal returns focus to its trigger');
       await page.getByTestId('language-selector').click();
       await page.getByTestId(`language-option-${language}`).click();
-      if (width < 1024) await page.getByTestId('navigation-toggle').click();
+      if (width < 1024) {
+        const navigation = page.getByTestId('mobile-navigation');
+        const toggle = page.getByTestId('navigation-toggle');
+        const reducedMotion = scale === 2;
+        await page.emulateMedia({ reducedMotion: reducedMotion ? 'reduce' : 'no-preference' });
+        await toggle.click();
+        await navigation.waitFor();
+        const layout = await navigation.evaluate(async sheet => {
+          const animation = getComputedStyle(sheet).animationName;
+          await Promise.all(sheet.getAnimations().map(animation => animation.finished));
+          const bounds = sheet.getBoundingClientRect();
+          const header = sheet.querySelector('[data-testid=sidebar-header]')!.getBoundingClientRect();
+          return { animation, left: bounds.left, top: header.top, headerWidth: header.width, width: bounds.width };
+        });
+        assert.equal(layout.animation, reducedMotion ? 'none' : 'mobile-sidebar-slide');
+        assert.equal(layout.left, 0);
+        assert.equal(layout.top, 0);
+        assert(layout.width - layout.headerWidth <= 1, 'School identity fills the sheet up to its edge border');
+        if (language === 'en' && width === 360 && scale === 1) {
+          await page.screenshot({ path: resolve(output, 'compact-navigation.png') });
+          assert.equal(await navigation.getByRole('button', { name: /pin menu/i }).count(), 0);
+          await navigation.getByRole('button', { name: 'Collapse menu' }).click();
+          await navigation.waitFor({ state: 'hidden' });
+          await toggle.click();
+          await page.mouse.click(width - 2, 200);
+          await navigation.waitFor({ state: 'hidden' });
+          await toggle.click();
+        }
+      }
       await trigger.waitFor();
+      assert(await page.getByTestId('sidebar-header').evaluate(element => element.scrollWidth <= element.clientWidth), 'Sidebar identity remains bounded');
       if (width === 1280 && scale === 1) await page.locator('#app-sidebar').screenshot({ path: resolve(output, `sidebar-${language}-1280.png`) });
+      const geometry = await page.getByTestId('sidebar-header').evaluate(header => {
+        const logo = header.querySelector('img')!.getBoundingClientRect();
+        const name = header.querySelector('[data-testid=sidebar-school-name]')!.getBoundingClientRect();
+        const year = header.querySelector('[data-testid=academic-year-value]')!.getBoundingClientRect();
+        const nav = document.querySelector('#app-sidebar nav')!;
+        const footer = document.querySelector('[data-testid=sidebar-footer]')!;
+        const footerTop = footer.getBoundingClientRect().top;
+        const spacer = document.createElement('div');
+        spacer.style.height = '150vh';
+        nav.appendChild(spacer);
+        nav.scrollTop = nav.scrollHeight;
+        const scrolled = nav.scrollTop > 0;
+        const after = footer.getBoundingClientRect().top;
+        spacer.remove();
+        return { top: name.top - logo.top, bottom: year.bottom - logo.bottom, footerTop, after, scrolled, end: footer.getBoundingClientRect().bottom };
+      });
+      if (scale === 1) assert(Math.abs(geometry.top) < 3 && Math.abs(geometry.bottom) < 3, JSON.stringify(geometry));
+      assert(geometry.scrolled);
+      assert.equal(geometry.after, geometry.footerTop);
+      assert.equal(geometry.end, 900);
       await external('longLabel');
       await open();
       const box = await dialog.boundingBox();

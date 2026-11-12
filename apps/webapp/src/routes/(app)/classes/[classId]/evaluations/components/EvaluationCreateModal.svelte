@@ -45,7 +45,7 @@
 	const classSubjects = $derived(evaluationsPage.subjectsFor(classId));
 	const selectedSubjectName = $derived.by(() => {
 		const subject = classSubjects.find(entry => entry.id === classSubjectId);
-		return subject ? catalogSubjectName(subject.name, $lang, subject.code) : '';
+		return subject ? catalogSubjectName(subject.name, $lang, subject.shortName) : '';
 	});
 	const kindLabel = $derived($t(`eval.kind.${kind}`));
 	const numericMax = $derived(Number.parseFloat(maxScore));
@@ -232,8 +232,8 @@
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
 					{#each classSubjects as subject (subject.id)}
-						<Select.Item data-testid={`assessment-subject-${subject.id}`} value={subject.id} label={catalogSubjectName(subject.name, $lang, subject.code)}>
-							{catalogSubjectName(subject.name, $lang, subject.code)}
+						<Select.Item data-testid={`assessment-subject-${subject.id}`} value={subject.id} label={catalogSubjectName(subject.name, $lang, subject.shortName)}>
+							{catalogSubjectName(subject.name, $lang, subject.shortName)}
 						</Select.Item>
 					{/each}
 				</Select.Content>

@@ -17,7 +17,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 	{ key: 'placement_statuses', icon: Layers, permission: 'ACADEMIC_CATALOG_MANAGE' },
 	{ key: 'guardian_relationships', icon: Users, permission: 'PARENT_MANAGE' },
 	{ key: 'class_offerings', icon: BookOpen, permission: 'ACADEMIC_PROGRAM_MANAGE' },
-].map(item => ({ ...item, key: item.key as ImportTypeKey, permission: item.permission as ImportTypeDefinition['permission'], labelKey: ['academic_disciplines', 'placement_statuses', 'guardian_relationships', 'class_offerings'].includes(item.key) ? `durableImport.types.${item.key}` : `import.types.${item.key}.label`, descriptionKey: 'durableImport.description', hintKey: 'durableImport.description', status: 'active', csvFilename: `${item.key}-v1.csv`, xlsxFilename: `${item.key}-v1.xlsx`, xlsxSheetName: item.key, columns: [], exampleRow: {} }));
+].map(item => ({ ...item, key: item.key as ImportTypeKey, permission: item.permission as ImportTypeDefinition['permission'], labelKey: ['academic_disciplines', 'placement_statuses', 'guardian_relationships', 'class_offerings'].includes(item.key) ? `durableImport.types.${item.key}` : `import.types.${item.key === 'teacher_assignments' ? 'teacherAssignments' : item.key}.label`, descriptionKey: 'durableImport.description', hintKey: 'durableImport.description', status: 'active', csvFilename: `${item.key}-v2.csv`, xlsxFilename: `${item.key}-v2.xlsx`, xlsxSheetName: item.key, columns: [], exampleRow: {} }));
 export const IMPORT_TYPE_BY_KEY = Object.fromEntries(IMPORT_TYPE_DEFINITIONS.map(item => [item.key, item])) as Record<ImportTypeKey, ImportTypeDefinition>;
 export function getImportTypeDefinition(key: ImportTypeKey) {
 	return IMPORT_TYPE_BY_KEY[key];

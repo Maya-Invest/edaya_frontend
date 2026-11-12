@@ -3,6 +3,7 @@ import type { components } from '@maya-invest/edaya-api-client/schema';
 export type ClassAttendanceMode = 'daily' | 'session';
 
 export interface ClassNode {
+	shortName?: string;
 	id: string;
 	schoolId: string;
 	academicYearId: string;
@@ -25,7 +26,7 @@ export interface Student {
 	firstName?: string | null;
 	lastName?: string | null;
 	sourceFullName?: string | null;
-	nationalMatricule?: string | null;
+	globalIdentifier?: string | null;
 	placeOfBirth?: string | null;
 	nationality?: string | null;
 	enrollmentDate?: string | null;
@@ -40,7 +41,7 @@ export interface Student {
 	/** Empty when the student has no linked account / invitation email. */
 	email: string;
 	birthdate: string;
-	matricule?: string | null;
+	identifier?: string | null;
 	gender?: string | null;
 	guardian: string;
 	/** Null when no attendance records exist (do not invent 100%). */
@@ -72,7 +73,6 @@ export interface Subject {
 	categoryId: string;
 	/** Catalog name. The six defaults are still translated with catalogCategory(). */
 	category: string;
-	code?: string | null;
 	shortName?: string | null;
 	coefficient?: number | null;
 	reportModuleId?: string | null;
@@ -206,7 +206,7 @@ export interface Guardian {
 	lastName?: string | null;
 	sourceFullName?: string | null;
 	occupation?: string | null;
-	code?: string | null;
+	identifier?: string | null;
 
 	id: string;
 	name: string;
@@ -237,7 +237,7 @@ export interface StaffMember {
 	phone?: string | null;
 	firstName?: string | null;
 	lastName?: string | null;
-	code?: string | null;
+	identifier?: string | null;
 
 	id: string;
 	name: string;
@@ -265,7 +265,7 @@ export interface Teacher {
 	photoUrl?: string | null;
 	email: string;
 	phone: string;
-	code?: string | null;
+	identifier?: string | null;
 	isActive: boolean;
 	subjectId?: string | null;
 }
@@ -411,6 +411,7 @@ export type StudentChargeStatus
 		| 'waived';
 
 export interface Fee {
+	shortName?: string;
 	academicYearId?: string;
 	description?: string;
 	billingTerms?: import('$lib/api/finance-types').OneTimeBillingTerms;
@@ -475,6 +476,7 @@ export type PeriodDefinitionDayOfWeek
 		| 'sunday';
 
 export interface PeriodDefinition {
+	shortName?: string;
 	id: string;
 	schoolId: string;
 	academicYearId: string;
@@ -495,12 +497,13 @@ export interface GradeLevel {
 	schoolId: string;
 	name: string;
 	/** Stem used to build class names (`6ème` → `6ème 1`). */
-	label: string;
+	shortName: string;
 	cycle: string;
 	order: number;
 }
 
 export interface AcademicYear {
+	shortName?: string;
 	id: string;
 	schoolId: string;
 	label: string;
@@ -510,6 +513,8 @@ export interface AcademicYear {
 }
 
 export interface AcademicPeriod {
+	shortName?: string;
+	type?: 'trimester' | 'semester' | 'other';
 	id: string;
 	schoolId: string;
 	academicYearId: string;
@@ -591,6 +596,7 @@ export interface ClassActivityEnrollment {
 }
 
 export interface Activity {
+	shortName?: string;
 	id: string;
 	name: string;
 	category: 'Sport' | 'Arts' | 'Science' | 'Language' | 'Wellbeing';

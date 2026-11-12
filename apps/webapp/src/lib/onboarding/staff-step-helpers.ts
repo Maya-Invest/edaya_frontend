@@ -23,7 +23,7 @@ export function removeStaffInvite(
 export function updateStaffInvite(
 	invites: OnboardingStaffInviteDraft[],
 	id: string,
-	patch: Partial<Pick<OnboardingStaffInviteDraft, 'email' | 'role'>>,
+	patch: Partial<Pick<OnboardingStaffInviteDraft, 'email' | 'role' | 'identifier'>>,
 ): OnboardingStaffInviteDraft[] {
 	return invites.map(invite =>
 		invite.id === id ? { ...invite, ...patch } : invite);
@@ -34,6 +34,7 @@ export function staffInvitesForSubmit(invites: OnboardingStaffInviteDraft[]) {
 		.filter(invite => isValidStaffInviteEmail(invite.email) && invite.role)
 		.map(invite => ({
 			email: invite.email.trim(),
+			...(invite.identifier?.trim() ? { identifier: invite.identifier.trim() } : {}),
 			role: invite.role as Exclude<typeof invite.role, ''>,
 		}));
 }

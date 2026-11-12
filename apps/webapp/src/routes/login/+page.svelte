@@ -22,6 +22,7 @@
 	import AuthSplitShell from '$lib/components/auth/AuthSplitShell.svelte';
 	import LoginPanelHost from '$lib/components/auth/login/LoginPanelHost.svelte';
 	import SignupPanel from '$lib/components/auth/signup/SignupPanel.svelte';
+	import AppLoading from '$lib/components/layout/AppLoading.svelte';
 	import { isDemoLoginEnabled } from '$lib/env/app-env';
 	import { t } from '$lib/i18n';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -44,6 +45,7 @@
 	let invalidVerificationToastShown = false;
 	let completingAutoSignIn = false;
 	let sessionAutoSignInChecked = false;
+	let checkingSavedSession = $state(true);
 
 	const showDemoLink = $derived(isDemoLoginEnabled());
 	let showSignup = $state(false);
@@ -83,15 +85,23 @@
 			const verified = isEmailVerifiedRedirect(url);
 			if (verified || !sessionAutoSignInChecked) {
 				sessionAutoSignInChecked = true;
-				if (verified || await getAuthenticatedAuthUser()) {
-					completingAutoSignIn = true;
-					const signedIn = await completeAuthSignIn(
-						verified ? $t('auth.emailVerifiedSignIn') : $t('auth.welcome'),
-					);
-					if (signedIn) {
-						return;
+				try {
+					if (verified || await getAuthenticatedAuthUser()) {
+						completingAutoSignIn = true;
+						const signedIn = await completeAuthSignIn(
+							verified ? $t('auth.emailVerifiedSignIn') : $t('auth.welcome'),
+						);
+						if (signedIn) {
+							return;
+						}
+						completingAutoSignIn = false;
 					}
+				}
+				catch {
 					completingAutoSignIn = false;
+				}
+				finally {
+					checkingSavedSession = false;
 				}
 			}
 		}
@@ -134,83 +144,87 @@
 	}
 </script>
 
-<AuthSplitShell
-	activePanel={urlState.panel}
-	showSignup={showSignupPanel}
-	onPanelChange={(panel) => {
-		navigateLoginState({ panel, stage: 'form' });
-	}}
->
-	{#snippet signup()}
-		{#if apiChecking}
-			<p role="status" class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-		{:else if showSignup}
-			<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
-			<SignupPanel
-				active={urlState.panel === 'signup'}
-				bind:email
-				{apiConnected}
-				onSwitchToSignIn={handleSwitchToSignIn}
-				stage={urlState.panel === 'signup' && urlState.stage === 'verification'
-					? 'verification'
-					: 'form'}
-				onStageChange={stage => navigateLoginState({ panel: 'signup', stage })}
-			/>
-		{/if}
-	{/snippet}
+{#if checkingSavedSession && isLoginAutoSignInRoute($page.url.pathname)}
+	<AppLoading />
+{:else}
+	<AuthSplitShell
+		activePanel={urlState.panel}
+		showSignup={showSignupPanel}
+		onPanelChange={(panel) => {
+			navigateLoginState({ panel, stage: 'form' });
+		}}
+	>
+		{#snippet signup()}
+			{#if apiChecking}
+				<p role="status" class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
+			{:else if showSignup}
+				<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
+				<SignupPanel
+					active={urlState.panel === 'signup'}
+					bind:email
+					{apiConnected}
+					onSwitchToSignIn={handleSwitchToSignIn}
+					stage={urlState.panel === 'signup' && urlState.stage === 'verification'
+						? 'verification'
+						: 'form'}
+					onStageChange={stage => navigateLoginState({ panel: 'signup', stage })}
+				/>
+			{/if}
+		{/snippet}
 
-	{#snippet signin()}
-		{#if showTeacherPortalGate}
-			<div
-				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
-				role="status"
-				data-testid={TEACHER_PORTAL_GATE_BANNER_TEST_ID}
-			>
-				{$t('auth.teacherPortalGateHint')}
-			</div>
-		{/if}
-		{#if showGuardianPortalGate}
-			<div
-				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
-				role="status"
-				data-testid={GUARDIAN_PORTAL_GATE_BANNER_TEST_ID}
-			>
-				{$t('auth.guardianPortalGateHint')}
-			</div>
-		{/if}
-		{#if showStudentPortalGate}
-			<div
-				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
-				role="status"
-				data-testid={STUDENT_PORTAL_GATE_BANNER_TEST_ID}
-			>
-				{$t('auth.studentPortalGateHint')}
-			</div>
-		{/if}
-		<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
-
-		<LoginPanelHost
-			active={urlState.panel === 'signin'}
-			bind:email
-			activeMethod={urlState.method}
-			{apiConnected}
-			onMethodChange={handleMethodChange}
-			stage={urlState.panel === 'signin' && urlState.stage === 'code' ? 'code' : 'form'}
-			onStageChange={stage => navigateLoginState({ panel: 'signin', stage })}
-		/>
-	{/snippet}
-
-	{#snippet footer()}
-		{#if showDemoLink}
-			<p class="text-muted-foreground">
-				{$t('auth.exploringQuestion')}
-				<a
-					href={resolve('/login/demo')}
-					class="font-medium text-primary hover:underline"
+		{#snippet signin()}
+			{#if showTeacherPortalGate}
+				<div
+					class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+					role="status"
+					data-testid={TEACHER_PORTAL_GATE_BANNER_TEST_ID}
 				>
-					{$t('auth.demoLoginLink')}
-				</a>
-			</p>
-		{/if}
-	{/snippet}
-</AuthSplitShell>
+					{$t('auth.teacherPortalGateHint')}
+				</div>
+			{/if}
+			{#if showGuardianPortalGate}
+				<div
+					class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+					role="status"
+					data-testid={GUARDIAN_PORTAL_GATE_BANNER_TEST_ID}
+				>
+					{$t('auth.guardianPortalGateHint')}
+				</div>
+			{/if}
+			{#if showStudentPortalGate}
+				<div
+					class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+					role="status"
+					data-testid={STUDENT_PORTAL_GATE_BANNER_TEST_ID}
+				>
+					{$t('auth.studentPortalGateHint')}
+				</div>
+			{/if}
+			<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
+
+			<LoginPanelHost
+				active={urlState.panel === 'signin'}
+				bind:email
+				activeMethod={urlState.method}
+				{apiConnected}
+				onMethodChange={handleMethodChange}
+				stage={urlState.panel === 'signin' && urlState.stage === 'code' ? 'code' : 'form'}
+				onStageChange={stage => navigateLoginState({ panel: 'signin', stage })}
+			/>
+		{/snippet}
+
+		{#snippet footer()}
+			{#if showDemoLink}
+				<p class="text-muted-foreground">
+					{$t('auth.exploringQuestion')}
+					<a
+						href={resolve('/login/demo')}
+						class="font-medium text-primary hover:underline"
+					>
+						{$t('auth.demoLoginLink')}
+					</a>
+				</p>
+			{/if}
+		{/snippet}
+	</AuthSplitShell>
+{/if}

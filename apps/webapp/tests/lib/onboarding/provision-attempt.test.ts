@@ -52,10 +52,11 @@ describe('provision attempt identity', () => {
 		expect(second.requestId).toBe(first.requestId);
 	});
 
-	it('requires reconciliation before replacing a changed attempt and retains the school identity', () => {
+	it('requires reconciliation before replacing a changed submitted attempt and retains the school identity', () => {
 		const draft = createEmptyDraft();
 		draft.school.name = 'School A';
 		const first = resolveProvisionAttempt('user-1', draft);
+		saveProvisionAttempt('user-1', { ...first, submitted: true });
 		draft.school.name = 'School B';
 		expect(() => resolveProvisionAttempt('user-1', draft)).toThrow('RECONCILIATION_REQUIRED');
  const second = resolveProvisionAttempt('user-1', draft, true);

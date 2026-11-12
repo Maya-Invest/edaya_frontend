@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SubjectMatterDrawerRow, saveSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
@@ -27,6 +28,7 @@
 
 	let busy = $state(false);
 	let name = $state('');
+	let shortName = $state('');
 	let description = $state('');
 	let sequenceOrder = $state('1');
 	let estimatedHours = $state('');
@@ -44,12 +46,14 @@
 	function resetForm() {
 		if (matter) {
 			name = matter.name;
+			shortName = matter?.shortName ?? matter?.name ?? '';
 			description = matter.description ?? '';
 			sequenceOrder = String(matter.sequenceOrder);
 			estimatedHours = matter.estimatedHours !== undefined ? String(matter.estimatedHours) : '';
 			return;
 		}
 		name = '';
+		shortName = '';
 		description = '';
 		sequenceOrder = String(defaultSequenceOrder);
 		estimatedHours = '';
@@ -76,6 +80,7 @@
 				classSubjectId,
 				classGroupId,
 				name: trimmedName,
+				shortName,
 				description: fieldText(description) || undefined,
 				sequenceOrder: Number(sequenceOrder),
 				estimatedHours: estimatedHoursText ? Number(estimatedHoursText) : undefined,
@@ -123,4 +128,5 @@
 			</label>
 		</div>
 	</div>
+	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
+	import type { DataImportState } from '../import-state.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import { IMPORT_TYPE_DEFINITIONS } from '$lib/import/catalog/import-types';
+	import ImportResolution from './ImportResolution.svelte';
 
-	const { detail }: { detail: components['schemas']['SchoolImportDetail'] } = $props();
+	const { detail, importState }: { detail: components['schemas']['SchoolImportDetail']; importState: DataImportState } = $props();
 	let pageIndex = $state(0);
 	let outcomeFilter = $state('');
 	const files = $derived([...new Map(detail.files.map(file => [file.fileId, file])).values()]);
@@ -32,7 +34,7 @@
 				<tr class="border-t align-top">
 					<td class="px-4 py-3"><span>{files.find(file => file.fileId === row.source.fileId)?.fileName} : {row.source.row}</span><p class="text-xs text-muted-foreground">{typeLabel(row.type)}</p></td>
 					<td class="px-4 py-3">{row.effectiveMode}</td>
-					<td class="max-w-sm p-3"><span>{$t(`durableImport.outcome.${row.outcome}`)}</span>{#each row.issues as issue, index (`${issue.code}:${index}`)}<p class="mt-1 break-words text-xs text-destructive">{issue.code}{issue.column ? ` (${issue.column})` : ''}{issue.candidates?.length ? `: ${issue.candidates.join(', ')}` : ''}</p>{/each}</td>
+					<td class="max-w-sm p-3"><span>{$t(`durableImport.outcome.${row.outcome}`)}</span>{#each row.issues as issue, index (`${issue.code}:${index}`)}<p class="mt-1 break-words text-xs text-destructive">{issue.code}{issue.column ? ` (${issue.column})` : ''}</p>{#if issue.replacementColumns?.length}<p class="mt-1 text-xs">{$t('durableImport.useColumns')} {issue.replacementColumns.join(' / ')}</p>{/if}{#if issue.column && ['IMPORT_TARGET_DECISION_REQUIRED', 'IMPORT_REFERENCE_AMBIGUOUS'].includes(issue.code) && detail.batch.state === 'validated'}<ImportResolution {importState} rowId={row.id} field={issue.column} revision={detail.batch.revision} />{/if}{/each}</td>
 					<td class="px-4 py-3"><details><summary class="cursor-pointer">{$t('durableImport.inspect')}</summary><p class="my-2 break-all text-xs">{$t('durableImport.target')}: {row.current ? row.targetId : $t('durableImport.newRecord')}</p>
 						<table class="ui-entry-table my-2 w-full text-xs"><thead><tr><th class="p-1">{$t('durableImport.field')}</th><th class="p-1">{$t('durableImport.current')}</th><th class="p-1">{$t('durableImport.resulting')}</th></tr></thead><tbody>{#each [...new Set([...Object.keys(row.current ?? {}), ...Object.keys(row.proposed ?? {})])] as key (key)}<tr class="border-t"><th class="p-1 font-normal">{key}</th><td class="max-w-56 break-words p-1">{display(row.current?.[key])}</td><td class="max-w-56 break-words p-1">{display(row.proposed?.[key])}</td></tr>{/each}</tbody></table>
 						<details><summary class="cursor-pointer">{$t('durableImport.imported')}</summary><dl>{#each Object.entries(row.raw) as [key, value] (key)}<dt class="mt-2 text-xs font-semibold">{key}</dt><dd class="max-w-80 break-words text-xs">{display(value)}</dd>{/each}</dl></details>

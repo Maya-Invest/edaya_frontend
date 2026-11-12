@@ -12,11 +12,11 @@ const sources = {
 		classSubject({ id: 'cs-6a-eps', classGroupId: '6a', subjectId: 'subj-eps' }),
 	],
 	subjectsRaw: [
-		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', coefficient: 3 }),
-		subject({ id: 'subj-fr', name: 'French Literature', code: 'FR', coefficient: 2, category: 'Littéraire', color: 'warm' }),
-		subject({ id: 'subj-hist', name: 'History & Geography', code: 'HIST', coefficient: 2, category: 'Sciences humaines', color: 'sky' }),
-		subject({ id: 'subj-en', name: 'English', code: 'EN', coefficient: 2, category: 'Langues', color: 'sky' }),
-		subject({ id: 'subj-eps', name: 'Physical Education', code: 'EPS', coefficient: 1, category: 'Sport', color: 'mint' }),
+		subject({ id: 'subj-math', name: 'Mathematics', shortName: 'MATH', coefficient: 3 }),
+		subject({ id: 'subj-fr', name: 'French Literature', shortName: 'FR', coefficient: 2, category: 'Littéraire', color: 'warm' }),
+		subject({ id: 'subj-hist', name: 'History & Geography', shortName: 'HIST', coefficient: 2, category: 'Sciences humaines', color: 'sky' }),
+		subject({ id: 'subj-en', name: 'English', shortName: 'EN', coefficient: 2, category: 'Langues', color: 'sky' }),
+		subject({ id: 'subj-eps', name: 'Physical Education', shortName: 'EPS', coefficient: 1, category: 'Sport', color: 'mint' }),
 	],
 	subjectMattersRaw: [
 		{ id: 'sm-math', subjectId: 'subj-math', name: 'Core programme', description: 'Algebra fundamentals.', sequenceOrder: 1, estimatedHours: 5 },
@@ -79,7 +79,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6b-math', classGroupId: '6b', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
-				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0, name: 'Mathematics', code: 'MATH', coefficient: 3, categoryId: `${SEED_SCHOOL_ID}:subject-category:scientifique`, color: 'mint' },
+				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0, name: 'Mathematics', shortName: 'MATH', coefficient: 3, categoryId: `${SEED_SCHOOL_ID}:subject-category:scientifique`, color: 'mint' },
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],
@@ -98,7 +98,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6a-sci', classGroupId: '6a', subjectId: 'subj-sci' }),
 			],
 			subjectsRaw: [
-				subject({ id: 'subj-sci', name: 'Natural Sciences', code: 'SCI', coefficient: 2 }),
+				subject({ id: 'subj-sci', name: 'Natural Sciences', shortName: 'SCI', coefficient: 2 }),
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],
@@ -116,7 +116,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
-				subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', coefficient: 3 }),
+				subject({ id: 'subj-math', name: 'Mathematics', shortName: 'MATH', coefficient: 3 }),
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],

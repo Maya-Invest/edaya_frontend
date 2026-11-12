@@ -73,8 +73,6 @@ export function isNamespaceRootPath(matrixPath: string): boolean {
 
 /** Documented redirect targets (inventory + matrix redirect smoke). */
 export const ROUTE_REDIRECTS: Record<string, string> = {
- '/school/students/:id?/enrollments': '/school/students/:id/profile',
- '/classes/:classId/students/:id?/enrollments': '/classes/:classId/students/:id/profile',
 	'/configuration/report-cards/:id?': '/configuration/structure/subjects',
 	'/configuration/other/grade-scales': '/configuration/grade-scales',
 	'/school/marks-review': '/school/corrections?workflow=grades',
@@ -109,8 +107,6 @@ export const ROUTE_REDIRECTS: Record<string, string> = {
 };
 
 export const LEGACY_ROUTES = new Set([
- '/school/students/:id?/enrollments',
- '/classes/:classId/students/:id?/enrollments',
 	'/configuration/report-cards/:id?',
 	'/school/staff/:id?/assignments',
 	'/configuration/subjects',

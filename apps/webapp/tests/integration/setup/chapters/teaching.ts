@@ -1,3 +1,4 @@
+import { prepareHumanFixture } from '../../support/prepare-human';
 import { chooseOption, selectControl, selectOptions } from '../../support/custom-select';
 import {
 	fillLabeledInput,
@@ -153,7 +154,7 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
         const hubTeacherId = crypto.randomUUID();
         const schoolId = await resolveSchoolId(page, journey.ctx.base);
         const created = await apiFetch(page, journey.ctx.base, '/core/commands/register-teacher', {
-            method: 'POST', data: { id: hubTeacherId, schoolId, firstName: 'Integration', lastName: hubTeacherId, isActive: true },
+            method: 'POST', data: { ...await prepareHumanFixture(page, journey.ctx.base, 'teachers', hubTeacherId), id: hubTeacherId, schoolId, firstName: 'Integration', lastName: hubTeacherId, isActive: true },
         });
         if (!created.ok()) throw new Error(`Assignment fixture failed: ${created.status()}`);
 		await gotoApp(journey, '/configuration/tools/teacher-assignments');

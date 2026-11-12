@@ -1,5 +1,5 @@
 import type { Student } from '$lib/types/school';
-import { normalizeStudentMatricule } from '$lib/import/shared/normalize-student-matricule';
+import { normalizeStudentMatricule } from '$lib/import/shared/normalize-student-identifier';
 
 export function studentMatchesSearchQuery(student: Student, query: string): boolean {
 	const needle = query.trim().toLowerCase();
@@ -12,10 +12,10 @@ export function studentMatchesSearchQuery(student: Student, query: string): bool
 		return true;
 	}
 
-	const matricule = student.matricule?.trim();
-	if (!matricule) {
+	const identifier = student.identifier?.trim();
+	if (!identifier) {
 		return false;
 	}
 
-	return normalizeStudentMatricule(matricule).includes(normalizeStudentMatricule(needle));
+	return normalizeStudentMatricule(identifier).includes(normalizeStudentMatricule(needle));
 }

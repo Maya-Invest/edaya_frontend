@@ -17,10 +17,7 @@ import {
   onboardingStepUrl,
   parseOnboardingStep,
 } from '$lib/onboarding/navigation';
-import {
-  isProvisionAttemptBootstrapReady,
-  isProvisionAttemptCommitted,
-} from '$lib/onboarding/provision-attempt';
+import { isProvisionAttemptBootstrapReady, isProvisionAttemptCommitted } from '$lib/onboarding/provision-attempt';
 import {
   getProvisionProgressSteps,
 } from '$lib/onboarding/provision-progress';

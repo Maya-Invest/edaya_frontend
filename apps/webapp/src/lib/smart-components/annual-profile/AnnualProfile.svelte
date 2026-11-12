@@ -2,6 +2,7 @@
 	import type { components } from '$lib/api/schema';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -86,8 +87,10 @@
 		<PageQuery compactLoading={flat} cache={false} query={profileState.query} cacheKey={() => profileState.identity()} loadingTitle={$t('profile.yearInformation')}>
 			{#snippet children(data)}<DataState compact={flat} status={data.status} errorMessage={data.errorMessage} preserveShell>
 				{#if kind === 'student'}
-					<p class="text-sm">{$t('profile.placementStatuses')}: {profileState.options.find(option => option.id === profileState.student?.placementStatusId)?.label ?? $t('profile.notProvided')}</p>
-					<p class="text-sm">{$t('profile.repeating')}: {profileState.student?.isRepeating == null ? $t('profile.notProvided') : $t(profileState.student.isRepeating ? 'common.yes' : 'common.no')}</p>
+					<div class="ui-student-facts">
+						<DrawerField label={$t('profile.placementStatuses')}><p class="text-sm">{profileState.options.find(option => option.id === profileState.student?.placementStatusId)?.label ?? $t('profile.notProvided')}</p></DrawerField>
+						<DrawerField label={$t('profile.repeating')}><p class="text-sm">{profileState.student?.isRepeating == null ? $t('profile.notProvided') : $t(profileState.student.isRepeating ? 'common.yes' : 'common.no')}</p></DrawerField>
+					</div>
 				{:else}
 					<p class="text-sm">{$t('profile.academicDisciplines')}: {profileState.teacher?.disciplineIds.map(id => profileState.options.find(option => option.id === id)?.label ?? id).join(', ') || $t('profile.notProvided')}</p>
 					<p class="text-sm">{$t('profile.declaredHours')}: {profileState.teacher?.declaredHours ?? $t('profile.notProvided')} · {$t(`profile.period.${profileState.teacher?.hoursPeriod ?? 'unspecified'}`)} {profileState.teacher?.hoursPeriodLabel ?? ''}</p>
@@ -98,10 +101,10 @@
 	<FormModal bind:open={edit.open} title={`${$t('profile.yearInformation')} · ${name} · ${yearLabel}`} submitLabel={$t('common.save')} busy={profileState.busy} submitDisabled={!canManage || stale || profileState.loadedIdentity !== profileState.identity() || (kind === 'teacher' && ((hours !== '' && (!Number.isFinite(Number(hours)) || Number(hours) < 0)) || (hoursPeriod === 'other' && !periodLabel.trim())))} onSubmit={save}>
 		{#if stale}<p role="alert">{$t('profile.contextChanged')}</p>{/if}
 		{#if kind === 'student'}
-			<Label class="block space-y-2"><span>{$t('profile.placementStatuses')}</span><SelectField class="w-full border border-border bg-card" bind:value={placementStatusId}><option value="">{$t('profile.notProvided')}</option>{#each profileState.options.filter(option => option.isActive || option.id === profileState.student?.placementStatusId) as option (option.id)}<option value={option.id}>{option.code} · {option.label}{option.isActive ? '' : ` (${$t('teacher.statusInactive')})`}</option>{/each}</SelectField></Label>
+			<Label class="block space-y-2"><span>{$t('profile.placementStatuses')}</span><SelectField class="w-full border border-border bg-card" bind:value={placementStatusId}><option value="">{$t('profile.notProvided')}</option>{#each profileState.options.filter(option => option.isActive || option.id === profileState.student?.placementStatusId) as option (option.id)}<option value={option.id}>{option.shortName ?? option.label} · {option.label}{option.isActive ? '' : ` (${$t('teacher.statusInactive')})`}</option>{/each}</SelectField></Label>
 			<Label class="block space-y-2"><span>{$t('profile.repeating')}</span><SelectField class="w-full border border-border bg-card" bind:value={repeating}><option value="unknown">{$t('profile.notProvided')}</option><option value="true">{$t('common.yes')}</option><option value="false">{$t('common.no')}</option></SelectField></Label>
 		{:else}
-			<fieldset class="space-y-2"><legend class="mb-2 text-sm font-medium">{$t('profile.academicDisciplines')}</legend>{#each profileState.options.filter(option => option.isActive || profileState.teacher?.disciplineIds.includes(option.id)) as option (option.id)}<Label class="flex items-center gap-2"><Checkbox checked={disciplineIds.includes(option.id)} onCheckedChange={checked => disciplineIds = checked ? [...disciplineIds, option.id] : disciplineIds.filter(id => id !== option.id)} />{option.code} · {option.label}</Label>{/each}</fieldset>
+			<fieldset class="space-y-2"><legend class="mb-2 text-sm font-medium">{$t('profile.academicDisciplines')}</legend>{#each profileState.options.filter(option => option.isActive || profileState.teacher?.disciplineIds.includes(option.id)) as option (option.id)}<Label class="flex items-center gap-2"><Checkbox checked={disciplineIds.includes(option.id)} onCheckedChange={checked => disciplineIds = checked ? [...disciplineIds, option.id] : disciplineIds.filter(id => id !== option.id)} />{option.shortName ?? option.label} · {option.label}</Label>{/each}</fieldset>
 			<Label class="block space-y-2"><span>{$t('profile.declaredHours')}</span><Input type="number" min="0" step="any" bind:value={hours} /></Label>
 			<Label class="block space-y-2"><span>{$t('profile.hoursPeriod')}</span><SelectField class="w-full border border-border bg-card" bind:value={hoursPeriod}>{#each periodOptions as option (option)}<option value={option}>{$t(`profile.period.${option}`)}</option>{/each}</SelectField></Label>
 			{#if hoursPeriod === 'other'}<Label class="block space-y-2"><span>{$t('profile.periodLabel')}</span><Input bind:value={periodLabel} /></Label>{/if}

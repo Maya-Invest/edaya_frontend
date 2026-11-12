@@ -12,7 +12,6 @@
 	import OnboardingSubjectChaptersDrawer from './OnboardingSubjectChaptersDrawer.svelte';
 
 	const wizard = getOnboardingWizardState();
-
 	const catalog = $derived(wizard.catalog);
 	let selectedSubject = $state<{
 		levelCode: string;
@@ -69,6 +68,13 @@
 </script>
 
 <OnboardingDatasetStatus disabled={editsLocked} />
+<section class="rounded-md border border-border bg-card p-3 space-y-2" aria-label={$t('profile.identifier')}>
+	<p>{$t('onboarding.complete.sectionSchool')} · {$t('profile.identifier')}: <strong>{onboardingContext.draft.ownerIdentifier?.trim() || $t('identifier.notProvided')}</strong></p>
+	{#each onboardingContext.draft.staffInvites as invite, index (index)}
+		<p>{invite.email}: <strong>{invite.identifier?.trim() || $t('identifier.notProvided')}</strong></p>
+	{/each}
+</section>
+
 {#if catalog && wizard.datasetStatus === 'ready'}
 	<div class="space-y-2">
 		<header class="space-y-0.5">
@@ -168,7 +174,7 @@
 					{#each summary.levels as level (level.gradeLevelId)}
 						<div class="space-y-1.5 rounded-md border border-border/80 bg-muted/30 px-2.5 py-2">
 							<p class="text-xs font-medium text-foreground">
-								{level.code}
+								{level.name} · {level.shortName}
 								<span class="font-normal text-muted-foreground">
 									· {$t('onboarding.complete.levelClasses', { count: level.classCount })}
 								</span>
@@ -183,7 +189,7 @@
 								<table class="ui-entry-table w-full text-xs">
 									<thead>
 										<tr class="border-b border-border text-left text-muted-foreground">
-											<th class="px-1.5 py-1 font-medium">{$t('onboarding.complete.colCode')}</th>
+											<th class="px-1.5 py-1 font-medium">{$t('profile.shortName')}</th>
 											<th class="px-1.5 py-1 font-medium">{$t('onboarding.complete.colSubject')}</th>
 											<th class="px-1.5 py-1 text-right font-medium">{$t('onboarding.complete.colChapters')}</th>
 										</tr>
@@ -202,8 +208,8 @@
 												onclick={() => selectSubject(level.gradeLevelId, subject)}
 												onkeydown={event => handleSubjectRowKeydown(event, level.gradeLevelId, subject)}
 											>
-												<td class="px-1.5 py-1.5 font-medium font-sans tabular-nums">{subject.code}</td>
-												<td class="px-1.5 py-1.5">{catalogSubjectName(subject.name, $lang, subject.code)} {#if subject.isOptional}<span class="text-muted-foreground">· {$t('onboarding.dataset.optional')}</span>{/if}</td>
+												<td class="px-1.5 py-1.5 font-medium font-sans tabular-nums">{subject.shortName}</td>
+												<td class="px-1.5 py-1.5">{catalogSubjectName(subject.name, $lang, subject.shortName)} {#if subject.isOptional}<span class="text-muted-foreground">· {$t('onboarding.dataset.optional')}</span>{/if}</td>
 												<td class="px-1.5 py-1.5">
 													<span class="flex items-center justify-end gap-1 text-muted-foreground">
 														{subject.matters.length}
@@ -273,8 +279,8 @@
 		<OnboardingSubjectChaptersDrawer
 			open={selectedSubject !== null}
 			levelCode={catalog.byId.get(selectedSubject?.levelCode ?? '')?.shortLabel ?? ''}
-			subjectCode={selectedSubject?.subject.code ?? ''}
-			subjectName={catalogSubjectName(selectedSubject?.subject.name ?? '', $lang, selectedSubject?.subject.code)}
+			subjectCode={selectedSubject?.subject.shortName ?? ''}
+			subjectName={catalogSubjectName(selectedSubject?.subject.name ?? '', $lang, selectedSubject?.subject.shortName)}
 			matters={selectedSubject?.subject.matters ?? []}
 			subject={selectedSubject?.subject}
 			onClose={closeSubjectDrawer}

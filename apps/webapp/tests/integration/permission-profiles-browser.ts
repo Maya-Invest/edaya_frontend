@@ -42,7 +42,7 @@ let manualSaved = false;
 let profileSaved = false;
 let defaultsChanged = false;
 async function request(path: string, data: unknown, method = 'POST') {
-	const response = await apiFetch(page, base, `/core/${path}`, { method, data, schoolId, academicYearId: year });
+	const response = await apiFetch(page, base, `/core/${path}`, { method, data, headers: { 'x-actor-kind': 'staff' }, schoolId, academicYearId: year });
 	assert(response.ok(), `${path}: HTTP ${response.status()} ${(await response.text()).slice(0, 200)}`);
 	return await response.json() as any;
 }
@@ -137,8 +137,8 @@ try {
 	await creation.getByRole('button', { name: /try again|réessayer/i }).click();
 	await chooseOption(creation.locator('select[data-control-target]'), profileId);
 	assert.equal(await creation.locator('[data-scope-grain="class_group"]').count(), 1, 'Mixed profile must offer class scope on a cold page');
-	await creation.locator('input').nth(0).fill('Permission');
-	await creation.locator('input').nth(1).fill('Regression');
+	await creation.getByRole('textbox', { name: /^(first name|prénom)$/i }).fill('Permission');
+	await creation.getByRole('textbox', { name: /^(last name|nom)$/i }).fill('Regression');
 	await creation.locator('#staff-send-invite').uncheck();
 	await creation.locator('[data-scope-grain="class_group"] summary').click();
 	await creation.locator('[data-scope-grain="class_group"]').getByRole('checkbox').check();

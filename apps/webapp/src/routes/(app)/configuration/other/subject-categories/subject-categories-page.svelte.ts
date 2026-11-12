@@ -90,6 +90,7 @@ export class SubjectCategoriesPageState {
 	async saveCategory(input: {
 		id?: string;
 		name: string;
+		shortName?: string;
 		successMessage?: string;
 	}): Promise<boolean> {
 		const schoolId = this.schoolId();
@@ -97,17 +98,19 @@ export class SubjectCategoriesPageState {
 			return false;
 		}
 		const client = getBrowserSchoolClient();
-		const id = input.id ?? `subject-category-${Date.now().toString(36)}`;
+		const id = input.id ?? crypto.randomUUID();
 		const entity: SubjectCategoryOption = {
 			id,
 			schoolId,
 			name: input.name.trim(),
+			shortName: input.shortName,
 		};
 		const previous = input.id ? this.categories.find(entry => entry.id === input.id) : undefined;
 		const result = await runSubjectCategoriesRouteMutation({
 			request: () => client.commands.configureSubjectCategory({
 				id,
 				name: entity.name,
+				shortName: entity.shortName,
 			}),
 			successMessage: input.successMessage,
 			apply: () => this.upsertCategory(entity),

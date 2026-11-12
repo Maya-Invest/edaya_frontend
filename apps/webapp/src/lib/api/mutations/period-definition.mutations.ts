@@ -13,6 +13,7 @@ export interface PeriodDefinitionSaveInput {
 	id?: string;
 	academicYearId: string;
 	label: string;
+	shortName?: string;
 	dayOfWeek: PeriodDefinitionDayOfWeek;
 	order: number;
 	startTime: string;
@@ -28,6 +29,7 @@ function toEntity(input: PeriodDefinitionSaveInput, sid: string, id: string): Pe
 		schoolId: sid,
 		academicYearId: input.academicYearId,
 		label: toCanonicalCatalogText(input.label.trim()),
+		shortName: input.shortName,
 		dayOfWeek: input.dayOfWeek,
 		order: input.order,
 		startTime: input.startTime,
@@ -44,12 +46,12 @@ export async function savePeriodDefinitionMutation(input: PeriodDefinitionSaveIn
 	}
 
 	const client = getBrowserSchoolClient();
-	const id = input.id ?? `pd-${input.academicYearId}-${Date.now().toString(36)}`;
+	const id = input.id ?? crypto.randomUUID();
 	const entity = toEntity(input, sid, id);
 
 	const { schoolId: _schoolId, ...command } = entity;
 	const result = await runMutation(
-		() => client.commands.configurePeriodDefinition(command),
+		() => client.commands.configurePeriodDefinition({ ...command, name: entity.label }),
 		{
 			versionKeys: ['periodDefinitions', 'planning'],
 			successMessage: input.successMessage,
@@ -82,7 +84,7 @@ export async function savePeriodDefinitionsBatchMutation(input: {
 		async () => {
 			for (const entity of entities) {
 				const { schoolId: _schoolId, ...command } = entity;
-				await client.commands.configurePeriodDefinition(command);
+				await client.commands.configurePeriodDefinition({ ...command, name: entity.label });
 			}
 			return entities;
 		},

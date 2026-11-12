@@ -81,8 +81,12 @@ class AcademicContext {
 		writePreference('session', this.periodStorageKey(), this.periodId);
 	}
 
-	private yearStorageKey(): string {
-		return this.schoolScopeId ? `${STORAGE_YEAR}:${this.schoolScopeId}` : STORAGE_YEAR;
+	savedSchoolYear(schoolId: string) {
+		return readPreference('session', this.yearStorageKey(schoolId));
+	}
+
+	private yearStorageKey(schoolId = this.schoolScopeId): string {
+		return schoolId ? `${STORAGE_YEAR}:${schoolId}` : STORAGE_YEAR;
 	}
 
 	private periodStorageKey(): string {

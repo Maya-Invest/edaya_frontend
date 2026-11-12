@@ -1,19 +1,25 @@
+import type { PageLoadMeta } from '$lib/page/load-state';
 import type { GradeScale, ReportCardResult } from '$lib/types/report-cards';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { writeHomeroomReportCommentMutation, writeReportSectionCommentsMutation } from '$lib/api/mutations/student-ops.mutations';
-import { loadClassReportCardResultsData } from '$lib/api/report-cards-data';
+import { loadStudentYearReportCardsData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
+import { authSession } from '$lib/auth/session.svelte';
 import { nowIso } from '$lib/date/format';
+import { t } from '$lib/i18n';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
+import { hasPermission } from '$lib/permissions';
 import { getContext, setContext } from 'svelte';
+import { get } from 'svelte/store';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
 import { AnnualReportCardState } from '../../annual-report-card-state.svelte';
+import { reportPublicationBlocked } from './report-selection';
 
 const STUDENT_REPORT_CARD_TAB_KEY = Symbol('student-report-card-tab');
 
@@ -45,9 +51,25 @@ export class StudentReportCardTabState {
 
   slice = $state<StudentReportCardTabSlice | null>(null);
 
+  private generation = 0;
+  private requestVersion = 0;
+  private currentUrl?: URL;
+  private loadedIdentity = $state('');
+  private loadStatus = $state<PageLoadMeta>({ status: 'loading' });
   constructor(private readonly getPage: () => StudentDetailHost, readonly annual = new AnnualReportCardState(getPage)) {}
+  private identity(studentId: string) { return JSON.stringify([this.generation, authSession.authUserId, authSession.schoolId, academicContext.yearId, studentId, authSession.grants]); }
+  cacheKey = (url: URL) => `${url.pathname}:${this.identity(studentDetailIdFromPathname(url.pathname) ?? '')}`;
+  statusFor(studentId: string): PageLoadMeta {
+    if (!hasPermission('REPORT_CARD_READ', { studentId, classId: this.getPage().findStudent(studentId)?.classId }))
+      return { status: 'denied' };
+    return this.loadedIdentity === this.identity(studentId) ? this.loadStatus : { status: 'loading' };
+  }
 
   clear() {
+    this.generation++;
+    this.requestVersion++;
+    this.currentUrl = undefined;
+    this.loadedIdentity = '';
     this.versionedQuery.clear();
     this.annual.clear();
     this.slice = null;
@@ -62,7 +84,7 @@ export class StudentReportCardTabState {
   }
 
   private forStudent(studentId: string) {
-    return this.slice?.studentId === studentId ? this.slice : null;
+    return this.loadedIdentity === this.identity(studentId) && this.slice?.studentId === studentId ? this.slice : null;
   }
 
   reportCardResultsFor(studentId: string) {
@@ -73,60 +95,58 @@ export class StudentReportCardTabState {
     return this.forStudent(studentId)?.gradeScales ?? [];
   }
 
-  async loadCatalog(studentId: string, signal?: AbortSignal) {
- signal?.throwIfAborted();
-  this.seed(studentId, {});
-  }
-
-  async refreshResults(studentId: string, signal?: AbortSignal) {
-    const page = this.getPage();
-    const student = page.findStudent(studentId);
-    const slice = this.forStudent(studentId);
-    if (!student || !slice || !academicContext.periodId) {
-      this.seed(studentId, { reportCardResults: [] });
-      return;
-    }
-
-    const results = await loadClassReportCardResultsData(
-      getBrowserSchoolClient(),
-      student.classId,
-      academicContext.periodId,
-    );
-    signal?.throwIfAborted();
-    this.seed(studentId, {
-      reportCardResults: results.filter(result => result.studentId === studentId),
-    });
+  async refreshResults(studentId: string) {
+    if (this.currentUrl && studentDetailIdFromPathname(this.currentUrl.pathname) === studentId)
+      await this.query()(this.currentUrl);
   }
 
   query() {
-    return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
-      empty: () => ({}),
-      load: async (signal) => {
-        const studentId = studentDetailIdFromPathname(url.pathname);
-        const page = this.getPage();
-        const student = studentId ? page.findStudent(studentId) : undefined;
-        if (!studentId || !student) {
+    return this.versionedQuery.track(async (url: URL, request?: PageQueryRequest): Promise<PageLoadMeta> => {
+      const studentId = studentDetailIdFromPathname(url.pathname);
+      this.currentUrl = url;
+      const version = ++this.requestVersion;
+      const identity = studentId ? this.identity(studentId) : '';
+      this.loadStatus = { status: this.loadedIdentity === identity && this.loadStatus.status === 'ready' ? 'refreshing' : 'loading' };
+      this.loadedIdentity = identity;
+      if (!studentId || !hasPermission('REPORT_CARD_READ', { studentId, classId: this.getPage().findStudent(studentId)?.classId })) {
+        this.slice = null;
+        this.annual.clear();
+        return this.loadStatus = { status: 'denied' };
+      }
+      const result = await resolveStudentPageLoad(url, {
+        empty: () => ({}),
+        errorMessage: get(t)('dataState.errorDefault'),
+        load: async (signal) => {
+          const yearId = academicContext.yearId;
+          const periods = academicContext.periods.filter(period => period.academicYearId === yearId);
+          const data = await loadStudentYearReportCardsData(getBrowserSchoolClient(), studentId, yearId, periods.map(period => period.id));
+          signal.throwIfAborted();
+          if (version !== this.requestVersion || identity !== this.identity(studentId))
+            throw new DOMException('Context changed', 'AbortError');
+          this.seed(studentId, { reportCardResults: data.results });
+          this.annual.seed(studentId, data.raw);
           return {};
-        }
-
-        await Promise.all([this.loadCatalog(studentId, signal), this.annual.refresh(studentId, signal)]);
-        await this.refreshResults(studentId, signal);
-        return {};
-      },
-      hasItems: () => true,
-    }, request));
+        },
+        hasItems: () => true,
+      }, request);
+      if (version === this.requestVersion && identity === this.identity(studentId) && !request?.signal.aborted)
+        this.loadStatus = result;
+      return result;
+    });
   }
 
-  async generateReportCard(studentId: string): Promise<boolean> {
+  async generateReportCard(studentId: string, periodId: string): Promise<boolean> {
     const page = this.getPage();
     const student = page.findStudent(studentId);
     const slice = this.forStudent(studentId);
-    const periodId = academicContext.periodId;
-    if (!periodId || !student || !slice)
+    if (!periodId || !student || !slice || !academicContext.periods.some(period => period.id === periodId && period.academicYearId === academicContext.yearId) || !hasPermission('REPORT_CARD_GENERATE', { studentId, classId: slice.reportCardResults.find(result => result.academicPeriodId === periodId)?.classId || student.classId }))
       return false;
 
+    const existing = slice.reportCardResults.find(result => result.academicPeriodId === periodId);
+    if (existing?.status === 'published' && !hasPermission('REPORT_CARD_PUBLISH', { studentId, classId: existing.classId }))
+      return false;
     const client = getBrowserSchoolClient();
-    const id = `rcr-${studentId}-${periodId}`;
+    const id = slice.reportCardResults.find(result => result.academicPeriodId === periodId)?.id ?? crypto.randomUUID();
 
     const result = await runStudentRouteMutation({
       request: async () => {
@@ -138,7 +158,7 @@ export class StudentReportCardTabState {
         });
         return true;
       },
-      errorMessage: 'Impossible de générer le bulletin.',
+      errorMessage: get(t)('dataState.errorDefault'),
       versionKeys: ['students', 'reportCards'],
       onSuccess: async () => {
         await this.refreshResults(studentId);
@@ -151,10 +171,12 @@ export class StudentReportCardTabState {
     resultId: string;
     studentId: string;
     periodId: string;
+    reviewedRevision?: boolean;
   }): Promise<boolean> {
     const client = getBrowserSchoolClient();
     const existing = this.forStudent(input.studentId)?.reportCardResults.find(r => r.id === input.resultId);
-    if (!existing || existing.revisedDraft)
+    const reviewed = input.reviewedRevision ? existing?.revisedDraft : existing;
+    if (!reviewed || reviewed.status === 'published' || reportPublicationBlocked(reviewed) || !hasPermission('REPORT_CARD_PUBLISH', { studentId: input.studentId, classId: reviewed.classId }))
       return false;
 
     const result = await runStudentRouteMutation({
@@ -163,9 +185,9 @@ export class StudentReportCardTabState {
         studentId: input.studentId,
         periodId: input.periodId,
         publishedAt: nowIso(),
-        reviewedDraftVersion: existing.version!,
-        reviewedGradingRevision: existing.gradingPolicyRevision!,
-        reviewedReportConfigurationRevision: existing.reportConfigurationRevision,
+        reviewedDraftVersion: reviewed.version!,
+        reviewedGradingRevision: reviewed.gradingPolicyRevision!,
+        reviewedReportConfigurationRevision: reviewed.reportConfigurationRevision,
       }),
       versionKeys: ['students', 'reportCards'],
       onSuccess: async () => {

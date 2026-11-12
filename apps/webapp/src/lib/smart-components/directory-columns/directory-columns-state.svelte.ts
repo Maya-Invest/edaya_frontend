@@ -87,7 +87,7 @@ export class DirectoryColumnsState {
                     return;
                 const [profiles, statuses] = await Promise.all([listAllEntityPagesForIdFilters(query => client.entities.studentAcademicYearProfiles.list(query), [{ field: 'studentId', ids: allowedIds }], { extraQuery: { schoolId, academicYearId } }), listAllEntityPages(query => client.entities.placementStatuses.list(query), { baseQuery: { schoolId } })]);
                 for (const profile of profiles)
-                    Object.assign(values[profile.studentId] ??= {}, { placementStatusLabel: statuses.find(status => status.id === profile.placementStatusId)?.label, isRepeating: profile.isRepeating });
+                    Object.assign(values[profile.studentId] ??= {}, { placementStatusLabel: statuses.find(status => status.id === profile.placementStatusId)?.name, isRepeating: profile.isRepeating });
             })());
         }
         if (this.kind === 'student' && has('guardianContacts')) {

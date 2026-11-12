@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonProfileDetails from '$lib/components/school/shared/PersonProfileDetails.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -11,6 +12,7 @@
 	import AnnualProfile from '$lib/smart-components/annual-profile/AnnualProfile.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
+	import TeacherQuickLogin from './TeacherQuickLogin.svelte';
 
 	const { teacher }: {
 		teacher: Teacher;
@@ -48,9 +50,9 @@
 	<DrawerField label={$t('guardian.fullName')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{teacher.name}</div>
 	</DrawerField>
-	<DrawerField label={$t('common.code')}>
+	<DrawerField label={$t('profile.identifier')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
-			{teacher.code || teacher.id}
+			{teacher.identifier || $t('profile.notConfigured')}
 		</div>
 	</DrawerField>
 	<DrawerField label={$t('common.email')}>
@@ -87,4 +89,9 @@
 		contactEmail={teacher.email}
 		displayName={teacher.name}
 	/>
+	{#if teacher.subjectId && teacher.isActive}
+		<PermissionGate permission="ACCESS_CONTROL_MANAGE">
+			{#key `${teacher.id}:${academicContext.scopeGeneration}`}<TeacherQuickLogin teacherId={teacher.id} />{/key}
+		</PermissionGate>
+	{/if}
 </div>

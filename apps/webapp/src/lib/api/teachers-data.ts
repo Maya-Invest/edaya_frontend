@@ -33,7 +33,7 @@ export function mapTeacher(member: TeacherRaw): Teacher {
 		photoUrl: member.photoUrl ?? null,
 		email: member.email ?? '',
 		phone: member.phone ?? '',
-		code: member.code ?? member.id,
+		identifier: member.identifier ?? null,
 		isActive: member.isActive ?? true,
 		subjectId: member.subjectId ?? null,
 	};

@@ -436,11 +436,12 @@ async function registerSchool(
 	client: ProvisionHttpClient,
 	schoolName: string,
 ): Promise<string> {
+  const id = crypto.randomUUID();
 	const { response, body } = await client.jsonRequest<SchoolResponse>('/core/onboarding/register-school', {
 		method: 'POST',
 		headers: { 'content-type': 'application/json' },
 		body: JSON.stringify({
-			name: schoolName,
+			id, name: schoolName,
 			timeZone: 'Europe/Paris',
 			financeCurrency: 'XOF',
 			city: 'Abidjan',

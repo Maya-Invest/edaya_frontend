@@ -33,7 +33,7 @@ const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'incidents': '/(app)/school/students/[[id]]/(tabs)/incidents',
 	'finances': '/(app)/school/students/[[id]]/(tabs)/finances',
 	'report-card': '/(app)/school/students/[[id]]/(tabs)/report-card',
-	'enrollments': '/(app)/school/students/[[id]]/(tabs)/profile',
+	'enrollments': '/(app)/school/students/[[id]]/(tabs)/enrollments',
 	'documents': '/(app)/school/students/[[id]]/(tabs)/documents',
 };
 
@@ -44,7 +44,7 @@ const CLASS_STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'incidents': '/(app)/classes/[classId]/students/[[id]]/(tabs)/incidents',
 	'finances': '/(app)/classes/[classId]/students/[[id]]/(tabs)/finances',
 	'report-card': '/(app)/classes/[classId]/students/[[id]]/(tabs)/report-card',
-	'enrollments': '/(app)/classes/[classId]/students/[[id]]/(tabs)/profile',
+	'enrollments': '/(app)/classes/[classId]/students/[[id]]/(tabs)/enrollments',
 	'documents': '/(app)/classes/[classId]/students/[[id]]/(tabs)/documents',
 };
 

@@ -124,7 +124,7 @@
 							onchange={event => setSubject(index, event.currentTarget.value)}>
 							<option value="">{$t('roles.scopeAllSubjects')}</option>
 							{#each subjects as subject (subject.id)}
-								<option value={subject.id}>{catalogSubjectName(subject.name, $lang, subject.code)}</option>
+								<option value={subject.id}>{catalogSubjectName(subject.name, $lang, subject.shortName)}</option>
 							{/each}
 						</SelectField>
 					</label>

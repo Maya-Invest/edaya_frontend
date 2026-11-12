@@ -108,5 +108,5 @@
 	<GuardianContactFields bind:contacts disabled={busy} />
 	<label class="flex items-center gap-2"><input type="checkbox" bind:checked={hasAccess} />{$t('profile.portalAccess')}</label>
 
-	<PersonProfileFields kind="guardian" bind:values={additional} />
+	<PersonProfileFields kind="guardian" entityId={guardian.id} bind:values={additional} />
 </FormModal>

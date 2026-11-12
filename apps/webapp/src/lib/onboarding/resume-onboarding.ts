@@ -127,8 +127,8 @@ export function shouldHoldOnboardingSummary(options: {
 	if (options.localWizardCompleted) {
 		return false;
 	}
-	return options.provisionProgressVisible
-		|| options.provisionSucceeded
+	// Visible progress is not proof of a committed provision: a rejected request must remain retryable.
+	return options.provisionSucceeded
 		|| options.serverWizardCompleted === true;
 }
 

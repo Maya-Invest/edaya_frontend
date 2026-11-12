@@ -216,6 +216,8 @@ export class DataImportState {
 					return await request();
 				}
 				catch (error) {
+					if (generation === this.generation && error instanceof ApiError && error.status === 409)
+this.previewStale = true;
 					if (generation === this.generation)
 						this.mutationError = get(t)(error instanceof ApiError && error.status === 409 ? 'mutation.conflict' : 'durableImport.writeError');
 					throw error;
@@ -289,6 +291,36 @@ export class DataImportState {
 	cancel() {
 		const batchId = this.detail?.batch.id;
 		return batchId ? this.mutate(() => this.api.cancel({ batchId }), 'durableImport.cancelled', batch => this.applyBatch(batch)) : Promise.resolve(null);
+	}
+
+	async candidates(rowId: string, field: string) {
+		const generation = this.generation;
+		const batch = this.detail?.batch;
+		if (!batch)
+return null;
+		const result = await this.dependencies.runMutation(() => this.api.candidates({ batchId: batch.id, rowId, field }));
+		return result && generation === this.generation && this.detail?.batch.revision === result.revision ? result : null;
+	}
+
+	resolve(rowId: string, field: string, targetId?: string, decision?: 'create' | 'update') {
+		const batch = this.detail?.batch;
+		if (!batch)
+return Promise.resolve(null);
+		return this.mutate(() => this.api.resolve({ batchId: batch.id, revision: batch.revision, rowId, field, targetId, decision }), 'durableImport.resolved', detail => this.applyDetail(detail));
+	}
+
+	async export(type: DurableImportType, academicYearId: string, format: 'csv' | 'xlsx') {
+		const generation = this.generation;
+		let after: string | undefined;
+		let page = 1;
+		do {
+			const result = await this.dependencies.runMutation(() => this.api.export({ type, academicYearId, format, after, limit: 500 }));
+			if (!result || generation !== this.generation)
+return;
+			this.download({ ...result, fileName: result.fileName.replace(/\.(csv|xlsx)$/, `-${page}.$1`) });
+			after = result.nextCursor ?? undefined;
+			page++;
+		} while (after);
 	}
 
 	async template(type: DurableImportType, format: 'csv' | 'xlsx') {

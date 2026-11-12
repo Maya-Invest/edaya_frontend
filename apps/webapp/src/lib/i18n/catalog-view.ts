@@ -23,7 +23,7 @@ export function localizeGradeLevel(level: GradeLevel, lang: CatalogLang): GradeL
 	return {
 		...level,
 		name: catalogGradeName(level.name, lang),
-		label: catalogGradeShortLabel(level.label, lang),
+		shortName: catalogGradeShortLabel(level.shortName, lang),
 		cycle: catalogCycle(level.cycle, lang),
 	};
 }
@@ -63,7 +63,7 @@ export function localizeCatalogChapter(chapter: CatalogChapter, lang: CatalogLan
 export function localizeSubject(subject: Subject, lang: CatalogLang): Subject {
 	return {
 		...subject,
-		name: catalogSubjectName(subject.name, lang, subject.code),
+		name: catalogSubjectName(subject.name, lang, subject.shortName),
 		category: catalogCategory(subject.category, lang) as Subject['category'],
 		catalogChapters: subject.catalogChapters?.map(chapter => localizeCatalogChapter(chapter, lang)),
 	};

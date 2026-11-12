@@ -171,7 +171,7 @@
 	}
 </script>
 
-<FormModal presentation="task" {dirty} retainsDraft={retained} busy={importState.busy} bind:open title={$t('durableImport.title')} description={$t('durableImport.description')} onSubmit={() => {}}>
+<FormModal presentation="assistant" {dirty} retainsDraft={retained} busy={importState.busy} bind:open title={$t('durableImport.title')} description={$t('durableImport.description')} onSubmit={() => {}}>
 	{#snippet navigation()}
 		<div class="space-y-2">
 			<p class="text-sm">{academicContext.years.find(year => year.id === yearId)?.label ?? $t('durableImport.new')} · {importState.detail ? $t(`durableImport.status.${importState.detail.batch.state}`) : $t('durableImport.new')}</p>
@@ -210,7 +210,7 @@
 							{#each definitions as definition (definition.key)}<option value={definition.key}>{$t(definition.labelKey)}</option>{/each}
 						</SelectField>
 					</label>
-					<div class="flex flex-wrap gap-2"><Button data-testid="import-template-xlsx" variant="outline" onclick={() => importState.template(importType, 'xlsx')}>{$t('durableImport.template')} XLSX</Button><Button variant="outline" onclick={() => importState.template(importType, 'csv')}>{$t('durableImport.template')} CSV</Button></div>
+					<div class="flex flex-wrap gap-2"><Button data-testid="import-template-xlsx" variant="outline" onclick={() => importState.template(importType, 'xlsx')}>{$t('durableImport.template')} XLSX</Button><Button variant="outline" onclick={() => importState.template(importType, 'csv')}>{$t('durableImport.template')} CSV</Button><Button variant="outline" disabled={!yearId || importState.busy} onclick={() => importState.export(importType, yearId, 'xlsx')}>{$t('durableImport.exportExisting')}</Button></div>
 					{#if importState.detail}
 						<label class="block max-w-lg space-y-2 text-sm"><span>{$t('durableImport.destination')}</span>
 							<SelectField class="w-full border border-input bg-background" bind:value={replacementId} disabled={running || importState.busy || pendingUploads.length > 0}>
@@ -231,7 +231,7 @@
 						<p class="text-sm">{$t('durableImport.saveUnit')}</p>
 						{#if running}<p role="status" class="rounded-collection bg-primary/10 p-4 text-sm">{$t('durableImport.background')}</p>{/if}
 						{#if importState.previewStale}<p role="status" class="text-sm">{$t('durableImport.previewStale')}</p>{/if}
-						{#key importState.detail.batch.id}<ImportRows detail={importState.detail} />{/key}
+						{#key importState.detail.batch.id}<ImportRows {importState} detail={importState.detail} />{/key}
 					</section>
 				{/if}
 			{:else}
@@ -248,7 +248,7 @@
 					{#if importState.historyError}<p role="alert" class="text-sm text-destructive">{importState.historyError}</p><Button variant="outline" onclick={() => importState.loadHistory()}>{$t('dataState.retry')}</Button>{/if}
 					<Button variant="outline" onclick={() => importState.moreHistory()} disabled={importState.loading || importState.history.length === 0}>{$t('durableImport.older')}</Button>
 					<ul class="space-y-4">{#each files as file (file.fileId)}<li class="flex flex-wrap items-center justify-between gap-4 border-b border-border py-4 text-sm"><span class="break-words">{file.fileName} · {typeLabel(file.type)} · {$t('durableImport.fileRevision', { revision: file.revision })}</span><div class="flex flex-wrap gap-2"><Button data-testid="import-corrections-xlsx" variant="outline" onclick={() => importState.report(file.fileId)}>{$t('durableImport.corrections')} XLSX</Button><Button variant="outline" onclick={() => importState.report(file.fileId, 'csv')}>{$t('durableImport.corrections')} CSV</Button></div></li>{/each}</ul>
-					{#if importState.detail}<ImportRows detail={importState.detail} />{/if}
+					{#if importState.detail}<ImportRows {importState} detail={importState.detail} />{/if}
 				</section>
 			{/if}
 		</DataState>

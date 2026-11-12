@@ -1,8 +1,9 @@
 import type { ClassAttendanceMode } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { runMutation } from '$lib/api/mutations/run-mutation';
+import { refreshAppShellData, runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { formatDateInput } from '$lib/date/format';
 import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-delete';
 import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
@@ -18,10 +19,10 @@ function schoolId(): string {
 	return sid;
 }
 
-function trimestersForYear(startDate: string, endDate: string) {
+export function trimestersForYear(startDate: string, endDate: string) {
 	const startYear = Number.parseInt(startDate.slice(0, 4), 10);
 	const endYear = Number.parseInt(endDate.slice(0, 4), 10);
-	return [
+	const standard = [
 		{
 			id: crypto.randomUUID(),
 			name: 'Trimestre 1',
@@ -41,15 +42,27 @@ function trimestersForYear(startDate: string, endDate: string) {
 			endDate,
 		},
 	];
+	if (standard.every((period, index) => period.startDate >= startDate && period.endDate <= endDate && period.startDate <= period.endDate && (index === 0 || period.startDate > standard[index - 1]!.endDate))) {
+		return standard;
+	}
+	const start = Date.parse(`${startDate}T00:00:00Z`);
+	const days = Math.round((Date.parse(`${endDate}T00:00:00Z`) - start) / 86400000) + 1;
+	const count = Math.min(3, days);
+	return Array.from({ length: count }, (_, index) => ({
+		id: crypto.randomUUID(),
+		name: `Trimestre ${index + 1}`,
+		startDate: new Date(start + Math.floor(index * days / count) * 86400000).toISOString().slice(0, 10),
+		endDate: new Date(start + (Math.floor((index + 1) * days / count) - 1) * 86400000).toISOString().slice(0, 10),
+	}));
 }
 
 export async function createAcademicYearMutation(
 	startDate: string,
 	endDate: string,
-	options?: { successMessage?: string },
+	options?: CalendarMutationOptions & { name?: string; shortName?: string },
 ): Promise<string | null> {
 	const yearId = crypto.randomUUID();
-	const yearName = academicYearLabelFromDates(startDate, endDate);
+	const yearName = options?.name?.trim() || academicYearLabelFromDates(startDate, endDate);
 	const client = getBrowserSchoolClient();
 
 	const created = await runMutation(async () => {
@@ -58,6 +71,7 @@ export async function createAcademicYearMutation(
 			id: yearId,
 			schoolId: sid,
 			name: yearName,
+			shortName: options?.shortName,
 			startDate,
 			endDate,
 		});
@@ -76,27 +90,97 @@ export async function createAcademicYearMutation(
 		}
 
 		return yearId;
-	}, { successMessage: options?.successMessage });
+	}, calendarMutationOptions(options));
 
 	return created;
 }
 
-export async function publishAcademicYearMutation(yearId: string): Promise<boolean> {
+export interface CalendarMutationOptions {
+	successMessage?: string;
+	onRefreshed?: () => void | Promise<void>;
+	onRefreshFailed?: () => void;
+}
+
+export interface AcademicCalendarFields {
+	shortName?: string;
+	name: string;
+	startDate: string;
+	endDate: string;
+}
+
+export interface AcademicPeriodFields extends AcademicCalendarFields {
+	type?: 'trimester' | 'semester' | 'other';
+}
+
+function calendarMutationOptions(options?: CalendarMutationOptions) {
+	return {
+		successMessage: options?.successMessage,
+		versionKeys: ['school', 'subjectEnrollments', 'planning', 'evaluations', 'reportCards'] as ('school' | 'subjectEnrollments' | 'planning' | 'evaluations' | 'reportCards')[],
+		onSuccess: async () => {
+			try {
+				await refreshAppShellData();
+				await options?.onRefreshed?.();
+			}
+			catch (error) {
+				options?.onRefreshFailed?.();
+				throw error;
+			}
+		},
+	};
+}
+
+export async function updateAcademicYearMutation(yearId: string, fields: AcademicCalendarFields, options?: CalendarMutationOptions): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const result = await runMutation(() => client.commands.publishAcademicYear({ academicYearId: yearId }));
+	const result = await runMutation(async () => {
+		const current = await client.entities.academicYears.get(yearId);
+		return client.entities.academicYears.save({ ...current, name: fields.name.trim(), shortName: fields.shortName ?? current.shortName, startDate: fields.startDate === formatDateInput(current.startDate) ? current.startDate : fields.startDate, endDate: fields.endDate === formatDateInput(current.endDate) ? current.endDate : fields.endDate });
+	}, calendarMutationOptions(options));
 	return result !== null;
 }
 
-export async function archiveAcademicYearMutation(yearId: string): Promise<boolean> {
+export async function createAcademicPeriodMutation(academicYearId: string, fields: AcademicPeriodFields, options?: CalendarMutationOptions): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const result = await runMutation(() => client.commands.archiveAcademicYear({ academicYearId: yearId }));
+	const result = await runMutation(() => client.commands.createAcademicPeriod({
+		id: crypto.randomUUID(),
+		schoolId: schoolId(),
+		academicYearId,
+		name: fields.name.trim(),
+		shortName: fields.shortName,
+		type: fields.type,
+		startDate: fields.startDate,
+		endDate: fields.endDate,
+		isPublished: false,
+	}), calendarMutationOptions(options));
 	return result !== null;
 }
 
-export async function publishAcademicPeriodMutation(periodId: string): Promise<boolean> {
+export async function updateAcademicPeriodMutation(periodId: string, fields: AcademicPeriodFields, options?: CalendarMutationOptions): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const result = await runMutation(() => client.commands.publishAcademicPeriod({ academicPeriodId: periodId }));
+	const result = await runMutation(async () => {
+		const current = await client.entities.academicPeriods.get(periodId);
+		return client.entities.academicPeriods.save({ ...current, name: fields.name.trim(), shortName: fields.shortName ?? current.shortName, type: fields.type, startDate: fields.startDate === formatDateInput(current.startDate) ? current.startDate : fields.startDate, endDate: fields.endDate === formatDateInput(current.endDate) ? current.endDate : fields.endDate });
+	}, calendarMutationOptions(options));
 	return result !== null;
+}
+
+export async function deleteAcademicYearMutation(id: string, options?: CalendarMutationOptions): Promise<boolean> {
+	return await runMutation(() => getBrowserSchoolClient().entities.academicYears.delete({ id }), calendarMutationOptions(options)) !== null;
+}
+
+export async function deleteAcademicPeriodMutation(id: string, options?: CalendarMutationOptions): Promise<boolean> {
+	return await runMutation(() => getBrowserSchoolClient().entities.academicPeriods.delete({ id }), calendarMutationOptions(options)) !== null;
+}
+
+export async function publishAcademicYearMutation(yearId: string, options?: CalendarMutationOptions): Promise<boolean> {
+	return await runMutation(() => getBrowserSchoolClient().commands.publishAcademicYear({ academicYearId: yearId }), calendarMutationOptions(options)) !== null;
+}
+
+export async function archiveAcademicYearMutation(yearId: string, options?: CalendarMutationOptions): Promise<boolean> {
+	return await runMutation(() => getBrowserSchoolClient().commands.archiveAcademicYear({ academicYearId: yearId }), calendarMutationOptions(options)) !== null;
+}
+
+export async function publishAcademicPeriodMutation(periodId: string, options?: CalendarMutationOptions): Promise<boolean> {
+	return await runMutation(() => getBrowserSchoolClient().commands.publishAcademicPeriod({ academicPeriodId: periodId }), calendarMutationOptions(options)) !== null;
 }
 
 export interface ClassGroupProfilePatch {

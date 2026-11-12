@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { AnnualReportResult } from '$lib/api/annual-report-cards-data';
+	import type { AnnualReportReview } from '$lib/api/annual-report-cards-data';
 	import type { AnnualReportCardState } from '../annual-report-card-state.svelte';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { annualReportReadiness } from '$lib/api/annual-report-cards-data';
@@ -11,12 +11,16 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
+	import { hasPermission } from '$lib/permissions';
+	import { formatPersistedGrade } from '$lib/types/report-cards';
 
-	let { open = $bindable(false), annualState, studentId, classId }: {
+	let { open = $bindable(false), annualState, studentId, classId, initialTargetId = '', onSaved }: {
 		open?: boolean;
 		annualState: AnnualReportCardState;
 		studentId: string;
 		classId: string;
+		initialTargetId?: string;
+		onSaved?: () => Promise<void>;
 	} = $props();
 	let targetId = $state('');
 	let sourceIds = $state<string[]>([]);
@@ -25,7 +29,7 @@
 	let hydratedTarget = $state('');
 	let formContext = $state('');
 	const candidates = $derived(annualState.results.filter(result => result.periodId === targetId));
-	const annual = $derived(candidates.length === 1 && candidates[0].aggregation?.source === 'report_cards' ? candidates[0] : undefined);
+	const annual = $derived(candidates.length === 1 && candidates[0].aggregation?.source === 'report_cards' ? candidates[0].revisedDraft ?? candidates[0] : undefined);
 	const published = $derived(annual?.status === 'published');
 	const readiness = $derived(annualReportReadiness(annualState.periods, annualState.results, sourceIds, targetId));
 	const sourcesReady = $derived(sourceIds.length > 0 && new Set(sourceIds).size === sourceIds.length && readiness.every(entry => entry.ready));
@@ -35,15 +39,14 @@
 		&& sourceIds.every(id => (annual.aggregation!.periodWeightsByPeriodId?.[id] ?? 1) === (weights[id] ?? 1))));
 	const recordedSourcesCurrent = $derived(Boolean(annual?.aggregation?.sourceReportVersions
 		&& readiness.every(entry => annual.aggregation!.sourceReportVersions?.some(source => source.periodId === entry.id && source.resultId === entry.report?.id && source.version === entry.report?.version))));
-	const canPublish = $derived(recordedSourcesCurrent && matchesSelection && sourcesReady && !annual?.calculationStale && !annual?.pendingCorrectionIds?.length
-		&& !annual?.pendingAssessmentIds?.length && annualState.periods.find(period => period.id === targetId)?.status === 'published');
+	const canPublish = $derived(Boolean(annual && matchesSelection && annualState.readyForPublication(annual)));
 	const selectionValid = $derived(Boolean(targetId && annualState.periods.some(period => period.id === targetId) && sourcesReady && weightsValid && candidates.length <= 1 && (!candidates.length || annual)));
 
 	$effect(() => {
-		const context = `${studentId}:${academicContext.yearId}`;
+		const context = `${open}:${studentId}:${academicContext.yearId}:${initialTargetId}`;
 		if (formContext !== context) {
 			formContext = context;
-			targetId = '';
+			targetId = annualState.periods.some(period => period.id === initialTargetId) ? initialTargetId : '';
 		}
 		const key = `${open}:${studentId}:${academicContext.yearId}:${targetId}`;
 		if (key === hydratedTarget)
@@ -67,16 +70,18 @@
 			return;
 		busy = true;
 		try {
-			await annualState.generate({ studentId, targetId, sourceIds, weights });
+			if (await annualState.generate({ studentId, targetId, sourceIds, weights }))
+				await onSaved?.();
 		}
 		finally { busy = false; }
 	}
-	async function publish(result: AnnualReportResult) {
+	async function publish(result: AnnualReportReview) {
 		if (!canPublish || busy)
 			return;
 		busy = true;
 		try {
-			await annualState.publish(result);
+			if (await annualState.publish(result))
+				await onSaved?.();
 		}
 		finally { busy = false; }
 	}
@@ -90,14 +95,14 @@
 		}
 		finally { busy = false; }
 	}
-	function subjectRows(result: AnnualReportResult) {
-		type Node = { sectionId?: string; name?: string; sectionKind?: string; average?: number; weight?: number; comment?: string; subResults?: Node[] };
+	function subjectRows(result: AnnualReportReview) {
+		type Node = { sectionId?: string; name?: string; sectionKind?: string; average?: number; grading?: AnnualReportReview['grading']; weight?: number; comment?: string; subResults?: Node[] };
 		const flatten = (nodes: Node[]): Node[] => nodes.flatMap(node => [node, ...flatten(node.subResults ?? [])]);
 		return flatten(result.sectionResults as Node[]).filter(node => node.sectionKind === 'subject');
 	}
 </script>
 
-<FormModal bind:open title={$t('reportCards.annual.title')} description={$t('reportCards.annual.description')}
+<FormModal bind:open dirty={Boolean(targetId && (!annual || !matchesSelection))} title={$t('reportCards.annual.title')} description={$t('reportCards.annual.description')}
 	submitLabel={$t('documents.generatePdf')} cancelLabel={$t('common.close')} {busy}
 	submitDisabled={!published || !canPublish} onSubmit={issue}>
 	{#snippet footer({ close })}
@@ -110,7 +115,7 @@
 		<Label>{$t('reportCards.annual.target')}</Label>
 		<Select.Root type="single" bind:value={targetId}>
 			<Select.Trigger><Select.Value placeholder={$t('reportCards.annual.chooseTarget')}>{annualState.periods.find(period => period.id === targetId)?.label}</Select.Value></Select.Trigger>
-			<Select.Content>{#each annualState.periods as period (period.id)}<Select.Item value={period.id} label={period.label}>{period.label} · {period.range}</Select.Item>{/each}</Select.Content>
+			<Select.Content class="z-[100]">{#each annualState.periods as period (period.id)}<Select.Item value={period.id} label={period.label}>{period.label} · {period.range}</Select.Item>{/each}</Select.Content>
 		</Select.Root>
 	</div>
 	<fieldset class="space-y-2" disabled={published || busy || !targetId}>
@@ -131,7 +136,7 @@
 	{#if targetId && (!sourcesReady || !weightsValid)}<p role="status" class="text-sm text-muted-foreground">{$t('reportCards.annual.prerequisites')}</p>{/if}
 	{#if targetId && annualState.periods.find(period => period.id === targetId)?.status !== 'published'}<p class="text-sm text-muted-foreground">{$t('reportCards.annual.publishPeriod')}</p>{/if}
 	{#if candidates.length && !annual}<p role="alert" class="text-sm text-destructive">{$t('reportCards.annual.targetConflict')}</p>{/if}
-	{#if !published || !recordedSourcesCurrent}
+	{#if candidates[0]?.status !== 'published' || hasPermission('REPORT_CARD_PUBLISH', { classId })}
 		<PermissionGate permission="REPORT_CARD_GENERATE" {classId} mode="disable">
 			{#snippet children({ disabled, title })}<Button {title} disabled={disabled || busy || !selectionValid} onclick={generate}>{$t('reportCards.annual.generate')}</Button>{/snippet}
 		</PermissionGate>
@@ -140,9 +145,9 @@
 		<div class="space-y-2 rounded-collection border border-border p-3">
 			<p class="text-sm font-semibold">{$t('reportCards.annual.review')} · {$t(published ? 'academic.published' : 'academic.draft')}</p>
 			{#each subjectRows(annual) as row (row.sectionId)}
-				<p class="flex justify-between gap-3 text-sm"><span>{row.name}</span><span class="font-sans tabular-nums">{row.average === undefined ? '—' : row.average.toFixed(2)} / 20</span></p>
+				<p class="flex justify-between gap-3 text-sm"><span>{row.name}</span><span class="font-sans tabular-nums">{formatPersistedGrade(row.grading, row.average)}</span></p>
 			{/each}
-			<p class="text-sm font-semibold">{$t('reportCards.overall')}: {annual.overallAverage == null ? '—' : annual.overallAverage.toFixed(2)} / 20</p>
+			<p class="text-sm font-semibold">{$t('reportCards.overall')}: {formatPersistedGrade(annual.grading, annual.overallAverage ?? undefined)}</p>
 			{#if !matchesSelection || !recordedSourcesCurrent}<p role="status" class="text-sm text-muted-foreground">{$t('reportCards.annual.regenerate')}</p>{/if}
 		</div>
 		{#if !published}<PermissionGate permission="REPORT_CARD_PUBLISH" {classId} mode="disable">

@@ -45,7 +45,7 @@
 				return true;
 			}
 			return subject.name.toLowerCase().includes(needle)
-				|| catalogSubjectName(subject.name, $lang, subject.code).toLowerCase().includes(needle)
+				|| catalogSubjectName(subject.name, $lang, subject.shortName).toLowerCase().includes(needle)
 				|| subject.teacher.toLowerCase().includes(needle)
 				|| subject.category.toLowerCase().includes(needle)
 				|| catalogCategory(subject.category, $lang).toLowerCase().includes(needle);
@@ -156,7 +156,7 @@
 				<div class={cn('h-8 w-1.5 shrink-0 rounded-full', dotColor[subject.color])}></div>
 				<div class="min-w-0 flex-1">
 					<div class="flex items-center gap-2">
-						<span class="font-display text-sm font-semibold">{catalogSubjectName(subject.name, $lang, subject.code)}</span>
+						<span class="font-display text-sm font-semibold">{catalogSubjectName(subject.name, $lang, subject.shortName)}</span>
 						<span
 							class={cn(
 								'rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',

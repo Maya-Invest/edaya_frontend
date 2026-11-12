@@ -227,15 +227,5 @@
     "surface": "/configuration/structure/details/report-cards/:...rest",
     "kind": "redirect",
     "reason": "Retired configuration template links redirect to grade-level Subjects."
-  },
-  {
-    "surface": "/school/students/:id?/enrollments",
-    "kind": "redirect",
-    "reason": "Legacy enrollment URL redirects to the merged Profile/Schooling view; the student-profile browser suite verifies this alias and captures its destination."
-  },
-  {
-    "surface": "/classes/:classId/students/:id?/enrollments",
-    "kind": "redirect",
-    "reason": "Legacy enrollment URL redirects to the merged Profile/Schooling view; the student-profile browser suite verifies this alias and captures its destination."
   }
 ]

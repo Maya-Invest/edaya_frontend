@@ -12,13 +12,13 @@
 		name: string;
 		initials: string;
 		photoUrl?: string | null;
-		size?: 'xs' | 'sm' | 'md' | 'list' | 'lg';
+		size?: 'xs' | 'sm' | 'md' | 'list' | 'lg' | 'studentHeader';
 		class?: string;
 	} = $props();
 
+	const source = $derived(photoUrl);
 	let imageSource = $state<string | null>(null);
 	$effect(() => {
-		const source = photoUrl;
 		imageSource = null;
 		if (!source)
 			return;
@@ -44,6 +44,7 @@
 			sm: 'h-6 w-6 rounded-full text-[10px]',
 			md: 'h-7 w-7 rounded-full text-[11px]',
 			list: 'h-10 w-10 rounded-lg text-sm',
+			studentHeader: 'h-[70px] w-[70px] rounded-full text-xl',
 			lg: 'h-14 w-14 rounded-lg text-lg',
 		}[size],
 	);

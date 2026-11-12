@@ -9,7 +9,7 @@ import { exerciseImportProgress } from './support/import-progress';
 import { exerciseImport, IMPORT_SCENARIOS } from './support/import-workflows';
 import { passwordlessApiLogin } from './support/passwordless';
 
-const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? '/private/tmp/edaya-import-browser';
+const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? '.focused-run/imports-ui';
 mkdirSync(artifacts, { recursive: true });
 const base = (process.env.WEBAPP_URL ?? 'http://localhost:5173').replace(/\/+$/, '');
 assert(['localhost', '127.0.0.1'].includes(new URL(base).hostname));
@@ -27,7 +27,7 @@ try {
 	const year = await page.getByTestId('academic-year-trigger').getAttribute('data-year-id');
 	assert(year);
 	async function request(path: string, data: unknown) {
-		const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data, schoolId: 'sch-edaya-ci-cocody', academicYearId: year! });
+		const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data, headers: { 'x-actor-kind': 'staff' }, schoolId: 'sch-edaya-ci-cocody', academicYearId: year! });
 		assert(response.ok(), `${path}: ${response.status()} ${await response.text()}`);
 		return response.json();
 	}

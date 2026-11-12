@@ -8,6 +8,8 @@ export interface RouteModalCatalogEntry {
 
 const STUDENT_DETAIL_MODALS = [
 	'change-status',
+	'placement-history',
+	'report-comments',
 	'edit-profile',
 	'edit-annual-profile',
 	'remove-annual-profile',
@@ -236,6 +238,11 @@ export const ROUTE_MODAL_CATALOG = [
 		modalNames: [
 			'create',
 			'archive-year',
+			'edit-year',
+			'create-period',
+			'edit-period',
+			'delete-year',
+			'delete-period',
 			'publish-year',
 			'publish-period',
 		],

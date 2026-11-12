@@ -56,7 +56,7 @@
 		subjectLabels = Object.fromEntries(nextClassSubjects.map((entry) => {
 			const subject = subjects.find(item => item.id === entry.subjectId);
 			const name = subject
-				? catalogSubjectName(subject.name, $lang, subject.code)
+				? catalogSubjectName(subject.name, $lang, subject.shortName)
 				: entry.id;
 			return [entry.id, name];
 		}));

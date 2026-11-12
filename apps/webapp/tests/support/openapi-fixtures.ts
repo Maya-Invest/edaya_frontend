@@ -38,7 +38,6 @@ export function subject(
 		.replace(/^-+|-+$/g, '');
 	return {
 		schoolId: SEED_SCHOOL_ID,
-		code: null,
 		coefficient: 1,
 		reportOrder: 0,
 		gradeLevelId: 'ci-gl-6',

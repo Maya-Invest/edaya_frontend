@@ -10,6 +10,7 @@ export function buildActivitySavePayload(
 	existing: ActivityEntity,
 	updates: {
 		name: string;
+		shortName?: string;
 		category: Activity['category'];
 		coach: string;
 		capacity: number;
@@ -31,6 +32,7 @@ export function buildActivitySavePayload(
 		id: existing.id,
 		schoolId: existing.schoolId,
 		name: updates.name.trim(),
+		shortName: updates.shortName,
 		category: updates.category,
 		coach: updates.coach.trim(),
 		schedule,
@@ -50,6 +52,7 @@ export function buildActivityConfigCommand(
 	updates: {
 		id: string;
 		name: string;
+		shortName?: string;
 		category: Activity['category'];
 		coach: string;
 		capacity: number;
@@ -76,6 +79,7 @@ export function buildActivityConfigCommand(
 	return {
 		id: updates.id,
 		name: updates.name.trim(),
+		shortName: updates.shortName,
 		category: updates.category,
 		coach: updates.coach.trim(),
 		schedule,

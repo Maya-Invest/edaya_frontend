@@ -30,6 +30,14 @@
 			await workflow.refreshAfterSave(onSaved);
 		}
 	}
+	const description = $derived.by(() => {
+		if (!context)
+			return '';
+		const parts = [context.className, context.yearName];
+		if (!context.chooseStudents)
+			parts.push($t('list.selectedCount', { n: context.students.length }));
+		return parts.join(' · ');
+	});
 	const submitLabel = $derived($t(workflow.operations.length > 0 && workflow.withdrawalCount === workflow.operations.length ? 'participation.withdraw' : 'participation.apply'));
 	function currentLabel(subjectId: string) {
 		const selection = workflow.common(subjectId);
@@ -45,7 +53,7 @@
 	if (!open)
 		onClose();
 }}
-	title={$t('participation.enrolments')} description={context ? `${context.className} · ${context.yearName}` : ''}
+	title={$t('participation.enrolments')} {description}
 	busy={workflow.busy} dirty={workflow.dirty} submitDisabled={!workflow.canSave}
 	{submitLabel}
 	onSubmit={save}>
@@ -57,16 +65,14 @@
 		<p role="alert" class="text-sm text-destructive">{workflow.loadError}</p>
 		<Button variant="outline" onclick={() => void workflow.reload(true)}>{$t('dataState.retry')}</Button>
 	{:else}
-		<p class="font-medium">{$t('list.selectedCount', { n: workflow.selectedIds.length })}</p>
 		{#if context?.chooseStudents}
+			<p class="font-medium">{$t('list.selectedCount', { n: workflow.selectedIds.length })}</p>
 			<fieldset disabled={workflow.busy} class="space-y-2">
 				<legend class="text-sm font-medium">{$t('participation.selectStudents')}</legend>
 				{#each context.students as student (student.id)}
 					<label class="flex min-h-11 items-center gap-3"><Checkbox checked={workflow.selectedIds.includes(student.id)} onCheckedChange={checked => workflow.toggleStudent(student.id, checked)} />{student.name}</label>
 				{/each}
 			</fieldset>
-		{:else if context?.students.length}
-			<details><summary class="cursor-pointer text-sm">{$t('participation.selectedStudents')}</summary><ul class="mt-2 space-y-1 text-sm">{#each context.students as student (student.id)}<li>{student.name}</li>{/each}</ul></details>
 		{/if}
 		{#each workflow.offerings as offering (offering.id)}
 			{@const draft = workflow.drafts[offering.id]}
@@ -79,7 +85,7 @@
 					{/if}
 					{#if draft.enabled}
 						{#if !draft.explicit}<p class="text-sm text-muted-foreground">{$t('participation.chooseReplacement')}</p>{/if}
-						<SubjectSelectionFields bind:selection={draft.selection} periods={workflow.periods} completedPeriodIds={workflow.completedPeriodIds(offering.id)} zone={context?.zone ?? 'UTC'} onChange={() => workflow.choose(offering.id, draft.selection)} />
+						<SubjectSelectionFields showWithdrawalTools={context?.chooseStudents} bind:selection={draft.selection} periods={workflow.periods} completedPeriodIds={workflow.completedPeriodIds(offering.id)} zone={context?.zone ?? 'UTC'} onChange={() => workflow.choose(offering.id, draft.selection)} />
 					{:else}
 						<p class="text-sm text-muted-foreground">{$t('participation.unchanged')}</p>
 					{/if}
@@ -88,15 +94,18 @@
 		{:else}
 			<p class="text-sm text-muted-foreground">{$t('participation.noOptionalSubjects')}</p>
 		{/each}
-		{#if workflow.withdrawalCount}<p class="text-sm text-muted-foreground">{$t('participation.withdrawCount', { n: workflow.withdrawalCount })} {$t('participation.withdrawExplanation')}</p>{/if}
+		{#if context?.chooseStudents && workflow.withdrawalCount}<p class="text-sm text-muted-foreground">{$t('participation.withdrawCount', { n: workflow.withdrawalCount })} {$t('participation.withdrawExplanation')}</p>{/if}
 		{#if workflow.overLimit}<p role="alert" class="text-sm text-destructive">{$t('participation.limit')}</p>{/if}
 	{/if}
 	{#if workflow.error}<p role="alert" class="text-sm text-destructive">{workflow.error}</p>{/if}
 	{#snippet footer({ close, busy, submitDisabled })}
 		<div class="w-full space-y-3">
 			{#if workflow.allowed && !workflow.loading && !workflow.loadError}
-				<p role="status" class="text-sm">{$t('participation.changeCount', { students: workflow.affectedCount, changes: workflow.operations.length })}</p>
-				{#if workflow.withdrawalCount}<p class="text-sm text-muted-foreground">{$t('participation.withdrawCount', { n: workflow.withdrawalCount })}</p>{/if}
+				<div class="space-y-1">
+					<p role="status" class="text-sm">{$t('participation.changeCount', { students: workflow.affectedCount, changes: workflow.operations.length })}</p>
+					{#if workflow.withdrawalCount}<p class="text-sm text-muted-foreground">{$t('participation.withdrawCount', { n: workflow.withdrawalCount })}</p>{/if}
+					<p class="text-xs text-muted-foreground">{$t('participation.selectionExplanation')}</p>
+				</div>
 			{/if}
 			<div class="flex flex-wrap justify-end gap-2">
 				<Button variant="outline" data-testid="form-modal-cancel" onclick={close} disabled={busy}>{$t('common.cancel')}</Button>

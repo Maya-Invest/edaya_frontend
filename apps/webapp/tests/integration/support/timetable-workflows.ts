@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { navigateSpaPage, waitForPageQuery, waitForResolvedAcademicYearId } from '../../../scripts/qa-harness-ui';
 import { apiFetch } from '../setup/journey-api';
 
-export async function exerciseTimetable(page: Page, base: string, verifyRegeneration: boolean): Promise<string> {
+export async function exerciseTimetable(page: Page, base: string, classId: string, verifyRegeneration: boolean): Promise<string> {
 	await navigateSpaPage(page, `${base}/configuration/tools`);
 	await waitForPageQuery(page);
 	await waitForResolvedAcademicYearId(page);
@@ -41,34 +41,33 @@ export async function exerciseTimetable(page: Page, base: string, verifyRegenera
 		end.setUTCDate(end.getUTCDate() + 6);
 		const endDate = end.toISOString().slice(0, 10);
 		await inputs.nth(1).fill(endDate);
-		await dialog.locator('form').getByRole('button', { name: /^(classes et paramètres|classes and settings)$/i }).click();
-		await page.waitForURL(url => url.searchParams.get('taskStep') === 'selection');
+		const generate = dialog.getByTestId('timetable-generate-submit');
 		const checkboxes = dialog.getByTestId('timetable-class-checkbox');
 		await checkboxes.first().waitFor({ state: 'visible' });
 		const classIds = await checkboxes.evaluateAll(elements => elements.map(element => element.getAttribute('data-class-id')!));
 		for (const checkbox of await checkboxes.all()) assert(await checkbox.isChecked(), 'All classes must start selected');
 		await dialog.getByTestId('timetable-clear-selection').click();
-		assert(await dialog.getByTestId('timetable-review-scope').isDisabled(), 'Empty selection must disable generation');
+		assert(await generate.isDisabled(), 'Empty selection must disable generation');
 		await dialog.getByTestId('timetable-select-all').click();
 		for (const checkbox of await checkboxes.all()) assert(await checkbox.isChecked(), 'Select all must restore every class');
-		const selectedClassId = classIds[0]!;
+		assert(classIds.includes(classId), 'The fixture class must be available in this school year');
+		const selectedClassId = classId;
 		const classResponse = await apiFetch(page, base, `/core/entities/class-groups/${selectedClassId}`, { academicYearId: year });
 		assert(classResponse.ok(), 'Selected timetable class must be readable');
 		const classroom = await classResponse.json() as { academicYearId: string; schoolId: string };
 		assert.equal(classroom.academicYearId, year, 'Lesson year scope comes from its persisted class');
 		await dialog.getByTestId('timetable-clear-selection').click();
-		await checkboxes.first().check();
+		await dialog.locator(`[data-testid="timetable-class-checkbox"][data-class-id="${selectedClassId}"]`).check();
 		const beforeUnselected = (await list())
 			.filter(row => row.classGroupId !== selectedClassId)
 			.map(row => row.id)
 			.sort();
 		const selectionSearch = dialog.getByTestId('timetable-class-selection').getByTestId('list-search');
 		await selectionSearch.fill('no-matching-timetable-class');
-		assert(await dialog.getByTestId('timetable-review-scope').isEnabled(), 'Search must not clear the hidden selection');
+		assert(await generate.isEnabled(), 'Search must not clear the hidden selection');
 		await selectionSearch.fill('');
 		// Set a valid workload for every offered subject through the production form.
 		await dialog.getByRole('tab', { name: /classes.*(?:matières|subjects)/i }).click();
-		await dialog.getByTestId('timetable-workload-periods').first().waitFor({ state: 'visible', timeout: 20000 });
 		for (const button of await dialog.getByTestId('timetable-workload-class').all()) {
 			if (await button.getAttribute('data-class-id') === selectedClassId) {
 				await button.click();
@@ -76,17 +75,21 @@ export async function exerciseTimetable(page: Page, base: string, verifyRegenera
 				assert(await button.isDisabled(), 'Excluded classes must not expose editable workloads');
 			}
 		}
-		for (const input of await dialog.getByTestId('timetable-workload-periods').all()) await input.fill('1');
+		const adjustments = dialog.locator('details').filter({ has: page.getByTestId('timetable-workload-periods') });
+		await adjustments.first().waitFor();
+		for (const adjustment of await adjustments.all()) {
+			const periods = adjustment.getByTestId('timetable-workload-periods');
+			if (!await periods.isVisible()) await adjustment.locator('summary').click();
+			await periods.fill('1');
+		}
 		await dialog.getByRole('tab', { name: /avancé|advanced/i }).click();
 		const allow = dialog.locator('label').filter({ hasText: /sans enseignant|unassigned/i }).first().getByRole('checkbox');
 		await allow.check();
 		const enforce = dialog.locator('label').filter({ hasText: /charge.*complète|workload.*fulfillment|respect.*volume|charge.*horaire/i }).first().getByRole('checkbox');
 		if (await enforce.count())
 			await enforce.uncheck();
-		await dialog.getByTestId('timetable-review-scope').click();
-		await page.waitForURL(url => url.searchParams.get('taskStep') === 'review');
 		const responsePromise = page.waitForResponse(response => response.url().includes('/commands/generate-school-timetable') && response.request().method() === 'POST', { timeout: 60000 });
-		await dialog.getByTestId('timetable-generate-submit').click();
+		await generate.click();
 		const response = await responsePromise;
 		assert(response.ok(), `Timetable generation HTTP ${response.status()}: ${await response.text()}`);
 		const request = response.request().postDataJSON();

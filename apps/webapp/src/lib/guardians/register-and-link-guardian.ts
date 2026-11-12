@@ -7,7 +7,7 @@ export interface RegisterGuardianInput {
 	guardianId: string;
 	firstName: string;
 	lastName: string;
-	code?: string;
+	profile?: Record<string, string>;
 	email?: string;
 	phone?: string;
 	alternativePhone?: string;
@@ -31,17 +31,17 @@ export async function registerGuardian(
 	client: SchoolClient,
 	input: RegisterGuardianInput,
 ): Promise<void> {
-	const now = input.createdAt ?? new Date().toISOString();
+	const now = input.createdAt;
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 
-	const code = input.code?.trim() || undefined;
 	await client.commands.registerGuardian({
-		id: input.guardianId,
 		schoolId: input.schoolId,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
-		...(code ? { code } : {}),
+		id: input.guardianId,
+		requestId: input.guardianId,
+		identifier: input.profile?.identifier,
 		email: email || null,
 		phone: phone || null,
 		alternativePhone: input.alternativePhone,

@@ -36,6 +36,12 @@ export function hasAnyPermission(permissions: readonly PermissionCode[], ctx: Ct
 	return checkAnyPermission(authSession.grants, permissions, sessionContext(ctx));
 }
 
+export function canOpenStudentClassForm(studentId: string, classId: string, assign = false): boolean {
+	return hasPermission('ENROLLMENT_MANAGE', { studentId, classId })
+		|| ((assign || !classId) && academicContext.classes.some(group =>
+			group.academicYearId === academicContext.yearId && hasPermission('ENROLLMENT_MANAGE', { studentId, classId: group.id })));
+}
+
 export function canUploadProfilePhoto(updatePermission: PermissionCode): boolean {
 	return hasPermission(updatePermission);
 }

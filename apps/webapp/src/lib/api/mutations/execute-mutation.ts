@@ -50,6 +50,20 @@ function messageFromApiError(error: ApiError): string | undefined {
 export function mutationErrorMessage(error: unknown, fallback: string | undefined, translate: MutationFeedback['translate']): string {
 	if (error instanceof ApiError) {
 		const body = error.body as { code?: string; message?: string; details?: { conflicts?: { kind: string; id: string }[]; assessmentIds?: string[]; lessonSessionIds?: string[]; classSubjectId?: string; actualRevision?: number } } | undefined;
+		const calendarErrors: Record<string, string> = {
+			ACADEMIC_YEAR_ARCHIVED: 'academic.archivedReadOnly',
+			ACADEMIC_YEAR_EXCLUDES_PERIODS: 'academic.excludesPeriods',
+			ACADEMIC_PERIOD_OUTSIDE_YEAR: 'academic.outsideYear',
+			ACADEMIC_PERIOD_OVERLAP: 'academic.overlap',
+			ACADEMIC_YEAR_NOT_DRAFT: 'academic.draftRequired',
+			ACADEMIC_PERIOD_NOT_DRAFT: 'academic.draftRequired',
+			ACADEMIC_YEAR_HAS_DEPENDENCIES: 'academic.dependencies',
+			ACADEMIC_PERIOD_HAS_DEPENDENCIES: 'academic.dependencies',
+			ACADEMIC_PERIOD_PARENT_IMMUTABLE: 'academic.parentImmutable',
+			ACADEMIC_YEAR_ENROLLMENT_CONFLICT: 'academic.enrollmentConflict',
+		};
+		if (body?.code && calendarErrors[body.code])
+			return translate(calendarErrors[body.code]);
 		if (body?.code?.startsWith('SUBJECT_')) {
 			const details = body.details;
 			const ids = [...(details?.conflicts?.map(row => `${row.kind}: ${row.id}`) ?? []), ...(details?.assessmentIds ?? []), ...(details?.lessonSessionIds ?? [])];

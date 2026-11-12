@@ -34,7 +34,7 @@ describe('tools route helpers', () => {
 			tab: 'payments',
 		})).toEqual({
 			modal: 'generate-timetable',
-			step: 'range',
+			step: 'setup',
 			tab: 'subjects',
 		});
 	});
@@ -116,10 +116,10 @@ it('retains drafts only within the same import target, type and workspace contex
 });
 
 it('canonicalizes legacy generation setup while preserving supported panels and results', () => {
-	expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step: 'setup', tab: 'subjects' }).step).toBe('range');
-	expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step: 'setup', tab: 'advanced' })).toEqual({ modal: 'generate-timetable', step: 'selection', tab: 'advanced' });
+	expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step: 'setup', tab: 'subjects' }).step).toBe('setup');
+	expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step: 'setup', tab: 'advanced' })).toEqual({ modal: 'generate-timetable', step: 'setup', tab: 'advanced' });
 	for (const step of ['range', 'selection', 'review', 'success', 'error'])
-		expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step, tab: 'subjects' }).step).toBe(step);
+		expect(canonicalToolsWorkflowSurface({ modal: 'generate-timetable', step, tab: 'subjects' }).step).toBe(step === 'success' || step === 'error' ? step : 'setup');
 });
 it('generation retains step and panel drafts but guards target, school, year and route changes', () => {
 	const start = new URL('https://school.test/configuration/tools?task=generate-timetable&taskStep=range&taskPanel=subjects&year=2026');

@@ -130,6 +130,7 @@ describe('report cards result mapping', () => {
 	});
 	it('maps subject marks from API comment and weight', () => {
 		const mark = mapSubjectMark({
+			sectionId: 'rcs-ms-fond-subj-math', rank: 2, participantCount: 18,
 			classSubjectId: 'cs-6a-math',
 			name: 'subj-math',
 			average: 18.5,
@@ -139,6 +140,8 @@ describe('report cards result mapping', () => {
 
 		expect(mark).toMatchObject({
 			subjectId: 'cs-6a-math',
+			sectionId: 'rcs-ms-fond-subj-math', rank: 2, participantCount: 18,
+			comment: 'Excellent — maîtrise remarquable de l\'algèbre.',
 			average: 18.5,
 			coefficient: 2,
 			appreciation: 'Excellent — maîtrise remarquable de l\'algèbre.',
@@ -174,13 +177,13 @@ describe('report cards result mapping', () => {
 				},
 				assessmentResultCount: 1,
 				sectionResults: [{
-					sectionId: 'rcs-ms-fond',
+					sectionId: 'rcs-ms-fond', rank: 3, participantCount: 28,
 					sectionKind: 'module',
 					name: 'Matières fondamentales',
 					average: 17.17,
 					weight: 2, coefficient: 2,
 					subResults: [{
-						sectionId: 'rcs-ms-fond-subj-math',
+						sectionId: 'rcs-ms-fond-subj-math', rank: 2, participantCount: 18,
 						sectionKind: 'subject',
 						name: 'subj-math',
 						average: 18.5,
@@ -194,8 +197,11 @@ describe('report cards result mapping', () => {
 			classSubjectsSources,
 		);
 
+		expect(results[0]?.sectionResults[0]).toMatchObject({ rank: 3, participantCount: 28 });
 		const mathMark = results[0]?.sectionResults[0]?.marks.find(mark => mark.subjectId === 'cs-6a-math');
 		expect(mathMark).toMatchObject({
+			sectionId: 'rcs-ms-fond-subj-math', rank: 2, participantCount: 18,
+			comment: 'Excellent — maîtrise remarquable de l\'algèbre.',
 			average: 18.5,
 			coefficient: 2,
 			appreciation: 'Excellent — maîtrise remarquable de l\'algèbre.',

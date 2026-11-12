@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
 
 	provideCollectionPresentation();
@@ -33,13 +34,13 @@
 	const canManage = $derived(hasPermission('ACADEMIC_CATALOG_MANAGE'));
 	const canRead = $derived(hasAnyPermission(['ACADEMIC_CATALOG_READ', 'ACADEMIC_CATALOG_MANAGE']));
 	const target = $derived(catalogue.rows.find(row => row.id === modals.target));
-	let code = $state('');
+	let shortName = $state('');
 	let label = $state('');
 	let isActive = $state(true);
 	let initialized = $state('');
 	let searchTerm = $state('');
 	const title = $derived($t(`profile.${kind}`));
-	const rows = $derived(catalogue.rows.filter(row => `${row.code} ${row.label}`.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())));
+	const rows = $derived(catalogue.rows.filter(row => `${row.shortName} ${row.label}`.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())));
 	$effect(() => modals.hydrate());
 	$effect(() => {
 		if (!modals.active) {
@@ -49,15 +50,15 @@
 		const identity = `${modals.active}:${modals.target}:${authSession.schoolId}`;
 		if (initialized !== identity && (modals.active === 'create' || target)) {
 			initialized = identity;
-			code = target?.code ?? '';
+			shortName = target?.shortName ?? '';
 			label = target?.label ?? '';
 			isActive = target?.isActive ?? true;
 		}
 	});
 	async function save() {
-		if (!canManage || !code.trim() || !label.trim())
+		if (!canManage || !label.trim())
 			return;
-		if (await catalogue.save({ id: modals.active === 'edit' ? target?.id : undefined, code, label, isActive }))
+		if (await catalogue.save({ id: modals.active === 'edit' ? target?.id : undefined, shortName, label, isActive }))
 			modals.close();
 	}
 	async function confirmRemove() {
@@ -72,9 +73,9 @@
 				{#snippet search()}<Input bind:value={searchTerm} aria-label={$t('common.search')} />{/snippet}
 				{#snippet primary()}{#if canManage}<Button onclick={() => modals.open('create')}>{$t('common.add')}</Button>{/if}{/snippet}
 			</ListPageHeader>
-			<ListEntityTable listKey={kind} rows={rows} columns={[{ key: 'code', label: $t('common.code'), span: 2 }, { key: 'label', label: $t('people.name'), span: 5 }, { key: 'status', label: $t('common.status'), span: 2 }, { key: 'actions', label: '', span: 1 }]}>
+			<ListEntityTable listKey={kind} rows={rows} columns={[{ key: 'shortName', label: $t('profile.shortName'), span: 2 }, { key: 'label', label: $t('people.name'), span: 5 }, { key: 'status', label: $t('common.status'), span: 2 }, { key: 'actions', label: '', span: 1 }]}>
 				{#snippet cell(row, column)}
-					{#if column.key === 'code'}<span class="font-medium">{row.code}</span>{:else if column.key === 'label'}{row.label}{:else if column.key === 'status'}{$t(row.isActive ? 'teacher.statusActive' : 'teacher.statusInactive')}{:else if canManage}<RowActionMenu label={`${$t('list.rowActions')} · ${row.label}`}><RowActionMenuItem onclick={() => modals.open('edit', { target: row.id })}>{$t('common.edit')}</RowActionMenuItem><RowActionMenuItem onclick={() => modals.open('delete', { target: row.id })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>{/if}
+					{#if column.key === 'shortName'}<span class="font-medium">{row.shortName}</span>{:else if column.key === 'label'}{row.label}{:else if column.key === 'status'}{$t(row.isActive ? 'teacher.statusActive' : 'teacher.statusInactive')}{:else if canManage}<RowActionMenu label={`${$t('list.rowActions')} · ${row.label}`}><RowActionMenuItem onclick={() => modals.open('edit', { target: row.id })}>{$t('common.edit')}</RowActionMenuItem><RowActionMenuItem onclick={() => modals.open('delete', { target: row.id })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>{/if}
 				{/snippet}
 			</ListEntityTable>
 		</DataState>{/snippet}
@@ -82,10 +83,10 @@
 	<FormModal open={create.open || edit.open} onOpenChange={(open) => {
 		if (!open)
 			modals.close();
-	}} title={title} submitLabel={$t('common.save')} busy={catalogue.busy} submitDisabled={!canManage || !code.trim() || !label.trim() || (edit.open && !target)} onSubmit={save}>
-		<Label class="block space-y-2"><span>{$t('common.code')}</span><Input bind:value={code} disabled={edit.open} /></Label>
+	}} title={title} submitLabel={$t('common.save')} busy={catalogue.busy} submitDisabled={!canManage || !label.trim() || (edit.open && !target)} onSubmit={save}>
+		<ShortNameField name={label} bind:value={shortName} creating={create.open} />
 		<Label class="block space-y-2"><span>{$t('people.name')}</span><Input bind:value={label} /></Label>
 		<Label class="flex items-center gap-2"><Checkbox bind:checked={isActive} />{$t('teacher.statusActive')}</Label>
 	</FormModal>
-	<ConfirmModal bind:open={remove.open} title={$t('common.delete')} description={target ? `${target.code} · ${target.label}` : ''} busy={catalogue.busy} confirmDisabled={!canManage || !target} onConfirm={confirmRemove} />
+	<ConfirmModal bind:open={remove.open} title={$t('common.delete')} description={target ? `${target.shortName} · ${target.label}` : ''} busy={catalogue.busy} confirmDisabled={!canManage || !target} onConfirm={confirmRemove} />
 {:else}<p class="text-muted-foreground">{$t('profile.restricted')}</p>{/if}

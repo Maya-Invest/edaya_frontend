@@ -3,7 +3,6 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { FileText } from '$lib/icons';
@@ -50,7 +49,7 @@
 	}
 </script>
 
-<div class="space-y-4">
+<div>
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-collection bg-primary/10 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.average')}</p>
@@ -71,13 +70,13 @@
 			</p>
 		</div>
 	</div>
-	<div>
+	<div class="ui-student-tab-section">
 		<div class="flex items-center justify-between gap-3">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			<h3 class="ui-student-section-title">
 				{$t('student.gradesBySubject')} · {gradesData.studentEvals.length}
-			</Label>
+			</h3>
 		</div>
-		<div class="mt-2 space-y-2">
+		<div class="space-y-2">
 			{#if gradesData.studentEvals.length === 0}
 				<DrawerEmptyState label={$t('student.noGrades')}>
 					{#snippet icon()}

@@ -1,4 +1,4 @@
-import { chooseOption, selectControl } from '../tests/integration/support/custom-select';
+import { chooseOption, selectControl, selectOptions } from '../tests/integration/support/custom-select';
 import { openViewSurface } from '../tests/integration/support/view-workflow';
 import { bindBrowserScenarioContext } from '../tests/integration/support/browser-scenario';
 import { captureIntegrationCheckpoint } from '../tests/integration/support/visual-artifacts';
@@ -11,7 +11,7 @@ import { apiFetch } from '../tests/integration/setup/journey-api';
 import { exerciseRegisteredRead } from '../tests/integration/support/read-workflows';
 import { exerciseDashboard } from '../tests/integration/support/dashboard-workflows';
 import { scenarioForSurface } from '../tests/integration/support/coverage-contract';
-import { exerciseStudentDocument } from '../tests/integration/support/document-workflows';
+import { exerciseStudentDocument, exerciseTeacherDocument } from '../tests/integration/support/document-workflows';
 import { exerciseStudentPhoto, exerciseStudentStatus, exerciseStudentTransfer } from '../tests/integration/support/student-workflows';
 import { exerciseActivityCreateEdit, exerciseReportModuleLifecycle, exerciseCatalogCrud, exerciseEvaluationEditDelete, exerciseFeeEditArchive, exerciseGradeLevelEditDelete } from '../tests/integration/support/catalog-workflows';
 import { exerciseFinanceMutation, exerciseReconciliation, financeFixture } from '../tests/integration/support/finance-workflows';
@@ -296,17 +296,24 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	if (action.includes('Sélecteur école')) {
 		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
     await waitForAppShell(page);
+    const schoolId = await page.getByTestId('app-shell').getAttribute('data-school-id');
+    const profiles = await apiFetch(page, base, '/core/authorization/profiles');
+    assert(profiles.ok());
+    const { profiles: identities } = await profiles.json() as { profiles: { kind: string; schoolId: string; schoolShortName: string }[] };
+    const memberships = identities.filter(profile => profile.kind === 'staff');
+    const selected = memberships.find(profile => profile.schoolId === schoolId);
+    assert(selected, 'Active school must be a staff membership');
     const trigger = page.getByTestId('academic-year-trigger');
-    await trigger.waitFor();
-    const schoolId = await trigger.getAttribute('data-school-id');
-    assert(schoolId, 'Required active school missing');
-    const response = await apiFetch(page,base,`/core/entities/schools/${schoolId}`);
-    assert(response.ok());
-    const school = await response.json() as {name:string};
-    const label = (await page.getByTestId('school-selector').innerText()).trim();
-    assert(label.length > 0 && school.name.startsWith(label), 'School selector must identify the persisted active school');
-    assert.equal(await page.getByTestId('school-selector-menu').count(),0, 'A single-school fixture must not offer a school switch');
-    return ok(row,'Verified the active school label against persisted data; multi-school switching executes in invited-staff-second-school');
+    assert.equal(await trigger.getAttribute('data-school-id'), selected.schoolId);
+    await trigger.click();
+    const schoolChoice = page.getByTestId('workspace-school-choice');
+    assert.equal(await schoolChoice.count(), memberships.length > 1 ? 1 : 0);
+    if (memberships.length > 1) {
+      const ids = await selectOptions(schoolChoice).evaluateAll(items => items.map(item => (item as HTMLOptionElement).value));
+      assert.deepEqual(ids.sort(), memberships.map(profile => profile.schoolId).sort());
+    }
+    await page.keyboard.press('Escape');
+    return ok(row, 'Verified the selected school and available memberships against the signed-in account');
 	}
 
 	if (action.includes('année scolaire')) {
@@ -449,16 +456,12 @@ async function expandSidebarModuleForPath(
 
 async function sidebarNavHrefs(page: Page): Promise<string[]> {
 	await waitForAppShell(page);
-	await page.waitForTimeout(1_000);
-	for (const pattern of [/école|school/i, /classe|class/i]) {
-		const toggle = page.locator('aside#app-sidebar button').filter({ hasText: pattern }).first();
-		if (await toggle.isVisible({ timeout: 2_000 }).catch(() => false)) {
-			await toggle.click().catch(() => {});
-			await page.waitForTimeout(400);
-		}
+	const nav = page.locator('aside#app-sidebar').getByRole('navigation');
+	await nav.getByRole('link').first().waitFor();
+	for (const group of await nav.locator('button[aria-expanded]').all()) {
+		if (await group.getAttribute('aria-expanded') === 'false') await group.click();
 	}
-	await page.locator('aside#app-sidebar a[href]').first().waitFor({ timeout: 15_000 }).catch(() => {});
-	const hrefs = await page.locator('aside#app-sidebar a[href]').evaluateAll(
+	const hrefs = await nav.locator('a[href]').evaluateAll(
 		elements => elements
 			.map(element => element.getAttribute('href'))
 			.filter((href): href is string => Boolean(href)),
@@ -865,6 +868,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
     return ok(row, await exerciseFinanceMutation(page, ctx.base, entities.classId, action === 'Imputer le solde' ? 'allocate' : 'reverse'));
   }
   if (action === 'Rapprochement financier' || action === 'Contrôles financiers') return ok(row, await exerciseReconciliation(page, ctx.base));
+  if (action === 'Documents' && row.endpoint.includes('/school/teachers/[id]/documents')) return ok(row, await exerciseTeacherDocument(page, ctx.base));
   if (action === 'Documents' && row.endpoint.endsWith('/documents')) return ok(row, await exerciseStudentDocument(page, ctx.base));
   if (row.endpoint.includes('/school/teachers/[id]/') && ['Emploi du temps', 'Évaluations', 'Retour des familles'].includes(action)) return ok(row, await exerciseTeacherRead(page, ctx.base, action, entities));
   if (row.endpoint.endsWith('/configuration/structure/details?gradeLevel=[id]') && action === 'Niveau sélectionné — éditer / supprimer') return ok(row, await exerciseGradeLevelEditDelete(page, ctx.base));
@@ -1142,7 +1146,8 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
     if (action === 'Générer / télécharger / annuler') return ok(row, await exerciseStudentDocument(page, ctx.base));
 
     if (action.startsWith('Planning EDT')) {
-        return ok(row, await exerciseTimetable(page, ctx.base, scenarioForSurface(row).id === 'web.scenario.0181'));
+        assert(entities.classId, 'The timetable scenario requires a provisioned class');
+        return ok(row, await exerciseTimetable(page, ctx.base, entities.classId, scenarioForSurface(row).id === 'web.scenario.0181'));
     }
 
 	// ── Publish / generate / payment / toggle — smoke only ──

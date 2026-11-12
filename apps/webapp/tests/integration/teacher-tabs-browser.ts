@@ -21,7 +21,7 @@ const errors: string[] = [];
 page.on('pageerror', error => errors.push(error.message));
 let yearId = '';
 async function read(path: string, data: unknown) {
-  const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data, schoolId, academicYearId: yearId });
+  const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data, headers: { 'x-actor-kind': 'staff' }, schoolId, academicYearId: yearId });
   assert(response.ok(), `${path}: ${response.status()}`);
   return await response.json() as any;
 }

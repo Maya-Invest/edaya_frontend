@@ -3,7 +3,7 @@ import { guardianIdentityPayload, personFieldDraft, studentIdentityPayload, teac
 
 describe('person profile patch preservation', () => {
     test('omitted optional fields do not mask existing values when merged into full-save payloads', () => {
-        const existing = { code: '0012', sourceFullName: '  Aminata Mariam Koné-Diabaté  ', occupation: 'Teacher', nationalMatricule: '000019' };
+        const existing = { identifier: '0012', sourceFullName: '  Aminata Mariam Koné-Diabaté  ', occupation: 'Teacher', globalIdentifier: '000019' };
         for (const patch of [studentIdentityPayload(), teacherIdentityPayload(), guardianIdentityPayload()]) expect({ ...existing, ...patch }).toEqual(existing);
     });
     test('unchanged school-entry dates are omitted so existing timestamps survive unrelated edits', () => {
@@ -12,9 +12,9 @@ describe('person profile patch preservation', () => {
         expect(studentIdentityPayload({ enrollmentDate: '' }, previous).enrollmentDate).toBeNull();
     });
     test('original names and leading-zero identifiers round-trip while explicit blanks clear', () => {
-        const person = { sourceFullName: '  Aminata Mariam Koné-Diabaté  ', code: '0012', occupation: 'Teacher' };
+        const person = { sourceFullName: '  Aminata Mariam Koné-Diabaté  ', identifier: '0012', occupation: 'Teacher' };
         expect(guardianIdentityPayload(personFieldDraft('guardian', person))).toEqual(person);
-        expect(studentIdentityPayload({ nationalMatricule: '000019' }).nationalMatricule).toBe('000019');
+        expect(studentIdentityPayload({ globalIdentifier: '000019' }).globalIdentifier).toBe('000019');
         expect(guardianIdentityPayload({ occupation: '', sourceFullName: '' })).toEqual({ occupation: null, sourceFullName: null });
     });
 });

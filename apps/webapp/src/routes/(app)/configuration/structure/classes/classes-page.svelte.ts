@@ -194,6 +194,7 @@ export class ClassesPageState {
 
   async createClassGroup(input: {
     name: string;
+    shortName?: string;
     gradeLevelId: string;
     capacity?: number | null;
     attendanceMode?: ClassAttendanceMode;
@@ -219,6 +220,7 @@ export class ClassesPageState {
         academicYearId,
         gradeLevelId: input.gradeLevelId,
         name: input.name.trim(),
+        shortName: input.shortName,
         capacity: input.capacity ?? null,
         attendanceMode: input.attendanceMode ?? 'session',
         homeroomStaffId: input.homeroomStaffId ?? null,
@@ -235,6 +237,7 @@ export class ClassesPageState {
   async updateClassGroup(input: {
     classGroupId: string;
     name: string;
+    shortName?: string;
     capacity?: number | null;
     attendanceMode?: ClassAttendanceMode;
     homeroomStaffId?: string | null;
@@ -250,6 +253,7 @@ export class ClassesPageState {
       request: () => client.commands.updateClassGroupConfiguration({
         classGroupId: input.classGroupId,
         name: input.name.trim(),
+        shortName: input.shortName,
         capacity: input.capacity !== undefined ? input.capacity : (current.capacity ?? null),
         attendanceMode: input.attendanceMode ?? current.attendanceMode,
         homeroomStaffId: input.homeroomStaffId !== undefined

@@ -5,6 +5,8 @@
 	import type { PlanningEvent, Subject } from '$lib/types/school';
 	import { defaultSubjectCategoryId } from '$lib/api/subject-categories-data';
 	import { authSession } from '$lib/auth/session.svelte';
+	import SubjectTypeField from '$lib/components/school/academics/SubjectTypeField.svelte';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -48,7 +50,6 @@
 	let wasOpen = $state(false);
 	let name = $state('');
 	let disciplineId = $state('');
-	let code = $state('');
 	let shortName = $state('');
 	let coefficient = $state('');
 	let reportModuleId = $state('ungrouped');
@@ -86,7 +87,6 @@
 	function resetForm() {
 		workloadError = '';
 		disciplineId = subject?.disciplineId ?? '';
-		code = subject?.code ?? '';
 		shortName = subject?.shortName ?? '';
 		coefficient = subject?.coefficient == null ? '' : String(subject.coefficient);
 		reportModuleId = subject?.reportModuleId ?? 'ungrouped';
@@ -144,8 +144,7 @@
 					...workload?.value,
 					name,
 					disciplineId: disciplineId || null,
-					code: code.trim() || null,
-					shortName: shortName.trim() || null,
+					shortName: shortName.trim() || undefined,
 					coefficient: coefficient ? Number(coefficient) : null,
 					isOptional,
 					categoryId,
@@ -161,8 +160,7 @@
 					classGroupId: classId,
 					name,
 					disciplineId: disciplineId || null,
-					code: code.trim() || null,
-					shortName: shortName.trim() || null,
+					shortName: shortName.trim() || undefined,
 					coefficient: coefficient ? Number(coefficient) : null,
 					isOptional,
 					categoryId,
@@ -224,6 +222,7 @@
 		</Label>
 		<Input bind:value={name} />
 	</div>
+	<SubjectTypeField bind:isOptional />
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -328,10 +327,8 @@
 		</div>
 	{/if}
 	<Label class="block space-y-2"><span>{$t('profile.discipline')}</span><AcademicDisciplinePicker bind:value={disciplineId} active={open} /></Label>
-	<Label class="block space-y-2"><span>{$t('common.code')}</span><Input bind:value={code} /></Label>
-	<Label class="block space-y-2"><span>{$t('profile.shortName')}</span><Input bind:value={shortName} /></Label>
+	<ShortNameField {name} bind:value={shortName} creating={!isEdit} />
 	{#if canConfigureModule}<Label class="block space-y-2"><span>{$t('modules.module')}</span><Select.Root type="single" bind:value={reportModuleId}><Select.Trigger><Select.Value>{reportModules.find(module => module.id === reportModuleId)?.name ?? $t('modules.ungrouped')}</Select.Value></Select.Trigger><Select.Content><Select.Item value="ungrouped">{$t('modules.ungrouped')}</Select.Item>{#each reportModules as module (module.id)}<Select.Item value={module.id}>{module.name}</Select.Item>{/each}</Select.Content></Select.Root></Label>{/if}
 
 	<Label class="block space-y-2"><span>{$t('eval.coefficient')}</span><Input type="number" min="0" step="any" bind:value={coefficient} /></Label>
-	<Label class="flex items-center gap-2"><Checkbox bind:checked={isOptional} />{$t('profile.isOptional')}</Label>
 </FormModal>

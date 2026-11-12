@@ -53,7 +53,7 @@ export const IMPORT_TYPE_TABS = [
 	'class_offerings',
 ] as const satisfies readonly ImportTypeKey[];
 
-export const TIMETABLE_GENERATION_STEPS = ['range', 'selection', 'review', 'success', 'error'] as const;
+export const TIMETABLE_GENERATION_STEPS = ['setup', 'success', 'error'] as const;
 export type TimetableGenerationStep = (typeof TIMETABLE_GENERATION_STEPS)[number];
 
 export const TIMETABLE_SETUP_TABS = ['subjects', 'periods', 'advanced'] as const;
@@ -62,7 +62,10 @@ export const TOOL_WORKFLOW_STEPS = [
 	...IMPORT_WORKFLOW_STEPS,
 	...Object.keys(LEGACY_IMPORT_STEPS),
 	...TIMETABLE_GENERATION_STEPS,
-	'setup', // Supported legacy address; canonicalized to range/selection.
+	'range',
+	'selection',
+	'preferences',
+	'review', // Legacy preparation addresses.
 ] as const;
 
 export const TOOL_WORKFLOW_TABS = [
@@ -92,10 +95,8 @@ export function canonicalToolsWorkflowSurface(
 	if (surface.modal === 'generate-timetable') {
 		return {
 			modal: surface.modal,
-			step: isValue(surface.step, TIMETABLE_GENERATION_STEPS)
-				? surface.step
-				: surface.step === 'setup' && (surface.tab === 'periods' || surface.tab === 'advanced') ? 'selection' : 'range',
-			tab: isValue(surface.tab, TIMETABLE_SETUP_TABS) ? surface.tab : 'subjects',
+			step: surface.step === 'success' || surface.step === 'error' ? surface.step : 'setup',
+			tab: isValue(surface.tab, TIMETABLE_SETUP_TABS) ? surface.tab : surface.step === 'preferences' ? 'periods' : 'subjects',
 		};
 	}
 	return { modal: null, step: null, tab: null };

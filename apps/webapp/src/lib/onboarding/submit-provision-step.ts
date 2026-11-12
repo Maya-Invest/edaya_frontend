@@ -7,6 +7,7 @@ import { t } from '$lib/i18n';
 import { saveDraft } from '$lib/onboarding/draft-storage';
 import { onboardingUserErrorMessage } from '$lib/onboarding/onboarding-user-error';
 import {
+	saveProvisionAttempt,
 	loadProvisionAttempt,
 	markProvisionAttemptBootstrapReady,
 	markProvisionAttemptCommitted,
@@ -182,6 +183,7 @@ export async function submitProvisionOnboarding(
 
 		let result: Awaited<ReturnType<typeof client.onboarding.provision>>;
 		try {
+			saveProvisionAttempt(authUserId, { ...attempt, submitted: true });
 			result = await client.onboarding.provision({
 				...payload,
 				schoolId: attempt.schoolId,

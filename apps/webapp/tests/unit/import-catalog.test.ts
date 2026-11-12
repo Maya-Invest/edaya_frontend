@@ -22,8 +22,8 @@ for (const type of types) {
 		const item = getImportTypeDefinition(type);
 		expect(item.key).toBe(type);
 		expect(item.status).toBe('active');
-		expect(item.csvFilename).toBe(`${type}-v1.csv`);
-		expect(item.xlsxFilename).toBe(`${type}-v1.xlsx`);
+		expect(item.csvFilename).toBe(`${type}-v2.csv`);
+		expect(item.xlsxFilename).toBe(`${type}-v2.xlsx`);
 		expect(item.xlsxSheetName).toBe(type);
 		expect(item.permission).toBeTruthy();
 		// Template columns and business validation remain authoritative API inputs.
