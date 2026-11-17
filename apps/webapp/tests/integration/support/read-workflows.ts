@@ -391,6 +391,7 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
 
     await uiCommand(ctx.page,'/commands/save-teacher-logbook',()=>dialog.getByTestId('form-modal-submit').click());
     await waitForMutationDialog(ctx.page);
+    await shown(ctx,content,'[role="dialog"].ui-drawer');
     await ctx.page.reload({waitUntil:'domcontentloaded'});
     assert.equal((await entity(ctx,'lesson-sessions',ctx.entities.sessionId)).sessionNote,content);
     const progress = await list(ctx,'class-subject-progress',{lessonSessionId:ctx.entities.sessionId});
