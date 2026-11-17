@@ -187,7 +187,7 @@ export const NOTIFICATION_TEMPLATE_VARIABLES: Record<NotificationTemplateKey, re
 };
 
 export const NOTIFICATION_TEMPLATE_SAMPLE_VALUES: Record<string, string> = {
-	schoolName: 'Edaya Academy',
+	schoolName: 'EDaya Academy',
 	announcementTitle: 'Parent-teacher meetings',
 	announcementBody: 'Meetings will be held on March 12.',
 	announcementBodyShort: 'Meetings on March 12.',

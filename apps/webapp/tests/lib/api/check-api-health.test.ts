@@ -11,7 +11,7 @@ test('service health is independent of optional phone availability discovery', a
 		if (path === '/auth/edaya/methods') throw new Error('Availability is unavailable');
 		return Response.json({ message: 'healthy' });
 	}) as unknown as typeof fetch;
-	expect(await checkBrowserApiHealth()).toEqual({ connected: true, message: 'Edaya API' });
+	expect(await checkBrowserApiHealth()).toEqual({ connected: true, message: 'EDaya API' });
 	expect(paths).toEqual(['/reference']);
 });
 test('unhealthy API still disables authentication', async () => {

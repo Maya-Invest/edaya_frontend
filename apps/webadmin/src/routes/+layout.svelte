@@ -11,7 +11,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Edaya Admin</title>
+	<title>EDaya Admin</title>
 </svelte:head>
 
 <div class="flex min-h-screen bg-background">
@@ -21,7 +21,7 @@
 				<Building2 class="size-5" />
 			</div>
 			<div>
-				<p class="font-display text-lg font-semibold leading-tight">Edaya</p>
+				<p class="font-display text-lg font-semibold leading-tight">EDaya</p>
 				<p class="text-xs text-muted-foreground">Webadmin</p>
 			</div>
 		</div>

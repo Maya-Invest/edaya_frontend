@@ -1,4 +1,4 @@
-# Edaya Webadmin
+# EDaya Webadmin
 
 SvelteKit platform operator UI. Tenant, user and billing routes currently remain placeholders; browser coverage verifies registered navigation and those placeholders, not completed business workflows.
 

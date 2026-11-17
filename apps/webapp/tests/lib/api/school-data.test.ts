@@ -5,7 +5,7 @@ import { mapSchoolFromApi, schoolConfigurationIdentityFields } from '$lib/api/sc
 function school(overrides: Partial<SchoolRaw> = {}): SchoolRaw {
 	return {
 		id: 'sch-1',
-		name: 'École Edaya — Cocody',
+		name: 'École EDaya — Cocody',
 		timeZone: 'Africa/Abidjan',
 		city: 'Abidjan',
 		enforceScheduleConflicts: false,
@@ -18,7 +18,7 @@ function school(overrides: Partial<SchoolRaw> = {}): SchoolRaw {
 		timetableGenerationMode: 'weekly',
 		timetableMinPeriodSpan: 1,
 		timetableMaxPeriodSpan: 1,
-		issuingName: 'École Edaya — Cocody',
+		issuingName: 'École EDaya — Cocody',
 		postalAddress: 'Boulevard Latrille, Cocody, Abidjan',
 		phone: '+225 27 22 44 00 00',
 		email: 'secretariat@edaya-ci.test',
@@ -38,7 +38,7 @@ describe('school identity mapping', () => {
 		const mapped = mapSchoolFromApi(school({ financeCurrency: 'EUR' }));
 		expect(mapped.financeCurrency).toBe('EUR');
 		expect(mapped.shortName).toBe('Cocody');
-		expect(mapped.issuingName).toBe('École Edaya — Cocody');
+		expect(mapped.issuingName).toBe('École EDaya — Cocody');
 		expect(mapped.schoolCode).toBe('EDAYA-CI');
 		expect(mapped.logoAttachmentId).toBe('att-logo');
 		expect(mapped.publicBrandingPurposes).toEqual(['school.logo']);
@@ -52,7 +52,7 @@ describe('school identity mapping', () => {
 			phone: '+225 27 22 44 00 00',
 			email: 'secretariat@edaya-ci.test',
 			schoolCode: 'EDAYA-CI',
-			issuingName: 'École Edaya — Cocody',
+			issuingName: 'École EDaya — Cocody',
 			publicBrandingPurposes: ['school.logo', 'school.crest'],
 		});
 	});

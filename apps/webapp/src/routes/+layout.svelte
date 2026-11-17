@@ -111,7 +111,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Edaya — School Management</title>
+	<title>EDaya — School Management</title>
 </svelte:head>
 
 <ApiDevBanner />

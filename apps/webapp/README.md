@@ -1,4 +1,4 @@
-# Edaya Webapp
+# EDaya Webapp
 
 SvelteKit staff workspace for school administration. Teachers, guardians and students are managed here; their portal accounts use their respective applications.
 

@@ -1,6 +1,6 @@
-# Edaya Web
+# EDaya Web
 
-Bun and Turborepo monorepo for the Edaya staff webapp and platform webadmin.
+Bun and Turborepo monorepo for the EDaya Prof webapp and platform webadmin.
 
 ## Repository layout
 
