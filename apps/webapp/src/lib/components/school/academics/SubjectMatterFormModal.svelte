@@ -31,10 +31,11 @@
 	let shortName = $state('');
 	let description = $state('');
 	let sequenceOrder = $state('1');
+	let progressWeight = $state('1');
 	let estimatedHours = $state('');
 
 	const isEdit = $derived(matter !== null && matter !== undefined);
-	const canSubmit = $derived(name.trim().length > 0 && Number(sequenceOrder) > 0);
+	const canSubmit = $derived(name.trim().length > 0 && Number(sequenceOrder) > 0 && Number.isFinite(Number(progressWeight)) && Number(progressWeight) > 0);
 
 	function fieldText(value: string | number | null | undefined): string {
 		if (value === null || value === undefined) {
@@ -49,6 +50,7 @@
 			shortName = matter?.shortName ?? matter?.name ?? '';
 			description = matter.description ?? '';
 			sequenceOrder = String(matter.sequenceOrder);
+			progressWeight = String(matter.progressWeight ?? 1);
 			estimatedHours = matter.estimatedHours !== undefined ? String(matter.estimatedHours) : '';
 			return;
 		}
@@ -56,6 +58,7 @@
 		shortName = '';
 		description = '';
 		sequenceOrder = String(defaultSequenceOrder);
+		progressWeight = '1';
 		estimatedHours = '';
 	}
 
@@ -83,6 +86,7 @@
 				shortName,
 				description: fieldText(description) || undefined,
 				sequenceOrder: Number(sequenceOrder),
+				progressWeight: Number(progressWeight),
 				estimatedHours: estimatedHoursText ? Number(estimatedHoursText) : undefined,
 				successMessage: isEdit
 					? get(t)('subjects.chapters.updateSuccess', { name: trimmedName })
@@ -121,6 +125,10 @@
 			<label class="block space-y-1.5">
 				<span class="text-xs font-medium text-muted-foreground">{$t('subjects.chapters.sequence')}</span>
 				<Input type="number" min="1" bind:value={sequenceOrder} />
+			</label>
+			<label class="grid gap-1">
+				<span class="text-xs font-medium text-muted-foreground">{$t('logbook.weight')}</span>
+				<Input type="number" min="0" step="any" bind:value={progressWeight} />
 			</label>
 			<label class="block space-y-1.5">
 				<span class="text-xs font-medium text-muted-foreground">{$t('subjects.chapters.estimatedHours')}</span>

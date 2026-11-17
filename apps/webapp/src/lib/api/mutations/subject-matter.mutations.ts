@@ -14,6 +14,7 @@ export interface SubjectMatterDrawerRow {
 	shortName?: string;
 	description?: string;
 	sequenceOrder: number;
+	progressWeight?: number;
 	estimatedHours?: number;
 	classSubjectMatterId?: string;
 	status?: ClassSubjectMatterRaw['status'];
@@ -67,6 +68,7 @@ function mapSubjectMatterRows(
 				shortName: matter.shortName,
 				description: matter.description ?? undefined,
 				sequenceOrder: matter.sequenceOrder,
+				progressWeight: matter.progressWeight ?? 1,
 				estimatedHours: matter.estimatedHours ?? undefined,
 				classSubjectMatterId: link?.id,
 				status: link?.status,
@@ -99,6 +101,7 @@ export async function saveSubjectMatterMutation(input: {
 	shortName?: string;
 	description?: string;
 	sequenceOrder: number;
+	progressWeight?: number;
 	estimatedHours?: number;
 	successMessage?: string;
 }): Promise<SubjectMatterDrawerRow | null> {
@@ -113,6 +116,7 @@ export async function saveSubjectMatterMutation(input: {
 			shortName: input.shortName,
 			description: input.description?.trim() || null,
 			sequenceOrder: input.sequenceOrder,
+			progressWeight: input.progressWeight,
 			estimatedHours: input.estimatedHours ?? null,
 		}),
 		{ successMessage: input.successMessage, versionKeys: ['subjects'] },
@@ -128,6 +132,7 @@ export async function saveSubjectMatterMutation(input: {
 		shortName: input.shortName,
 		description: input.description?.trim() || undefined,
 		sequenceOrder: input.sequenceOrder,
+		progressWeight: input.progressWeight,
 		estimatedHours: input.estimatedHours,
 	};
 }

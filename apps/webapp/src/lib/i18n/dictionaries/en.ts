@@ -4,6 +4,20 @@ import type {
 import { permissionLabelsEn } from './permission-labels.ts';
 
 export const en: Dict = {
+	'logbook.otherAuthor': 'A correction is awaiting review. Only its author can revise it.',
+	'logbook.finished': 'Completed in this session',
+	'logbook.covered': 'Covered',
+	'logbook.originalPercentages': 'Original percentages',
+	'logbook.migratedUnchanged': 'This percentage change has no effect on chapter coverage. Its author can revise or withdraw it.',
+	'logbook.migratedReview': 'The author needs to confirm the migrated chapter changes.',
+	'logbook.reference': 'Historical reference',
+	'logbook.weight': 'Chapter weight',
+	'logbook.empty': 'No chapters configured',
+	'logbook.counts': '{completed} of {total} chapters completed · {ongoing} ongoing',
+	'logbook.reason': 'Correction reason',
+	'logbook.in_progress': 'Ongoing',
+	'logbook.not_started': 'Not started',
+	'logbook.completed': 'Completed',
 	'identifier.optionalHelp': 'Optional. Use 1–20 letters, digits or internal hyphens. The identifier must be unique within this group at this school.',
 	'identifier.owner': 'Owner identifier',
 	'identifier.correct': 'Correct identifier',

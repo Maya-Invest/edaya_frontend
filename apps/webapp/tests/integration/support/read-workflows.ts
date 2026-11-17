@@ -385,14 +385,16 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     await button.click();
     const dialog = ctx.page.getByRole('dialog');
     await dialog.locator('textarea').nth(0).fill(content);
+    await dialog.getByRole('checkbox').first().check();
+    await dialog.getByRole('checkbox',{name:/completed in this session|terminé pendant cette séance/i}).first().check();
     await dialog.locator('textarea').nth(1).fill(content);
-    await dialog.locator('input[type="number"]').fill('45');
-    await uiCommand(ctx.page,'/commands/record-lesson-session-progress',()=>dialog.getByTestId('form-modal-submit').click());
+
+    await uiCommand(ctx.page,'/commands/save-teacher-logbook',()=>dialog.getByTestId('form-modal-submit').click());
     await waitForMutationDialog(ctx.page);
     await ctx.page.reload({waitUntil:'domcontentloaded'});
     assert.equal((await entity(ctx,'lesson-sessions',ctx.entities.sessionId)).sessionNote,content);
     const progress = await list(ctx,'class-subject-progress',{lessonSessionId:ctx.entities.sessionId});
-    assert(progress.some(row=>row.completedPercentage===45 && row.notes===content));
+    assert(progress.some(row=>row.completed===true && row.notes===content));
     await shown(ctx,content,'[role="dialog"].ui-drawer');
   },
   'web.scenario.0108': async ctx => {

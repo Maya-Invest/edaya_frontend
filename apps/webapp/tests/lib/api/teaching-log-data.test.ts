@@ -19,7 +19,7 @@ const classSources: TeachingLogSources = {
 			id: 'csp-1',
 			classSubjectMatterId: 'csm-1',
 			lessonSessionId: 'ls-cs-6a-math-0',
-			completedPercentage: 62,
+			completed: false,
 			notes: 'Mettre au même dénominateur',
 		},
 	],
@@ -69,7 +69,7 @@ describe('mapTeachingLogEntries', () => {
 			subject: 'Mathematics',
 			teacher: 'Aminata Touré',
 			content: 'Addition et soustraction de fractions.',
-			progress: 62,
+			chapters: [{ matterId: 'csm-1', name: '', completed: false, notes: 'Mettre au même dénominateur' }],
 		});
 	});
 

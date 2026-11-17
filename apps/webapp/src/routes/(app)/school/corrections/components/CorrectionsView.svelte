@@ -26,7 +26,7 @@
 	import { closeDetailDrawer, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { BADGE, BADGE_INFO, BADGE_SUCCESS, BADGE_WARN, BADGE_DANGER } from '$lib/ui-tones';
-	import { correctionDiff, correctionRevisionDiff } from '../correction-diff';
+	import { correctionDiff, correctionRevisionDiff, legacyPercentages } from '../correction-diff';
 	import { CorrectionsPageState } from '../corrections-page.svelte';
 
 	const queue = new CorrectionsPageState();
@@ -223,6 +223,15 @@
 				</DrawerEntityHeader>
 				<section><h3 class="mb-2 text-sm font-semibold">{$t('corrections.context')}</h3><p>{queue.detail.context.students.map(student => student.name).join(', ') || queue.detail.context.className}</p><p class="mt-2 text-xs text-muted-foreground">{new Date(queue.detail.correction.createdAt).toLocaleString($locale, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}</p></section>
 				<h3 class="text-sm font-semibold">{$t('corrections.comparison')}</h3>
+				{#if queue.detail.correction.workflow === 'logbook' && queue.detail.original?.legacyOriginal}
+					{#if !diffs.length}<p>{$t('logbook.migratedUnchanged')}</p>{/if}
+					{#if queue.detail.correction.legacyNeedsReview}<p>{$t('logbook.migratedReview')}</p>{/if}
+					<details><summary>{$t('logbook.originalPercentages')}</summary>
+						{#each legacyPercentages(queue.detail) as entry (entry.id)}
+							<p>{entry.name} · {entry.before} → {entry.proposed}</p>
+						{/each}
+					</details>
+				{/if}
 				<div class="space-y-4">{#each diffs as diff, index (`${diff.label}-${index}`)}<section><h3 class="mb-2 text-sm font-semibold">{diff.label}</h3><div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><div class="border-l-2 border-border pl-3"><p class="mb-1 text-xs text-muted-foreground">{$t('corrections.official')}</p><p class="whitespace-pre-wrap">{diff.before}</p></div><div class="border-l-2 border-primary/30 pl-3"><p class="mb-1 text-xs text-primary">{$t('corrections.proposed')}</p><p class="whitespace-pre-wrap">{diff.proposed}</p></div></div></section>{/each}</div>
 				<section class="border-t pt-6"><h3 class="mb-2 text-sm font-semibold">{$t('corrections.reason')}</h3><p class="whitespace-pre-wrap">{queue.detail.correction.reason}</p></section>
 				<h3 class="text-sm font-semibold">{$t('corrections.consequences')}</h3>{#if !consequences.length}<p class="text-sm text-muted-foreground">{$t('corrections.noConsequences')}</p>{/if}

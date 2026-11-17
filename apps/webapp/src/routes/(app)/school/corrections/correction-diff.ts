@@ -55,10 +55,14 @@ export function correctionDiff(detail: CorrectionDetail, translate: (key: string
 		}
 		const matterIds = new Set([...row.before.progress.map(p => p.matterId), ...row.proposal.progress.map(p => p.matterId)]);
 		for (const [index, matterId] of [...matterIds].entries()) {
-			const original = row.before.progress.find(p => p.matterId === matterId)?.completedPercentage;
-			const next = row.proposal.progress.find(p => p.matterId === matterId)?.completedPercentage;
-			if (original !== next)
-				rows.push({ label: fieldNames?.[matterId] ?? `${translate('corrections.field.progress')} ${index + 1}`, before: original == null ? '—' : `${original}%`, proposed: next == null ? '—' : `${next}%` });
+			const original = row.before.progress.find(p => p.matterId === matterId);
+			const next = row.proposal.progress.find(p => p.matterId === matterId);
+			const label = fieldNames?.[matterId] ?? `${translate('corrections.field.progress')} ${index + 1}`;
+			const coverage = (entry: typeof original) => entry ? translate(entry.completed ? 'logbook.finished' : 'logbook.covered') : '—';
+			if (original?.completed !== next?.completed)
+				rows.push({ label, before: coverage(original), proposed: coverage(next) });
+			if ((original?.notes ?? '') !== (next?.notes ?? ''))
+				rows.push({ label: `${label} · ${translate('teaching.notes')}`, before: display(original?.notes), proposed: display(next?.notes) });
 		}
 	}
 	return rows;
@@ -72,4 +76,17 @@ export function correctionRevisionDiff(detail: CorrectionDetail, version: number
 	}
 	const revision = row.revisions.find(r => r.version === version);
 	return revision ? correctionDiff({ ...detail, correction: { ...row, proposal: revision.proposal } }, translate) : [];
+}
+
+export function legacyPercentages(detail: CorrectionDetail) {
+	const original = detail.original?.legacyOriginal as { before?: { progress?: { matterId: string; completedPercentage: number }[] }; proposal?: { progress?: { matterId: string; completedPercentage: number }[] } } | undefined;
+	const names = detail.original?.fieldNames as Record<string, string> | undefined;
+	const before = new Map(original?.before?.progress?.map(p => [p.matterId, p.completedPercentage]));
+	const proposed = new Map(original?.proposal?.progress?.map(p => [p.matterId, p.completedPercentage]));
+	return [...new Set([...before.keys(), ...proposed.keys()])].map(id => ({
+		id,
+		name: names?.[id] ?? id,
+		before: before.has(id) ? `${before.get(id)}%` : '—',
+		proposed: proposed.has(id) ? `${proposed.get(id)}%` : '—',
+	}));
 }

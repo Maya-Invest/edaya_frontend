@@ -1,11 +1,10 @@
-import type { SessionDetail, SessionLogbook, SessionSubjectMatterOption } from '$lib/types/session-detail';
+import type { LogbookSave, SessionDetail, SessionLogbook, SessionSubjectMatterOption } from '$lib/types/session-detail';
 import type { PageQueryRequest } from '../../../lib/timetable-page-status';
 import type { TimetablePageState } from '../../../timetable-page.svelte';
-import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { findPlanningEventById } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
-import { nowIso } from '$lib/date/format';
+import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { queryClient } from '$lib/queries/client';
 import { getContext, setContext } from 'svelte';
@@ -126,60 +125,33 @@ export class SessionLogbookTabState {
 		}, request);
 	}
 
+	async loadLogbook(targetId: string) {
+		const state = await getBrowserSchoolClient().queries.getTeacherWorkflowState({ proposal: { workflow: 'logbook', formatVersion: 2, targetId, sessionNote: null, progress: [] } });
+		const pending = state.corrections.find(row => row.status === 'pending');
+		return { ...state, editable: !pending || pending.authorSubjectId === authSession.subjectId };
+	}
+
 	async validateLogbook(sessionIds: string[]): Promise<boolean> {
 		const result = await runTimetableRouteMutation({ request: () => getBrowserSchoolClient().commands.validateTeacherLogbook({ requestId: crypto.randomUUID(), lessonSessionIds: sessionIds }), successMessage: get(t)('corrections.validateLogbook') });
 		return result !== null;
 	}
 
-	async saveLogbook(input: {
-		sessionId: string;
-		classGroupId: string;
-		classSubjectId: string;
-		date: string;
-		logbookId?: string;
-		classSubjectMatterId: string;
-		chapter: string;
-		content: string;
-		notes: string;
-		progress: number;
-		successMessage?: string;
-	}): Promise<boolean> {
+	async saveLogbook(input: LogbookSave): Promise<boolean> {
 		const client = getBrowserSchoolClient();
-		const progressId = input.logbookId ?? `csp-${input.sessionId}-${Date.now().toString(36)}`;
-		const nextLogbook: SessionLogbook = {
-			id: progressId,
-			chapter: input.chapter.trim(),
-			content: input.content.trim(),
-			notes: input.notes.trim(),
-			progress: input.progress,
-		};
-		const previous = this.slice?.sessionId === input.sessionId ? this.slice.logbook : undefined;
-
+		const proposal = { workflow: 'logbook' as const, formatVersion: 2 as const, targetId: input.sessionId, sessionNote: input.sessionNote, progress: input.progress };
+		const body = { requestId: input.requestId, expectedVersion: input.expectedVersion, proposal };
 		const result = await runTimetableRouteMutation({
 			request: async () => {
-				const session = await client.entities.lessonSessions.get(input.sessionId);
-				await client.entities.lessonSessions.save(
-					buildLessonSessionSavePayload(session, {
-						displayLabel: session.displayLabel,
-						sessionNote: input.content.trim() || null,
-					}),
-				);
-				await client.commands.recordLessonSessionProgress({
-					id: progressId,
-					classSubjectMatterId: input.classSubjectMatterId,
-					lessonSessionId: input.sessionId,
-					completedPercentage: input.progress,
-					notes: input.notes.trim() || null,
-					recordedAt: nowIso(),
-				});
+				if (input.reason && input.correctionId)
+					await client.commands.reviseTeacherCorrection({ ...body, reason: input.reason, correctionId: input.correctionId });
+				else if (input.reason)
+					await client.commands.requestTeacherCorrection({ ...body, reason: input.reason });
+				else
+					await client.commands.saveTeacherLogbook(body);
+				return true;
 			},
-			successMessage: input.successMessage ?? get(t)('planning.session.logbookSuccess'),
-			apply: () => {
-				this.patchLogbook(input.sessionId, nextLogbook);
-			},
-			rollback: () => {
-				this.patchLogbook(input.sessionId, previous);
-			},
+			versionKeys: ['planning', 'subjects'],
+			successMessage: get(t)('planning.session.logbookSuccess'),
 		});
 		return result !== null;
 	}

@@ -25,7 +25,9 @@
 					</p>
 					<h4 class="mt-0.5 font-display text-sm font-semibold">{entry.chapter}</h4>
 				</div>
-				<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{entry.progress}%</span>
+				{#each entry.chapters ?? [] as chapter (chapter.matterId)}
+					<p>{chapter.name} · {$t(chapter.completed === null ? 'logbook.reference' : chapter.completed ? 'logbook.finished' : 'logbook.covered')}{chapter.notes ? ` · ${chapter.notes}` : ''}</p>
+				{/each}
 			</header>
 			<p class="text-xs leading-relaxed text-foreground/80">{entry.content}</p>
 			{#if entry.notes.trim().length > 0}

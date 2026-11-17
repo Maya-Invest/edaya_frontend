@@ -37,7 +37,7 @@ describe('buildSessionDetail', () => {
 			id: 'csp-1',
 			classSubjectMatterId: 'csm-cs-6a-math',
 			lessonSessionId: 'ls-att-today-6a',
-			completedPercentage: 40,
+			completed: false,
 			notes: 'Add fractions',
 		}];
 
@@ -77,7 +77,7 @@ describe('buildSessionDetail', () => {
 			completedPercentage: 40,
 		}]);
 		expect(detail.logbook).toMatchObject({
-			id: 'csp-1',
+			id: 'ls-att-today-6a',
 			content: 'Lesson content',
 		});
 	});
@@ -98,7 +98,7 @@ describe('buildSessionDetail', () => {
 	});
 });
 
- it('occurrence reads distinguish missing records from denied and failed requests', async () => {
+it('occurrence reads distinguish missing records from denied and failed requests', async () => {
 	const { ApiError } = await import('@maya-invest/edaya-api-client');
 	for (const kind of ['lesson', 'activity', 'assessment'] as const) {
 		for (const code of [403, 404, 503]) {
@@ -106,8 +106,9 @@ describe('buildSessionDetail', () => {
 			const entity = { get: async () => { throw error; } };
 			const client = { entities: { lessonSessions: entity, activitySessions: entity, assessments: entity } } as unknown as Parameters<typeof loadPlanningOccurrenceDetail>[0];
 			const result = loadPlanningOccurrenceDetail(client, { id: 'missing', kind });
-			if (code === 404) expect(await result).toBeNull();
+			if (code === 404)
+				expect(await result).toBeNull();
 			else await expect(result).rejects.toBe(error);
 		}
 	}
- });
+});

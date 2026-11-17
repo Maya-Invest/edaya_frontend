@@ -8,7 +8,7 @@ import { root } from '../runtime'
 /* eslint-disable no-template-curly-in-string */
 const workflow = (name: string) => Bun.YAML.parse(readFileSync(resolve(root, '.github/workflows', name), 'utf8')) as Record<string, any>
 const preparation = 'preparation'
-const entries = ['branche_check.yml', 'pr_validation.yml', 'deploy.yml']
+const entries = ['branch_check.yml', 'pr_validation.yml', 'deploy.yml']
 const mandatory = [preparation, 'quality', 'unit', 'build', 'integration']
 
 test('integration reserves hosted runner capacity before setup and retains diagnostics after failure', () => {
@@ -66,14 +66,16 @@ test('entry workflows contain only reusable callers and every reusable workflow 
     }
   }
   for (const entry of entries) {
-    expect(workflow(entry).name).toBe(entry === 'staging_maintenance.yml' ? 'staging maintenance' : entry.replace('.yml', ''))
+    // The branch workflow kept its published name when its file was renamed.
+    const expectedName = entry === 'branch_check.yml' ? 'branche_check' : entry.replace('.yml', '')
+    expect(workflow(entry).name).toBe(expectedName)
     visit(entry)
   }
   expect([...reached].sort()).toEqual(files.sort())
 })
 
 test('branch checks prepare immutable inputs then run only parallel quality and unit jobs', () => {
-  const branch = workflow('branche_check.yml')
+  const branch = workflow('branch_check.yml')
   expect(branch.on.push['branches-ignore']).toEqual(['main', 'staging'])
   expect(Object.keys(branch.jobs)).toEqual([preparation, 'quality', 'unit'])
   expect(branch.concurrency['cancel-in-progress']).toBe(true)
@@ -222,7 +224,7 @@ test('artifact setup freezes dependencies while finalization only joins results'
 })
 
 test('development matches backend source branches, while manual validation and releases never fall back', () => {
-  const branch = workflow('branche_check.yml').jobs.preparation.with
+  const branch = workflow('branch_check.yml').jobs.preparation.with
   expect(branch.backend_ref).toBe('${{ github.ref_name }}')
   expect(branch.match_backend_branch).toBe(true)
   const validation = workflow('pr_validation.yml')

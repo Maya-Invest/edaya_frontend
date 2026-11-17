@@ -12,23 +12,18 @@
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
-	import { chapterProgressFromEntries } from '../../../../lib/teaching-helpers';
-	import { getTeachingPageState } from '../../../../teaching-page.svelte';
 	import { getSubjectProgressionTabState } from '../subject-progression-tab.svelte';
 
 	type SubjectDrawerModal = 'add-chapter' | 'edit-chapter' | 'delete-chapter';
 
 	const { subject }: { subject: Subject } = $props();
 
-	const teachingPage = getTeachingPageState();
 	const progressionTab = getSubjectProgressionTabState();
 	const matterRows = $derived(progressionTab.rowsFor(subject.id));
 	const matterContext = $derived(progressionTab.matterContextFor(subject.id));
 	const chaptersReadOnly = $derived(progressionTab.chaptersReadOnlyFor(subject.id));
 	const canEditChapter = (row: SubjectMatterDrawerRow) =>
 		!progressionTab.isCatalogChapter(subject.id, row.id);
-	const entries = $derived(teachingPage.logEntriesForSubject(subject));
-	const chaptersData = $derived(chapterProgressFromEntries(entries));
 
 	const modals = createUrlSyncedModals<SubjectDrawerModal>({
 		allowed: ['add-chapter', 'edit-chapter', 'delete-chapter'],
@@ -129,6 +124,7 @@
 				<div class="flex items-start justify-between gap-3">
 					<div class="min-w-0">
 						<p class="text-sm font-semibold">{row.name}</p>
+						{#if row.status}<span>{$t(`logbook.${row.status}`)}</span>{/if}
 						{#if row.description}
 							<p class="mt-1 text-xs text-muted-foreground">{row.description}</p>
 						{/if}
@@ -168,25 +164,19 @@
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('teaching.overallProgress')}
 			</p>
-			<span class="font-sans tabular-nums text-xs">{chaptersData.overall}%</span>
+			<span class="font-sans tabular-nums text-xs">{subject.completedPercentage ?? 0}%</span>
 		</div>
 		<div class="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
-			<div class="h-full bg-primary" style="width: {chaptersData.overall}%"></div>
+			<div class="h-full bg-primary" style="width: {subject.completedPercentage ?? 0}%"></div>
 		</div>
 	</div>
 
 	<div class="space-y-2">
-		{#each chaptersData.chapters as [chapter, progress] (chapter)}
-			<div class="rounded-collection border border-border bg-card px-4 py-3 shadow-soft">
-				<div class="flex items-center justify-between gap-3">
-					<p class="text-sm font-semibold">{chapter}</p>
-					<span class="font-sans tabular-nums text-xs text-muted-foreground">{progress}%</span>
-				</div>
-				<div class="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
-					<div class="h-full bg-primary" style="width: {progress}%"></div>
-				</div>
-			</div>
-		{/each}
+		{#if subject.chapterCount === 0}
+			<p>{$t('logbook.empty')}</p>
+		{:else if subject.chapterCount !== undefined}
+			<p>{$t('logbook.counts', { completed: subject.completedChapterCount ?? 0, total: subject.chapterCount, ongoing: subject.ongoingChapterCount ?? 0 })}</p>
+		{/if}
 	</div>
 </div>
 

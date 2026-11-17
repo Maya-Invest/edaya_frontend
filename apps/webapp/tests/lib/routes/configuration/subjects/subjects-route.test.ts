@@ -8,9 +8,9 @@ import {
 	SUBJECTS_DETAIL_TABS,
 } from '../../../../../src/routes/(app)/configuration/structure/subjects/lib/subjects-detail-tabs';
 import {
-	chapterProgressFromEntries,
 	logEntriesForSubject,
 	subjectIdFromUrl,
+	subjectProgress,
 } from '../../../../../src/routes/(app)/configuration/structure/subjects/lib/subjects-helpers';
 
 describe('subjects route helpers', () => {
@@ -54,16 +54,8 @@ describe('subjects route helpers', () => {
 		expect(logEntriesForSubject('Math', '6a', entries)).toHaveLength(1);
 	});
 
-	it('computes chapter progress from entries', () => {
-		const entries = [
-			{ id: '1', classId: '6a', subject: 'Math', chapter: 'A', progress: 40, date: '2026-01-01', teacher: '', content: '', notes: '' },
-			{ id: '2', classId: '6a', subject: 'Math', chapter: 'A', progress: 60, date: '2026-01-02', teacher: '', content: '', notes: '' },
-			{ id: '3', classId: '6a', subject: 'Math', chapter: 'B', progress: 80, date: '2026-01-03', teacher: '', content: '', notes: '' },
-		];
-		expect(chapterProgressFromEntries(entries)).toEqual({
-			chapters: [['A', 60], ['B', 80]],
-			overall: 70,
-		});
+	it('reads weighted coverage even when lesson history is empty', () => {
+		expect(subjectProgress({ completedPercentage: 63 } as Parameters<typeof subjectProgress>[0], [])).toBe(63);
 	});
 });
 
