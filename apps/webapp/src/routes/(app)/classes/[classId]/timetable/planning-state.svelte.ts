@@ -23,7 +23,7 @@ import {
 	shiftWeek,
 	todayDate,
 } from '$lib/scheduling/planning-calendar';
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, untrack } from 'svelte';
 import { sessionAttendanceTaskHref } from './lib/attendance-task';
 import {
 	PLANNING_MODAL_KEYS,
@@ -109,7 +109,8 @@ export class PlanningState {
 			replaceRouteSurface(daily ? `${appPath('/(app)/classes/[classId]/attendance', { classId })}${detailNavigationSearch(url)}` : sessionAttendanceTaskHref(url, classId, surface.target));
 			return;
 		}
-		const openingWorkflow = this.modals.active !== surface.modal;
+		// Local open/close state must not retrigger URL hydration before navigation settles.
+		const openingWorkflow = untrack(() => this.modals.active !== surface.modal);
 		if (openingWorkflow && surface.modal === 'new-session' && surface.step !== 'type') {
 			surface.step = 'type';
 		}
