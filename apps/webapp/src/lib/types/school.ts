@@ -79,6 +79,9 @@ export interface Subject {
 	reportOrder?: number;
 	isOffered?: boolean;
 	participationRevision?: number;
+	chapterCount?: number;
+	completedChapterCount?: number;
+	ongoingChapterCount?: number;
 	completedPercentage?: number | null;
 	periodsPerWeek?: number | null;
 	minPeriodSpan?: number | null;

@@ -4,6 +4,20 @@ import type {
 import { permissionLabelsFr } from './permission-labels.ts';
 
 export const fr: Dict = {
+	'logbook.otherAuthor': 'Une correction attend une décision. Seul son auteur peut la réviser.',
+	'logbook.finished': 'Chapitre terminé pendant cette séance',
+	'logbook.covered': 'Abordé',
+	'logbook.originalPercentages': 'Pourcentages d’origine',
+	'logbook.migratedUnchanged': 'Ce changement de pourcentage ne modifie pas la progression. Son auteur peut réviser ou retirer la demande.',
+	'logbook.migratedReview': 'L’auteur doit confirmer les modifications de chapitres reprises.',
+	'logbook.reference': 'Référence historique',
+	'logbook.weight': 'Poids du chapitre',
+	'logbook.empty': 'Aucun chapitre configuré',
+	'logbook.counts': '{completed} chapitres terminés sur {total} · {ongoing} en cours',
+	'logbook.reason': 'Motif de la correction',
+	'logbook.in_progress': 'En cours',
+	'logbook.not_started': 'Non commencé',
+	'logbook.completed': 'Terminé',
 	'identifier.optionalHelp': 'Facultatif. Utilisez de 1 à 20 lettres, chiffres ou tirets internes. Le matricule doit être unique dans ce groupe au sein de l’établissement.',
 	'identifier.owner': 'Matricule du propriétaire',
 	'identifier.correct': 'Corriger le matricule',

@@ -105,7 +105,7 @@ describe('mapPlanningEvents', () => {
 				id: 'cs-math',
 				classGroupId: 'cg-1',
 				subjectId: 'subj-math',
-				completedPercentage: null,
+				completedPercentage: 0, chapterCount: 0, completedChapterCount: 0, ongoingChapterCount: 0,
 				participationRevision: 0,
 				isOffered: true,
 			} satisfies ClassSubjectRaw],

@@ -25,6 +25,7 @@ type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectRaw = components['schemas']['Subject'];
 
 export interface TeachingLogSources extends ClassSubjectInstructorSources {
+	subjectMattersRaw?: components['schemas']['SubjectMatter'][];
 	lessonSessionsRaw: LessonSessionRaw[];
 	classSubjectProgressRaw: ClassSubjectProgressRaw[];
 	classSubjectMattersRaw: ClassSubjectMatterRaw[];
@@ -102,6 +103,7 @@ export async function fetchClassTeachingLogSources(
 		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
 	]);
 
+	const subjectMattersRaw = await listAllEntityPagesByIds(query => client.entities.subjectMatters.list(query), uniqueIds(classSubjectMattersRaw.map(link => link.subjectMatterId)));
 	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);
 
 	return {
@@ -110,6 +112,7 @@ export async function fetchClassTeachingLogSources(
 		classSubjectMattersRaw,
 		classSubjectsRaw,
 		subjectsRaw,
+		subjectMattersRaw,
 		...instructorSources,
 	};
 }
@@ -156,13 +159,12 @@ export function mapTeachingLogEntries(
 				sources.subjectsRaw,
 			);
 			const progressRecords = progressBySession.get(session.id) ?? [];
-			const primaryProgress = progressRecords[0];
-			const averageProgress = progressRecords.length > 0
-				? Math.round(
-						progressRecords.reduce((sum, entry) => sum + entry.completedPercentage, 0)
-						/ progressRecords.length,
-					)
-				: 0;
+			const chapters = progressRecords.map(entry => ({
+				matterId: entry.classSubjectMatterId,
+				name: matterNameForProgress(entry, sources.classSubjectMattersRaw, sources.subjectMattersRaw),
+				completed: entry.completed,
+				notes: entry.notes,
+			}));
 
 			return {
 				id: session.id,
@@ -173,13 +175,11 @@ export function mapTeachingLogEntries(
 					session.classSubjectId,
 					sources,
 				),
-				chapter: primaryProgress
-					? matterNameForProgress(primaryProgress, sources.classSubjectMattersRaw)
-					: session.displayLabel,
+				chapter: chapters.map(row => row.name).filter(Boolean).join(' · ') || session.displayLabel,
+				chapters,
 				content: readableLogbookNote(session.sessionNote),
-				notes: primaryProgress?.notes ?? readableLogbookNote(session.sessionNote),
+				notes: '',
 				attachments: undefined,
-				progress: primaryProgress?.completedPercentage ?? averageProgress,
 			} satisfies LogEntry;
 		})
 		.sort((left, right) => (left.date < right.date ? 1 : -1));

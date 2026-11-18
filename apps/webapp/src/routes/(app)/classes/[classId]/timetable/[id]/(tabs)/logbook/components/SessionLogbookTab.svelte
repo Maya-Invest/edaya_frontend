@@ -26,22 +26,6 @@
 	logbookTab.configureSurfaceValidation(logbookExists =>
 		planning.validateSessionLogbookSurface(s, logbookExists),
 	);
-
-	async function saveLogbook(input: {
-		sessionId: string;
-		classGroupId: string;
-		classSubjectId: string;
-		date: string;
-		logbookId?: string;
-		classSubjectMatterId: string;
-		chapter: string;
-		content: string;
-		notes: string;
-		progress: number;
-		successMessage?: string;
-	}) {
-		return logbookTab.saveLogbook(input);
-	}
 </script>
 
 {#if detail}
@@ -77,18 +61,15 @@
 		{#if detail.logbook}
 			<article class="rounded-collection border border-border bg-card p-4 shadow-soft">
 				<div class="flex items-start justify-between gap-2">
-					<h4 class="font-display text-sm font-semibold">{detail.logbook.chapter}</h4>
-					{#if isLesson}
-						<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{detail.logbook.progress}%</span>
-					{/if}
+					<h4 class="font-display text-sm font-semibold">{$t('subjects.tab.logbook')}</h4>
+
 				</div>
 				<p class="mt-2 text-xs leading-relaxed text-foreground/80">{detail.logbook.content}</p>
-				{#if isLesson && detail.logbook.notes.trim().length > 0}
-					<p class="mt-2 text-[11px] text-muted-foreground">
-						<span class="font-medium text-foreground">{$t('planning.session.logbookNotes')} :</span>
-						{detail.logbook.notes}
-					</p>
-				{/if}
+				{#each detail.logbook.chapters ?? [] as chapter (chapter.matterId)}
+					<p>{chapter.name} · {$t(chapter.completed === null ? 'logbook.reference' : chapter.completed ? 'logbook.finished' : 'logbook.covered')}</p>
+					{#if chapter.notes}<p>{chapter.notes}</p>{/if}
+				{/each}
+
 			</article>
 		{:else}
 			<DrawerEmptyState label={$t('planning.session.noLogbook')}>
@@ -122,6 +103,6 @@
 	</div>
 
 	{#if logbookAuthorized}
-		<PlanningSessionLogbookModal {detail} bind:open={sessionLogbookOpen.open} showTrigger={false} onSave={saveLogbook} />
+		<PlanningSessionLogbookModal {detail} bind:open={sessionLogbookOpen.open} showTrigger={false} onLoad={id => logbookTab.loadLogbook(id)} onSave={input => logbookTab.saveLogbook(input)} />
 	{/if}
 {/if}

@@ -1,14 +1,12 @@
 <script lang="ts">
-	import type { SessionDetail } from '$lib/types/session-detail';
+	import type { components } from '$lib/api/schema';
+	import type { SessionDetail, LogbookSave } from '$lib/types/session-detail';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
-	import { get } from 'svelte/store';
 
 	let {
 		detail,
@@ -16,6 +14,7 @@
 		title,
 		open = $bindable(false),
 		showTrigger = true,
+		onLoad,
 		onSave,
 	}: {
 		detail: SessionDetail;
@@ -23,94 +22,83 @@
 		title?: string;
 		open?: boolean;
 		showTrigger?: boolean;
-		onSave: (input: {
-			sessionId: string;
-			classGroupId: string;
-			classSubjectId: string;
-			date: string;
-			logbookId?: string;
-			classSubjectMatterId: string;
-			chapter: string;
-			content: string;
-			notes: string;
-			progress: number;
-			successMessage?: string;
-		}) => Promise<boolean>;
+		onLoad: (id: string) => Promise<components['schemas']['TeacherWorkflowEligibilityResponse'] & { editable: boolean }>;
+		onSave: (input: LogbookSave) => Promise<boolean>;
 	} = $props();
 	let busy = $state(false);
-	let wasOpen = $state(false);
-	let classSubjectMatterId = $state('');
+	let loaded = $state(false);
+	let error = $state('');
 	let content = $state('');
-	let notes = $state('');
-	let progress = $state('0');
-
+	let reason = $state('');
+	let locked = $state(false);
+	let expectedVersion = 0;
+	let correctionId: string | undefined;
+	let envelope: { edayaLogbook: { content?: string } } | undefined;
+	let selected = $state<Record<string, { completed: boolean; notes: string }>>({});
+	let lastBody = '';
+	let requestId = '';
 	const isEdit = $derived(detail.logbook !== undefined);
-	const subjectMatters = $derived(detail.subjectMatters);
-	const selectedMatter = $derived(subjectMatters.find(entry => entry.id === classSubjectMatterId));
-	const selectedMatterLabel = $derived(selectedMatter?.name ?? '');
-	const canSubmit = $derived(
-		classSubjectMatterId.length > 0 && content.trim().length > 0	&& detail.classSubjectId.length > 0 && subjectMatters.length > 0,
-	);
-
-	function resolveInitialMatterId(): string {
-		if (detail.logbook) {
-			const matched = subjectMatters.find(entry => entry.id === detail.logbook?.chapter || entry.name === detail.logbook?.chapter);
-			if (matched) {
-				return matched.id;
-			}
-		}
-		return subjectMatters[0]?.id ?? '';
-	}
-
-	function resetForm() {
-		classSubjectMatterId = resolveInitialMatterId();
-		content = detail.logbook?.content ?? '';
-		notes = detail.logbook?.notes ?? '';
-		progress = String(
-			detail.logbook?.progress ?? subjectMatters.find(entry => entry.id === classSubjectMatterId)?.completedPercentage ?? 0,
-		);
-	}
-
-	function handleMatterChange(value: string | undefined) {
-		if (!value) {
-			return;
-		}
-		classSubjectMatterId = value;
-		const matter = subjectMatters.find(entry => entry.id === value);
-		if (matter && !isEdit) {
-			progress = String(matter.completedPercentage);
-		}
-	}
+	const canSubmit = $derived(loaded && (!locked || !!reason.trim()));
 
 	$effect(() => {
-		if (open && !wasOpen)
-			resetForm();
-		wasOpen = open;
+		if (!open)
+			return;
+		let active = true;
+		loaded = false;
+		error = '';
+		const targetId = detail.sessionId;
+		onLoad(targetId).then((state) => {
+			if (!active || state.official.workflow !== 'logbook')
+				return;
+			if (!state.editable) {
+				error = $t('logbook.otherAuthor');
+				return;
+			}
+			const pending = state.corrections.find(row => row.status === 'pending');
+			const source = pending?.proposal.workflow === 'logbook' ? pending.proposal : state.official;
+			locked = state.locked;
+			expectedVersion = pending?.version ?? state.version;
+			correctionId = pending?.id;
+			reason = pending?.reason ?? '';
+			content = source.sessionNote ?? '';
+			envelope = undefined;
+			try {
+				const parsed = JSON.parse(content);
+				if (parsed?.edayaLogbook && typeof parsed.edayaLogbook === 'object') {
+					envelope = parsed;
+					content = parsed.edayaLogbook.content ?? '';
+				}
+			}
+			catch { /* Plain text lesson note. */ }
+			selected = Object.fromEntries(source.progress.map(row => [row.matterId, { completed: row.completed, notes: row.notes ?? '' }]));
+			lastBody = '';
+			loaded = true;
+		}).catch((cause) => {
+			if (active)
+				error = String(cause);
+		});
+		return () => {
+			active = false;
+		};
 	});
 
 	async function submit() {
-		if (!canSubmit || !selectedMatter)
+		if (!canSubmit || busy)
 			return;
-
 		busy = true;
-		const input = {
-			sessionId: detail.sessionId,
-			classGroupId: detail.classGroupId,
-			classSubjectId: detail.classSubjectId,
-			classSubjectMatterId,
-			date: detail.date,
-			logbookId: detail.logbook?.id,
-			chapter: selectedMatter.name,
-			content,
-			notes,
-			progress: Math.max(0, Math.min(100, Number.parseInt(progress, 10) || 0)),
-			successMessage: get(t)('planning.session.logbookSuccess'),
-		};
-		const ok = await onSave(input);
-		busy = false;
-		if (ok) {
-			open = false;
+		try {
+			const sessionNote = envelope ? JSON.stringify({ ...envelope, edayaLogbook: { ...envelope.edayaLogbook, content } }) : content.trim() || null;
+			const progress = Object.entries(selected).map(([matterId, row]) => ({ matterId, completed: row.completed, notes: row.notes.trim() || null }));
+			const body = { sessionId: detail.sessionId, expectedVersion, sessionNote, progress, reason: locked ? reason.trim() : undefined, correctionId };
+			const key = JSON.stringify(body);
+			if (lastBody !== key) {
+				requestId = crypto.randomUUID();
+				lastBody = key;
+			}
+			if (await onSave({ ...body, requestId }))
+				open = false;
 		}
+		finally { busy = false; }
 	}
 </script>
 
@@ -138,50 +126,27 @@
 	submitLabel={isEdit ? $t('common.save') : $t('planning.session.addLogbook')}
 	{busy}
 	submitDisabled={!canSubmit}
-	onCancel={resetForm}
+	onCancel={() => { open = false; }}
 	onSubmit={submit}
 >
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('planning.session.logbookSubjectMatter')}
-		</Label>
-		{#if subjectMatters.length === 0}
-			<p class="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
-				{$t('planning.session.noSubjectMatters')}
-			</p>
-		{:else}
-			<Select.Root type="single" value={classSubjectMatterId} onValueChange={handleMatterChange}>
-				<Select.Trigger>
-					<Select.Value placeholder={$t('planning.session.logbookSubjectMatter')}>
-						{selectedMatterLabel}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content class="z-[100]">
-					{#each subjectMatters as matter (matter.id)}
-						<Select.Item value={matter.id} label={matter.name}>
-							{matter.name}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		{/if}
-	</div>
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('planning.session.logbookContent')}
-		</Label>
-		<Textarea bind:value={content} rows={4} />
-	</div>
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('planning.session.logbookNotes')}
-		</Label>
-		<Textarea bind:value={notes} rows={3} />
-	</div>
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('planning.session.logbookProgress')}
-		</Label>
-		<Input type="number" min="0" max="100" bind:value={progress} />
-	</div>
+	{#if error}<p role="alert">{error}</p>{/if}
+	{#if loaded}
+		<Label>{$t('planning.session.logbookContent')}<Textarea bind:value={content} rows={4} /></Label>
+		<fieldset class="space-y-3"><legend>{$t('planning.session.logbookSubjectMatter')}</legend>
+			{#each detail.subjectMatters as matter (matter.id)}
+				<div class="space-y-2">
+					<label><input type="checkbox" checked={!!selected[matter.id]} onchange={(event) => {
+						if (event.currentTarget.checked)
+							selected[matter.id] = { completed: false, notes: '' };
+						else delete selected[matter.id];
+					}} /> {matter.name}</label>
+					{#if selected[matter.id]}
+						<label class="block"><input type="checkbox" bind:checked={selected[matter.id].completed} /> {$t('logbook.finished')}</label>
+						<Label>{$t('planning.session.logbookNotes')}<Textarea bind:value={selected[matter.id].notes} rows={2} /></Label>
+					{/if}
+				</div>
+			{/each}
+		</fieldset>
+		{#if locked}<Label>{$t('logbook.reason')}<Textarea bind:value={reason} rows={2} /></Label>{/if}
+	{/if}
 </FormModal>

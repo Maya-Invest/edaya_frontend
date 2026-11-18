@@ -38,17 +38,8 @@ export function logEntriesForSubject(
 	return entries.filter(entry => entry.subject === subjectName && entry.classId === classId);
 }
 
-export function subjectProgress(subject: Subject, entries: LogEntry[]): number {
-	const subjectEntries = logEntriesForSubject(subject.name, subject.classId, entries);
-	const byChapter: Record<string, number> = {};
-	for (const entry of subjectEntries) {
-		const previous = byChapter[entry.chapter];
-		if (previous === undefined || entry.progress > previous) {
-			byChapter[entry.chapter] = entry.progress;
-		}
-	}
-	const values = Object.values(byChapter);
-	return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
+export function subjectProgress(subject: Subject, _entries: LogEntry[]): number {
+	return subject.completedPercentage ?? 0;
 }
 
 export function overallClassProgress(subjects: Subject[], entries: LogEntry[]): number {
@@ -57,22 +48,4 @@ export function overallClassProgress(subjects: Subject[], entries: LogEntry[]): 
 	}
 	const total = subjects.reduce((sum, subject) => sum + subjectProgress(subject, entries), 0);
 	return Math.round(total / subjects.length);
-}
-
-export function chapterProgressFromEntries(entries: LogEntry[]): {
-	chapters: [string, number][];
-	overall: number;
-} {
-	const byChapter: Record<string, number> = {};
-	for (const entry of entries) {
-		const previous = byChapter[entry.chapter];
-		if (previous === undefined || entry.progress > previous) {
-			byChapter[entry.chapter] = entry.progress;
-		}
-	}
-	const chapters = Object.entries(byChapter);
-	const overall = chapters.length
-		? Math.round(chapters.reduce((sum, [, progress]) => sum + progress, 0) / chapters.length)
-		: 0;
-	return { chapters, overall };
 }

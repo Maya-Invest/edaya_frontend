@@ -10,13 +10,27 @@ export interface SessionSubjectMatterOption {
 	completedPercentage: number;
 }
 
+export interface SessionChapter {
+	matterId: string;
+	name: string;
+	completed: boolean | null;
+	notes?: string | null;
+}
+
+export interface LogbookSave {
+	sessionId: string;
+	requestId: string;
+	expectedVersion: number;
+	sessionNote: string | null;
+	progress: { matterId: string; completed: boolean; notes?: string | null }[];
+	reason?: string;
+	correctionId?: string;
+}
+
 export interface SessionLogbook {
+	chapters?: SessionChapter[];
 	id: string;
-	chapter: string;
 	content: string;
-	/** Progress / session notes (API: ClassSubjectProgress.notes / sessionNote). */
-	notes: string;
-	progress: number;
 }
 
 export interface SessionAttendanceRow {

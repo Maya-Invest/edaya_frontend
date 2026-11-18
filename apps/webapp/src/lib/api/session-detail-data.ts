@@ -43,26 +43,22 @@ function formatDate(value: unknown): string {
 export function buildSessionSubjectMatters(
 	classSubjectMattersRaw: ClassSubjectMatterRaw[],
 	subjectMattersRaw: SubjectMatterRaw[],
-	progressRaw: ClassSubjectProgressRaw[] = [],
+	_progressRaw: ClassSubjectProgressRaw[] = [],
 ): SessionSubjectMatterOption[] {
 	const subjectMatterById = new Map(subjectMattersRaw.map(entry => [entry.id, entry]));
-	const progressByMatterId = new Map(
-		progressRaw.map(entry => [entry.classSubjectMatterId, entry]),
-	);
-
 	return classSubjectMattersRaw
 		.map((link) => {
 			const subjectMatter = subjectMatterById.get(link.subjectMatterId);
 			if (!subjectMatter) {
 				return null;
 			}
-			const progress = progressByMatterId.get(link.id);
+
 			return {
 				id: link.id,
 				name: subjectMatter.name,
 				sequenceOrder: subjectMatter.sequenceOrder,
-				status: (progress ? 'in_progress' : link.status) as SessionSubjectMatterStatus,
-				completedPercentage: progress?.completedPercentage ?? link.completedPercentage,
+				status: link.status as SessionSubjectMatterStatus,
+				completedPercentage: link.completedPercentage,
 			} satisfies SessionSubjectMatterOption;
 		})
 		.filter((entry): entry is SessionSubjectMatterOption => entry !== null)
@@ -73,22 +69,19 @@ function mapLogbook(
 	session: LessonSessionRaw,
 	progressRaw: ClassSubjectProgressRaw[],
 	classSubjectMattersRaw: ClassSubjectMatterRaw[],
+	subjectMattersRaw: SubjectMatterRaw[],
 ): SessionLogbook | undefined {
-	const primaryProgress = progressRaw[0];
-	const matterLink = primaryProgress
-		? classSubjectMattersRaw.find(entry => entry.id === primaryProgress.classSubjectMatterId)
-		: undefined;
-
-	if (!session.sessionNote && !primaryProgress) {
+	if (!session.sessionNote && progressRaw.length === 0)
 		return undefined;
-	}
 
 	return {
-		id: primaryProgress?.id ?? session.id,
-		chapter: matterLink?.id ?? session.displayLabel,
-		content: readableLogbookNote(session.sessionNote) || primaryProgress?.notes || '',
-		notes: primaryProgress?.notes ?? readableLogbookNote(session.sessionNote) ?? '',
-		progress: primaryProgress?.completedPercentage ?? 0,
+		id: session.id,
+		content: readableLogbookNote(session.sessionNote) ?? '',
+		chapters: progressRaw.map((entry) => {
+			const link = classSubjectMattersRaw.find(row => row.id === entry.classSubjectMatterId);
+			const name = subjectMattersRaw.find(row => row.id === link?.subjectMatterId)?.name ?? session.displayLabel;
+			return { matterId: entry.classSubjectMatterId, name, completed: entry.completed, notes: entry.notes };
+		}),
 	};
 }
 
@@ -134,7 +127,7 @@ export function buildSessionDetail(input: {
 			subjectMattersRaw,
 			progressRaw,
 		),
-		logbook: mapLogbook(session, progressRaw, classSubjectMattersRaw),
+		logbook: mapLogbook(session, progressRaw, classSubjectMattersRaw, subjectMattersRaw),
 	};
 }
 
@@ -158,12 +151,12 @@ export async function loadSessionDetail(
 	const classSubjectId = session.classSubjectId;
 	const [attendanceRaw, classSubjectMattersRaw, progressRaw] = await Promise.all([
 		client.entities.attendance.list(recordsForFieldIds('lessonSessionId', [lessonSessionId])),
-		options.attendanceOnly ? [] : client.entities.classSubjectMatters.list(recordsForFieldIds('classSubjectId', [classSubjectId])),
-		options.attendanceOnly ? [] : client.entities.classSubjectProgress.list(progressForLessonSessions([lessonSessionId])),
+		options.attendanceOnly ? [] : listAllEntityPages(query => client.entities.classSubjectMatters.list(query), { baseQuery: recordsForFieldIds('classSubjectId', [classSubjectId]) }),
+		options.attendanceOnly ? [] : listAllEntityPages(query => client.entities.classSubjectProgress.list(query), { baseQuery: progressForLessonSessions([lessonSessionId]) }),
 	]);
 	const subjectMatterIds = [...new Set((classSubjectMattersRaw ?? []).map(entry => entry.subjectMatterId))];
 	const subjectMattersRaw = subjectMatterIds.length > 0
-		? await client.entities.subjectMatters.list(entitiesByIds(subjectMatterIds))
+		? await listAllEntityPages(query => client.entities.subjectMatters.list(query), { baseQuery: entitiesByIds(subjectMatterIds) })
 		: [];
 
 	return buildSessionDetail({
@@ -210,10 +203,8 @@ export function buildOccurrenceAttendanceDetail(input: {
 		logbook: input.notes
 			? {
 					id: input.occurrenceId,
-					chapter: input.displayLabel ?? '',
 					content: input.notes,
-					notes: input.notes,
-					progress: 0,
+
 				}
 			: undefined,
 	};
