@@ -102,7 +102,7 @@
 		{/if}
 	</div>
 
-	{#if logbookAuthorized}
+	{#if logbookAuthorized && sessionLogbookOpen.open}
 		<PlanningSessionLogbookModal {detail} bind:open={sessionLogbookOpen.open} showTrigger={false} onLoad={id => logbookTab.loadLogbook(id)} onSave={input => logbookTab.saveLogbook(input)} />
 	{/if}
 {/if}
