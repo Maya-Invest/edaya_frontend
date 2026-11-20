@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
+import { waitForResolvedAcademicYearId } from '../../scripts/qa-harness-ui';
 import { emptyEntities } from '../../scripts/qa-matrix-support';
 import { apiFetch } from './setup/journey-api';
 import { exerciseImportProgress } from './support/import-progress';
@@ -23,11 +24,9 @@ try {
 	await passwordlessApiLogin(page, base, 'a.kone@ecole-ci.edaya.dev');
 	await page.goto(`${base}/dashboard`);
 	await page.waitForURL(/\/dashboard/);
-	await page.waitForFunction(() => Boolean(document.querySelector('[data-testid="academic-year-trigger"]')?.getAttribute('data-year-id')));
-	const year = await page.getByTestId('academic-year-trigger').getAttribute('data-year-id');
-	assert(year);
+	const year = await waitForResolvedAcademicYearId(page);
 	async function request(path: string, data: unknown) {
-		const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data, headers: { 'x-actor-kind': 'staff' }, schoolId: 'sch-edaya-ci-cocody', academicYearId: year! });
+		const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data, headers: { 'x-actor-kind': 'staff' }, schoolId: 'sch-edaya-ci-cocody', academicYearId: year });
 		assert(response.ok(), `${path}: ${response.status()} ${await response.text()}`);
 		return response.json();
 	}

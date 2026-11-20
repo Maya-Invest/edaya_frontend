@@ -18,13 +18,11 @@ export const IMPORT_SCENARIOS = {
 } as const;
 
 export async function exerciseImport(page: Page, base: string, type: keyof typeof IMPORT_SCENARIOS, entities: MatrixEntities) {
-  await waitForResolvedAcademicYearId(page);
-  const year = await page.getByTestId('academic-year-trigger').getAttribute('data-year-id');
-  assert(year, 'Import fixture requires a selected academic year');
+  const year = await waitForResolvedAcademicYearId(page);
   const schoolId = await resolveSchoolId(page, base);
   assert(schoolId, 'Import fixture requires a school');
   async function request(path: string, data?: Row) {
-    const response = await apiFetch(page, base, path, { ...(data ? { method: 'POST', data } : {}), schoolId: schoolId!, academicYearId: year!, headers: { 'x-actor-kind': 'staff' } });
+    const response = await apiFetch(page, base, path, { ...(data ? { method: 'POST', data } : {}), schoolId: schoolId!, academicYearId: year, headers: { 'x-actor-kind': 'staff' } });
     assert(response.ok(), `Import fixture/read ${path}: HTTP ${response.status()} ${await response.text()}`);
     return response.json();
   }

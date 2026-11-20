@@ -85,13 +85,14 @@ export async function clearAcademicSelectionStorage(page: Page): Promise<void> {
 	});
 }
 
-export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000): Promise<void> {
-	await page.waitForFunction(() => {
+export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000): Promise<string> {
+	const selectedYear = await page.waitForFunction(() => {
 		const trigger = document.querySelector('[data-testid="app-shell"]') ?? document.querySelector('[data-testid="academic-year-trigger"]');
 		const schoolId = trigger?.getAttribute('data-school-id');
 		const yearId = trigger?.getAttribute('data-year-id');
-		return Boolean(schoolId && yearId && sessionStorage.getItem(`edaya:yearId:${schoolId}`) === yearId);
+		return schoolId && yearId && sessionStorage.getItem(`edaya:yearId:${schoolId}`) === yearId ? yearId : '';
 	}, undefined, { timeout });
+	return selectedYear.jsonValue();
 }
 
 /** Keep date inputs inside their min/max (academic-year bounds on calendar create). */
