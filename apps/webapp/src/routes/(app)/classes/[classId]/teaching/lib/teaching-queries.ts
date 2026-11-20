@@ -1,27 +1,23 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { TeachingPageSlice } from './teaching-helpers';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadClassSubjects } from '$lib/api/subjects-data';
-import { fetchTeachingLogEntries } from '$lib/api/teaching-log-data';
 import { resolvePageLoad } from '$lib/queries/page-status';
-import { emptyTeachingSlice } from './teaching-helpers';
+import { emptyTeachingSlice, teachingClassIdFromUrl } from './teaching-helpers';
 
 export async function loadTeachingSlice(classId: string): Promise<TeachingPageSlice> {
 	const client = getBrowserSchoolClient();
-	const [subjects, logEntries] = await Promise.all([
-		loadClassSubjects(client, classId),
-		fetchTeachingLogEntries(classId, client),
-	]);
-	return {
-		classId,
-		subjects,
-		logEntries,
-	};
+	const subjects = await loadClassSubjects(client, classId);
+	return { classId, subjects };
 }
 
-export function queryTeachingListPage(classId: string) {
-	return (url: URL) => resolvePageLoad(url, {
-		empty: () => emptyTeachingSlice(classId),
-		load: () => loadTeachingSlice(classId),
-		hasItems: () => true,
-	});
+export function queryTeachingListPage() {
+	return (url: URL, request?: PageQueryRequest) => {
+		const classId = teachingClassIdFromUrl(url) ?? '';
+		return resolvePageLoad(url, {
+			empty: () => emptyTeachingSlice(classId),
+			load: () => classId ? loadTeachingSlice(classId) : Promise.resolve(emptyTeachingSlice(classId)),
+			hasItems: () => true,
+		}, request);
+	};
 }

@@ -2,62 +2,63 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
-function buildContactMethods(email: string, phone: string) {
-	return [
-		email
-			? {
-					type: 'email' as const,
-					value: email,
-					label: 'Email',
-					isPrimary: true,
-					allowsNotifications: true,
-				}
-			: null,
-		phone
-			? {
-					type: 'phone' as const,
-					value: phone,
-					label: 'Téléphone',
-					isPrimary: !email,
-					allowsNotifications: true,
-				}
-			: null,
-	].filter((method): method is NonNullable<typeof method> => method !== null);
-}
-
-export interface RegisterAndLinkGuardianInput {
+export interface RegisterGuardianInput {
 	schoolId: string;
 	guardianId: string;
-	linkId: string;
-	studentId: string;
 	firstName: string;
 	lastName: string;
+	profile?: Record<string, string>;
 	email?: string;
 	phone?: string;
+	alternativePhone?: string;
+	emailNotificationsEnabled?: boolean;
+	smsNotificationsEnabled?: boolean;
+	pushNotificationsEnabled?: boolean;
 	sendAccountInvitation?: boolean;
 	createdAt?: string;
 }
 
-export async function registerAndLinkGuardian(
+export interface LinkGuardianToStudentInput {
+	linkId: string;
+	guardianId: string;
+	studentId: string;
+	createdAt?: string;
+}
+
+export interface RegisterAndLinkGuardianInput extends RegisterGuardianInput, LinkGuardianToStudentInput {}
+
+export async function registerGuardian(
 	client: SchoolClient,
-	input: RegisterAndLinkGuardianInput,
+	input: RegisterGuardianInput,
 ): Promise<void> {
-	const now = input.createdAt ?? new Date().toISOString();
+	const now = input.createdAt;
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 
 	await client.commands.registerGuardian({
-		id: input.guardianId,
 		schoolId: input.schoolId,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
+		id: input.guardianId,
+		requestId: input.guardianId,
+		identifier: input.profile?.identifier,
 		email: email || null,
 		phone: phone || null,
-		contactMethods: buildContactMethods(email, phone),
+		alternativePhone: input.alternativePhone,
+		emailNotificationsEnabled: input.emailNotificationsEnabled,
+		smsNotificationsEnabled: input.smsNotificationsEnabled,
+		pushNotificationsEnabled: input.pushNotificationsEnabled,
 		hasAccess: true,
 		sendAccountInvitation: input.sendAccountInvitation ?? false,
 		createdAt: now,
 	});
+}
+
+export async function linkGuardianToStudent(
+	client: SchoolClient,
+	input: LinkGuardianToStudentInput,
+): Promise<void> {
+	const now = input.createdAt ?? new Date().toISOString();
 
 	await client.commands.linkGuardianToStudent({
 		id: input.linkId,
@@ -77,6 +78,14 @@ export async function registerAndLinkGuardian(
 	});
 }
 
+export async function registerAndLinkGuardian(
+	client: SchoolClient,
+	input: RegisterAndLinkGuardianInput,
+): Promise<void> {
+	await registerGuardian(client, input);
+	await linkGuardianToStudent(client, input);
+}
+
 export function createGuardianImportIds(
 	index: number,
 	studentId: string,
@@ -90,4 +99,8 @@ export function createGuardianImportIds(
 		guardianId,
 		linkId: `gl-${guardianId}-${studentId}`,
 	};
+}
+
+export function createGuardianStudentLinkId(guardianId: string, studentId: string): string {
+	return `gl-${guardianId}-${studentId}`;
 }

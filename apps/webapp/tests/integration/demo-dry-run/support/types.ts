@@ -22,6 +22,7 @@ export interface DemoSummary {
 export interface VisitOptions {
 	expectText?: RegExp | string;
 	selector?: string;
+	selectorTimeoutMs?: number;
 	pathPrefix?: string;
 	retry?: boolean;
 	skipOnFail?: string;
@@ -30,6 +31,7 @@ export interface VisitOptions {
 export interface SignInOptions {
 	namePattern?: RegExp;
 	email?: string;
+	password?: string;
 }
 
 export interface DemoContext {
@@ -39,6 +41,8 @@ export interface DemoContext {
 	pageErrors: PageErrorTracker;
 	outDir: string;
 	shot: (name: string) => Promise<void>;
+	/** Captured during D5 timetable scene for DD drawer tabs. */
+	timetableSessionId?: string | null;
 }
 
 export interface EnsureDailyAttendanceOptions {

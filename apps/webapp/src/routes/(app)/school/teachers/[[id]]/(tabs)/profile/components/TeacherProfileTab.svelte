@@ -1,39 +1,37 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
-	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import PersonProfileDetails from '$lib/components/school/shared/PersonProfileDetails.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail, Phone } from '$lib/icons';
+	import AccountLinkingSection from '$lib/smart-components/account-linking/AccountLinkingSection.svelte';
+	import AnnualProfile from '$lib/smart-components/annual-profile/AnnualProfile.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
+	import TeacherQuickLogin from './TeacherQuickLogin.svelte';
 
-	const { teacher }: { teacher: Teacher } = $props();
-
+	const { teacher }: {
+		teacher: Teacher;
+	} = $props();
 	const teachersPage = getTeachersPageState();
-
 	let optimisticActive = $state<boolean | null>(null);
 	let statusBusy = $state(false);
-
 	const active = $derived(optimisticActive ?? teacher.isActive);
-
 	async function handleActiveChange(checked: boolean | 'indeterminate') {
 		if (checked === 'indeterminate' || statusBusy) {
 			return;
 		}
-
 		const previous = active;
 		optimisticActive = checked;
 		statusBusy = true;
 		const ok = await teachersPage.updateStatus({
 			teacherId: teacher.id,
 			isActive: checked,
-			successMessage: get(t)(
-				checked ? 'teacher.activateSuccess' : 'teacher.deactivateSuccess',
-				{ name: teacher.name },
-			),
+			successMessage: get(t)(checked ? 'teacher.activateSuccess' : 'teacher.deactivateSuccess', { name: teacher.name }),
 		});
 		statusBusy = false;
 		if (ok) {
@@ -44,10 +42,18 @@
 		}
 	}
 </script>
+<AnnualProfile kind="teacher" personId={teacher.id} name={teacher.name} />
+
+<PersonProfileDetails kind="teacher" person={teacher} />
 
 <div class="space-y-4">
 	<DrawerField label={$t('guardian.fullName')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{teacher.name}</div>
+	</DrawerField>
+	<DrawerField label={$t('profile.identifier')}>
+		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
+			{teacher.identifier || $t('profile.notConfigured')}
+		</div>
 	</DrawerField>
 	<DrawerField label={$t('common.email')}>
 		<div class="flex min-h-10 items-center gap-2 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
@@ -61,9 +67,9 @@
 			{teacher.phone || '—'}
 		</div>
 	</DrawerField>
-	<PermissionGate permission="STAFF_UPDATE" mode="disable">
+	<PermissionGate permission="STAFF_MANAGE" mode="disable">
 		{#snippet children({ disabled })}
-			<div class="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3">
+			<div class="flex items-center gap-2 rounded-collection border border-border bg-card px-4 py-3">
 				<Checkbox
 					checked={active}
 					disabled={disabled || statusBusy}
@@ -83,4 +89,9 @@
 		contactEmail={teacher.email}
 		displayName={teacher.name}
 	/>
+	{#if teacher.subjectId && teacher.isActive}
+		<PermissionGate permission="ACCESS_CONTROL_MANAGE">
+			{#key `${teacher.id}:${academicContext.scopeGeneration}`}<TeacherQuickLogin teacherId={teacher.id} />{/key}
+		</PermissionGate>
+	{/if}
 </div>

@@ -11,7 +11,6 @@ export { ONBOARDING_PATH };
 
 export function resolveLinkedActorPath(session?: SessionSnapshot | null): string {
 	return resolveLinkedActorPathCore(session, {
-		role: authSession.user?.role,
 		sessionKind: authSession.sessionKind,
 	});
 }
@@ -24,9 +23,9 @@ export function resolvePostAuthPath(options: {
 	return resolvePostAuthPathCore({
 		...options,
 		authUserId: options.authUserId ?? authSession.authUserId,
-		role: authSession.user?.role,
 		sessionKind: authSession.sessionKind,
 		serverOnboardingStatus: authSession.serverOnboardingStatus,
+		onboardingStatusUnknown: authSession.onboardingStatusUnknown,
 	});
 }
 
@@ -39,14 +38,20 @@ export function redirectPathIfAuthenticated(): string | null {
 		return resolvePostAuthPath({ session: null, pendingOnboarding: true });
 	}
 
+	if (authSession.onboardingStatusUnknown) {
+		return null;
+	}
+
 	if (authSession.isLoggedIn) {
-		const resumePath = onboardingResumePath(
-			authSession.authUserId,
-			authSession.schoolId,
-			authSession.serverOnboardingStatus,
-		);
-		if (resumePath) {
-			return resumePath;
+		if (authSession.sessionKind === 'staff') {
+			const resumePath = onboardingResumePath(
+				authSession.authUserId,
+				authSession.schoolId,
+				authSession.serverOnboardingStatus,
+			);
+			if (resumePath) {
+				return resumePath;
+			}
 		}
 		return resolveLinkedActorPath();
 	}

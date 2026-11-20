@@ -1,51 +1,64 @@
 <script lang="ts">
-	import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
-	import { saveSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
+	import type { SubjectMatterDrawerRow, saveSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
+	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
 	let {
+		onSaveSubjectMatter,
 		open = $bindable(false),
 		matter = null,
 		subjectId,
 		classSubjectId,
 		classGroupId,
-		gradeLevelSubjectId,
 		defaultSequenceOrder = 1,
 		onSaved,
 	}: {
+		onSaveSubjectMatter: typeof saveSubjectMatterMutation;
 		open?: boolean;
 		matter?: SubjectMatterDrawerRow | null;
 		subjectId: string;
 		classSubjectId: string;
 		classGroupId: string;
-		gradeLevelSubjectId?: string;
 		defaultSequenceOrder?: number;
 		onSaved?: (row: SubjectMatterDrawerRow) => void;
 	} = $props();
 
 	let busy = $state(false);
 	let name = $state('');
+	let shortName = $state('');
 	let description = $state('');
 	let sequenceOrder = $state('1');
+	let progressWeight = $state('1');
 	let estimatedHours = $state('');
 
 	const isEdit = $derived(matter !== null && matter !== undefined);
-	const canSubmit = $derived(name.trim().length > 0 && Number(sequenceOrder) > 0);
+	const canSubmit = $derived(name.trim().length > 0 && Number(sequenceOrder) > 0 && Number.isFinite(Number(progressWeight)) && Number(progressWeight) > 0);
+
+	function fieldText(value: string | number | null | undefined): string {
+		if (value === null || value === undefined) {
+			return '';
+		}
+		return String(value).trim();
+	}
 
 	function resetForm() {
 		if (matter) {
 			name = matter.name;
+			shortName = matter?.shortName ?? matter?.name ?? '';
 			description = matter.description ?? '';
 			sequenceOrder = String(matter.sequenceOrder);
+			progressWeight = String(matter.progressWeight ?? 1);
 			estimatedHours = matter.estimatedHours !== undefined ? String(matter.estimatedHours) : '';
 			return;
 		}
 		name = '';
+		shortName = '';
 		description = '';
 		sequenceOrder = String(defaultSequenceOrder);
+		progressWeight = '1';
 		estimatedHours = '';
 	}
 
@@ -63,16 +76,18 @@
 		busy = true;
 		try {
 			const trimmedName = name.trim();
-			const saved = await saveSubjectMatterMutation({
+			const estimatedHoursText = fieldText(estimatedHours);
+			const saved = await onSaveSubjectMatter({
 				id: matter?.id,
 				subjectId,
 				classSubjectId,
 				classGroupId,
-				gradeLevelSubjectId,
 				name: trimmedName,
-				description: description.trim() || undefined,
+				shortName,
+				description: fieldText(description) || undefined,
 				sequenceOrder: Number(sequenceOrder),
-				estimatedHours: estimatedHours.trim() ? Number(estimatedHours) : undefined,
+				progressWeight: Number(progressWeight),
+				estimatedHours: estimatedHoursText ? Number(estimatedHoursText) : undefined,
 				successMessage: isEdit
 					? get(t)('subjects.chapters.updateSuccess', { name: trimmedName })
 					: get(t)('subjects.chapters.createSuccess', { name: trimmedName }),
@@ -88,7 +103,7 @@
 	}
 </script>
 
-<FormModal
+<FormModal contentClass="max-w-3xl"
 	bind:open
 	title={isEdit ? $t('subjects.chapters.editTitle') : $t('subjects.chapters.createTitle')}
 	description={$t('subjects.chapters.formDescription')}
@@ -111,10 +126,15 @@
 				<span class="text-xs font-medium text-muted-foreground">{$t('subjects.chapters.sequence')}</span>
 				<Input type="number" min="1" bind:value={sequenceOrder} />
 			</label>
+			<label class="grid gap-1">
+				<span class="text-xs font-medium text-muted-foreground">{$t('logbook.weight')}</span>
+				<Input type="number" min="0" step="any" bind:value={progressWeight} />
+			</label>
 			<label class="block space-y-1.5">
 				<span class="text-xs font-medium text-muted-foreground">{$t('subjects.chapters.estimatedHours')}</span>
 				<Input type="number" min="0" step="0.5" bind:value={estimatedHours} />
 			</label>
 		</div>
 	</div>
+	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

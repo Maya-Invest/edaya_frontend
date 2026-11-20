@@ -1,9 +1,14 @@
-import { describe, expect, it } from 'bun:test';
 import { createEmptyDraft, saveDraft } from '$lib/onboarding/draft-storage';
 import {
+	mergeOnboardingDraftWithServerStatus,
 	onboardingResumePath,
+	persistServerOnboardingStatusToDraft,
+	persistSyncedOnboardingDraft,
 	shouldContinueOnboarding,
+	shouldHoldOnboardingSummary,
 } from '$lib/onboarding/resume-onboarding';
+import { markOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
+import { describe, expect, it } from 'bun:test';
 
 function withSessionStorage<T>(run: () => T): T {
 	const storage = new Map<string, string>();
@@ -35,6 +40,41 @@ function withSessionStorage<T>(run: () => T): T {
 }
 
 describe('resume onboarding', () => {
+	it('does not send invited staff into the owner wizard', () => {
+		withSessionStorage(() => {
+			const authUserId = 'user-invited-staff';
+			const draft = createEmptyDraft();
+			draft.schoolStepSubmitted = true;
+			draft.maxReachedStep = 2;
+			saveDraft(authUserId, draft);
+
+			expect(shouldContinueOnboarding(authUserId, 'sch-1')).toBe(false);
+			expect(onboardingResumePath(authUserId, 'sch-1')).toBeNull();
+
+			const serverStatus = {
+				wizardCompleted: true,
+				maxReachedStep: 4 as const,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: true,
+			};
+			expect(shouldContinueOnboarding(authUserId, 'sch-1', serverStatus)).toBe(false);
+			expect(onboardingResumePath(authUserId, 'sch-1', serverStatus)).toBeNull();
+		});
+	});
+
+	it('resumes unlinked draft progress without a school id', () => {
+		withSessionStorage(() => {
+			const authUserId = 'user-unlinked-draft';
+			const draft = createEmptyDraft();
+			draft.schoolStepSubmitted = true;
+			draft.maxReachedStep = 2;
+			saveDraft(authUserId, draft);
+
+			expect(shouldContinueOnboarding(authUserId)).toBe(true);
+			expect(onboardingResumePath(authUserId)).toBe('/onboarding?step=2');
+		});
+	});
+
 	it('resumes linked users when the wizard is not completed', () => {
 		withSessionStorage(() => {
 			const authUserId = 'user-resume-1';
@@ -43,8 +83,15 @@ describe('resume onboarding', () => {
 			draft.maxReachedStep = 2;
 			saveDraft(authUserId, draft);
 
-			expect(shouldContinueOnboarding(authUserId, 'sch-1')).toBe(true);
-			expect(onboardingResumePath(authUserId, 'sch-1')).toBe('/onboarding?step=2');
+			const serverStatus = {
+				wizardCompleted: false,
+				maxReachedStep: 2 as const,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: false,
+			};
+
+			expect(shouldContinueOnboarding(authUserId, 'sch-1', serverStatus)).toBe(true);
+			expect(onboardingResumePath(authUserId, 'sch-1', serverStatus)).toBe('/onboarding?step=2');
 		});
 	});
 
@@ -60,10 +107,23 @@ describe('resume onboarding', () => {
 		});
 	});
 
-	it('resumes at step 1 for linked users without a stored draft', () => {
+	it('does not resume for school-step stub at step 1 (app shell init artifact)', () => {
 		withSessionStorage(() => {
-			expect(shouldContinueOnboarding('user-no-draft', 'sch-1')).toBe(true);
-			expect(onboardingResumePath('user-no-draft', 'sch-1')).toBe('/onboarding?step=1');
+			const authUserId = 'user-stub';
+			const draft = createEmptyDraft();
+			draft.schoolStepSubmitted = true;
+			draft.registeredSchoolId = 'sch-1';
+			saveDraft(authUserId, draft);
+
+			expect(shouldContinueOnboarding(authUserId, 'sch-1')).toBe(false);
+			expect(onboardingResumePath(authUserId, 'sch-1')).toBeNull();
+		});
+	});
+
+	it('does not resume linked users without draft or server status (post-wizard cleanup)', () => {
+		withSessionStorage(() => {
+			expect(shouldContinueOnboarding('user-no-draft', 'sch-1')).toBe(false);
+			expect(onboardingResumePath('user-no-draft', 'sch-1')).toBeNull();
 		});
 	});
 
@@ -98,5 +158,107 @@ describe('resume onboarding', () => {
 
 			expect(onboardingResumePath(authUserId, 'sch-1', serverStatus)).toBe('/onboarding?step=4');
 		});
+	});
+
+	it('can persist server status without completing the local wizard', () => {
+		withSessionStorage(() => {
+			const authUserId = 'user-hold-complete';
+			const draft = createEmptyDraft();
+			draft.maxReachedStep = 4;
+			saveDraft(authUserId, draft);
+
+			const serverStatus = {
+				wizardCompleted: true,
+				maxReachedStep: 4 as const,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: true,
+			};
+
+			expect(mergeOnboardingDraftWithServerStatus(draft, serverStatus, 'sch-1').wizardCompleted).toBe(true);
+			expect(mergeOnboardingDraftWithServerStatus(
+				draft,
+				serverStatus,
+				'sch-1',
+				{ holdLocalWizardCompleted: true },
+			).wizardCompleted).toBe(false);
+
+			const held = persistServerOnboardingStatusToDraft(
+				authUserId,
+				serverStatus,
+				'sch-1',
+				{ holdLocalWizardCompleted: true },
+			);
+			expect(held.wizardCompleted).toBe(false);
+			expect(held.schoolStepSubmitted).toBe(true);
+			expect(held.structureStepSubmitted).toBe(true);
+			expect(held.registeredSchoolId).toBe('sch-1');
+
+			draft.wizardCompleted = true;
+			saveDraft(authUserId, draft);
+			expect(persistServerOnboardingStatusToDraft(
+				authUserId,
+				serverStatus,
+				'sch-1',
+				{ holdLocalWizardCompleted: true },
+			).wizardCompleted).toBe(false);
+		});
+	});
+
+	it('clears a stored wizardCompleted flag while the summary hold is active', () => {
+		withSessionStorage(() => {
+			const authUserId = 'user-hold-heal';
+			const draft = createEmptyDraft();
+			draft.wizardCompleted = true;
+			draft.maxReachedStep = 4;
+			saveDraft(authUserId, draft);
+			markOnboardingSummaryHold(authUserId);
+
+			expect(persistSyncedOnboardingDraft(authUserId).wizardCompleted).toBe(false);
+		});
+	});
+
+	it('does not treat in-flight provisioning progress as a completed school', () => {
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: false,
+			provisionProgressVisible: true,
+			provisionSucceeded: false,
+		})).toBe(false);
+	});
+
+	it('holds the summary after provision until the local wizard is completed', () => {
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: false,
+			provisionProgressVisible: false,
+			provisionSucceeded: true,
+		})).toBe(true);
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: true,
+			provisionProgressVisible: true,
+			provisionSucceeded: true,
+		})).toBe(false);
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: false,
+			provisionProgressVisible: false,
+			provisionSucceeded: false,
+		})).toBe(false);
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: false,
+			provisionProgressVisible: false,
+			provisionSucceeded: false,
+			serverWizardCompleted: true,
+		})).toBe(true);
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: true,
+			provisionProgressVisible: false,
+			provisionSucceeded: false,
+			serverWizardCompleted: true,
+		})).toBe(false);
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: true,
+			provisionProgressVisible: false,
+			provisionSucceeded: false,
+			serverWizardCompleted: true,
+			summaryHold: true,
+		})).toBe(true);
 	});
 });

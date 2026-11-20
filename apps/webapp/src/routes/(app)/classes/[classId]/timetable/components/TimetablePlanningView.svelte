@@ -1,35 +1,39 @@
 <script lang="ts">
-	import type { Activity, PlanningEvent, SchoolYearEvent, Student, Subject } from '$lib/types/school';
+	import type { ActivityOption } from '$lib/api/activities-data';
+	import type { PlanningEvent, SchoolYearEvent, Student, Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import AttendanceFlow from '$lib/components/school/scheduling/AttendanceFlow.svelte';
-	import ClassTimetableCalendar from '$lib/components/school/scheduling/ClassTimetableCalendar.svelte';
-	import NewSessionWizard from '$lib/components/school/scheduling/NewSessionWizard.svelte';
+
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import Input from '$lib/components/ui/input/input.svelte';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { detailHref } from '$lib/detail-hrefs';
+	import { locale, t } from '$lib/i18n';
+	import { ChevronLeft, ChevronRight, Plus } from '$lib/icons';
+	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
+	import { canEditTimetable, hasPermission } from '$lib/permissions';
 	import {
 		activePlanningEvents,
 		detectPlanningOverlaps,
 		filterPlanningEventsForWeek,
 		formatPlanningWeekRange,
 		parseWeekAnchor,
-	} from '$lib/components/school/scheduling/planning-calendar';
-	import ScheduleFormModal from '$lib/components/school/scheduling/ScheduleFormModal.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
-	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
-	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
-	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
-	import { locale, t } from '$lib/i18n';
-	import { ChevronLeft, ChevronRight, Plus, Search } from '$lib/icons';
-	import { appGoto } from '$lib/navigation/app-navigation';
-	import { canEditTimetable } from '$lib/permissions';
-	import { PlanningState, setPlanningState } from '$lib/scheduling/planning-state.svelte';
+	} from '$lib/scheduling/planning-calendar';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
+	import { getPlanningState } from '../planning-state.svelte';
+	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
+	import NewSessionWizard from './NewSessionWizard.svelte';
+	import ScheduleFormModal from './ScheduleFormModal.svelte';
 
 	const {
 		classId,
 		events: routeEvents,
-		students: routeStudents,
 		subjects,
 		activities,
 		schoolYearEvents = [],
@@ -43,7 +47,7 @@
 		events: PlanningEvent[];
 		students: Student[];
 		subjects: Subject[];
-		activities: Activity[];
+		activities: ActivityOption[];
 		schoolYearEvents?: SchoolYearEvent[];
 		focusDate?: string;
 		expandCalendar?: boolean;
@@ -53,32 +57,23 @@
 	} = $props();
 
 	const events = $derived(routeEvents);
-	const classes = $derived(academicContext.classes);
-	const students = $derived(routeStudents);
 
-	const planning = new PlanningState(() => $page.url);
-	setPlanningState(planning);
+	const planning = getPlanningState();
+	const newSessionOpen = bindUrlModal(planning.modals, 'new-session');
+	const scheduleCreateOpen = bindUrlModal(planning.modals, 'create-schedule');
 
 	const weekStart = $derived(planning.weekStart);
 	const weekRange = $derived(formatPlanningWeekRange(weekStart, $locale));
 	const viewingCurrentWeek = $derived(planning.viewingCurrentWeek());
 
 	const editable = $derived(canEditTimetable({ classId }));
+	const canRecordAttendance = $derived(academicContext.classes.find(row => row.id === classId)?.attendanceMode === 'session' && hasPermission('ATTENDANCE_RECORD', { classId }));
 
 	const filteredEvents = $derived(planning.filterEvents(events));
 	const weekEvents = $derived(
 		activePlanningEvents(filterPlanningEventsForWeek(filteredEvents, weekStart)),
 	);
 	const planningOverlaps = $derived(detectPlanningOverlaps(weekEvents));
-
-	const attendanceClass = $derived(
-		planning.attendanceSession ? classes.find(c => c.id === planning.attendanceSession!.classId) : null,
-	);
-	const attendanceStudents = $derived(
-		planning.attendanceSession
-			? students.filter(s => s.classId === planning.attendanceSession!.classId)
-			: [],
-	);
 
 	function handleWeekPickerChange(event: Event) {
 		const value = (event.currentTarget as HTMLInputElement).value;
@@ -87,10 +82,6 @@
 		}
 		planning.navigateWeek(parseWeekAnchor(value));
 	}
-
-	$effect(() => {
-		planning.hydrateFromUrl($page.url);
-	});
 
 	let lastAppliedFocusDate = $state('');
 
@@ -102,16 +93,6 @@
 		planning.navigateWeek(new Date(`${focusDate}T12:00:00`));
 	});
 
-	$effect(() => {
-		if (!planning.filters.ready || !selectedId) {
-			return;
-		}
-		if (weekEvents.some(event => event.id === selectedId)) {
-			return;
-		}
-		const href = `${detailHref.classPlanning(classId)}${$page.url.search}`;
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	});
 </script>
 
 <div class={cn('animate-fade-in', expandCalendar && 'flex min-h-0 flex-1 flex-col')}>
@@ -120,44 +101,49 @@
 		title={$t('planning.title')}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={planning.filters.values.q}
-					oninput={() => planning.filters.scheduleSync()}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={planning.filters.values.q} oninput={() => planning.filters.scheduleSync()} />
+		{/snippet}
+		{#snippet context()}
+			<AcademicPeriodSelector />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="TIMETABLE_UPDATE"
+				permission="TIMETABLE_MANAGE"
+				{classId}
 				mode="disable"
 				tooltip={$t('calendar.permissionUpdate')}
 			>
 				{#snippet children({ disabled, title })}
 					<div class="flex flex-wrap items-center gap-2">
-						<NewSessionWizard
-							{classId}
-							{weekStart}
-							bind:open={planning.wizardOpen}
-							{disabled}
-							{title}
-							onCreated={async (sessionId) => {
-								await onRefresh?.();
-								appGoto(detailHref.classPlanning(classId, sessionId));
-							}}
-						/>
+						{#key newSessionOpen.open}
+							<NewSessionWizard
+								{classId}
+								{weekStart}
+								{subjects}
+								{activities}
+								bind:open={newSessionOpen.open}
+								step={planning.newSessionStep}
+								onOpen={() => planning.openNewSession()}
+								onStepChange={(step, replace) =>
+									replace ? planning.replaceStep(step) : planning.setStep(step)}
+								{disabled}
+								{title}
+								onCreated={async (sessionId) => {
+									await onRefresh?.();
+									openDetailDrawer(
+										detailHref.classPlanning(classId, sessionId),
+										currentRouteSurfaceHref($page.url),
+									);
+								}}
+							/>
+						{/key}
 						<Button
 							size="sm"
 							variant="outline"
-							class="rounded-full"
+
 							{disabled}
 							{title}
-							onclick={() => planning.openScheduleCreate('lesson')}
+							onclick={() => planning.openScheduleCreate()}
 						>
 							<Plus class="mr-1 h-4 w-4" />
 							{$t('planning.newSchedule')}
@@ -167,7 +153,12 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportTimetable')} onExport={() => void planning.performRequestDocumentIssuance({
+				templateKey: 'class-timetable.v1',
+				sourceId: classId,
+				classGroupId: classId,
+				successMessage: get(t)('documents.toastRequested'),
+			})} />
 		{/snippet}
 	</ListPageHeader>
 
@@ -180,7 +171,7 @@
 			<Button
 				variant="ghost"
 				size="icon"
-				class="h-8 w-8 rounded-full"
+				class="w-8"
 				onclick={() => planning.goToPreviousWeek()}
 				aria-label={$t('planning.prevWeek')}
 			>
@@ -196,14 +187,14 @@
 					type="date"
 					value={planning.weekPickerValue}
 					onchange={handleWeekPickerChange}
-					class="h-8 w-[10.5rem] rounded-full px-3 text-xs"
+					class="w-[10.5rem] text-xs"
 					aria-label={$t('planning.goToWeek')}
 				/>
 			</div>
 			<Button
 				variant="ghost"
 				size="icon"
-				class="h-8 w-8 rounded-full"
+				class="w-8"
 				onclick={() => planning.goToNextWeek()}
 				aria-label={$t('planning.nextWeek')}
 			>
@@ -214,7 +205,7 @@
 			<Button
 				variant="outline"
 				size="sm"
-				class="rounded-full"
+
 				onclick={() => planning.goToThisWeek()}
 			>
 				{$t('planning.thisWeek')}
@@ -224,7 +215,7 @@
 
 	{#if planningOverlaps.length > 0}
 		<div
-			class="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground"
+			class="mb-4 rounded-collection border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground"
 			role="status"
 		>
 			<p class="font-medium">{$t('planning.overlapWarning', { count: planningOverlaps.length })}</p>
@@ -241,7 +232,15 @@
 		</div>
 	{/if}
 
-	<ScheduleFormModal {classId} {weekStart} {subjects} {activities} defaultScheduleKind={planning.scheduleCreateKind} bind:open={planning.scheduleCreateOpen} onSaved={onRefresh} />
+	<ScheduleFormModal
+		{classId}
+		{weekStart}
+		{subjects}
+		{activities}
+		defaultScheduleKind="lesson"
+		bind:open={scheduleCreateOpen.open}
+		onSaved={onRefresh}
+	/>
 
 	<div class={cn(expandCalendar && 'min-h-0 flex-1')}>
 		<ClassTimetableCalendar
@@ -253,18 +252,14 @@
 			{weekStart}
 			{editable}
 			{onSelect}
-			onAttendance={planning.openAttendance}
+			onAttendance={canRecordAttendance ? planning.openAttendance : undefined}
+			rescheduleOpen={planning.modals.isOpen('reschedule')}
+			rescheduleTarget={planning.modals.target}
+			onRescheduleRequest={eventId => planning.openReschedule(eventId)}
+			onInvalidReschedule={() => planning.closeInvalidSurface()}
+			onRescheduleClose={() => planning.modals.close()}
 			onChanged={onRefresh}
 		/>
 	</div>
 
-	{#if planning.attendanceSession && attendanceClass}
-		<AttendanceFlow
-			open={true}
-			onClose={() => (planning.attendanceSession = null)}
-			students={attendanceStudents}
-			className="{attendanceClass.name} · {planning.attendanceSession.subject}"
-			classLevel="{$t(`day.${planning.attendanceSession.day}`)} {planning.attendanceSession.start}–{planning.attendanceSession.end}"
-		/>
-	{/if}
 </div>

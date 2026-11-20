@@ -1,58 +1,52 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
-	import GuardianPicker from '$lib/components/school/shared/pickers/GuardianPicker.svelte';
+	import GuardianRelationshipFields from '$lib/components/school/shared/GuardianRelationshipFields.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PickerModal from '$lib/components/ui/PickerModal.svelte';
+	import { t } from '$lib/i18n';
+	import GuardianPicker from '$lib/smart-components/guardian-picker/GuardianPicker.svelte';
+	import { guardianRelationshipDraft } from '$lib/smart-components/guardian-relationship/guardian-relationship-state.svelte';
+	import { get } from 'svelte/store';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
-	let {
-		s,
-		disabled = false,
-		title,
-		open = $bindable(false),
-		showTrigger = true,
-	}: {
+	let { s, disabled = false, title, open = $bindable(false), showTrigger = true }: {
 		s: Student;
 		disabled?: boolean;
 		title?: string;
 		open?: boolean;
 		showTrigger?: boolean;
 	} = $props();
-
 	const profileTab = getStudentProfileTabState();
 	let busy = $state(false);
 	let guardianId = $state('');
-
-	const available = $derived(profileTab.availableGuardians(s.id));
-	const selectedGuardian = $derived(available.find(g => g.id === guardianId));
-
+	let relationshipFields = $state(guardianRelationshipDraft());
+	const linkedIds = $derived(profileTab.linkedGuardians(s.id).map(guardian => guardian.id));
 	let wasOpen = $state(false);
-
 	function resetPicker() {
-		guardianId = available[0]?.id ?? '';
+		guardianId = '';
+		relationshipFields = guardianRelationshipDraft();
 	}
-
 	$effect(() => {
 		if (open && !wasOpen)
 			resetPicker();
 		wasOpen = open;
 	});
-
 	async function confirm() {
 		if (!guardianId)
 			return;
-
 		busy = true;
 		const ok = await profileTab.linkGuardian({
 			guardianId,
+			relationshipFields,
 			studentId: s.id,
-			successMessage: `${selectedGuardian?.name ?? 'Le tuteur'} a été rattaché à ${s.name}.`,
+			successMessage: get(t)('student.profile.guardianLinked', { name: s.name }),
 		});
 		busy = false;
 		if (ok) {
 			open = false;
 			guardianId = '';
+			relationshipFields = guardianRelationshipDraft();
 		}
 	}
 </script>
@@ -60,33 +54,28 @@
 {#if showTrigger}
 	<Button
 		variant="ghost"
-		class="w-full rounded-full border border-dashed border-border"
+		class="w-full border border-dashed border-border"
 		{disabled}
 		{title}
 		onclick={() => (open = true)}
 	>
-		Rattacher un tuteur
+		{$t('student.linkGuardian')}
 	</Button>
 {/if}
 
 <PickerModal
 	bind:open
-	title={`Rattacher un tuteur à ${s.name}`}
-	description="Choisissez un tuteur existant à associer au dossier de l’élève."
-	confirmLabel="Rattacher"
+	title={$t('student.profile.guardianTitle', { name: s.name })}
+	description={$t('student.profile.guardianDescription')}
+	confirmLabel={$t('student.linkGuardian')}
 	busy={busy}
-	confirmDisabled={!guardianId || available.length === 0}
+	confirmDisabled={!guardianId || !relationshipFields.relationship?.trim()}
 	onCancel={resetPicker}
 	onConfirm={confirm}
 >
-	{#if available.length === 0}
-		<p class="rounded-xl bg-secondary/40 p-3 text-sm text-muted-foreground">
-			Tous les tuteurs connus sont déjà rattachés à cet élève.
-		</p>
-	{:else}
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tuteur</Label>
-			<GuardianPicker bind:value={guardianId} guardians={available} />
-		</div>
-	{/if}
+	<div class="space-y-1.5">
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{$t('people.guardians')}</Label>
+		<GuardianPicker bind:value={guardianId} excludeIds={linkedIds} active={open} />
+	</div>
+	<GuardianRelationshipFields bind:fields={relationshipFields} />
 </PickerModal>

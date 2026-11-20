@@ -1,4 +1,4 @@
-import type { Guardian, Subject, StaffRole, ActivityEnrollmentStatus, Incident } from '$lib/types/school';
+import type { ActivityEnrollmentStatus, Incident, StaffRole, Subject } from '$lib/types/school';
 import type { DrawerItem } from './drawer-types.ts';
 import { BADGE, BADGE_DANGER, BADGE_INFO, BADGE_WARN } from '$lib/ui-tones';
 
@@ -9,6 +9,7 @@ const drawerBadge = BADGE_INFO;
 
 export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 	student: drawerBadge,
+	catalogSubject: drawerBadge,
 	subject: drawerBadge,
 	planning: drawerBadge,
 	evaluation: drawerBadge,
@@ -22,7 +23,7 @@ export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 	level: drawerBadge,
 	activity: drawerBadge,
 	announcement: drawerBadge,
-	reportCardDefinition: drawerBadge,
+	familyFeedback: drawerBadge,
 	reportCardResult: drawerBadge,
 	gradeLevel: drawerBadge,
 	classGroup: drawerBadge,
@@ -30,6 +31,7 @@ export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 
 export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	student: 'drawer.student',
+	catalogSubject: 'drawer.catalogSubject',
 	subject: 'drawer.subject',
 	planning: 'drawer.planning',
 	evaluation: 'drawer.evaluation',
@@ -43,17 +45,23 @@ export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	level: 'drawer.level',
 	activity: 'drawer.activity',
 	announcement: 'drawer.announcement',
-	reportCardDefinition: 'drawer.reportCardDefinition',
+	familyFeedback: 'drawer.familyFeedback',
 	reportCardResult: 'drawer.reportCardResult',
 	gradeLevel: 'drawer.gradeLevel',
 	classGroup: 'drawer.classGroup',
 };
 
-export const relationKey: Record<Guardian['relation'], string> = {
+export const relationKey: Partial<Record<string, string>> = {
 	'Mother': 'guardian.relation.Mother',
 	'Father': 'guardian.relation.Father',
 	'Legal guardian': 'guardian.relation.LegalGuardian',
 };
+
+/** Known relations → i18n key; otherwise return the raw API string for display. */
+export function guardianRelationLabel(relation: string): string {
+	const knownRelation = Object.keys(relationKey).find(value => value.toLocaleLowerCase() === relation.trim().toLocaleLowerCase());
+	return (knownRelation && relationKey[knownRelation]) || relation;
+}
 
 export const dotByColor: Record<Subject['color'], string> = {
 	mint: 'bg-accent',
@@ -67,10 +75,10 @@ export const ENROLL_STATUS_STYLE: Record<ActivityEnrollmentStatus, string> = {
 	denied: `${BADGE_DANGER} border-destructive/20`,
 };
 
-export const ENROLL_STATUS_LABEL: Record<ActivityEnrollmentStatus, string> = {
-	approved: 'Autorisé',
-	pending: 'En attente',
-	denied: 'Refusé',
+export const ENROLL_STATUS_LABEL_KEY: Record<ActivityEnrollmentStatus, string> = {
+	approved: 'activities.enrollStatus.approved',
+	pending: 'activities.enrollStatus.pending',
+	denied: 'activities.enrollStatus.denied',
 };
 
 export const ENROLL_NEXT: Record<ActivityEnrollmentStatus, ActivityEnrollmentStatus> = {
@@ -94,10 +102,10 @@ export const incidentCatTone: Record<Incident['category'], string> = {
 
 export type StaffPermScope = PermissionScope;
 
-export const STAFF_SCOPE_LABEL: Record<StaffPermScope, string> = {
-	global: 'Globale',
-	class: 'Classe',
-	subject: 'Matière',
+export const STAFF_SCOPE_LABEL_KEY: Record<StaffPermScope, string> = {
+	global: 'staff.scope.global',
+	class: 'staff.scope.class',
+	subject: 'staff.scope.subject',
 };
 
 export const STAFF_SCOPE_TONE: Record<StaffPermScope, string> = {
@@ -108,7 +116,11 @@ export const STAFF_SCOPE_TONE: Record<StaffPermScope, string> = {
 
 export type Scope = PermissionScope;
 
-export const SCOPE_LABEL: Record<Scope, string> = { global: 'Globale', class: 'Classe', subject: 'Matière' };
+export const SCOPE_LABEL_KEY: Record<Scope, string> = {
+	global: 'staff.scope.global',
+	class: 'staff.scope.class',
+	subject: 'staff.scope.subject',
+};
 
 export const SCOPE_TONE: Record<Scope, string> = {
 	global: `${BADGE_INFO} border-primary/20`,
@@ -119,18 +131,23 @@ export const SCOPE_TONE: Record<Scope, string> = {
 export const ROLE_TINT: Record<StaffRole, string> = {
 	owner: 'bg-primary/10 text-primary',
 	directeur: 'bg-primary/10 text-primary',
-	prof_principal: 'bg-primary/10 text-primary',
-	professeur: 'bg-secondary text-foreground/80',
+	deputy_director: 'bg-primary/10 text-primary',
+	studies_director: 'bg-primary/10 text-primary',
 	educateur: 'bg-secondary text-foreground/80',
+	cpe: 'bg-secondary text-foreground/80',
+	secretary: 'bg-secondary text-foreground/80',
+	accountant: 'bg-secondary text-foreground/80',
+	it_admin: 'bg-secondary text-foreground/80',
+	staff: 'bg-secondary text-foreground/80',
 };
 
 export const CRUD_KEYS: Crud[] = ['C', 'R', 'U', 'D'];
 
-export const CRUD_LABEL: Record<Crud, string> = {
-	C: 'Créer',
-	R: 'Lire',
-	U: 'Modifier',
-	D: 'Supprimer',
+export const CRUD_LABEL_KEY: Record<Crud, string> = {
+	C: 'common.add',
+	R: 'common.open',
+	U: 'common.edit',
+	D: 'common.delete',
 };
 
 export const CRUD_TONE: Record<Crud, string> = {
@@ -140,10 +157,16 @@ export const CRUD_TONE: Record<Crud, string> = {
 	D: 'data-[on=true]:bg-destructive/10 data-[on=true]:text-destructive data-[on=true]:border-destructive/20',
 };
 
-export function fmtActivityDate(d: string) {
-	return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+const SHORT_DATE: Intl.DateTimeFormatOptions = {
+	day: '2-digit',
+	month: 'short',
+	year: 'numeric',
+};
+
+export function fmtActivityDate(d: string, dateLocale = 'fr-FR') {
+	return new Date(d).toLocaleDateString(dateLocale, SHORT_DATE);
 }
 
-export function fmtDateFr(d: string) {
-	return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+export function fmtDateFr(d: string, dateLocale = 'fr-FR') {
+	return new Date(d).toLocaleDateString(dateLocale, SHORT_DATE);
 }

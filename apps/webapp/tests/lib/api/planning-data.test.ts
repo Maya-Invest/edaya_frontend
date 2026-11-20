@@ -1,5 +1,5 @@
-import type { components } from '$lib/api/schema';
 import type { PlanningSources } from '$lib/api/planning-data';
+import type { components } from '$lib/api/schema';
 import { academicYearPlanningRange, mapPlanningEvents } from '$lib/api/planning-data';
 import { describe, expect, test } from 'bun:test';
 
@@ -73,6 +73,7 @@ describe('mapPlanningEvents', () => {
 				endsAt: '2026-06-02T09:00:00.000Z',
 				status: 'pending',
 				isException: false,
+				timetableGenerated: false,
 				timetableTeacherIds: [],
 			}]]),
 			activitySessionsById: new Map([['as-1', {
@@ -104,14 +105,18 @@ describe('mapPlanningEvents', () => {
 				id: 'cs-math',
 				classGroupId: 'cg-1',
 				subjectId: 'subj-math',
-				completedPercentage: null,
+				completedPercentage: 0, chapterCount: 0, completedChapterCount: 0, ongoingChapterCount: 0,
+				participationRevision: 0,
 				isOffered: true,
 			} satisfies ClassSubjectRaw],
 			subjectsRaw: [{
 				id: 'subj-math',
 				schoolId: 'school-1',
+				gradeLevelId: 'grade-6',
+				academicYearId: 'year-1',
+				isOptional: false, reportOrder: 0,
 				name: 'Mathematics',
-				category: 'Scientifique',
+				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',
 			} satisfies SubjectRaw],
 		});

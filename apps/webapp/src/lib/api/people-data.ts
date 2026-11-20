@@ -1,22 +1,23 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Guardian, Student } from '$lib/types/school';
+import type { EntityQuery } from '@maya-invest/edaya-api-client';
 import {
 	activeEnrollmentsForClass,
-	assessmentResultsForScope,
-	assessmentResultsForStudents,
 	assessmentsForClassPeriod,
-	attendanceForStudents,
 	DEFAULT_LIST_PAGE_SIZE,
-	entitiesByIds,
+	ENROLLMENT_LIST_ORDER,
 	enrollmentsForStudents,
+	entitiesByIds,
 	GUARDIAN_LIST_ORDER,
 	guardianLinksForGuardians,
 	guardianLinksForStudents,
 	guardiansByIds,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	paginatedList,
-	schoolWideEntityList,
-	ENROLLMENT_LIST_ORDER,
+	schoolScopedEntityList,
 	STUDENT_LIST_ORDER,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
@@ -71,6 +72,7 @@ interface PaginatedPeopleSourcesWithMetrics extends PeopleSources {
 }
 
 export interface PeoplePageRequest {
+	schoolId: string;
 	offset?: number;
 	limit?: number;
 	classGroupId?: string;
@@ -88,43 +90,25 @@ function initialsFor(firstName: string, lastName: string): string {
 	return `${firstName[0] ?? ''}${lastName[0] ?? ''}`;
 }
 
-function mapGuardianRelation(link: GuardianLinkRaw | undefined): Guardian['relation'] {
+function mapGuardianRelation(link: GuardianLinkRaw | undefined): string {
 	if (!link) {
 		return 'Legal guardian';
 	}
 
-	const relationship = link.relationship.toLowerCase();
-	if (relationship.includes('mother') || relationship.includes('mère')) {
-		return 'Mother';
+	const relationship = link.relationship?.trim();
+	if (relationship) {
+		return relationship;
 	}
-	if (relationship.includes('father') || relationship.includes('père')) {
-		return 'Father';
-	}
+
 	if (link.legalGuardian) {
 		return 'Legal guardian';
 	}
 
-	return 'Mother';
+	return 'Guardian';
 }
 
 function mapPreferredContact(guardian: GuardianRaw): Guardian['preferredContact'] {
-	const primary = guardian.contactMethods.find(method => method.isPrimary)
-		?? guardian.contactMethods[0];
-
-	if (primary?.type === 'sms') {
-		return 'sms';
-	}
-	if (primary?.type === 'phone' || primary?.type === 'whatsapp') {
-		return 'phone';
-	}
-	if (guardian.email || primary?.type === 'email') {
-		return 'email';
-	}
-	if (guardian.phone) {
-		return 'phone';
-	}
-
-	return 'email';
+	return guardian.phone ? 'phone' : 'email';
 }
 
 function guardianDisplayName(
@@ -137,10 +121,24 @@ function guardianDisplayName(
 	return `${guardian.firstName} ${guardian.lastName}`;
 }
 
-function computeAttendancePercent(studentId: string, attendanceRaw: AttendanceRaw[]): number {
-	const records = attendanceRaw.filter(record => record.studentId === studentId);
+function groupRows<T>(rows: readonly T[], key: (row: T) => string): Map<string, T[]> {
+	const groups = new Map<string, T[]>();
+	for (const row of rows) {
+		const id = key(row);
+		const group = groups.get(id);
+		if (group) {
+			group.push(row);
+		}
+		else {
+			groups.set(id, [row]);
+		}
+	}
+	return groups;
+}
+
+function computeAttendancePercent(records: AttendanceRaw[]): number | null {
 	if (records.length === 0) {
-		return 100;
+		return null;
 	}
 
 	const attended = records.filter(record => record.status === 'present' || record.status === 'late').length;
@@ -148,7 +146,6 @@ function computeAttendancePercent(studentId: string, attendanceRaw: AttendanceRa
 }
 
 function computeStudentAverage(
-	studentId: string,
 	resultsRaw: AssessmentResultRaw[],
 	assessmentsById: Map<string, AssessmentRaw>,
 ): number {
@@ -156,7 +153,7 @@ function computeStudentAverage(
 	let totalCoefficient = 0;
 
 	for (const result of resultsRaw) {
-		if (result.studentId !== studentId || typeof result.score !== 'number') {
+		if (typeof result.score !== 'number') {
 			continue;
 		}
 
@@ -176,49 +173,80 @@ function computeStudentAverage(
 		return 0;
 	}
 
-	return Math.round((weightedSum / totalCoefficient) * 10) / 10;
+	return Math.round((weightedSum / totalCoefficient) * 100) / 100;
 }
 
-function mapStudentStatus(
-	status: StudentRaw['status'],
-	average: number,
-): Student['status'] {
-	if (status === 'inactive' || status === 'archived') {
-		return 'warning';
-	}
+function mapStudentAcademicBadge(average: number): Student['academicBadge'] {
 	if (average >= 16) {
 		return 'honor';
 	}
 	if (average > 0 && average < 10) {
 		return 'warning';
 	}
+	return null;
+}
+
+function mapStudentApiStatus(status: StudentRaw['status']): Student['status'] {
+	if (status === 'inactive' || status === 'archived' || status === 'graduated') {
+		return status;
+	}
 	return 'active';
 }
 
-export async function fetchPeopleSources(client: SchoolClient): Promise<PeopleSources> {
-	const [
+async function listRosterPages<T>(
+	list: (query: EntityQuery) => Promise<T[] | null | undefined>,
+	baseQuery: EntityQuery,
+): Promise<T[]> {
+	return listAllEntityPages(query => list(query), { baseQuery });
+}
+
+export async function fetchPeopleSources(client: SchoolClient, schoolId: string): Promise<PeopleSources> {
+	const studentsRaw = await listRosterPages(
+		query => client.entities.students.list(query),
+		{
+			...schoolScopedEntityList(schoolId, SCHOOL_ROSTER_SCOPE),
+			$orderBy: STUDENT_LIST_ORDER,
+		},
+	);
+	const studentIds = uniqueIds(studentsRaw.map(student => student.id));
+	if (studentIds.length === 0) {
+		return {
+			studentsRaw,
+			enrollmentsRaw: [],
+			guardiansRaw: [],
+			linksRaw: [],
+		};
+	}
+
+	const [enrollmentsRaw, linksRaw] = await Promise.all([
+		listRosterPages(
+			query => client.entities.enrollments.list(query),
+			enrollmentsForStudents(studentIds),
+		),
+		listRosterPages(
+			query => client.entities.guardianLinks.list(query),
+			guardianLinksForStudents(studentIds),
+		),
+	]);
+	const guardianIds = uniqueIds(linksRaw.map(link => link.guardianId));
+	const guardiansRaw = guardianIds.length > 0
+		? await listRosterPages(
+				query => client.entities.guardians.list(query),
+				guardiansByIds(guardianIds),
+			)
+		: [];
+
+	return {
 		studentsRaw,
 		enrollmentsRaw,
 		guardiansRaw,
 		linksRaw,
-	] = await Promise.all([
-		client.entities.students.list(schoolWideEntityList(SCHOOL_ROSTER_SCOPE)),
-		client.entities.enrollments.list(schoolWideEntityList(SCHOOL_ROSTER_SCOPE)),
-		client.entities.guardians.list(schoolWideEntityList(SCHOOL_ROSTER_SCOPE)),
-		client.entities.guardianLinks.list(schoolWideEntityList(SCHOOL_ROSTER_SCOPE)),
-	]);
-
-	return {
-		studentsRaw: studentsRaw ?? [],
-		enrollmentsRaw: enrollmentsRaw ?? [],
-		guardiansRaw: guardiansRaw ?? [],
-		linksRaw: linksRaw ?? [],
 	};
 }
 
 async function fetchPeopleSourcesPageWithMetrics(
 	client: SchoolClient,
-	request: PeoplePageRequest = {},
+	request: PeoplePageRequest,
 ): Promise<PaginatedPeopleSourcesWithMetrics> {
 	if (request.classGroupId) {
 		return fetchClassPeopleSourcesPageWithMetrics(client, request.classGroupId, request);
@@ -226,7 +254,8 @@ async function fetchPeopleSourcesPageWithMetrics(
 
 	const limit = request.limit ?? DEFAULT_LIST_PAGE_SIZE;
 	const offset = request.offset ?? 0;
-	const studentFilter = paginatedList(schoolWideEntityList(SCHOOL_ROSTER_SCOPE), {
+	const rosterScope = schoolScopedEntityList(request.schoolId, SCHOOL_ROSTER_SCOPE);
+	const studentFilter = paginatedList(rosterScope, {
 		limit,
 		offset,
 		orderBy: STUDENT_LIST_ORDER,
@@ -234,7 +263,7 @@ async function fetchPeopleSourcesPageWithMetrics(
 
 	const [studentsRaw, totalStudents] = await Promise.all([
 		client.entities.students.list(studentFilter),
-		client.entities.students.count(schoolWideEntityList(SCHOOL_ROSTER_SCOPE)).then(result => result.count),
+		client.entities.students.count(rosterScope).then(result => result.count),
 	]);
 
 	const studentIds = uniqueIds((studentsRaw ?? []).map(student => student.id));
@@ -249,13 +278,17 @@ async function fetchPeopleSourcesPageWithMetrics(
 		};
 	}
 
-	const enrollmentsPromise = client.entities.enrollments.list(enrollmentsForStudents(studentIds));
-	const linksPromise = client.entities.guardianLinks.list(guardianLinksForStudents(studentIds));
+	const enrollmentsPromise = listAllEntityPagesForIdFilters(
+		query => client.entities.enrollments.list(query),
+		[{ field: 'studentId', ids: studentIds }],
+	);
+	const linksPromise = listAllEntityPagesForIdFilters(
+		query => client.entities.guardianLinks.list(query),
+		[{ field: 'studentId', ids: studentIds }],
+	);
 	const guardiansPromise = linksPromise.then((linksRaw) => {
-		const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
-		return guardianIds.length > 0
-			? client.entities.guardians.list(guardiansByIds(guardianIds))
-			: Promise.resolve([]);
+		const guardianIds = uniqueIds(linksRaw.map(link => link.guardianId));
+		return listAllEntityPagesByIds(query => client.entities.guardians.list(query), guardianIds);
 	});
 	const metricsPromise = fetchStudentMetricsSources(client, studentIds);
 
@@ -279,7 +312,7 @@ async function fetchPeopleSourcesPageWithMetrics(
 async function fetchClassPeopleSourcesPageWithMetrics(
 	client: SchoolClient,
 	classGroupId: string,
-	request: PeoplePageRequest = {},
+	request: Pick<PeoplePageRequest, 'limit' | 'offset'> = {},
 ): Promise<PaginatedPeopleSourcesWithMetrics> {
 	const limit = request.limit ?? DEFAULT_LIST_PAGE_SIZE;
 	const offset = request.offset ?? 0;
@@ -307,17 +340,22 @@ async function fetchClassPeopleSourcesPageWithMetrics(
 		};
 	}
 
-	const linksPromise = client.entities.guardianLinks.list(guardianLinksForStudents(studentIds));
+	const studentsPromise = listAllEntityPagesByIds(
+		query => client.entities.students.list(query),
+		studentIds,
+	);
+	const linksPromise = listAllEntityPagesForIdFilters(
+		query => client.entities.guardianLinks.list(query),
+		[{ field: 'studentId', ids: studentIds }],
+	);
 	const guardiansPromise = linksPromise.then((linksRaw) => {
-		const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
-		return guardianIds.length > 0
-			? client.entities.guardians.list(guardiansByIds(guardianIds))
-			: Promise.resolve([]);
+		const guardianIds = uniqueIds(linksRaw.map(link => link.guardianId));
+		return listAllEntityPagesByIds(query => client.entities.guardians.list(query), guardianIds);
 	});
 	const metricsPromise = fetchStudentMetricsSources(client, studentIds);
 
 	const [studentsRaw, linksRaw, guardiansRaw, metrics] = await Promise.all([
-		client.entities.students.list(entitiesByIds(studentIds)),
+		studentsPromise,
 		linksPromise,
 		guardiansPromise,
 		metricsPromise,
@@ -335,7 +373,7 @@ async function fetchClassPeopleSourcesPageWithMetrics(
 
 export async function fetchPeopleSourcesPage(
 	client: SchoolClient,
-	request: PeoplePageRequest = {},
+	request: PeoplePageRequest,
 ): Promise<PeopleSources & { totalStudents: number }> {
 	const sources = await fetchPeopleSourcesPageWithMetrics(client, request);
 	return {
@@ -349,11 +387,12 @@ export async function fetchPeopleSourcesPage(
 
 export async function fetchGuardiansPeopleSourcesPage(
 	client: SchoolClient,
-	request: PeoplePageRequest = {},
+	request: PeoplePageRequest,
 ): Promise<PeopleSources & { totalGuardians: number }> {
 	const limit = request.limit ?? DEFAULT_LIST_PAGE_SIZE;
 	const offset = request.offset ?? 0;
-	const guardianFilter = paginatedList(schoolWideEntityList(SCHOOL_GUARDIANS_SCOPE), {
+	const guardiansScope = schoolScopedEntityList(request.schoolId, SCHOOL_GUARDIANS_SCOPE);
+	const guardianFilter = paginatedList(guardiansScope, {
 		limit,
 		offset,
 		orderBy: GUARDIAN_LIST_ORDER,
@@ -361,7 +400,7 @@ export async function fetchGuardiansPeopleSourcesPage(
 
 	const [guardiansRaw, totalGuardians] = await Promise.all([
 		client.entities.guardians.list(guardianFilter),
-		client.entities.guardians.count(schoolWideEntityList(SCHOOL_GUARDIANS_SCOPE)).then(result => result.count),
+		client.entities.guardians.count(guardiansScope).then(result => result.count),
 	]);
 	const guardianIds = uniqueIds((guardiansRaw ?? []).map(guardian => guardian.id));
 
@@ -375,9 +414,10 @@ export async function fetchGuardiansPeopleSourcesPage(
 		};
 	}
 
-	const linksRaw = (await client.entities.guardianLinks.list(
-		guardianLinksForGuardians(guardianIds),
-	)) ?? [];
+	const linksRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.guardianLinks.list(query),
+		[{ field: 'guardianId', ids: guardianIds }],
+	);
 	const studentIds = uniqueIds(linksRaw.map(link => link.studentId));
 
 	if (studentIds.length === 0) {
@@ -391,8 +431,11 @@ export async function fetchGuardiansPeopleSourcesPage(
 	}
 
 	const [studentsRaw, enrollmentsRaw] = await Promise.all([
-		client.entities.students.list(entitiesByIds(studentIds)),
-		client.entities.enrollments.list(enrollmentsForStudents(studentIds)),
+		listAllEntityPagesByIds(query => client.entities.students.list(query), studentIds),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.enrollments.list(query),
+			[{ field: 'studentId', ids: studentIds }],
+		),
 	]);
 
 	return {
@@ -404,10 +447,11 @@ export async function fetchGuardiansPeopleSourcesPage(
 	};
 }
 
-export async function fetchGuardiansPeopleSources(client: SchoolClient): Promise<PeopleSources> {
-	const guardiansRaw = (await client.entities.guardians.list(
-		schoolWideEntityList(SCHOOL_GUARDIANS_SCOPE),
-	)) ?? [];
+export async function fetchGuardiansPeopleSources(client: SchoolClient, schoolId: string): Promise<PeopleSources> {
+	const guardiansRaw = await listAllEntityPages(
+		query => client.entities.guardians.list(query),
+		{ baseQuery: schoolScopedEntityList(schoolId, SCHOOL_GUARDIANS_SCOPE) },
+	);
 	const guardianIds = uniqueIds(guardiansRaw.map(guardian => guardian.id));
 
 	if (guardianIds.length === 0) {
@@ -419,9 +463,10 @@ export async function fetchGuardiansPeopleSources(client: SchoolClient): Promise
 		};
 	}
 
-	const linksRaw = (await client.entities.guardianLinks.list(
-		guardianLinksForGuardians(guardianIds),
-	)) ?? [];
+	const linksRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.guardianLinks.list(query),
+		[{ field: 'guardianId', ids: guardianIds }],
+	);
 	const studentIds = uniqueIds(linksRaw.map(link => link.studentId));
 
 	if (studentIds.length === 0) {
@@ -437,13 +482,16 @@ export async function fetchGuardiansPeopleSources(client: SchoolClient): Promise
 		studentsRaw,
 		enrollmentsRaw,
 	] = await Promise.all([
-		client.entities.students.list(entitiesByIds(studentIds)),
-		client.entities.enrollments.list(enrollmentsForStudents(studentIds)),
+		listAllEntityPagesByIds(query => client.entities.students.list(query), studentIds),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.enrollments.list(query),
+			[{ field: 'studentId', ids: studentIds }],
+		),
 	]);
 
 	return {
-		studentsRaw: studentsRaw ?? [],
-		enrollmentsRaw: enrollmentsRaw ?? [],
+		studentsRaw,
+		enrollmentsRaw,
 		guardiansRaw,
 		linksRaw,
 	};
@@ -453,9 +501,10 @@ export async function fetchClassPeopleSources(
 	client: SchoolClient,
 	classGroupId: string,
 ): Promise<PeopleSources> {
-	const enrollmentsRaw = (await client.entities.enrollments.list(
-		activeEnrollmentsForClass(classGroupId),
-	)) ?? [];
+	const enrollmentsRaw = await listAllEntityPages(
+		query => client.entities.enrollments.list(query),
+		{ baseQuery: activeEnrollmentsForClass(classGroupId) },
+	);
 	const studentIds = uniqueIds(enrollmentsRaw.map(enrollment => enrollment.studentId));
 
 	if (studentIds.length === 0) {
@@ -471,20 +520,24 @@ export async function fetchClassPeopleSources(
 		studentsRaw,
 		linksRaw,
 	] = await Promise.all([
-		client.entities.students.list(entitiesByIds(studentIds)),
-		client.entities.guardianLinks.list(guardianLinksForStudents(studentIds)),
+		listAllEntityPagesByIds(query => client.entities.students.list(query), studentIds),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.guardianLinks.list(query),
+			[{ field: 'studentId', ids: studentIds }],
+		),
 	]);
 
-	const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
-	const guardiansRaw = guardianIds.length > 0
-		? await client.entities.guardians.list(guardiansByIds(guardianIds))
-		: [];
+	const guardianIds = uniqueIds(linksRaw.map(link => link.guardianId));
+	const guardiansRaw = await listAllEntityPagesByIds(
+		query => client.entities.guardians.list(query),
+		guardianIds,
+	);
 
 	return {
-		studentsRaw: studentsRaw ?? [],
+		studentsRaw,
 		enrollmentsRaw,
-		guardiansRaw: guardiansRaw ?? [],
-		linksRaw: linksRaw ?? [],
+		guardiansRaw,
+		linksRaw,
 	};
 }
 
@@ -494,22 +547,29 @@ async function fetchClassRosterMetricsSources(
 	classScope: { classGroupId: string; periodId: string },
 ): Promise<StudentMetricsSources> {
 	const [attendanceRaw, assessmentsRaw] = await Promise.all([
-		client.entities.attendance.list(attendanceForStudents(studentIds)),
-		client.entities.assessments.list(
-			assessmentsForClassPeriod(classScope.classGroupId, classScope.periodId),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.attendance.list(query),
+			[{ field: 'studentId', ids: studentIds }],
 		),
+		classScope.periodId
+			? listAllEntityPages(query => client.entities.assessments.list(query), {
+					baseQuery: assessmentsForClassPeriod(classScope.classGroupId, classScope.periodId),
+				})
+			: Promise.resolve([]),
 	]);
-	const assessmentIds = uniqueIds((assessmentsRaw ?? []).map(assessment => assessment.id));
-	const resultsRaw = assessmentIds.length > 0
-		? await client.entities.assessmentResults.list(
-				assessmentResultsForScope(assessmentIds, studentIds),
-			)
-		: [];
+	const assessmentIds = uniqueIds(assessmentsRaw.map(assessment => assessment.id));
+	const resultsRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.assessmentResults.list(query),
+		[
+			{ field: 'assessmentId', ids: assessmentIds },
+			{ field: 'studentId', ids: studentIds },
+		],
+	);
 
 	return {
-		attendanceRaw: attendanceRaw ?? [],
-		assessmentsRaw: assessmentsRaw ?? [],
-		resultsRaw: resultsRaw ?? [],
+		attendanceRaw,
+		assessmentsRaw,
+		resultsRaw,
 	};
 }
 
@@ -518,18 +578,25 @@ async function fetchSchoolRosterMetricsSources(
 	studentIds: readonly string[],
 ): Promise<StudentMetricsSources> {
 	const [attendanceRaw, resultsRaw] = await Promise.all([
-		client.entities.attendance.list(attendanceForStudents(studentIds)),
-		client.entities.assessmentResults.list(assessmentResultsForStudents(studentIds)),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.attendance.list(query),
+			[{ field: 'studentId', ids: studentIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.assessmentResults.list(query),
+			[{ field: 'studentId', ids: studentIds }],
+		),
 	]);
-	const assessmentIds = uniqueIds((resultsRaw ?? []).map(result => result.assessmentId));
-	const assessmentsRaw = assessmentIds.length > 0
-		? await client.entities.assessments.list(entitiesByIds(assessmentIds))
-		: [];
+	const assessmentIds = uniqueIds(resultsRaw.map(result => result.assessmentId));
+	const assessmentsRaw = await listAllEntityPagesByIds(
+		query => client.entities.assessments.list(query),
+		assessmentIds,
+	);
 
 	return {
-		attendanceRaw: attendanceRaw ?? [],
-		assessmentsRaw: assessmentsRaw ?? [],
-		resultsRaw: resultsRaw ?? [],
+		attendanceRaw,
+		assessmentsRaw,
+		resultsRaw,
 	};
 }
 
@@ -574,30 +641,44 @@ export function mapStudents(
 	const { studentsRaw, enrollmentsRaw, guardiansRaw, linksRaw } = sources;
 	const assessmentsById = new Map(metrics.assessmentsRaw.map(assessment => [assessment.id, assessment]));
 
+	const activeByStudent = groupRows(enrollmentsRaw.filter(row => row.status === 'active'), row => row.studentId);
+	const linksByStudent = groupRows(linksRaw, row => row.studentId);
+	const guardiansById = new Map(guardiansRaw.map(row => [row.id, row]));
+	const attendanceByStudent = groupRows(metrics.attendanceRaw, row => row.studentId);
+	const resultsByStudent = groupRows(metrics.resultsRaw, row => row.studentId);
+
 	return studentsRaw.map((student) => {
-		const activeEnrollment = enrollmentsRaw.find(
-			enrollment => enrollment.studentId === student.id && enrollment.status === 'active',
-		);
+		const activeEnrollment = activeByStudent.get(student.id)?.[0];
 		const classId = activeEnrollment?.classGroupId ?? '';
-		const link = linksRaw.find(entry => entry.studentId === student.id);
-		const guardian = link
-			? guardiansRaw.find(entry => entry.id === link.guardianId)
-			: null;
-		const average = computeStudentAverage(student.id, metrics.resultsRaw, assessmentsById);
+		const link = linksByStudent.get(student.id)?.[0];
+		const guardian = link && guardiansById.get(link.guardianId);
+		const average = computeStudentAverage(resultsByStudent.get(student.id) ?? [], assessmentsById);
 
 		return {
 			id: student.id,
+			firstName: student.firstName ?? null,
+			lastName: student.lastName ?? null,
+			sourceFullName: student.sourceFullName ?? null,
+			globalIdentifier: student.globalIdentifier ?? null,
+			placeOfBirth: student.placeOfBirth ?? null,
+			nationality: student.nationality ?? null,
+			enrollmentDate: formatDateInput(student.enrollmentDate) || null,
+
 			classId,
 			enrollmentId: activeEnrollment?.id,
 			name: `${student.firstName} ${student.lastName}`,
 			initials: initialsFor(student.firstName, student.lastName),
 			photoUrl: student.photoUrl ?? null,
-			email: `${student.firstName.toLowerCase()}.${student.lastName.toLowerCase()}@school.edu`,
+			photoAttachmentId: student.photoAttachmentId ?? null,
+			email: '',
 			birthdate: formatDateInput(student.birthDate),
+			identifier: student.identifier ?? null,
+			gender: student.gender ?? null,
 			guardian: guardianDisplayName(guardian),
-			attendance: computeAttendancePercent(student.id, metrics.attendanceRaw),
+			attendance: computeAttendancePercent(attendanceByStudent.get(student.id) ?? []),
 			average,
-			status: mapStudentStatus(student.status, average),
+			status: mapStudentApiStatus(student.status),
+			academicBadge: mapStudentAcademicBadge(average),
 			subjectId: student.subjectId ?? null,
 		};
 	});
@@ -607,18 +688,28 @@ export function mapGuardians(
 	guardiansRaw: GuardianRaw[],
 	linksRaw: GuardianLinkRaw[],
 ): Guardian[] {
+	const linksByGuardian = groupRows(linksRaw, row => row.guardianId);
 	return guardiansRaw.map((guardian) => {
-		const guardianLinks = linksRaw.filter(link => link.guardianId === guardian.id);
+		const guardianLinks = linksByGuardian.get(guardian.id) ?? [];
 		const primaryLink = guardianLinks.find(link => link.isPrimary) ?? guardianLinks[0];
 		const email = guardian.email
-			?? guardian.contactMethods.find(method => method.type === 'email')?.value
 			?? '';
 		const phone = guardian.phone
-			?? guardian.contactMethods.find(method => method.type === 'phone' || method.type === 'whatsapp')?.value
 			?? '';
 
 		return {
 			id: guardian.id,
+			firstName: guardian.firstName ?? null,
+			lastName: guardian.lastName ?? null,
+			sourceFullName: guardian.sourceFullName ?? null,
+			occupation: guardian.occupation ?? null,
+			identifier: guardian.identifier ?? null,
+			alternativePhone: guardian.alternativePhone,
+			emailNotificationsEnabled: guardian.emailNotificationsEnabled,
+			smsNotificationsEnabled: guardian.smsNotificationsEnabled,
+			pushNotificationsEnabled: guardian.pushNotificationsEnabled,
+			hasAccess: guardian.hasAccess,
+			links: guardianLinks,
 			name: `${guardian.firstName} ${guardian.lastName}`,
 			initials: initialsFor(guardian.firstName, guardian.lastName),
 			photoUrl: guardian.photoUrl ?? null,
@@ -632,8 +723,8 @@ export function mapGuardians(
 	});
 }
 
-export async function loadPeopleData(client: SchoolClient): Promise<PeopleData> {
-	const sources = await fetchPeopleSources(client);
+export async function loadPeopleData(client: SchoolClient, schoolId: string): Promise<PeopleData> {
+	const sources = await fetchPeopleSources(client, schoolId);
 	const studentIds = uniqueIds(sources.studentsRaw.map(student => student.id));
 	const metrics = await fetchStudentMetricsSources(client, studentIds);
 	return mapPeopleData(sources, metrics);
@@ -641,7 +732,7 @@ export async function loadPeopleData(client: SchoolClient): Promise<PeopleData> 
 
 export async function loadPeopleDataPage(
 	client: SchoolClient,
-	request: PeoplePageRequest = {},
+	request: PeoplePageRequest,
 ): Promise<PaginatedPeopleData> {
 	const sources = await fetchPeopleSourcesPageWithMetrics(client, request);
 	const { metrics } = sources;
@@ -649,14 +740,14 @@ export async function loadPeopleDataPage(
 	return { ...data, totalStudents: sources.totalStudents };
 }
 
-export async function loadGuardiansPeopleData(client: SchoolClient): Promise<PeopleData> {
-	const sources = await fetchGuardiansPeopleSources(client);
+export async function loadGuardiansPeopleData(client: SchoolClient, schoolId: string): Promise<PeopleData> {
+	const sources = await fetchGuardiansPeopleSources(client, schoolId);
 	return mapPeopleData(sources);
 }
 
 export async function loadGuardiansPeopleDataPage(
 	client: SchoolClient,
-	request: PeoplePageRequest = {},
+	request: PeoplePageRequest,
 ): Promise<PaginatedGuardiansData> {
 	const sources = await fetchGuardiansPeopleSourcesPage(client, request);
 	const data = mapPeopleData(sources);
@@ -681,6 +772,7 @@ function isMissingEntityError(error: unknown): boolean {
 export async function fetchStudentById(
 	client: SchoolClient,
 	studentId: string,
+	classScope?: { classGroupId: string; periodId: string },
 ): Promise<Student | null> {
 	try {
 		const studentsRaw = await client.entities.students.list(entitiesByIds([studentId]));
@@ -689,21 +781,23 @@ export async function fetchStudentById(
 			return null;
 		}
 
+		// Placement/relationships are independent drawer sections; their failures cannot erase student identity.
 		const [enrollmentsRaw, linksRaw] = await Promise.all([
-			client.entities.enrollments.list(enrollmentsForStudents([studentId])),
-			client.entities.guardianLinks.list(guardianLinksForStudents([studentId])),
+			client.entities.enrollments.list(enrollmentsForStudents([studentId])).catch(() => []),
+			client.entities.guardianLinks.list(guardianLinksForStudents([studentId])).catch(() => []),
 		]);
 		const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
 		const guardiansRaw = guardianIds.length > 0
-			? await client.entities.guardians.list(guardiansByIds(guardianIds))
+			? await client.entities.guardians.list(guardiansByIds(guardianIds)).catch(() => [])
 			: [];
+		const classEnrollments = classScope ? enrollmentsRaw?.filter(row => row.status === 'active' && row.classGroupId === classScope.classGroupId) : undefined;
 		let metrics: StudentMetricsSources = {
 			attendanceRaw: [],
 			assessmentsRaw: [],
 			resultsRaw: [],
 		};
 		try {
-			metrics = await fetchStudentMetricsSources(client, [studentId]);
+			metrics = await fetchStudentMetricsSources(client, [studentId], classEnrollments?.length ? classScope : undefined);
 		}
 		catch (error) {
 			if (!isMissingEntityError(error)) {
@@ -712,7 +806,7 @@ export async function fetchStudentById(
 		}
 		const sources: PeopleSources = {
 			studentsRaw: [studentRaw],
-			enrollmentsRaw: enrollmentsRaw ?? [],
+			enrollmentsRaw: classEnrollments?.length ? classEnrollments : enrollmentsRaw ?? [],
 			guardiansRaw: guardiansRaw ?? [],
 			linksRaw: linksRaw ?? [],
 		};

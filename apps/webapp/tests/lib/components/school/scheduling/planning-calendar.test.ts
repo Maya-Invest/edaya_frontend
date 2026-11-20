@@ -25,7 +25,7 @@ import {
 	timetableExpandedUnitHeight,
 	timetableTimeSlotCount,
 	utcWallClockDate,
-} from '$lib/components/school/scheduling/planning-calendar';
+} from '$lib/scheduling/planning-calendar';
 
 describe('planning-calendar', () => {
 	test('calendarSlotFromDates maps UTC wall-clock times to weekday slot', () => {
@@ -127,10 +127,10 @@ describe('planning-calendar', () => {
 			endsAt: '2026-05-11T09:00:00.000Z',
 			room: '',
 			teacher: 'Teacher',
-			timetableGenerated: 'draft',
+			timetableGenerated: true,
 		}]);
 
-		expect(mapped?.timetableGenerated).toBe('draft');
+		expect(mapped?.timetableGenerated).toBe(true);
 	});
 
 	test('sessionInstantsForSlot keeps reference week and uses UTC wall-clock', () => {

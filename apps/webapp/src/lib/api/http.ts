@@ -19,12 +19,13 @@ function isEntityGetPath(path: string): boolean {
 
 export async function parseApiResponse<T>(path: string, response: Response): Promise<T> {
 	if (!response.ok) {
-		let body: unknown;
+		const text = await response.text();
+		let body: unknown = text;
 		try {
-			body = await response.json();
+			body = JSON.parse(text);
 		}
 		catch {
-			body = await response.text();
+			// Gateways can return a plain-text error body.
 		}
 		throw new ApiError(response.status, body);
 	}

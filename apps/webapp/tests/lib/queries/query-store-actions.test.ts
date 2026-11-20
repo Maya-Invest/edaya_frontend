@@ -14,6 +14,7 @@ function subject(id: string): Subject {
 		hoursPerWeek: 4,
 		color: 'mint',
 		description: '',
+		categoryId: 'cat-scientifique',
 		category: 'Scientifique',
 	};
 }

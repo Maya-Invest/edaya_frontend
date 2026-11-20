@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { AlertTriangle, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
@@ -19,48 +19,48 @@
 	const modals = getDrawerUrlModals();
 </script>
 
-<div class="space-y-4">
+<div>
 	<div class="grid grid-cols-3 gap-3">
-		<div class="rounded-xl bg-destructive/10 p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Élevés</p>
+		<div class="rounded-collection bg-destructive/10 p-4">
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.high')}</p>
 			<p class="mt-1 font-display text-2xl text-destructive">{incidentsData.high}</p>
 		</div>
-		<div class="rounded-xl bg-secondary/60 p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Moyens</p>
+		<div class="rounded-collection bg-secondary/60 p-4">
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.medium')}</p>
 			<p class="mt-1 font-display text-2xl">{incidentsData.med}</p>
 		</div>
-		<div class="rounded-xl bg-secondary p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Faibles</p>
+		<div class="rounded-collection bg-secondary p-4">
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.low')}</p>
 			<p class="mt-1 font-display text-2xl">{incidentsData.low}</p>
 		</div>
 	</div>
-	<div>
+	<div class="ui-student-tab-section">
 		<div class="flex items-center justify-between gap-3">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				Évènements · {incidentsData.sorted.length}
-			</Label>
+			<h3 class="ui-student-section-title">
+				{$t('events.heading')} · {incidentsData.sorted.length}
+			</h3>
 			<PermissionGate
 				permission="DISCIPLINE_CREATE"
 				classId={s.classId}
 				mode="disable"
-				tooltip="Droit DISCIPLINE_CREATE requis."
+				tooltip={$t('events.permissionCreate')}
 			>
 				{#snippet children({ disabled, title })}
 					<Button
 						variant="outline"
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals?.open('add-incident')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
-						Consigner
+						{$t('events.log')}
 					</Button>
 				{/snippet}
 			</PermissionGate>
 		</div>
-		<div class="mt-2 space-y-2">
+		<div class="space-y-2">
 			{#if incidentsData.sorted.length === 0}
 				<DrawerEmptyState label={$t('drawer.noIncidents')}>
 					{#snippet icon()}
@@ -69,7 +69,7 @@
 				</DrawerEmptyState>
 			{:else}
 				{#each incidentsData.sorted as incident (incident.id)}
-					<div class="rounded-xl border border-border bg-card p-4">
+					<div class="rounded-collection border border-border bg-card p-4">
 						<div class="flex items-center justify-between">
 							<span
 								class={cn(
@@ -83,12 +83,21 @@
 							>
 								{$t(`events.severity.${incident.severity}`)}
 							</span>
-							<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(incident.date)}</span>
+							<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{fmtDateFr(incident.date, $locale)}</span>
 						</div>
 						<p class="mt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
 							{$t(`events.cat.${incident.category}`)}
 						</p>
 						<p class="mt-1 text-sm">{incident.summary}</p>
+						<div class="mt-3">
+							<DocumentPdfButton onRequestDocumentIssuance={incidentsTab.performRequestDocumentIssuance}
+								templateKey="incident-report.v1"
+								sourceId={incident.id}
+								studentId={s.id}
+								permission="DISCIPLINE_READ"
+								classId={s.classId}
+							/>
+						</div>
 					</div>
 				{/each}
 			{/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { PageQueryRequest } from '$lib/queries/page-status';
 	import type { ActivityEnrollmentStatus } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -12,52 +13,119 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
-	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { writeModalSurface } from '$lib/modal/modal-url';
+	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getActivitiesPageState } from '../../../activities-page.svelte';
 	import { studentDisplayFallback } from '../../../lib/activity-selectors';
-	import { getActivityStudentsTabState } from './activity-students-tab.svelte';
+	import { getActivityStudentsTabState, pickerStudent, removalFromUrl } from './activity-students-tab.svelte';
+	import ActivityPupilPicker from './ActivityPupilPicker.svelte';
 
 	const activitiesPage = getActivitiesPageState();
 	const studentsTab = getActivityStudentsTabState();
-	const query = studentsTab.query();
+	const loadTab = studentsTab.query();
 	const activityId = $derived($page.params.id ?? '');
 	const activity = $derived(activityId ? activitiesPage.findActivity(activityId) : undefined);
-	const enrollments = $derived(studentsTab.enrollmentsFor(activityId));
+	const enrollments = $derived(studentsTab.slice?.items ?? []);
+	let pickerRevision = $state(0);
 
-	let addOpen = $state(false);
+	const classesById = $derived(new Map(academicContext.classes.map(group => [group.id, group])));
+
+	type ActivityStudentsModal = 'edit' | 'delete' | 'add-students' | 'remove-enrollment';
+	const modals = createUrlSyncedModals<ActivityStudentsModal>({
+		allowed: ['edit', 'delete', 'add-students', 'remove-enrollment'],
+		getUrl: () => $page.url,
+	});
+	$effect(() => {
+		modals.hydrate();
+		untrack(validateModal);
+	});
+	const addOpen = bindUrlModal(modals, 'add-students');
+	const removeOpen = bindUrlModal(modals, 'remove-enrollment');
 	let studentIds = $state<string[]>([]);
+	let pickerSession = 0;
+	$effect(() => {
+		void addOpen.open;
+		void activityId;
+		void academicContext.scopeGeneration;
+		studentIds = [];
+		pickerSession += 1;
+		return () => {
+			pickerSession += 1;
+		};
+	});
 	let busy = $state(false);
-	let removeEnrollmentId = $state<string | null>(null);
-	let removeOpen = $state(false);
 	let removeBusy = $state(false);
 
-	$effect(() => {
-		if (addOpen) {
-			void activitiesPage.ensureStudents();
-		}
-	});
-
-	const enrolledIds = $derived(new Set(enrollments.map(enrollment => enrollment.studentId)));
-	const linkedClassGroupIds = $derived(activity?.classEnrollments.map(enrollment => enrollment.classGroupId) ?? []);
-	const canAddStudents = $derived(linkedClassGroupIds.length > 0);
+	const canAddStudents = $derived(studentsTab.slice?.canAdd ?? false);
 	const addStudentsDescription = $derived(
 		canAddStudents
 			? $t('activities.addStudentsFromLinkedClasses')
 			: $t('activities.addStudentsRequiresLinkedClasses'),
 	);
 	const removeTarget = $derived(
-		removeEnrollmentId
-			? enrollments.find(enrollment => enrollment.id === removeEnrollmentId)
+		modals.isOpen('remove-enrollment') && modals.target
+			? enrollments.find(enrollment => enrollment.id === modals.target) ?? (studentsTab.slice?.selected?.id === modals.target ? studentsTab.slice.selected : undefined)
 			: undefined,
 	);
 	const removeStudentName = $derived(
 		removeTarget
-			? (activitiesPage.findStudent(removeTarget.studentId)?.name ?? studentDisplayFallback(removeTarget.studentId))
+			? ((removeTarget.student ? pickerStudent(removeTarget.student).name : undefined) ?? studentDisplayFallback(removeTarget.studentId))
 			: '—',
 	);
+
+	let removalOrigin: { button: HTMLButtonElement; viewport: HTMLElement; top: number; scope: string; activityId: string } | undefined;
+
+	function openRemoval(id: string, button: HTMLButtonElement) {
+		const viewport = button.closest<HTMLElement>('[data-activity-drawer-scroll]');
+		removalOrigin = viewport ? { button, viewport, top: viewport.scrollTop, scope: activitiesPage.scope, activityId } : undefined;
+		modals.open('remove-enrollment', { target: id });
+	}
+
+	function restoreRosterPosition(event: Event) {
+		const origin = removalOrigin;
+		removalOrigin = undefined;
+		if (!origin || !origin.viewport.isConnected || origin.scope !== activitiesPage.scope || origin.activityId !== activityId)
+			return;
+		event.preventDefault();
+		if (origin.button.isConnected)
+			origin.button.focus({ preventScroll: true });
+		origin.viewport.scrollTop = origin.top;
+	}
+
+	function canonicalizeModal(modal: ActivityStudentsModal | null) {
+		replaceRouteSurface(writeModalSurface($page.url, { modal }));
+	}
+
+	function validateModal() {
+		if (!modals.ready || studentsTab.slice?.activityId !== activityId || !modals.active) {
+			return;
+		}
+		if (
+			(modals.active === 'edit' || modals.active === 'delete' || modals.active === 'add-students')
+			&& modals.target
+		) {
+			canonicalizeModal(modals.active);
+			return;
+		}
+		if (
+			modals.active === 'remove-enrollment'
+			&& studentsTab.slice.requestedId === (modals.target ?? undefined) && !removeTarget
+		) {
+			canonicalizeModal(null);
+		}
+	}
+
+	async function query(url: URL, request: PageQueryRequest) {
+		const result = await loadTab(url, request);
+		request.signal.throwIfAborted();
+		validateModal();
+		return result;
+	}
 
 	function enrollStatusLabel(status: ActivityEnrollmentStatus): string {
 		return get(t)(`activities.enrollStatus.${status}`);
@@ -78,6 +146,7 @@
 			return;
 		}
 
+		const targetId = activity.id;
 		busy = true;
 		await activitiesPage.enrollStudent({
 			activityId: activity.id,
@@ -86,33 +155,36 @@
 			enrollmentId: enrollment.id,
 			successMessage: get(t)('activities.enrollStatusSuccess'),
 		});
-		studentsTab.syncFromPage(activity.id);
+		await studentsTab.refresh(targetId);
 		busy = false;
 	}
 
 	async function confirmAddStudents() {
-		if (!activity || studentIds.length === 0 || busy) {
+		if (!activity || studentIds.length === 0 || busy)
 			return;
-		}
-
+		const targetId = activity.id;
+		const generation = academicContext.scopeGeneration;
+		const session = pickerSession;
+		const current = () => session === pickerSession && addOpen.open && activityId === targetId && academicContext.scopeGeneration === generation;
 		busy = true;
-		let added = 0;
-		for (const studentId of studentIds) {
-			const ok = await activitiesPage.enrollStudent({
-				activityId: activity.id,
-				studentId,
-				status: 'pending',
-			});
-			if (ok) {
-				added += 1;
+		try {
+			const result = await activitiesPage.addStudents(targetId, studentIds, current);
+			if (!current())
+				return;
+			studentIds = result.remaining;
+			if (result.succeeded.length > 0) {
+				toast.success(get(t)('activities.enrollStudentsSuccess', { n: result.succeeded.length }));
+				pickerRevision++;
+				await studentsTab.refresh(targetId);
+				if (!current())
+					return;
 			}
+			if (result.remaining.length === 0)
+				modals.close();
+			else toast.error(get(t)('common.partialSelection', { n: result.remaining.length }));
 		}
-		busy = false;
-		if (added > 0) {
-			toast.success(get(t)('activities.enrollStudentsSuccess', { n: added }));
-			studentsTab.syncFromPage(activity.id);
-			addOpen = false;
-			studentIds = [];
+		finally {
+			busy = false;
 		}
 	}
 
@@ -121,6 +193,8 @@
 			return;
 		}
 
+		const targetId = activity.id;
+		const scope = activitiesPage.scope;
 		removeBusy = true;
 		const ok = await activitiesPage.removeEnrollment({
 			activityId: activity.id,
@@ -128,32 +202,32 @@
 			successMessage: get(t)('activities.removeEnrollmentSuccess'),
 		});
 		removeBusy = false;
-		if (ok) {
-			studentsTab.syncFromPage(activity.id);
-			removeOpen = false;
-			removeEnrollmentId = null;
+		if (ok && targetId === activityId && scope === activitiesPage.scope) {
+			await studentsTab.refresh(targetId);
+			modals.close();
 		}
 	}
+
 </script>
 
 {#if activity}
-	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.enrolledStudents')}>
+	<PageQuery {query} cache={false} preserveWhileLoading cacheKey={url => JSON.stringify([drawerTabRouteCacheKey(url), removalFromUrl(url)])} loadingTitle={$t('activities.enrolledStudents')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
-				<div class="rounded-2xl border border-border bg-card">
+				<div class="rounded-collection border border-border bg-card">
 					<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
-						<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-							{$t('activities.enrolledStudents')}
+						<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
+							{$t('activities.enrolledStudents')} · {studentsTab.slice?.total ?? activity.enrollmentCount}
 						</p>
-						<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+						<PermissionGate permission="ACTIVITY_ENROLLMENT_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 							{#snippet children({ disabled, title })}
 								<Button
 									size="sm"
 									variant="outline"
-									class="h-7 rounded-full text-xs"
+									class="text-xs"
 									disabled={disabled || busy || !canAddStudents}
 									title={!canAddStudents ? $t('activities.addStudentsRequiresLinkedClasses') : title}
-									onclick={() => (addOpen = true)}
+									onclick={() => modals.open('add-students')}
 								>
 									<Plus class="mr-1 h-3.5 w-3.5" /> {$t('activities.addStudent')}
 								</Button>
@@ -165,8 +239,8 @@
 					{:else}
 						<ul class="divide-y divide-border">
 							{#each enrollments as enrollment (enrollment.id)}
-								{@const student = activitiesPage.findStudent(enrollment.studentId)}
-								{@const classGroup = student ? academicContext.classes.find(entry => entry.id === student.classId) : undefined}
+								{@const student = enrollment.student ? pickerStudent(enrollment.student) : undefined}
+								{@const classGroup = student ? classesById.get(student.classId) : undefined}
 								<li class="flex items-center justify-between gap-3 px-4 py-2.5">
 									<div class="flex min-w-0 items-center gap-2">
 										<span
@@ -181,7 +255,7 @@
 											<p class="truncate text-[11px] text-muted-foreground">{classGroup?.name ?? '—'}</p>
 										</div>
 									</div>
-									<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+									<PermissionGate permission="ACTIVITY_ENROLLMENT_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 										{#snippet children({ disabled, title })}
 											<div class="flex items-center gap-2">
 												<button
@@ -197,13 +271,10 @@
 													type="button"
 													variant="ghost"
 													size="icon"
-													class="h-8 w-8 text-muted-foreground hover:text-destructive"
+													class="w-8 text-muted-foreground hover:text-destructive"
 													disabled={disabled || busy}
 													title={$t('activities.removeEnrollment')}
-													onclick={() => {
-														removeEnrollmentId = enrollment.id;
-														removeOpen = true;
-													}}
+													onclick={event => openRemoval(enrollment.id, event.currentTarget)}
 												>
 													<Trash2 class="h-4 w-4" />
 												</Button>
@@ -214,6 +285,11 @@
 							{/each}
 						</ul>
 					{/if}
+					{#if studentsTab.failed}
+						<DataState compact status="error" onRetry={() => void studentsTab.refresh(activityId)} />
+					{:else if studentsTab.slice?.nextCursor}
+						<Button variant="outline" size="sm" disabled={studentsTab.loading} onclick={() => void studentsTab.more()}>{$t('activities.morePupils')}</Button>
+					{/if}
 				</div>
 			</DataState>
 		{/snippet}
@@ -221,7 +297,8 @@
 {/if}
 
 <PickerModal
-	bind:open={addOpen}
+	dirty={studentIds.length > 0}
+	bind:open={addOpen.open}
 	title={activity ? $t('activities.addStudentTitle', { name: activity.name }) : $t('activities.addStudent')}
 	description={addStudentsDescription}
 	confirmLabel={$t('activities.addStudentsAction')}
@@ -232,24 +309,20 @@
 	}}
 	onConfirm={confirmAddStudents}
 >
-	<StudentPicker
-		bind:values={studentIds}
-		mode="multi"
-		variant="panel"
-		active={addOpen}
-		classGroupIds={linkedClassGroupIds}
-		excludeIds={[...enrolledIds]}
-	/>
+	{#if addOpen.open && canAddStudents}
+		{#key JSON.stringify([activityId, activitiesPage.scope])}
+			<ActivityPupilPicker {activityId} revision={pickerRevision} bind:values={studentIds} />
+		{/key}
+	{/if}
 </PickerModal>
 
 <ConfirmModal
-	bind:open={removeOpen}
+	bind:open={removeOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('activities.removeEnrollmentConfirm', { name: removeStudentName })}
 	confirmLabel={$t('activities.removeEnrollment')}
 	busy={removeBusy}
-	onCancel={() => {
-		removeEnrollmentId = null;
-	}}
+	confirmDisabled={!removeTarget}
+	onCloseAutoFocus={restoreRosterPosition}
 	onConfirm={confirmRemoveEnrollment}
 />

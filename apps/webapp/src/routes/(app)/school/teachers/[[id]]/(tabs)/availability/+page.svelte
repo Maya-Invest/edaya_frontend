@@ -12,7 +12,7 @@
 	const availabilityTab = getTeacherAvailabilityTabState();
 	const query = availabilityTab.query();
 	const teacher = $derived(teachersPage.selected);
-	const allowed = $derived(hasAnyPermission(['ACCESS_CONTROL_ASSIGN', 'SCHOOL_STRUCTURE_CONFIGURE']));
+	const allowed = $derived(hasAnyPermission(['STAFF_READ', 'ACCESS_CONTROL_READ']));
 	const cacheKey = (url: URL) => `${url.pathname}|${academicContext.yearId}`;
 </script>
 

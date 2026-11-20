@@ -50,6 +50,19 @@ describe('student tab selectors', () => {
 		expect(summary.overall).toBeGreaterThan(0);
 	});
 
+	it('uses each scored assessment’s own scale and weight after a pending mark', () => {
+		const shared = { classGroupId: 'c', title: 'Quiz', subject: 'Math', kind: 'quiz' as const, date: '2026-01-01' };
+		const rows = [
+			{ ...shared, assessmentId: 'pending', coefficient: 4, score: null, outOf: 10 },
+			{ ...shared, assessmentId: 'scored', coefficient: 2, score: 15, outOf: 20 },
+			{ ...shared, assessmentId: 'zero', coefficient: 1, score: 0, outOf: 5 },
+		];
+		const summary = buildStudentGradeSummaryFromRows(rows);
+		expect(summary.valid).toEqual([15, 0]);
+		expect(summary.overall).toBe(10);
+		expect(summary.subjectGroups[0]?.subjectAvg).toBe(10);
+	});
+
 	it('summarizes incident severities in descending date order', () => {
 		const summary = summarizeStudentIncidents([
 			{
@@ -58,6 +71,7 @@ describe('student tab selectors', () => {
 				involvedStudentIds: ['s1'],
 				involvedCount: 1,
 				date: '2026-02-01',
+				kind: 'emergency',
 				category: 'Behavior',
 				severity: 'high',
 				summary: 'A',
@@ -69,6 +83,7 @@ describe('student tab selectors', () => {
 				involvedStudentIds: ['s1'],
 				involvedCount: 1,
 				date: '2026-03-01',
+				kind: 'minor_infraction',
 				category: 'Tardiness',
 				severity: 'low',
 				summary: 'B',
@@ -80,6 +95,7 @@ describe('student tab selectors', () => {
 				involvedStudentIds: ['s1'],
 				involvedCount: 1,
 				date: '2026-02-15',
+				kind: 'major_infraction',
 				category: 'Conflict',
 				severity: 'medium',
 				summary: 'C',
@@ -96,21 +112,31 @@ describe('student tab selectors', () => {
 			{
 				id: 'b1',
 				studentId: 's1',
-				feeId: 'fee-1',
+				enrollmentId: 'enr-1',
+				catalogServiceId: 'fee-1',
+				label: 'Tuition',
 				total: 100,
 				paid: 40,
+				remaining: 60,
+				currency: 'XOF',
 				status: 'partial',
 				dueDate: '2026-04-01',
+				academicYearId: 'year-1',
 				installments: [],
 			},
 			{
 				id: 'b2',
 				studentId: 's2',
-				feeId: 'fee-2',
+				enrollmentId: 'enr-2',
+				catalogServiceId: 'fee-2',
+				label: 'Transport',
 				total: 50,
 				paid: 50,
+				remaining: 0,
+				currency: 'XOF',
 				status: 'paid',
 				dueDate: '2026-04-01',
+				academicYearId: 'year-1',
 				installments: [],
 			},
 		];

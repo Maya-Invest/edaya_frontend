@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
 	buildTimetablePlacementParameters,
 	resolvedPeriodSpanPlaceholder,
-} from '$lib/components/school/scheduling/timetable-placement-parameters';
+} from '$lib/scheduling/timetable-placement-parameters';
 
 describe('timetable placement parameters', () => {
 	test('builds placement parameters from non-empty override maps', () => {

@@ -1,11 +1,12 @@
 import type { ClassNode, GradeLevel, HierarchyGroup } from '$lib/types/school';
+import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 
-/** Regroupe les classes par cycle, ordonnées selon les niveaux. */
+/** Regroupe les classes par cycle, ordonnées selon les niveaux (Collège puis Lycée). */
 export function buildClassHierarchy(
 	classList: ClassNode[],
 	gradeLevelList: GradeLevel[],
 ): HierarchyGroup[] {
-	const sortedLevels = [...gradeLevelList].sort((a, b) => a.order - b.order);
+	const sortedLevels = sortGradeLevels(gradeLevelList);
 	const cycles: string[] = [];
 	for (const gl of sortedLevels) {
 		if (!cycles.includes(gl.cycle)) {

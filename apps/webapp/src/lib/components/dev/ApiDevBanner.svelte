@@ -5,7 +5,7 @@
 
 	type ApiStatus = { connected: true; message: string } | { connected: false };
 
-	let status = $state<ApiStatus>({ connected: false });
+	let status = $state<ApiStatus | null>(null);
 
 	$effect(() => {
 		if (!browser || !isLocalDevApi())
@@ -28,14 +28,14 @@
 		};
 	});
 
-	const show = $derived(isLocalDevApi() && !status.connected);
+	const show = $derived(isLocalDevApi() && status?.connected === false);
 </script>
 
 {#if show}
 	<div
 		role="status"
-		class="border-b border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-center text-xs text-amber-900 dark:text-amber-200"
+		class="border-b border-highlight/30 bg-highlight-soft px-4 py-1.5 text-center text-xs text-highlight"
 	>
-		Local API unreachable — run <code class="font-mono">cd ../edaya_backend && bun dev</code>
+		Local identity/API unreachable — run <code class="font-mono">bun repo dev</code> in <code class="font-mono">edaya_backend</code>
 	</div>
 {/if}

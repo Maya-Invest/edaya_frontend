@@ -92,11 +92,11 @@ describe('school-life calendar mapping', () => {
 		);
 	});
 
-	it('falls back to kind label only when description is missing', () => {
+	it('falls back to empty string when description is missing', () => {
 		expect(mapCalendarEventDescription({
 			...seedCalendarEvents[1],
 			description: undefined,
-		})).toBe('Événement scolaire.');
+		})).toBe('');
 	});
 
 	it('maps calendar events for the school calendar UI', () => {
@@ -172,13 +172,13 @@ describe('school-life calendar mapping', () => {
 describe('school-life incident mapping', () => {
 	it('derives category and severity from API fields without per-id tables', () => {
 		expect(mapIncidentCategory(seedIncidents[0])).toBe('Tardiness');
-		expect(mapIncidentSeverity(seedIncidents[0], 'Tardiness')).toBe('low');
+		expect(mapIncidentSeverity(seedIncidents[0])).toBe('low');
 
-		expect(mapIncidentCategory(seedIncidents[1])).toBe('Behavior');
-		expect(mapIncidentSeverity(seedIncidents[1], 'Behavior')).toBe('medium');
+		expect(mapIncidentCategory(seedIncidents[1])).toBe('Tardiness');
+		expect(mapIncidentSeverity(seedIncidents[1])).toBe('low');
 
 		expect(mapIncidentCategory(seedIncidents[2])).toBe('Conflict');
-		expect(mapIncidentSeverity(seedIncidents[2], 'Conflict')).toBe('medium');
+		expect(mapIncidentSeverity(seedIncidents[2])).toBe('medium');
 	});
 
 	it('maps seeded incidents for the school events UI', () => {
@@ -191,16 +191,30 @@ describe('school-life incident mapping', () => {
 			involvedCount: 1,
 			category: 'Tardiness',
 			severity: 'low',
+			summary: 'Repeated tardiness',
 		});
 		expect(incidents.find(entry => entry.id === 'i2')).toMatchObject({
 			studentId: 's2',
-			category: 'Behavior',
-			severity: 'medium',
+			category: 'Tardiness',
+			severity: 'low',
 		});
 		expect(incidents.find(entry => entry.id === 'i3')).toMatchObject({
 			studentId: 's3',
 			category: 'Conflict',
 			severity: 'medium',
+		});
+	});
+
+	it('keeps incidents visible when involvements have not loaded yet', () => {
+		const incidents = mapIncidents([seedIncidents[0]], []);
+
+		expect(incidents).toHaveLength(1);
+		expect(incidents[0]).toMatchObject({
+			id: 'i1',
+			studentId: '',
+			involvedStudentIds: [],
+			involvedCount: 0,
+			summary: 'Repeated tardiness',
 		});
 	});
 });

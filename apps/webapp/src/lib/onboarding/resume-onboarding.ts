@@ -1,15 +1,24 @@
 import type { OnboardingDraft, OnboardingStep, ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import { createEmptyDraft, loadDraft, saveDraft } from '$lib/onboarding/draft-storage';
 import { onboardingStepUrl } from '$lib/onboarding/navigation';
+import {
+	isOnboardingSummaryHold,
+	isWizardCompletedInSession,
+} from '$lib/onboarding/wizard-completion-flag';
 
 export function mergeOnboardingDraftWithServerStatus(
 	draft: OnboardingDraft,
 	status: ServerOnboardingAccountStatus,
 	schoolId?: string | null,
+	options?: { holdLocalWizardCompleted?: boolean },
 ): OnboardingDraft {
+	// Local draft remains source of truth until provision succeeds.
+	// Server flags only raise progress (OR / Math.max), never lower it.
 	return {
 		...draft,
-		wizardCompleted: draft.wizardCompleted || status.wizardCompleted,
+		wizardCompleted: options?.holdLocalWizardCompleted
+			? false
+			: draft.wizardCompleted || status.wizardCompleted,
 		maxReachedStep: Math.max(draft.maxReachedStep, status.maxReachedStep) as OnboardingStep,
 		schoolStepSubmitted: draft.schoolStepSubmitted || status.schoolStepSubmitted,
 		structureStepSubmitted: draft.structureStepSubmitted || status.structureStepSubmitted,
@@ -39,11 +48,13 @@ export function persistServerOnboardingStatusToDraft(
 	authUserId: string,
 	status: ServerOnboardingAccountStatus,
 	schoolId?: string | null,
+	options?: { holdLocalWizardCompleted?: boolean },
 ) {
 	const merged = mergeOnboardingDraftWithServerStatus(
 		resolveOnboardingDraft(authUserId, { schoolId }),
 		status,
 		schoolId,
+		options,
 	);
 	saveDraft(authUserId, merged);
 	return merged;
@@ -58,6 +69,16 @@ export function shouldContinueOnboarding(
 		return false;
 	}
 
+	if (isWizardCompletedInSession(authUserId)) {
+		return false;
+	}
+
+	// Linked actors: last gate before dashboard uses server account-status only.
+	// Leftover local drafts must not send invited staff into the owner wizard.
+	if (schoolId) {
+		return Boolean(serverStatus && !serverStatus.wizardCompleted);
+	}
+
 	if (serverStatus?.wizardCompleted) {
 		return false;
 	}
@@ -67,15 +88,12 @@ export function shouldContinueOnboarding(
 		return false;
 	}
 
-	if (serverStatus) {
-		return !serverStatus.wizardCompleted;
+	// No server status (e.g. account-status 403) and no local draft: do not send owners back to step 1.
+	if (!loadDraft(authUserId)) {
+		return false;
 	}
 
-	if (schoolId) {
-		return true;
-	}
-
-	return false;
+	return draft.maxReachedStep > 1;
 }
 
 export function onboardingResumePath(
@@ -95,15 +113,39 @@ export function onboardingResumePath(
 	return onboardingStepUrl(maxReachedStep);
 }
 
+/** Stay on the step-4 summary after provision until the user opens the dashboard. */
+export function shouldHoldOnboardingSummary(options: {
+	localWizardCompleted: boolean;
+	provisionProgressVisible: boolean;
+	provisionSucceeded: boolean;
+	serverWizardCompleted?: boolean;
+	summaryHold?: boolean;
+}): boolean {
+	if (options.summaryHold === true) {
+		return true;
+	}
+	if (options.localWizardCompleted) {
+		return false;
+	}
+	// Visible progress is not proof of a committed provision: a rejected request must remain retryable.
+	return options.provisionSucceeded
+		|| options.serverWizardCompleted === true;
+}
+
 export function persistSyncedOnboardingDraft(
 	authUserId: string,
 	options?: { schoolId?: string | null },
 ) {
 	const stored = loadDraft(authUserId);
-	const draft = resolveOnboardingDraft(authUserId, options);
+	let draft = resolveOnboardingDraft(authUserId, options);
+	if (isOnboardingSummaryHold(authUserId) && draft.wizardCompleted) {
+		draft = { ...draft, wizardCompleted: false };
+	}
 
-	const needsPersist = !stored
-		|| (Boolean(options?.schoolId) && !stored.schoolStepSubmitted && draft.schoolStepSubmitted);
+	const needsPersist = Boolean(stored)
+		|| draft.wizardCompleted
+		|| draft.maxReachedStep > 1
+		|| isOnboardingSummaryHold(authUserId);
 
 	if (needsPersist) {
 		saveDraft(authUserId, draft);

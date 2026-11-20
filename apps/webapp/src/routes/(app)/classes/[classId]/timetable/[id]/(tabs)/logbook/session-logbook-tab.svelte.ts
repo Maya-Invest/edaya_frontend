@@ -1,10 +1,10 @@
-import type { SessionDetail, SessionLogbook, SessionSubjectMatterOption } from '$lib/types/session-detail';
+import type { LogbookSave, SessionDetail, SessionLogbook, SessionSubjectMatterOption } from '$lib/types/session-detail';
+import type { PageQueryRequest } from '../../../lib/timetable-page-status';
 import type { TimetablePageState } from '../../../timetable-page.svelte';
-import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { findPlanningEventById } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
-import { nowIso } from '$lib/date/format';
+import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { queryClient } from '$lib/queries/client';
 import { getContext, setContext } from 'svelte';
@@ -39,8 +39,16 @@ function emptySlice(sessionId: string): SessionLogbookTabSlice {
 
 export class SessionLogbookTabState {
 	slice = $state<SessionLogbookTabSlice | null>(null);
+	private validateSurface?: (logbookExists: boolean) => void;
 
 	constructor(private readonly getPage: () => TimetablePageState) {}
+
+	configureSurfaceValidation(validate: (logbookExists: boolean) => void) {
+		this.validateSurface = validate;
+		if (this.slice) {
+			validate(this.slice.logbook !== undefined);
+		}
+	}
 
 	clear() {
 		this.slice = null;
@@ -49,9 +57,11 @@ export class SessionLogbookTabState {
 	seed(sessionId: string, data: Omit<SessionLogbookTabSlice, 'sessionId'>) {
 		if (!this.slice || this.slice.sessionId !== sessionId) {
 			this.slice = { ...emptySlice(sessionId), ...data, sessionId };
+			this.validateSurface?.(data.logbook !== undefined);
 			return;
 		}
 		this.slice = { ...this.slice, ...data, sessionId };
+		this.validateSurface?.(data.logbook !== undefined);
 	}
 
 	detailFor(sessionId: string): SessionDetail | undefined {
@@ -78,9 +88,9 @@ export class SessionLogbookTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTimetablePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTimetablePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const sessionId = sessionDetailIdFromUrl(url);
 				const classId = timetableClassIdFromUrl(url);
 				if (!sessionId || !classId) {
@@ -99,6 +109,7 @@ export class SessionLogbookTabState {
 					{ id: session.id, kind: session.kind },
 				);
 				if (loaded) {
+					signal.throwIfAborted();
 					this.seed(sessionId, {
 						classGroupId: loaded.classGroupId,
 						classSubjectId: loaded.classSubjectId,
@@ -111,60 +122,36 @@ export class SessionLogbookTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load session logbook.',
-		});
+		}, request);
 	}
 
-	async saveLogbook(input: {
-		sessionId: string;
-		classGroupId: string;
-		classSubjectId: string;
-		date: string;
-		logbookId?: string;
-		classSubjectMatterId: string;
-		chapter: string;
-		content: string;
-		objectives: string[];
-		homework?: string;
-		progress: number;
-		successMessage?: string;
-	}): Promise<boolean> {
-		const client = getBrowserSchoolClient();
-		const progressId = input.logbookId ?? `csp-${input.sessionId}-${Date.now().toString(36)}`;
-		const nextLogbook: SessionLogbook = {
-			id: progressId,
-			chapter: input.chapter.trim(),
-			content: input.content.trim(),
-			objectives: input.objectives,
-			homework: input.homework?.trim() || undefined,
-			progress: input.progress,
-		};
-		const previous = this.slice?.sessionId === input.sessionId ? this.slice.logbook : undefined;
+	async loadLogbook(targetId: string) {
+		const state = await getBrowserSchoolClient().queries.getTeacherWorkflowState({ proposal: { workflow: 'logbook', formatVersion: 2, targetId, sessionNote: null, progress: [] } });
+		const pending = state.corrections.find(row => row.status === 'pending');
+		return { ...state, editable: !pending || pending.authorSubjectId === authSession.subjectId };
+	}
 
+	async validateLogbook(sessionIds: string[]): Promise<boolean> {
+		const result = await runTimetableRouteMutation({ request: () => getBrowserSchoolClient().commands.validateTeacherLogbook({ requestId: crypto.randomUUID(), lessonSessionIds: sessionIds }), successMessage: get(t)('corrections.validateLogbook') });
+		return result !== null;
+	}
+
+	async saveLogbook(input: LogbookSave): Promise<boolean> {
+		const client = getBrowserSchoolClient();
+		const proposal = { workflow: 'logbook' as const, formatVersion: 2 as const, targetId: input.sessionId, sessionNote: input.sessionNote, progress: input.progress };
+		const body = { requestId: input.requestId, expectedVersion: input.expectedVersion, proposal };
 		const result = await runTimetableRouteMutation({
 			request: async () => {
-				const session = await client.entities.lessonSessions.get(input.sessionId);
-				await client.entities.lessonSessions.save(
-					buildLessonSessionSavePayload(session, {
-						displayLabel: session.displayLabel,
-						sessionNote: input.content.trim() || null,
-					}),
-				);
-				await client.commands.recordLessonSessionProgress({
-					id: progressId,
-					classSubjectMatterId: input.classSubjectMatterId,
-					lessonSessionId: input.sessionId,
-					completedPercentage: input.progress,
-					notes: input.objectives.join('\n').trim() || null,
-					recordedAt: nowIso(),
-				});
+				if (input.reason && input.correctionId)
+					await client.commands.reviseTeacherCorrection({ ...body, reason: input.reason, correctionId: input.correctionId });
+				else if (input.reason)
+					await client.commands.requestTeacherCorrection({ ...body, reason: input.reason });
+				else
+					await client.commands.saveTeacherLogbook(body);
+				return true;
 			},
-			successMessage: input.successMessage ?? get(t)('planning.session.logbookSuccess'),
-			apply: () => {
-				this.patchLogbook(input.sessionId, nextLogbook);
-			},
-			rollback: () => {
-				this.patchLogbook(input.sessionId, previous);
-			},
+			versionKeys: ['planning', 'subjects'],
+			successMessage: get(t)('planning.session.logbookSuccess'),
 		});
 		return result !== null;
 	}

@@ -6,11 +6,11 @@ describe('shouldBootstrapAuthOnly', () => {
 		expect(shouldBootstrapAuthOnly('/login')).toBe(true);
 		expect(shouldBootstrapAuthOnly('/login/demo')).toBe(true);
 		expect(shouldBootstrapAuthOnly('/invite/token-123')).toBe(true);
-		expect(shouldBootstrapAuthOnly('/onboarding')).toBe(true);
-		expect(shouldBootstrapAuthOnly('/onboarding/complete')).toBe(true);
 	});
 
-	it('loads school bootstrap on app routes', () => {
+	it('loads school bootstrap on app and onboarding routes', () => {
+		expect(shouldBootstrapAuthOnly('/onboarding')).toBe(false);
+		expect(shouldBootstrapAuthOnly('/onboarding/complete')).toBe(false);
 		expect(shouldBootstrapAuthOnly('/dashboard')).toBe(false);
 		expect(shouldBootstrapAuthOnly('/school/staff')).toBe(false);
 	});

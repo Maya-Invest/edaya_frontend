@@ -1,7 +1,8 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { ActivitiesPageState } from '../activities-page.svelte';
+import { runRouteMutation } from '$lib/api/mutations/route-mutation';
 import { entityVersions } from '$lib/entity-versions.svelte';
-import { toast } from '$lib/toast.svelte';
-import { ApiError } from '@maya-invest/edaya-api-client';
+import { runSelectionOperation } from '$lib/interaction/selection-operation';
 
 export interface ActivityRouteMutationOptions<T> {
 	request: () => Promise<T>;
@@ -13,47 +14,48 @@ export interface ActivityRouteMutationOptions<T> {
 	versionKeys?: EntityVersionKey[];
 }
 
-function messageFromApiError(error: ApiError): string | undefined {
-	if (error.body && typeof error.body === 'object') {
-		const body = error.body as Record<string, unknown>;
-		if (typeof body.message === 'string') {
-			return body.message;
-		}
-		if (typeof body.error === 'string') {
-			return body.error;
-		}
-	}
-	return undefined;
-}
-
-function messageFromError(error: unknown, fallback?: string): string {
-	if (error instanceof ApiError) {
-		return messageFromApiError(error) ?? fallback ?? 'La requête a échoué.';
-	}
-	if (error instanceof Error && error.message.trim().length > 0) {
-		return error.message;
-	}
-	return fallback ?? 'La requête a échoué.';
-}
-
 export async function runActivityRouteMutation<T>(
+	state: ActivitiesPageState,
 	options: ActivityRouteMutationOptions<T>,
+	recordMembershipSave?: () => void,
 ): Promise<T | null> {
-	options.apply?.();
-	try {
-		const result = await options.request();
-		await options.onSuccess?.(result);
-		for (const key of options.versionKeys ?? ['activities']) {
-			entityVersions.bump(key);
-		}
-		if (options.successMessage) {
-			toast.success(options.successMessage);
-		}
-		return result;
+	const scope = state.scope;
+	const result = await runRouteMutation({
+		...options,
+		rollback: () => {
+			if (scope === state.scope)
+				options.rollback?.();
+		},
+		versionKeys: recordMembershipSave ? [] : options.versionKeys ?? ['activities'],
+	});
+	if (result !== null) {
+		if (recordMembershipSave)
+			recordMembershipSave();
+		else if (scope === state.scope)
+			void state.refreshAfterMutation().catch(() => {});
 	}
-	catch (error) {
-		options.rollback?.();
-		toast.error(messageFromError(error, options.errorMessage));
-		return null;
+	return result;
+}
+
+export async function saveActivityMembershipSelection(
+	state: ActivitiesPageState,
+	ids: readonly string[],
+	save: (id: string, recordSave: () => void) => Promise<boolean>,
+	isCurrent: () => boolean,
+) {
+	const scope = state.scope;
+	let changed = false;
+	const recordSave = () => {
+		changed = true;
+	};
+	try {
+		return await runSelectionOperation(ids, id => save(id, recordSave), isCurrent);
+	}
+	finally {
+		if (changed) {
+			entityVersions.bump('activities');
+			if (scope === state.scope)
+				void state.refreshAfterMutation().catch(() => {});
+		}
 	}
 }

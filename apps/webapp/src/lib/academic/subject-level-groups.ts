@@ -1,4 +1,5 @@
 import type { ClassNode, GradeLevel, Subject } from '$lib/types/school';
+import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 
 export interface SubjectLevelGroup {
 	key: string;
@@ -18,23 +19,22 @@ export function groupSubjectsByGradeLevel(
 	const byGradeLevelId: Record<string, { subtitle: string; items: Subject[] }> = {};
 
 	for (const subject of subjects) {
-		const cls = classById[subject.classId];
-		if (!cls) {
+		const gradeLevelId = subject.gradeLevelId ?? classById[subject.classId]?.gradeLevelId;
+		if (!gradeLevelId) {
 			continue;
 		}
-		const gradeLevelId = cls.gradeLevelId;
+		const cls = classById[subject.classId];
 		if (!byGradeLevelId[gradeLevelId]) {
 			const gradeLevel = gradeLevelById[gradeLevelId];
 			byGradeLevelId[gradeLevelId] = {
-				subtitle: gradeLevel?.cycle ?? cls.level,
+				subtitle: gradeLevel?.cycle ?? cls?.level ?? '',
 				items: [],
 			};
 		}
 		byGradeLevelId[gradeLevelId].items.push(subject);
 	}
 
-	return [...gradeLevels]
-		.sort((left, right) => left.order - right.order)
+	return sortGradeLevels(gradeLevels)
 		.filter(level => (byGradeLevelId[level.id]?.items.length ?? 0) > 0)
 		.map(level => ({
 			key: level.id,
@@ -43,22 +43,4 @@ export function groupSubjectsByGradeLevel(
 			count: byGradeLevelId[level.id]!.items.length,
 			items: byGradeLevelId[level.id]!.items,
 		}));
-}
-
-export function findSubjectLevelGroup(
-	label: string,
-	subjects: readonly Subject[],
-	classes: readonly ClassNode[],
-	gradeLevels: readonly GradeLevel[],
-): Omit<SubjectLevelGroup, 'key' | 'count'> | null {
-	const group = groupSubjectsByGradeLevel(subjects, classes, gradeLevels)
-		.find(entry => entry.label === label);
-	if (!group) {
-		return null;
-	}
-	return {
-		label: group.label,
-		subtitle: group.subtitle,
-		items: group.items,
-	};
 }

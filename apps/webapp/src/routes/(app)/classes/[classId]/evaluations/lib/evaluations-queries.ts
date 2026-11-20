@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { EvaluationsPageSlice } from './evaluation-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
@@ -6,7 +7,6 @@ import {
 	mapAssessmentResults,
 } from '$lib/api/assessments-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { loadClassSubjects } from '$lib/api/subjects-data';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { emptyEvaluationsSlice } from './evaluation-helpers';
 
@@ -17,17 +17,17 @@ export async function loadEvaluationGradingData(
 	classId: string,
 	periodId: string,
 ) {
-	const sources = await fetchClassAssessmentsSources(client, classId, periodId);
+	const sources = await fetchClassAssessmentsSources(client, classId, periodId, true);
 	return mapAssessmentResults(sources.resultsRaw);
 }
 
 export async function loadEvaluationsSlice(classId: string): Promise<EvaluationsPageSlice> {
 	const periodId = academicContext.periodId;
+	if (!periodId) {
+		return emptyEvaluationsSlice(classId);
+	}
 	const client = getBrowserSchoolClient();
-	const [{ evaluations }, subjects] = await Promise.all([
-		loadClassEvaluationsPageData(client, classId, periodId).then(({ evaluations }) => ({ evaluations })),
-		loadClassSubjects(client, classId),
-	]);
+	const { evaluations, subjects } = await loadClassEvaluationsPageData(client, classId, periodId);
 	return {
 		classId,
 		evaluations,
@@ -38,9 +38,9 @@ export async function loadEvaluationsSlice(classId: string): Promise<Evaluations
 }
 
 export function queryEvaluationsListPage(classId: string) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyEvaluationsSlice(classId),
 		load: () => loadEvaluationsSlice(classId),
 		hasItems: () => true,
-	});
+	}, request);
 }

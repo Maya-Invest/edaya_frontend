@@ -2,24 +2,32 @@ import type { components } from '$lib/api/schema';
 import { recordsForFieldIds } from '$lib/api/entity-list-filters';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
+type SubjectMatterRaw = components['schemas']['SubjectMatter'];
 
 export interface SubjectMatterDrawerRow {
 	id: string;
 	name: string;
+	shortName?: string;
 	description?: string;
 	sequenceOrder: number;
+	progressWeight?: number;
 	estimatedHours?: number;
 	classSubjectMatterId?: string;
 	status?: ClassSubjectMatterRaw['status'];
 	completedPercentage?: number;
+	notes?: string | null;
+	startedAt?: unknown;
+	completedAt?: unknown;
+	updatedByStaffId?: string | null;
 }
 
 export async function loadSubjectMatterDrawerRows(classSubjectId: string): Promise<{
 	catalogSubjectId: string;
-	gradeLevelSubjectId?: string;
+	subjectId: string;
 	classGroupId: string;
 	rows: SubjectMatterDrawerRow[];
 }> {
@@ -36,28 +44,52 @@ export async function loadSubjectMatterDrawerRows(classSubjectId: string): Promi
 		classSubjectMattersRaw.map(link => [link.subjectMatterId, link]),
 	);
 
-	const rows = [...subjectMattersRaw]
+	const rows = mapSubjectMatterRows(subjectMattersRaw, linkByMatterId);
+
+	return {
+		catalogSubjectId: classSubject.subjectId,
+		subjectId: classSubject.subjectId,
+		classGroupId: classSubject.classGroupId,
+		rows,
+	};
+}
+
+function mapSubjectMatterRows(
+	subjectMattersRaw: SubjectMatterRaw[],
+	linkByMatterId: Map<string, ClassSubjectMatterRaw>,
+): SubjectMatterDrawerRow[] {
+	return [...subjectMattersRaw]
 		.sort((left, right) => left.sequenceOrder - right.sequenceOrder)
 		.map((matter) => {
 			const link = linkByMatterId.get(matter.id);
 			return {
 				id: matter.id,
 				name: matter.name,
+				shortName: matter.shortName,
 				description: matter.description ?? undefined,
 				sequenceOrder: matter.sequenceOrder,
+				progressWeight: matter.progressWeight ?? 1,
 				estimatedHours: matter.estimatedHours ?? undefined,
 				classSubjectMatterId: link?.id,
 				status: link?.status,
 				completedPercentage: link?.completedPercentage ?? undefined,
+				notes: link?.notes ?? null,
+				startedAt: link?.startedAt,
+				completedAt: link?.completedAt,
+				updatedByStaffId: link?.updatedByStaffId ?? null,
 			} satisfies SubjectMatterDrawerRow;
 		});
+}
 
-	return {
-		catalogSubjectId: classSubject.subjectId,
-		gradeLevelSubjectId: classSubject.gradeLevelSubjectId ?? undefined,
-		classGroupId: classSubject.classGroupId,
-		rows,
-	};
+/** Class progression remains independent; chapter definitions are managed on the subject. */
+export async function loadTeachingSubjectProgressionRows(classSubjectId: string) {
+	return { ...await loadSubjectMatterDrawerRows(classSubjectId), chaptersReadOnly: true };
+}
+
+export async function loadCatalogSubjectMatterRows(subjectId: string) {
+	const client = getBrowserSchoolClient();
+	const matters = await client.entities.subjectMatters.list({ subjectId }) ?? [];
+	return { catalogSubjectId: subjectId, subjectId, classSubjectId: '', classGroupId: '', rows: mapSubjectMatterRows(matters, new Map()) };
 }
 
 export async function saveSubjectMatterMutation(input: {
@@ -65,59 +97,43 @@ export async function saveSubjectMatterMutation(input: {
 	subjectId: string;
 	classSubjectId: string;
 	classGroupId: string;
-	gradeLevelSubjectId?: string;
 	name: string;
+	shortName?: string;
 	description?: string;
 	sequenceOrder: number;
+	progressWeight?: number;
 	estimatedHours?: number;
 	successMessage?: string;
 }): Promise<SubjectMatterDrawerRow | null> {
 	const client = getBrowserSchoolClient();
-	const matterId = input.id ?? `sm-${Date.now().toString(36)}`;
-	const classSubjectMatterId = `csm-${input.classSubjectId}-${matterId}`;
+	const matterId = input.id ?? crypto.randomUUID();
 
 	const saved = await runMutation(
 		() => client.commands.configureSubjectMatter({
 			id: matterId,
 			subjectId: input.subjectId,
-			name: input.name.trim(),
+			name: toCanonicalCatalogText(input.name.trim()),
+			shortName: input.shortName,
 			description: input.description?.trim() || null,
 			sequenceOrder: input.sequenceOrder,
+			progressWeight: input.progressWeight,
 			estimatedHours: input.estimatedHours ?? null,
 		}),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: ['subjects'] },
 	);
 
 	if (!saved) {
 		return null;
 	}
 
-	if (input.gradeLevelSubjectId) {
-		const linked = await runMutation(
-			() => client.commands.assignMatterToGradeLevelSubject({
-				id: `glsm-${input.gradeLevelSubjectId}-${matterId}`,
-				gradeLevelSubjectId: input.gradeLevelSubjectId!,
-				subjectMatterId: matterId,
-				classSubjectMatterIdsByClassGroupId: {
-					[input.classGroupId]: classSubjectMatterId,
-				},
-			}),
-			{},
-		);
-		if (!linked) {
-			return null;
-		}
-	}
-
 	return {
 		id: matterId,
-		name: input.name.trim(),
+		name: toCanonicalCatalogText(input.name.trim()),
+		shortName: input.shortName,
 		description: input.description?.trim() || undefined,
 		sequenceOrder: input.sequenceOrder,
+		progressWeight: input.progressWeight,
 		estimatedHours: input.estimatedHours,
-		classSubjectMatterId,
-		status: 'not_started',
-		completedPercentage: 0,
 	};
 }
 
@@ -127,8 +143,11 @@ export async function deleteSubjectMatterMutation(
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
-		() => client.entities.subjectMatters.delete({ id: matterId }),
-		{ successMessage },
+		async () => {
+			await client.commands.removeSubjectMatter({ subjectMatterId: matterId });
+			return true;
+		},
+		{ successMessage, versionKeys: ['subjects'] },
 	);
-	return result !== null;
+	return result === true;
 }

@@ -1,60 +1,116 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
-	import type { DrawerItem } from '$lib/components/school/shared/drawer-types';
-	import type { Component, Snippet } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { browser } from '$app/environment';
+	import { afterNavigate, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { ACCOUNT_OPEN_PROFILE_PARAM } from '$lib/account/profile-navigation';
-	import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
+	import { bootstrapAppShell } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
+	import { leaveStaffWebappForSessionKind } from '$lib/auth/leave-staff-webapp';
+	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
 	import { authSession } from '$lib/auth/session.svelte';
-	import AccountProfileModal from '$lib/components/account/AccountProfileModal.svelte';
-	import AcademicHeader from '$lib/components/layout/AcademicHeader.svelte';
+	import AppHeader from '$lib/components/layout/AppHeader.svelte';
+	import AppLoading from '$lib/components/layout/AppLoading.svelte';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
-	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
-	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
-	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
-	import { detailDataContext } from '$lib/detail-data/context.svelte';
-	import { isLikelyDetailPath, listRouteCacheKey } from '$lib/detail-route-patterns';
-	import { setDrawer } from '$lib/drawer-context';
-	import { DrawerState } from '$lib/drawer.svelte';
-	import { hydrateDetailEntitiesForPath } from '$lib/drawer/drawer-detail-hydration';
-	import { DRAWER_TAB_QUERY_KEY } from '$lib/drawer/drawer-tab-url';
-	import { t } from '$lib/i18n';
-	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
-	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
-	import { DASHBOARD_HREF } from '$lib/navigation';
+	import MobileSidebar from '$lib/components/layout/MobileSidebar.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
+	import { entityVersions } from '$lib/entity-versions.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import {
+		MODAL_QUERY_KEY,
+		MODAL_STEP_QUERY_KEY,
+		MODAL_TAB_QUERY_KEY,
+		MODAL_TARGET_QUERY_KEY,
+	} from '$lib/modal/modal-url';
+	import { isKnownModalForPathname } from '$lib/modal/route-modal-catalog';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { canAccessPath } from '$lib/navigation/nav-permissions';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
-	import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
-	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { shellContext } from '$lib/shell/context.svelte';
+	import { MessageCountState, provideMessageCount } from '$lib/shell/message-count.svelte';
 	import { cn } from '$lib/utils';
+	import { onMount, untrack } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
+	import { AccountState, setAccountState } from './account-state.svelte';
+	import AccountProfileModal from './components/AccountProfileModal.svelte';
 
+	const messageCount = new MessageCountState();
+	provideMessageCount(messageCount);
+	$effect(() => {
+		const scope = messageCount.scope;
+		void entityVersions.inbox;
+		if (scope && academicContext.shellReady)
+			return untrack(() => messageCount.start());
+	});
+	const accountState = new AccountState();
+	setAccountState(accountState);
 	const { children }: { children: Snippet } = $props();
-
-	const drawer = new DrawerState();
-	setDrawer(drawer);
+	const desktop = new MediaQuery('(min-width: 1024px)');
+	let headerHeight = $state<number>();
+	let mobileSidebarOpen = $state(false);
+	function toggleNavigation() {
+		if (desktop.current)
+			shellContext.toggleSidebar();
+		else
+			mobileSidebarOpen = !mobileSidebarOpen;
+	}
+	const navigationOpen = $derived(desktop.current ? shellContext.sidebarOpen : mobileSidebarOpen);
+	afterNavigate(() => {
+		mobileSidebarOpen = false;
+	});
+	$effect(() => {
+		if (desktop.current)
+			mobileSidebarOpen = false;
+	});
 
 	const me = $derived(authSession.accountActor);
-	const needsDrawer = $derived(drawer.item !== null || isLikelyDetailPath($page.url.pathname));
+	const pathAllowed = $derived(
+		authSession.ready && authSession.isLoggedIn
+			? canAccessPath($page.url.pathname, authSession.grants, { schoolId: authSession.schoolId ?? '' })
+			: true,
+	);
+	const modalQueryKeys = [
+		MODAL_QUERY_KEY,
+		MODAL_TARGET_QUERY_KEY,
+		MODAL_STEP_QUERY_KEY,
+		MODAL_TAB_QUERY_KEY,
+	] as const;
 
-	type DetailDrawerComponent = Component<{ item: DrawerItem | null; onClose: () => void }>;
-	type ToastHostComponent = Component;
+	let routerMounted = $state(false);
+	onMount(() => {
+		routerMounted = true;
+	});
+	$effect(() => {
+		if (!browser || !routerMounted) {
+			return;
+		}
+		const url = $page.url;
+		const rawModalName = url.searchParams.get(MODAL_QUERY_KEY);
+		if (isKnownModalForPathname(url.pathname, rawModalName)) {
+			return;
+		}
+		if (!modalQueryKeys.some(key => url.searchParams.has(key))) {
+			return;
+		}
+		const canonicalUrl = new URL(url);
+		for (const key of modalQueryKeys) {
+			canonicalUrl.searchParams.delete(key);
+		}
+		// The URL is derived from the current resolved route and only removes search parameters.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		replaceState(canonicalUrl, $page.state);
+	});
 
-	let DetailDrawer = $state<DetailDrawerComponent | null>(null);
-	let ToastHost = $state<ToastHostComponent | null>(null);
-
-	let drawerSyncVersion = 0;
-	let profileOpen = $state(false);
-
-	function isReportCardDetailPath(pathname: string): boolean {
-		return /^\/configuration\/report-cards\/[^/]+$/.test(pathname)
-			|| /^\/classes\/[^/]+\/report-cards\/[^/]+$/.test(pathname);
-	}
+	const accountModals = createUrlSyncedModals({
+		allowed: [ACCOUNT_PROFILE_MODAL],
+		allowedTabs: ['profile', 'notifications', 'security'],
+		getUrl: () => $page.url,
+	});
+	$effect(() => {
+		accountModals.hydrate();
+	});
+	const profileOpen = bindUrlModal(accountModals, ACCOUNT_PROFILE_MODAL);
 
 	$effect(() => {
 		if (!authSession.ready) {
@@ -62,18 +118,31 @@
 		}
 
 		if (shouldEnforceLoginGate()) {
-			appGoto(appPath('/login'), { replaceState: true });
+			void appGoto(appPath('/login'), { replaceState: true });
 			return;
 		}
 
 		if (authSession.needsOnboarding) {
-			appGoto(appPath('/onboarding'), { replaceState: true });
+			void appGoto(ONBOARDING_PATH, { replaceState: true });
 			return;
 		}
 
-		const authUserId = authSession.authUserId;
-		if (authUserId) {
-			onboardingContext.init(authUserId);
+		if (!authSession.isLoggedIn) {
+			void appGoto(appPath('/login'), { replaceState: true });
+			return;
+		}
+
+		if (authSession.sessionKind && authSession.sessionKind !== 'staff') {
+			void leaveStaffWebappForSessionKind(authSession.sessionKind);
+			return;
+		}
+
+		if (authSession.onboardingStatusUnknown) {
+			return;
+		}
+
+		if (authSession.sessionKind !== 'staff') {
+			return;
 		}
 
 		const resumePath = onboardingResumePath(
@@ -83,11 +152,6 @@
 		);
 		if (resumePath) {
 			appGoto(resumePath, { replaceState: true });
-			return;
-		}
-
-		if (!authSession.isLoggedIn) {
-			appGoto(appPath('/login'), { replaceState: true });
 		}
 	});
 
@@ -95,201 +159,66 @@
 		if (!browser || !authSession.ready || !authSession.isLoggedIn) {
 			return;
 		}
-		const pathname = $page.url.pathname;
-		if (!canAccessPath(pathname, authSession.grants, { schoolId: authSession.schoolId ?? '' })) {
-			appGoto(DASHBOARD_HREF, { replaceState: true });
-		}
-	});
-
-	$effect(() => {
-		if (!browser || !authSession.ready || !authSession.isLoggedIn) {
+		if (authSession.sessionKind !== 'staff') {
 			return;
 		}
-		void bootstrapAppShell();
-	});
-
-	$effect(() => {
-		if (!browser || $page.url.searchParams.get(ACCOUNT_OPEN_PROFILE_PARAM) !== '1') {
-			return;
-		}
-		profileOpen = true;
-		const next = new URL($page.url);
-		next.searchParams.delete(ACCOUNT_OPEN_PROFILE_PARAM);
-		const href = `${next.pathname}${next.search}` as ResolvedPathname;
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	});
-
-	function usesRouteLocalDrawer(pathname: string): boolean {
-		return /^\/school\/students(?:\/|$)/.test(pathname)
-			|| /^\/school\/guardians(?:\/|$)/.test(pathname)
-			|| /^\/school\/staff(?:\/|$)/.test(pathname)
-			|| /^\/school\/teachers(?:\/|$)/.test(pathname)
-			|| /^\/school\/activities(?:\/|$)/.test(pathname)
-			|| /^\/school\/announcements(?:\/|$)/.test(pathname)
-			|| /^\/school\/events(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/timetable(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/teaching(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/report-cards(?:\/|$)/.test(pathname);
-	}
-
-	$effect(() => {
-		const pathname = $page.url.pathname;
-		const cacheKey = listRouteCacheKey($page.url);
-		const routeQueryReady = pageQueryStatus.isReady(cacheKey);
-		void reportCardsContext.ready;
-		void detailDataContext.students;
-
-		if (!isLikelyDetailPath(pathname) || usesRouteLocalDrawer(pathname)) {
-			drawer.close();
-			return;
-		}
-
-		if (!routeQueryReady) {
-			return;
-		}
-
-		if (isReportCardDetailPath(pathname) && !reportCardsContext.ready) {
-			return;
-		}
-
-		const version = ++drawerSyncVersion;
-
-		void (async () => {
-			await hydrateDetailEntitiesForPath(pathname);
-			if (version !== drawerSyncVersion) {
-				return;
-			}
-			const { parseDetailPath } = await import('$lib/detail-routes');
-			const parsed = parseDetailPath(pathname);
-			if (parsed) {
-				drawer.open(parsed.item);
-			}
-			else {
-				drawer.close();
-			}
-		})();
-	});
-
-	$effect(() => {
-		if (!needsDrawer || DetailDrawer)
-			return;
-		void import('$lib/components/school/shared/DetailDrawer.svelte').then((module) => {
-			DetailDrawer = module.default;
+		const shellIdentity = `${authSession.sessionKind}:${authSession.schoolId ?? ''}:${authSession.userId ?? ''}`;
+		void shellIdentity;
+		// PageQuery shares this request and presents the retry action on failure.
+		untrack(() => {
+			void bootstrapAppShell().catch(() => {});
 		});
 	});
 
-	$effect(() => {
-		if (!browser || ToastHost)
-			return;
-		void import('$lib/components/ui/ToastHost.svelte').then((module) => {
-			ToastHost = module.default;
-		});
-	});
-
-	async function closeDetail() {
-		const { getListPathForDetail } = await import('$lib/detail-routes');
-		const listPath = getListPathForDetail($page.url.pathname);
-		if (listPath) {
-			const next = new URL($page.url);
-			next.searchParams.delete(DRAWER_TAB_QUERY_KEY);
-			next.searchParams.delete(MODAL_QUERY_KEY);
-			next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-			const href = `${listPath}${next.search}` as ResolvedPathname;
-			appGoto(href);
-		}
-		else {
-			drawer.close();
-		}
-	}
-
-	function logout() {
-		resetAppShellBootstrap();
-		authSession.logout();
-		appGoto(appPath('/login'), { replaceState: true });
-	}
 </script>
 
 {#if authSession.ready && authSession.isLoggedIn && me}
-	<div class="flex h-screen w-full overflow-hidden bg-background text-foreground">
-		<div
-			class={cn(
-				'relative h-full shrink-0 transition-[width] duration-200 ease-in-out',
-				shellContext.sidebarOpen ? 'w-64' : 'w-14',
-			)}
-		>
-			<AppSidebar
+	<div
+		class="flex h-dvh w-full overflow-hidden bg-background text-foreground"
+		data-testid="app-shell" style:--app-header-height={headerHeight ? `${headerHeight}px` : undefined}
+		data-school-id={academicContext.schoolScopeId}
+		data-year-id={academicContext.shellReady ? academicContext.yearId : ''}
+	>
+		{#if desktop.current}
+			<div
+				class={cn(
+					'relative h-full shrink-0 transition-[width] duration-200 ease-in-out',
+					shellContext.sidebarOpen ? 'w-64' : 'w-14',
+				)}
+			>
+				<AppSidebar
+					hierarchy={academicContext.hierarchy}
+					studentCount={academicContext.studentCount}
+					guardianCount={academicContext.guardianCount}
+					staffCount={academicContext.staffCount}
+					teacherCount={academicContext.teacherCount}
+				/>
+			</div>
+		{:else}
+			<MobileSidebar
+				bind:open={mobileSidebarOpen}
 				hierarchy={academicContext.hierarchy}
 				studentCount={academicContext.studentCount}
 				guardianCount={academicContext.guardianCount}
 				staffCount={academicContext.staffCount}
+				teacherCount={academicContext.teacherCount}
 			/>
-		</div>
+		{/if}
 
 		<div class="flex min-w-0 flex-1 flex-col">
-			<div
-				class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-6"
-			>
-				<button
-					type="button"
-					onclick={() => shellContext.toggleSidebar()}
-					class="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground/80 transition hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					aria-label={shellContext.sidebarOpen ? $t('sidebar.hide') : $t('sidebar.show')}
-					aria-expanded={shellContext.sidebarOpen}
-					aria-controls="app-sidebar"
-				>
-					{#if shellContext.sidebarOpen}
-						<PanelLeftClose class="h-4 w-4" />
-					{:else}
-						<PanelLeft class="h-4 w-4" />
-					{/if}
-				</button>
+			<AppHeader bind:height={headerHeight} actor={me} {navigationOpen} profileOpen={profileOpen.open}
+				onToggleNavigation={toggleNavigation}
+				onOpenProfile={() => (profileOpen.open = true)} />
 
-				<div class="flex items-center gap-3">
-					{#if academicContext.shellReady}
-						<SchoolSelector schools={academicContext.schools} />
-						<AcademicHeader />
-					{:else}
-						<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />
-					{/if}
-					<LanguageSelector />
-					<div class="flex items-center gap-1.5">
-						<button
-							type="button"
-							onclick={() => (profileOpen = true)}
-							class="flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							aria-label={$t('account.profile.openProfile')}
-							aria-haspopup="dialog"
-							aria-expanded={profileOpen}
-						>
-							<PersonAvatar
-								name={me.name}
-								initials={me.initials}
-								photoUrl={me.photoUrl}
-								size="md"
-							/>
-							<span class="flex flex-col items-start leading-tight">
-								<span class="text-[11px] font-semibold">{me.name}</span>
-								<span class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-									{$t(me.subtitleKey)}
-								</span>
-							</span>
-						</button>
-					</div>
-				</div>
-			</div>
-
-			{@render children()}
-
-			{#if DetailDrawer}
-				<DetailDrawer item={drawer.item} onClose={closeDetail} />
+			{#if pathAllowed}
+				{@render children()}
+			{:else}
+				<DataState status="empty" />
 			{/if}
 		</div>
 	</div>
 
-	<AccountProfileModal bind:open={profileOpen} actor={me} onLogout={logout} />
-
-	{#if ToastHost}
-		<ToastHost />
-	{/if}
+	<AccountProfileModal bind:open={profileOpen.open} actor={me} section={accountModals.tab ?? 'profile'} onSectionChange={section => accountModals.setTab(section)} onLogout={() => accountState.logout()} />
+{:else}
+	<AppLoading />
 {/if}

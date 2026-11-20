@@ -1,507 +1,256 @@
-# EDAYA Webapp Design Language Spec
-
-> **Applies to:** `apps/webapp` visual design (colors, typography, spacing, components, motion)
-
-This document captures the visual design language extracted from the current webapp implementation. Use it when building new screens, components, or marketing surfaces that must feel native to EDAYA.
-
----
-
-## 1. Brand character
-
-EDAYA is a school management product for non-technical staff. The visual language optimizes for **clarity, calm, and institutional trust** — not density or flash.
-
-| Trait | Expression |
-|-------|------------|
-| **Warm institutional** | Deep teal primary, sage accent, soft off-white backgrounds |
-| **Editorial headings** | Fraunces serif for titles; gives personality without sacrificing readability |
-| **Operational clarity** | Inter for body; mono for metadata, counts, and role labels |
-| **Restrained color** | ~80% neutral · ~15% teal · ~5% gold (see `ui-tones.ts`) |
-| **Soft geometry** | Generous rounding (`rounded-xl`, `rounded-2xl`, `rounded-full`) |
-| **Layered depth** | Subtle borders + `shadow-soft` / `shadow-panel`; no harsh drop shadows |
-
-**Source palette:** Coolors `#004d5a · #cc8b12 · #76958c · #5a726e · #0f2c31 · #132c78` — mapped into HSL CSS variables in `apps/webapp/src/app.css`.
-
----
-
-## 2. Design tokens
-
-All colors are HSL CSS custom properties consumed by Tailwind (`apps/webapp/tailwind.config.ts`). Never hard-code hex in components; use semantic tokens.
-
-### 2.1 Core palette
-
-| Token | Role | Light value (HSL) |
-|-------|------|-------------------|
-| `--background` | Page canvas | `160 10% 98%` — warm off-white |
-| `--foreground` | Primary text | `189 53% 13%` — deep teal ink |
-| `--card` | Elevated surfaces | `0 0% 100%` |
-| `--primary` | Brand actions, avatars, active nav | `189 100% 18%` |
-| `--primary-foreground` | Text on primary | `0 0% 100%` |
-| `--secondary` | Hover fills, muted panels | `163 10% 93%` |
-| `--muted` / `--muted-foreground` | De-emphasized text, placeholders | `163 8% 95%` / `170 12% 40%` |
-| `--accent` | Progress bars, success toasts, active rail indicator | `163 13% 52%` — sage green |
-| `--accent-soft` | Soft accent backgrounds | `163 12% 91%` |
-| `--highlight` | Warnings, pending states | `39 84% 44%` — gold |
-| `--highlight-soft` | Soft warning backgrounds | `39 40% 94%` |
-| `--sky` | Secondary teal accent | `189 60% 28%` |
-| `--destructive` | Errors, delete, high severity | `0 70% 55%` |
-| `--border` / `--input` | Dividers, field borders | `163 10% 88%` |
-| `--ring` | Focus ring | `189 100% 18%` |
-
-### 2.2 Radius, shadows, gradients
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--radius` | `0.875rem` (14px) | Base radius; Tailwind `rounded-lg` |
-| `--shadow-soft` | Layered 1–6px blur | Cards, pills, table containers |
-| `--shadow-panel` | 20px blur, stronger | Drawer, dropdowns, toasts |
-| `--gradient-mint` | `accent → primary` diagonal | Decorative (available, rarely used inline) |
-
-Tailwind aliases: `rounded-md` = `radius - 2px`, `rounded-sm` = `radius - 4px`.
-
-### 2.3 Tone budget (`ui-tones.ts`)
-
-Centralized class strings for consistent semantic coloring:
-
-```ts
-// Neutral default
-BADGE          = 'bg-secondary text-foreground/80'
-SURFACE        = 'rounded-xl bg-secondary/50 p-3'
-
-// Teal (info / entity)
-BADGE_INFO     = 'bg-primary/10 text-primary'
-SURFACE_INFO   = 'rounded-xl bg-primary/5 p-3'
-ROW_ACTIVE     = 'bg-primary/10'
-AVATAR         = '… bg-primary … text-primary-foreground'
-
-// Gold (warning / pending)
-BADGE_WARN     = 'bg-highlight-soft text-highlight'
-SURFACE_WARN   = 'rounded-xl bg-highlight-soft/60 p-3'
-
-// Red (danger)
-BADGE_DANGER   = 'bg-destructive/10 text-destructive'
-```
-
-Import from `$lib/ui-tones` or extend `drawer-constants.ts` patterns — do not invent one-off badge colors.
-
----
-
-## 3. Typography
-
-### 3.1 Font families
-
-| Role | Family | CSS variable | Tailwind |
-|------|--------|--------------|----------|
-| **Display** | Fraunces (serif) | `--font-display` | `font-display` |
-| **Body** | Inter | `--font-sans` | default / `font-sans` |
-| **Meta** | JetBrains Mono | `--font-mono` | `font-mono` |
-
-Loaded via Google Fonts in `app.css`. Body uses `font-feature-settings: 'ss01', 'cv11'` and antialiasing.
-
-### 3.2 Type scale & usage
-
-| Element | Classes | When |
-|---------|---------|------|
-| Page title | `font-display text-2xl font-semibold` | List page `<h2>` via `ListPageHeader` |
-| Section title | `font-display text-base font-semibold` | Panel/card headers |
-| Drawer entity name | `font-display text-2xl font-semibold` | Student name, etc. |
-| Dashboard hero | `font-display text-xl` or `text-3xl` | Login, educator dashboard |
-| Body | `text-sm` | Default copy, table cells |
-| Caption | `text-xs text-muted-foreground` | Descriptions, hints |
-| Eyebrow / module label | `font-mono text-[10px] uppercase tracking-widest text-muted-foreground` | Sidebar module, list eyebrows |
-| Role / meta chip | `font-mono text-[9px] uppercase tracking-wider text-muted-foreground` | User role under name |
-| Table header | `text-[11px] font-medium uppercase tracking-wider text-muted-foreground` | Column headers |
-| Field label (read-only) | `text-[11px] font-medium uppercase tracking-wider text-muted-foreground` | `DrawerField` |
-| Form label | `text-sm font-medium` | `Label` component |
-| Numeric emphasis | `font-display tabular-nums` | Averages, scores |
-| Mono detail | `font-mono text-[10px]` | Date ranges, counts in badges |
-
-**Display headings** use `letter-spacing: -0.02em` and optical sizing (Fraunces `opsz`).
-
-### 3.3 Hierarchy rules
-
-- One display title per viewport region (page header, drawer hero, modal title).
-- Eyebrows are optional; use for module/context, not for every section.
-- Prefer `text-muted-foreground` over smaller font sizes for de-emphasis.
-- Uppercase + tracking is reserved for labels and metadata — not sentences.
-
----
-
-## 4. Spacing & layout rhythm
-
-### 4.1 Shell dimensions
-
-| Zone | Size / pattern |
-|------|----------------|
-| App sidebar | `w-64`, `bg-card/60 backdrop-blur`, `border-r border-border` |
-| App rail (alt) | `w-16`, `bg-primary` — icon-only module switcher |
-| Context sidebar | `w-72`, same frosted card treatment |
-| Header bar | `h-14`, `border-b`, `px-6`, `bg-card` |
-| Main content | `flex-1`, typically `p-6` on list routes |
-| Detail drawer | `md:w-1/2`, full width mobile, `shadow-panel` |
-
-### 4.2 Content spacing
-
-| Pattern | Spacing |
-|---------|---------|
-| Page header → collection | `mb-5` (`ListPageHeader`) |
-| Section stacks | `space-y-4` to `space-y-6` |
-| Card/panel padding | `p-5` (panels), `p-3` (stat tiles) |
-| Drawer body | `px-6 py-6` |
-| Grid stat tiles | `grid gap-3`, `grid-cols-3` common |
-| Inline clusters | `gap-2` (toolbar), `gap-3` (identity blocks), `gap-4` (hero rows) |
-
-### 4.3 Container
-
-Tailwind `container` is centered with `2rem` padding, max `1400px` at `2xl`. Most app views use full-width flex layout inside the shell instead.
-
----
-
-## 5. Shape language
-
-Rounding is a primary brand marker. Default to soft corners.
-
-| Class | Use |
-|-------|-----|
-| `rounded-full` | Pills: search inputs, filter chips, segmented controls, badges, header selectors, icon buttons |
-| `rounded-2xl` | Cards, panels, table wrappers, avatars (large), empty/error states, toasts |
-| `rounded-xl` | Logo tiles, list avatars, list items, stat tiles, dashed empty states |
-| `rounded-lg` | Nav items, dialog content (base), sub-nav links |
-| `rounded-md` | Buttons (default), inputs, small badges |
-
-**Rule:** toolbar controls and header selectors are pill-shaped (`rounded-full`). Content containers are `rounded-2xl`.
-
----
-
-## 6. Elevation & borders
-
-### 6.1 Surface stack (bottom → top)
-
-1. **Canvas** — `bg-background`
-2. **Frosted chrome** — `bg-card/60 backdrop-blur` (sidebars)
-3. **Card** — `bg-card border border-border shadow-soft`
-4. **Overlay** — drawer/modal: `bg-card shadow-panel`; scrim `bg-primary/5` (drawer) or `bg-black/80` (dialog)
-
-### 6.2 Borders
-
-- Default divider: `border-border`
-- Destructive emphasis: `border-destructive/20`
-- Warning emphasis: `border-highlight/20` or `border-amber-500/30`
-- Dashed empty: `border-dashed border-border`
-- Active selection: background tint (`bg-primary/10`) rather than heavy borders
-
-### 6.3 Shadows
-
-| Class | When |
-|-------|------|
-| `shadow-soft` | Cards, tables, pill toolbars, small logo tiles |
-| `shadow-panel` | Drawer, dropdown menus, toasts, login hero icon |
-
-Avoid `shadow-lg` on app surfaces — reserved for dialog primitive default.
-
----
-
-## 7. Motion
-
-Defined in `tailwind.config.ts` + `app.css` utilities.
-
-| Animation | Duration / easing | Usage |
-|-----------|-------------------|-------|
-| `animate-fade-in` | 0.3s ease-out, `translateY(4px)` | Page enter, dropdowns, data states, toasts |
-| `animate-slide-in-right` | 0.35s cubic-bezier(0.32, 0.72, 0, 1) | Detail drawer (desktop) |
-| `animate-spin` | default | `LoaderCircle` loading indicators |
-| Accordion | 0.2s ease-out | bits-ui accordion (if used) |
-
-**Accessibility:** drawer/backdrop use `motion-safe:` prefix. Respect `prefers-reduced-motion`.
-
-**Page pattern:** top-level views wrap content in `animate-fade-in` on mount.
-
----
-
-## 8. Iconography
-
-- **Library:** Lucide via `$lib/icons` (re-export hub)
-- **Default size:** `h-4 w-4` in buttons; `h-3.5 w-3.5` in compact chrome; `h-8 w-8` in empty/error states
-- **Color:** inherit or `text-muted-foreground`; active nav uses `text-accent` or `text-primary`
-- **Placement:** leading icon in buttons (`gap-2`); search icon absolutely positioned `left-3`
-- **Product mark:** `GraduationCap` in rounded primary tile
-
----
-
-## 9. Component catalog
-
-### 9.1 Primitives (`src/lib/components/ui/`)
-
-Built on **bits-ui** + **Tailwind**, shadcn-style patterns.
-
-| Component | Variants / notes |
-|-----------|------------------|
-| **Button** | `default` (primary), `destructive`, `outline`, `secondary`, `ghost`, `link`; sizes `default`/`sm`/`lg`/`icon`. Focus ring: `ring-2 ring-ring ring-offset-2`. Toolbar CTAs often add `rounded-full`. |
-| **Input** | `h-10 rounded-md border-input`; search overrides: `h-9 rounded-full pl-9`. |
-| **Textarea** | Matches input styling |
-| **Label** | `text-sm font-medium` |
-| **Checkbox** | bits-ui; compact `h-3.5 w-3.5` in popover lists |
-| **Select / FilterSelect** | Native `<select>` with chevron overlay; filters use `rounded-full text-xs` |
-| **Dialog** | Centered `max-w-lg`, `bg-background p-6`, dark scrim `bg-black/80` |
-| **Popover** | `rounded-2xl border shadow-panel` for menus |
-| **FormModal** | Dialog + ghost Cancel + primary Save |
-| **ConfirmModal** | Dialog + destructive Confirm |
-| **PickerModal** | Dialog + confirm label defaults to "Ajouter" |
-| **DataState** | Centered `min-h-[40vh]`; error uses destructive tint card; empty uses inbox icon |
-| **ListPageHeader** | Standard list page title block with snippet slots |
-| **PermissionGate** | `hide` or `disable` + tooltip — no visual chrome |
-| **ToastHost** | Bottom-right stack, `rounded-2xl border shadow-panel` |
-
-### 9.2 Shell components (`src/lib/components/layout/`)
-
-| Component | Visual pattern |
-|-----------|----------------|
-| **AppSidebar** | Logo tile `rounded-xl bg-primary shadow-soft`; expandable modules; active sub-link `bg-primary text-primary-foreground`; badges `font-mono text-[10px]` |
-| **ContextSidebar** | Module title + frosted nav; active item `bg-primary shadow-soft` |
-| **AcademicHeader** | Pill container `rounded-full border bg-card/70 shadow-soft backdrop-blur`; segment buttons toggle `bg-primary` when open |
-| **SchoolSelector** | Compact pill `h-9 rounded-full` with `Building2` icon |
-| **LanguageSelector** | Same pill family |
-| **User block** | Avatar circle `bg-primary font-display`; role in mono caps |
-
-### 9.3 Shared drawer chrome (`src/lib/components/school/shared/`)
-
-| Component | Role |
-|-----------|------|
-| **DetailDrawer shell contract** | Right sheet, kind badge `rounded-full uppercase text-[11px]`, close as ghost circle; may be shared or route-local |
-| **DrawerField** | Read-only label + value stack |
-| **DrawerEmptyState** | Dashed `rounded-xl` centered placeholder |
-| **DrawerActionBar** | Optional drawer body footer — `border-t pt-4`, right-aligned secondary actions; **not** sub-collection `+ Add` header |
-| **StudentAvatar** | `rounded-2xl bg-primary` initials; hover camera overlay |
-
-Route-local list and drawer bodies (`*View.svelte`, tab `+page.svelte`) live under `routes/.../components/` and compose T0/T2 primitives — not under `lib/components/school/{domain}/`.
-
----
-
-## 10. Recurring UI patterns
-
-### 10.1 List page header
-
-```
-[eyebrow: mono caps]
-[title: font-display 2xl]
-[description: text-sm muted]          [search] [filters] [more] [primary CTA]
-```
-
-Use `ListPageHeader` snippet slots: `search`, `filters`, `more`, `primary`.
-
-### 10.2 Segmented control (drawer tab bar / in-drawer segments)
-
-Pill segment strips for **drawer tab navigation** (route links under `[[id]]/{tab}`) or in-panel mode toggles — **not** for list-page main filters (main filter is always a `<select>`). Tab bar items navigate to child routes; do not use `?tab=` query params for new work.
-
-```html
-<div class="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-  <button class="rounded-full px-3 py-1.5 text-xs font-medium
-    [active: bg-primary text-primary-foreground]
-    [idle: text-muted-foreground hover:text-foreground]">
-```
-
-Drawer tabs use `bg-secondary/40` track and `bg-card shadow-soft` for active segment.
-
-### 10.3 Data table
-
-```html
-<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-  <div class="grid … border-b bg-secondary/40 px-5 py-3 text-[11px] uppercase …">
-  <button class="grid … px-5 py-3.5 [active: bg-primary/10] [hover: bg-secondary]">
-```
-
-- Row click targets are full-width buttons
-- Selected row: `ROW_ACTIVE` (`bg-primary/10`)
-- Inline empty: centered `text-muted-foreground` inside table
-
-### 10.4 Stat / KPI tile
-
-```html
-<div class="rounded-xl bg-primary/10 p-3">        <!-- or bg-secondary/60 -->
-  <p class="text-[10px] uppercase tracking-wider text-muted-foreground">Label</p>
-  <p class="mt-1 font-display text-xl">Value</p>
-</div>
-```
-
-Dashboard KPIs may invert: `bg-primary text-primary-foreground` for hero metrics.
-
-### 10.5 Badge / status chip
-
-```html
-<span class="rounded-full px-2 py-0.5 text-[10px] font-medium {tone}">
-```
-
-Map status → tone via `drawer-constants.ts` or local `Record<Status, string>` using `BADGE_*` presets.
-
-### 10.6 Progress bar
-
-```html
-<div class="h-1.5 w-full rounded-full bg-secondary">
-  <div class="h-full rounded-full bg-accent" style:width="…%"></div>
-</div>
-<p class="mt-1 font-mono text-[10px] text-muted-foreground">…%</p>
-```
-
-### 10.7 Avatar / initials block
-
-| Size | Classes |
-|------|---------|
-| Table row | `h-9 w-9 rounded-xl bg-primary font-display text-xs` |
-| Drawer hero | `h-14 w-14 rounded-2xl` (`StudentAvatar`) |
-| Header user | `h-7 w-7 rounded-full` |
-| Login / dashboard | `h-10`–`h-12 rounded-xl` or `rounded-2xl` |
-
-### 10.8 Panel section (dashboard)
-
-```html
-<section class="rounded-2xl border border-border bg-card p-5 shadow-soft">
-  <header class="mb-3 flex justify-between">
-    <h3 class="font-display text-base font-semibold">…</h3>
-  </header>
-  …
-</section>
-```
-
-### 10.9 Search field
-
-```html
-<div class="relative">
-  <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-  <Input class="h-9 w-56 rounded-full pl-9 text-sm" />
-</div>
-```
-
-### 10.10 Toast
-
-| Kind | Surface |
-|------|---------|
-| `success` | `border-accent/30 bg-accent/10` |
-| `error` | `border-destructive/30 bg-destructive/10` |
-| `info` | `border-border bg-card` |
-
-Position: `fixed bottom-6 right-6 z-[100] max-w-sm`.
-
-### 10.11 Dropdown menu
-
-`rounded-2xl border border-border bg-card shadow-panel animate-fade-in`
-
-Items: `px-4 py-2.5 text-sm hover:bg-secondary/60`; selected row `bg-primary/5` + `Check` icon in `text-accent`.
-
----
-
-## 11. Semantic color mapping
-
-Use these mappings consistently (see `drawer-constants.ts` for full records).
-
-| Meaning | Tone |
-|---------|------|
-| Default / neutral | `BADGE`, `bg-secondary` |
-| Info / entity / active | `BADGE_INFO`, `bg-primary/10` |
-| Warning / pending | `BADGE_WARN`, `bg-highlight-soft` |
-| Danger / error / high severity | `BADGE_DANGER`, `bg-destructive/10` |
-| Success / completed | `bg-secondary` or `bg-accent/10` (toasts) |
-| Director / elevated role | `bg-primary/10 text-primary` |
-| Teacher / educator role | `bg-secondary text-foreground/80` |
-
-**Incident severity:** low → neutral, medium → warn, high → danger.
-
-**Enrollment status:** approved → neutral, pending → warn, denied → danger.
-
-**Permission / capability chips:** assign → primary tint, read → secondary, update → highlight, delete → destructive.
-
----
-
-## 12. Form & modal styling
-
-- Modal body spacing: `space-y-4 py-2`
-- Footer: ghost Cancel (left) + primary Confirm (right) — `Dialog.Footer`
-- Destructive confirms: `variant="destructive"` on confirm button
-- Drawer footer: only `Close` on shell when needed; primary entity actions live in **`DrawerEntityHeader`**; sub-collection `+ Add` uses an **inline section header** (not `DrawerActionBar`)
-- Field errors: inline in modal — not in the read-only drawer
-- Disabled: `opacity-50 pointer-events-none` (buttons)
-
----
-
-## 13. Responsive behavior
-
-| Breakpoint | Visual adjustment |
-|------------|-------------------|
-| `< md` | Drawer full-width sheet; sidebar → hamburger menu |
-| `≥ md` | Drawer `w-1/2`; table layouts maintained |
-| Toolbar | `flex-wrap` on headers; filters wrap to next row |
-
----
-
-## 14. Dark mode
-
-`darkMode: ['class']` is configured in Tailwind but **no dark theme tokens are defined** in `app.css`. Do not add `dark:` variants until a full dark palette is specified.
-
----
-
-## 15. Tech stack
-
-| Layer | Choice |
-|-------|--------|
-| Framework | Svelte 5 + SvelteKit |
-| Styling | Tailwind CSS 3 + CSS variables |
-| Primitives | bits-ui (Dialog, Popover, Checkbox, Select) |
-| Icons | lucide-svelte via `$lib/icons` |
-| Utilities | `cn()` from `$lib/utils`, `tailwindcss-animate` |
-| i18n | `$lib/i18n` — all user-facing strings |
-
----
-
-## 16. Do / Don't
-
-### Do
-
-- Use semantic tokens (`bg-primary`, `text-muted-foreground`, etc.)
-- Use `font-display` for titles and numeric emphasis
-- Use `font-mono` + uppercase for metadata eyebrows
-- Wrap collections in `rounded-2xl border bg-card shadow-soft`
-- Use pill controls in toolbars and headers
-- Import tone presets from `$lib/ui-tones`
-- Apply `animate-fade-in` on page-level content
-- Keep icon sizes consistent (`3.5` compact, `4` default)
-
-### Don't
-
-- Introduce new accent colors outside the palette
-- Use sharp corners (`rounded-none`, `rounded-sm`) on marketing surfaces
-- Use heavy shadows or solid black overlays except dialog scrim
-- Mix flat Material-style cards with the frosted EDAYA shell
-- Use display font for body paragraphs or table data
-- Hard-code French strings in components (use i18n)
-- Create bespoke badge colors per screen
-
----
-
-## 17. File reference
-
-| Purpose | Path |
-|---------|------|
-| CSS variables & fonts | `apps/webapp/src/app.css` |
-| Tailwind theme | `apps/webapp/tailwind.config.ts` |
-| Tone presets | `apps/webapp/src/lib/ui-tones.ts` |
-| Status / badge maps | `apps/webapp/src/lib/components/school/shared/drawer-constants.ts` |
-| Button primitive | `apps/webapp/src/lib/components/ui/button/button.svelte` |
-| List header | `apps/webapp/src/lib/components/ui/ListPageHeader.svelte` |
-| Data states | `apps/webapp/src/lib/components/ui/DataState.svelte` |
-| Shell layout | `apps/webapp/src/routes/(app)/+layout.svelte` |
-
----
-
-## 18. Implementation checklist
-
-When adding a new screen:
-
-- [ ] Page uses `ListPageHeader` (or documented layout variant)
-- [ ] Title is `font-display`; eyebrow is `font-mono` caps if needed
-- [ ] Collection wrapped in `rounded-2xl border bg-card shadow-soft`
-- [ ] Toolbar controls are pill-shaped
-- [ ] Status chips use `BADGE_*` tones
-- [ ] Selected row uses `bg-primary/10`
-- [ ] Loading/empty/error use `DataState`
-- [ ] Mutations toast via `toast.success` / `toast.error`
-- [ ] Icons from `$lib/icons` at standard sizes
-- [ ] Motion uses `animate-fade-in` or `motion-safe:` drawer animations
-- [ ] No new colors outside token system
+# EDAYA design language and writing standard
+
+Normative for the staff `apps/webapp`. The desired UI must use the EDAYA palette, bundled fonts and official artwork. Domain meaning belongs to the feature contract; visual and language choices belong here. This spec must not authorize new business operations or reinterpret a calculation.
+
+## 1. Foundations
+
+| Role | Value | Required use |
+| --- | --- | --- |
+| Primary | `#2563EB`; hover `#1D4ED8`; pressed `#1E40AF` | Primary action, links, open-record marker and keyboard focus |
+| Supporting sky | `#60A5FA` | Decoration; never small text on white |
+| Amber | `#FBBF24` | Decoration under 10% of visible surface, navy foreground |
+| Canvas / surface | `#F0F7FF` / `#FFFFFF` | Page canvas / chrome and content |
+| Text / secondary text | `#1E293B` / `#5B6B82` | Essential information / supporting information |
+| Base slate / separator | `#64748B` / `#E2E8F0` | Input outline / noninteractive divider |
+| Success | `#15803D` on `#F0FDF4` | Confirmed success with text |
+| Warning | `#92400E` on `#FEF3C7` | Caution or pending attention with text |
+| Danger | `#B91C1C` on `#FEF2F2` | Failure, overdue and destructive meaning |
+| Information | `#1D4ED8` on `#E0F2FE` | Informational state with text |
+
+Poppins Semibold must be used for page/section headings. Inter Regular/Medium/Semibold/Bold must be used for body, controls, collection identities and numbers. Fonts must load from bundled files with their OFL licenses; no runtime third-party font requests. Actual code samples may use system monospace. Webapp surfaces are light-only.
+
+The frontend token revision is **1.0.14**, including shared drawer motion, role-specific geometry and the prescribed primary pressed and destructive confirmation hover/pressed roles. The platform-neutral token manifest is `design-system/tokens.json`; generated local CSS is `apps/webapp/src/lib/design-system/tokens.css`, imported through `app.css`. Semantic tokens must own the values in this spec. Components must not introduce raw color literals, additional font dependencies or per-feature token forks. Generated files must not be edited directly. Shared mobile snapshots may include dark values without introducing a staff-webapp theme switch. Calendar vendor styling must use scoped semantic tokens, not patches to vendor CSS.
+
+## 2. Measurable composition
+
+All dimensions below are CSS pixels at the default text size. Text sizes must use scalable units, respect user enlargement and never become fixed-height clipping constraints. Spacing, corner radii and minimum interaction targets must use CSS-pixel tokens: enlarging text alone must not proportionally double them. Controls must grow naturally for enlarged or wrapped text; browser zoom must remain supported. Page, navigation and drawer breakpoints use viewport width. Collection headers and fact grids use available content width, including inside drawers.
+
+| Element | Required dimension |
+| --- | --- |
+| Page title | 28px, 1.3 line height; 24px below 768px |
+| Section title / record drawer identity | 20px semibold, 1.3 line height |
+| Collection identity | 14px Inter semibold, 1.5 line height |
+| Body / controls | 14px, 1.5 line height |
+| Supporting metadata | 12px, 1.5 line height; never the sole essential identity/value |
+| Page padding | 24px; 16px below 768px |
+| Section / internal / related-control gaps | 24px / 16px / 8px |
+| Interaction target / action icon | At least 44 × 44px / 16 × 16px |
+| List row | 16px padding on every side, content-driven height |
+| Table header | 44px minimum height; 16px horizontal and zero vertical cell/control padding; grows for wrapped or enlarged text |
+| Table row | 48px minimum outer height including its divider; 16px horizontal and zero vertical cell padding; vertically centered targets without nested padding; grows for wrapping |
+| Table utility column | Stable 64px width; centered 44px targets; pinned right with an opaque row-matching background and subtle left divider |
+| Fact grid | Two columns from 480px available content width, otherwise one; long values span both |
+| Bounded dialog gutters | At least 16px on each viewport edge |
+| Navigation | Desktop sidebar from 1024px viewport width; focus-managed sheet below |
+| Drawer | 50vw from 1024px; full viewport width below 1024px |
+| Form | Maximum 32rem; 48rem only for the wide forms assigned by the app-shell spec; viewport bounded |
+| Text actions / quiet collection icons / search | 22px radius: 36px default visible button/search face within a 44px target; bounded corners when content grows |
+| Select / combobox chevron | 16px, vertically centered, 12px inset from the trailing field edge; reserve 40px trailing content padding so text cannot touch the chevron |
+| Standalone icon button | 36px circular visible face inside a 44px square target; centered 16px icon, 1px base-slate border, white fill |
+| Ordinary form text inputs / custom select-combobox triggers | 44px default minimum outer height; 8px vertical / 12px horizontal padding, 14px type at 1.5 line height; white fill, 1px base-slate border, 8px radius; height grows with content |
+| Filter / query date or interval controls | Pill-shaped trigger/field with the 22px action radius; retain the 44px default field height, white fill, outline and chevron spacing; search keeps its 36px face within a 44px target |
+| Textareas | Same field treatment; multiline height follows required content |
+| Collection containers / cards | 8px outer corners; square rows and row activation regions within the shared outline |
+| Dialog / menu or popover | 12px / 8px radius |
+| Inset assistant | Maximum width 900px; 32px viewport gutters from 1024px, 16px below; 12px corners; height equals the viewport minus the gutters. Persistent header and footer; Wrapping horizontal import steps; timetable uses underlined setup tabs without a step rail. Simple forms are at most 560px wide. Timetable uses a 200px class column from 768px working width, stacking below. Below 768px working width or 700px viewport height, setup dates and tabs scroll with the body; selection calendars use a 320px viewport. |
+| Drawer / full-screen workspace | Square corners; no artificial outer gutter |
+| Menu items / tabs / record activation regions | Square corners; full-width row or tab treatment, not action capsules |
+| Status badges / conversation bubbles | 4px / 12px radius; never styled as action buttons |
+| Avatars / binary controls | Circular avatars and radio controls; 4px checkbox corners; capsule switch track |
+
+The spacing vocabulary is 4/8/12/16/24/32/48; the required gaps above must not vary by feature. Collections must use one flat white surface with 8px outer corners and separators between square rows. The container must clip row backgrounds to its outer outline without rounding individual rows. Content sections must use headings, whitespace and dividers rather than nested bordered cards. A separately scoped summary may have a white card with 8px outer corners; it must not add a decorative shadow. Shadows are reserved for floating dialogs and menus and must remain restrained and neutral. Motion must communicate a state transition, honor reduced motion and never animate decoratively forever. Drawers slide horizontally from the right edge on opening and return to that edge on closing, using the 250ms enter-motion token and cubic-out easing in both directions. Their backdrop fades over the same interval. The panel and backdrop remain mounted through the exit transition, including URL-driven dismissal. With reduced motion enabled both transitions are immediate.
+
+The standard collection header must place title/count left and Search, Filter, `···` right. From 768px of available content width they share a row when their content fits; below that width title/count occupies the first row and the toolbar follows. Search has a preferred minimum width of 12rem, constrained by its container. When search and actions cannot fit together, search occupies its own row and Filter then collection menu wrap beneath it. This rule applies to related collections inside drawers, independently of viewport width. Labels and targets must not be clipped at enlarged text or narrow widths. Filter must use an icon-only button at every collection width, circular in the main-page collection header and quiet in related-collection headers, with the shared action-icon size and minimum interaction target. Its accessible name is Filter / Filtrer. An active-facet count uses a compact badge without widening the button and is also described accessibly; zero has no badge. The panel retains its visible heading and field labels. The collection primary action belongs first in `···`.
+
+## 3. Control treatments
+
+All controls must use the shared Button/Input/Select/Checkbox/Dialog primitives. Button labels are Inter medium 14px with 1.5 line height. Text buttons must have a 36px minimum visible face with 12px horizontal and 6px vertical padding, inside a non-overlapping interaction area at least 44px high. The extra 4px above and below the face belongs to the hit area, not the visible fill or border. Icon-label spacing is 8px. At 200% text or with wrapped labels, face and hit area grow with content; text must not be clipped. Table header cells and sortable header controls must have zero vertical padding and a 44px minimum height, without stacking cell padding on top of the control target. Width follows the visible label and declared icon slot; arbitrary minimum widths, hidden translated labels and stretched full-width buttons must not add idle bulk. Modal footers may stack full-width actions below 768px to preserve readable labels. Icon-only buttons have a 44px square target with a centered 16px icon. Labels must wrap without clipping; taller buttons retain the 22px corner radius. Search must match the default button face height, with a 36px visible field centered within a 44px interaction area. The 4px above and below must focus the field when activated, without extending its visible border or fill. Its text, icon and adjacent button icons share the same vertical center. At enlarged text, the field and target grow with content using the same fixed padding rather than clipping text. Search keeps its 22px corners and a 16px search icon. Filter fields and date/interval controls used to query or navigate displayed data must also use pill-shaped 22px corners, including both endpoints of a date range and controls inside Filter. They retain the default field height and white background; the compact search height must not shrink other fields. Ordinary create/edit fields, including date fields that edit record values, retain 8px corners. Horizontal padding remains 12px, with the reserved chevron space for selectors. Binary controls, popup containers and option rows retain their own treatments; the capsule applies to the query field or trigger, not every element inside Filter. Input and select outlines use base slate; focus is a 2px primary outline with a 2px surface-colored gap. Focus must be visible on every interactive surface, including menus and keyboard-operated rows.
+
+| Variant | Rest | Hover / pressed | Assignment |
+| --- | --- | --- | --- |
+| Primary | Primary background, white text, matching border | Primary hover / pressed values above | Form/task submit; first non-destructive drawer action |
+| Secondary | White background, primary text and 1px primary border | Information background / sky canvas with primary border | Second visible drawer action, Cancel, explicit secondary task action |
+| Quiet | Transparent, text foreground; no visible border | Sky canvas / information background | Table-header, related-collection-header and row icon controls, including their Filter and `···`; text-only disclosure and inline navigation |
+| Standalone icon | Circular white face, base-slate border and secondary-text icon | Sky canvas / information tint; expanded uses information tint | All icon-only buttons outside table headers, related-collection headers and rows, including Back, Close and overflow |
+| Destructive | White, danger text and 1px danger border | Danger background tint / white with 2px danger inset | Destructive action trigger where explicitly visible |
+| Destructive confirmation | Danger background, white text | `#991B1B` / `#7F1D1D` | Final Delete, Void, Reverse or other destructive confirmation only |
+
+Menu entries must be neutral square-cornered full-width rows with text labels, minimum 44px targets and a sky-canvas hover/focus background. Destructive entries use danger text and are separated at the end. A primary collection action is first in the menu; it is not a filled button embedded in the menu. X-TEMPLATE-RESET-REVIEW is bounded to notification templates: the neutral first Reset all templates entry opens consequence review before Export CSV; only its final confirmation is destructive. Selected menu options show a check and text, not color alone.
+
+Disabled controls must use the separator fill, secondary text and separator border, with no hover/pressed change. They must remain recognizable and expose the reason in adjacent text or a focus-accessible description. Unauthorized actions must be omitted, not represented as disabled. Busy controls must retain their role colors, visible action label and measured dimensions, expose busy state and prevent duplicate submission. A submit button must reserve one 16px trailing status slot with an 8px gap; it shows a spinner while busy. The localized ongoing-action message must be announced through a live status and shown in the form/task status area, outside the button. Hidden pending labels must not participate in button sizing. A button with a persistent action icon keeps that icon separate from its status slot. Busy controls must not look like an unexplained disabled control. Icons must come from the shared Lucide exports; no feature-specific substitutes for the same action.
+
+Input errors use a danger outline and adjacent localized error text. Link text uses primary color and an underline on hover/focus; meaning must not depend solely on color.
+
+Every icon-only button outside table headers, related-collection headers and rows must use a white circular face with a base-slate grey border and secondary-text grey icon. Main-page collection headers must use this circular treatment for Filter and collection `···`; these page-level controls are distinct from table column headers. This includes Back, Close, navigation, utility and overflow buttons in shell/page chrome, record headers, dialogs and task surfaces; the rule is not limited to `···` menus. Related-collection headers, the Table Customize header and collection rows retain quiet icon controls, including Filter and row menus. The variant changes appearance only; it must not add actions, duplicate actions or replace required visible action labels. Checkboxes, radio controls and non-interactive field adornments are not icon buttons. Hover uses sky canvas; pressed, expanded and toggled-on states use information tint; the grey outline/icon remain visible. Keyboard focus uses the shared primary indicator outside the face. Disabled controls use the shared disabled treatment. Pending commands retain their accessible action name, announce progress and prevent duplicate activation; menu/navigation controls have no artificial busy spinner.
+
+Selects and comboboxes must use one shared custom control, with a white trigger and white popup; visible native HTML selects or browser/OS option pickers must not be used. A hidden form-serialization control is not a visible alternative. Trigger geometry must match ordinary text inputs in §2, including default height, outline and text. Its role determines corners: query/filter selectors use the capsule; ordinary form selectors use the field radius. Search retains its separate compact geometry. Disabled and invalid states use the shared field treatments. A chevron is an adornment, not a second focus stop; it must use §2 spacing without overlapping text, clear controls or the border. Long selected labels must wrap rather than displace the chevron. Text enlargement must not enlarge the icon, inset or padding; the field grows with content. Read-only fields without a popup must not show a chevron. Options use square rows, meaningful selected text and a checkmark, with a viewport-bounded scrolling popup. Search-enabled and multi-selection variants may be used only when the feature requires them; they retain this shared appearance and must not invent new matching or selection capabilities.
+
+Confirmation dialogs use the default bounded-form width, dialog corners, section-title typography and body/control typography from §2. Their neutral header and body must not become an all-red danger panel. Cancel uses the secondary treatment; a non-destructive final action uses Primary, and a destructive final action uses Destructive confirmation. Required consequence text remains visible rather than hidden in tooltips or disclosures. The persistent footer contains Cancel before the explicit action; at narrow widths the actions wrap or stack in that same reading and keyboard order. Content scrolls while the title and footer remain reachable, including at 200% text. No decorative status icon or icon-only final command may replace the title, explanation or action label.
+
+X-LANGUAGE-SWITCHER preserves the original shell language picker rather than applying form-selector or shared-button sizing. Its pill trigger is 36px high, with 12px text, 12px horizontal padding, 6px gaps, a 14px language icon and a 12px chevron. It uses the separator border, white surface, EN/FR code and existing open-state treatment. Its end-aligned popup is 11rem wide, separated by 8px, with 16px corners and the panel shadow. Options use 14px text, 16px horizontal and 10px vertical padding, decorative flags, a 14px selected checkmark and the existing primary-tint selected background. These dimensions and the local popup replace the generic selector/button geometry only for this control; they must not spread to filters or ordinary forms. Its popup remains inside the viewport gutters at narrow widths and enlarged text; Escape dismisses it and restores trigger focus. Language changes must preserve workspace, navigation and drafts.
+
+### 3.1 Collection row states
+
+List and Table must render these independent states with the same meaning:
+
+| State | Required treatment |
+| --- | --- |
+| Rest | White surface |
+| Hover | Sky-canvas background; pointer styling only on actual interactive targets |
+| Open record | Sky-canvas background and a 2px inset primary leading marker; the identity target identifies the current record accessibly |
+| Bulk selected | Information-tint background and checked checkbox |
+| Open record and bulk selected | Information tint, open-record marker and checked checkbox |
+| Keyboard focus | Separate primary focus indicator on the focused target |
+
+Bulk-selection tint takes precedence over hover. The marker must not change column positions or row dimensions. Focus indicators must remain visible within clipped collection boundaries, using an inset treatment where an outer indicator would be clipped. Pinned cells must use the same opaque background as their row. Open-record state must not imply bulk selection, and focus must not imply either state. Single-line table rows must reach the §2 minimum without stacking cell padding around interaction targets; wrapped or enlarged essential content must increase height, never truncate to preserve density.
+
+## 4. Data and content hierarchy
+
+Student guardian related rows use two content rows separated by an 8px gap: name and a neutral relationship badge first, then email, phone and occupation in three equal-width fields separated by 16px gaps. Values and labels wrap within their field without introducing another fact row. The badge follows the shared badge radius and uses 4px/8px padding. The shared quiet row overflow is aligned to the first row; Edit belongs inside it. The related collection title carries the count without a redundant end summary.
+
+Essential names, identities, values and action labels must wrap. Secondary descriptions may use at most two lines of truncation only with an adjacent keyboard-accessible Read full text disclosure or an accessible full-content destination. A hover-only tooltip or `title` attribute is insufficient. Numeric amounts and scores must use Inter tabular numerals, right alignment in comparison columns, domain precision and units/currency. Formatting must not round away domain precision or invent a fallback currency.
+
+Dates must use the active FR/EN locale and an unambiguous day/month/year presentation. Civil dates must not shift through UTC conversion. Academic sessions and deadlines use the school timezone, identified beside the date/time group or in its heading whenever the viewer could interpret another zone. Message/audit instants use the viewer timezone with a visible timezone label. Relative dates must have an accessible absolute date/time. Ranges include both endpoints and the applicable zone. Saved result precision, units and mentions come from captured results, not mutable grading configuration.
+
+| Meaning | EN | FR | Rule |
+| --- | --- | --- | --- |
+| Numeric zero | `0` with unit | `0` with unit | Only a known measured/calculated zero |
+| Boolean false | No | Non | Known negative; never a missing value |
+| Boolean true | Yes | Oui | Known affirmative |
+| Absent optional value | Not provided | Non renseigné | No supplied value |
+| Missing required configuration | Not configured | Non configuré | Configuration is absent |
+| Data cannot be obtained | Unavailable | Indisponible | Required capability or persisted detail is missing/unsupported; not denial, failed request or successful empty result |
+| Denied field within authorized content | Restricted | Accès restreint | Do not expose hidden values/counts |
+| Missing persisted audit actor | Not recorded | Non enregistré | Do not infer an actor |
+
+Statuses must include meaningful text and a semantic tone. A dot, badge color or icon alone is insufficient. Essential facts are expanded. Secondary technical identifiers, processing metadata and audit detail belong in labeled, initially collapsed disclosures. Persisted business history required by a feature remains directly available in its History section/tab; it must not be replaced by raw technical logs.
+
+Disclosures put the chevron before the label, right when closed and down when open, with `aria-expanded`, keyboard activation and a 44px target. Scoped actions are separate siblings at the right; activating an action must not toggle the disclosure. White content surfaces on the sky canvas establish hierarchy; do not wrap every field in a card.
+
+## 5. FR/EN language contract
+
+Every visible string, accessible name, validation message and state must have FR and EN translations. Each screen must use one active locale; backend error codes must map to localized domain messages. User-entered names and content must not be translated. Use sentence case, a direct verb and the object when context is insufficient. Avoid jargon, internal IDs, unexplained acronyms, celebratory copy and generic Success/Error/Confirm labels.
+
+### 5.1 Domain glossary
+
+| EN | FR | Meaning |
+| --- | --- | --- |
+| Student / Students | Élève / Élèves | School pupil |
+| Teacher / Teachers | Enseignant / Enseignants | Teaching actor, distinct from staff |
+| Staff member / Staff | Membre du personnel / Personnel | Human staff workspace actor |
+| Guardian / Guardians | Responsable légal / Responsables légaux | Student-associated adult |
+| Identifier | Matricule | Optional human identifier, unique within the school and human group; use Student identifier, Teacher identifier, Guardian identifier or Staff identifier when context needs the group |
+| Global identifier | Matricule national | Optional externally issued student identifier (`globalIdentifier`), such as a ministry identifier; never the school’s matching key |
+| Short name | Nom court | Non-unique compact display name for a non-human entity; accents, spaces and punctuation are allowed |
+| Import reference | Référence d’import | Prefilled internal ID used for stable import targets/relationships; not an extra business label |
+| Resolve reference | Résoudre la référence | Explicitly choose the intended authorized record when scoped text lookup is ambiguous |
+| Create new / Select update target | Créer un nouvel élément / Choisir l’élément à modifier | Explicit import intent for an unbound non-human row; a matching name never silently selects an update |
+| Class / Classes | Classe / Classes | Class group |
+| Grade level / Grade levels | Niveau / Niveaux | Academic level, never a mark |
+| Subject / Subjects | Matière / Matières | Grade/year-owned subject |
+| Chapter / Chapters | Chapitre / Chapitres | Subject curriculum section |
+| Academic discipline / Academic disciplines | Discipline académique / Disciplines académiques | Reference catalog, not sanctions |
+| Placement status / Placement statuses | Statut de scolarisation / Statuts de scolarisation | Annual student declaration |
+| Activity / Activities | Activité / Activités | School activity |
+| Assessment / Assessments | Évaluation / Évaluations | Assessment definition |
+| Mark / Marks | Note / Notes | Recorded grading value |
+| Family feedback | Retour des familles | Campaign feedback, never assessments |
+| Attendance | Présences | Daily/session attendance records |
+| Logbook | Cahier de textes | Lesson record |
+| Appreciation / Teacher | Appréciation / Enseignant | Captured grading label, distinct from written teacher feedback |
+| Annual result / Report actions | Résultat annuel / Actions du bulletin | Student report selection and contextual actions |
+| Report card / Report cards | Bulletin / Bulletins | Captured academic result document |
+| Module / Modules | Module / Modules | Flat subject grouping for report results |
+| Fee / Fees | Frais / Frais | Configured charge offering |
+| Billing | Facturation | Assigned student fees |
+| Payment / Payments | Paiement / Paiements | Receipt or active allocation, labeled by context |
+| Account credit | Crédit disponible | Unallocated account balance |
+| Refund / Reversal | Remboursement / Annulation de paiement | Return of funds / reversal of a receipt; distinct commands |
+| Incident / Incidents | Incident / Incidents | Recorded discipline event |
+| Disciplinary action / Actions | Sanction disciplinaire / Sanctions disciplinaires | Sanction catalog/outcome |
+| Permission profile / Profiles | Profil d’autorisations / Profils d’autorisations | Reusable permission bundle, not runtime authority |
+| Announcement / Announcements | Annonce / Annonces | Published audience message |
+| Inbox | Boîte de réception | Sidebar group for personal deliveries, school conversations and corrections |
+| My inbox | Ma boîte de réception | Signed-in profile’s personal deliveries |
+| School messages | Messages de l’école | School conversations and authorized teacher oversight |
+| Conversation | Conversation | Immutable message thread |
+| Account / Profile | Compte / Profil | Account container / identity section |
+| Notifications / Security | Notifications / Sécurité | Personal settings / verified identity and authentication sections |
+| Activity log | Journal d’activité | Read-only recorded business history, distinct from school activities and technical logs |
+| Correction / Corrections | Correction / Corrections | Reviewed proposed change |
+| Academic year / Term | Année scolaire / Période | Workspace year / academic period |
+
+### 5.2 Status vocabulary
+
+| EN | FR | Meaning |
+| --- | --- | --- |
+| Active / Inactive | Actif / Inactif | Explicit record availability, with grammatical agreement |
+| Draft / Submitted | Brouillon / Soumis | Unsubmitted work / official submitted work |
+| Published / Archived | Publié / Archivé | Released result/content / archived lifecycle |
+| Pending review / Approved / Rejected | En attente de validation / Approuvé / Rejeté | Review workflow states |
+| Present / Absent / Late / Unmarked | Présent / Absent / En retard / Non renseigné | Explicit attendance values; Unmarked is not Absent |
+| Resolved / Cancelled | Résolu / Annulé | Resolution / cancellation, not deletion |
+| Unpaid / Partially paid / Paid | Impayé / Partiellement payé / Payé | Obligation settlement states |
+| Read / Unread | Lu / Non lu | Personal delivery read state |
+| Loading… / Refreshing… | Chargement… / Actualisation… | Initial read / same-scope refresh |
+| Updating / Completed / Failed | Mise à jour en cours / Terminé / Échec | Background calculation/job outcome |
+
+Status labels must reflect the specific domain state, not collapse draft, submitted, published and approved into one generic Done. Translations must agree with the named entity and preserve distinctions between cancelled obligations, reversed receipts and refunded money.
+
+### 5.3 Actions and reusable copy
+
+| EN | FR |
+| --- | --- |
+| Add {entity} / Edit {entity} / Delete {entity} | Ajouter {entity} / Modifier {entity} / Supprimer {entity} |
+| Save / Saving… / Cancel | Enregistrer / Enregistrement… / Annuler |
+| Close / Back / Done | Fermer / Retour / Terminé |
+| Filter / Reset filters / Clear search | Filtrer / Réinitialiser les filtres / Effacer la recherche |
+| View / List / Table / Sort / Columns | Affichage / Liste / Tableau / Trier / Colonnes |
+| Customize | Personnaliser |
+| Export matching / Export selected | Exporter les résultats / Exporter la sélection |
+| Select loaded rows / Clear selection / Exit selection | Sélectionner les lignes chargées / Effacer la sélection / Quitter la sélection |
+| Retry / Refresh / Read full text | Réessayer / Actualiser / Lire le texte complet |
+| Assign fee / Apply credit / Record payment | Attribuer des frais / Utiliser le crédit / Enregistrer un paiement |
+| Download account invoice / Finance checks | Télécharger la facture du compte / Contrôles financiers |
+| Publish / Archive / Activate | Publier / Archiver / Activer |
+| Approve / Reject / Withdraw | Approuver / Rejeter / Retirer |
+| Discard changes / Keep editing | Abandonner les modifications / Continuer la modification |
+| Optional / Required | Facultatif / Obligatoire |
+
+Entity placeholders in this table designate complete localized messages, not English-word concatenation: translations must supply articles, gender, elision and plural forms. Use locale-aware plurals for counts, including zero; never append `(s)`. A collection count must name its unit and scope, for example “1 student” / “1 élève”, “2 students” / “2 élèves”, and “No students” / “Aucun élève”.
+
+Empty copy must name the scoped collection: “No students in this class” / “Aucun élève dans cette classe”. No-match copy: “No results match your search and filters” / “Aucun résultat ne correspond à votre recherche et à vos filtres”. Access denial: “You do not have access to this content” / “Vous n’avez pas accès à ce contenu”. A failure names the operation and recovery, such as “Could not load payments. Try again.” / “Impossible de charger les paiements. Réessayez.”
+
+Confirmations must name the record and actual consequence, then use the action verb: “Delete {name}?” / “Supprimer {name} ?”. Permanent deletion must explicitly say it cannot be undone only when that is true. Reversible archive, cancellation, reversal and refund must use their own terms. A saved-write/read-failure message must say “Saved. Could not refresh the display.” / “Enregistré. Impossible d’actualiser l’affichage.” and offer Refresh without resubmitting. Validation must name the field and remedy; errors must not expose raw solver messages, payloads or stack traces.
+
+## 6. Brand and specialized presentation
+
+All student drawer tabs follow the shared section-title, body, metadata and fact-grid geometry: 24px between sections, 16px internal gaps, and two fact columns only from 480px of available content width. Student read-only facts use smaller, muted labels above primary-text values. The Health section and its edit form arrange blood type, allergies, medications and chronic conditions in reading order with two equal columns from 480px of available content width and one below. Long medical text wraps in full. The drawer has one vertical body scroller; the identity/tab region is pinned only when it occupies no more than half that region and leaves at least 240px for body content. Otherwise identity/actions scroll with the body while Close remains fixed. Proposed portraits use the existing preview size and the 70px published portrait appears in the identity header beside two identifier columns with wrapping values.
+
+Official outlined EDAYA artwork is authoritative. Use vertical artwork for spacious authentication, horizontal in headers/sidebar, symbol only in compact contexts already identified as EDAYA. Minimum widths are 88/128/32px respectively; favicon sizes may use 16/24/32px. Preserve clear space and aspect ratio; no reconstructed wordmarks, recoloring, stretching, shadow or text overlay. White artwork requires a dark or royal-blue surface.
+
+The app header uses a mobile navigation target and a right-aligned language/account group. Targets retain their shared minimum sizes and fixed gaps. Header padding is 12px horizontally and 8px vertically below the desktop navigation breakpoint, otherwise 24px horizontally with a 3.5rem minimum header height. On desktop the expanded, collapsed and hover-expanded sidebar headers share the app header’s bottom edge, including when profile text wraps. The language/account group remains a single row aligned to the trailing padding. Profile metadata appears only from 48rem of available header width; otherwise its named avatar control remains. Visible profile metadata wraps and the header grows to accommodate enlarged text.
+
+Under X-SCHOOL-YEAR-SWITCHER, the entire sidebar header is one button. A 32px brand symbol sits beside the school name and muted year, aligned to its top and bottom edges. A downward chevron sits at the upper right. Both values truncate and expose their full text on hover. The collapsed button shows a 26px symbol and retains its accessible name. The centered dialog uses a scrollable body with reachable Cancel and Apply actions at narrow widths and 200% text size.
+
+Under X-ACCOUNT, account settings use a maximum 52rem dialog from 768px, with 24px outer gutters and height bounded by the lesser of 40rem and 80dvh. Below 768px use the full viewport. The header is My account / Mon compte with one persistent circular Close button. Horizontal Profile / Profil, Notifications / Notifications and Security / Sécurité tabs remain above one body scroller, with at least 44px targets and an underlined current state. Content uses 24px desktop and 16px mobile padding. Names and long contacts wrap, section headings align, and flat sections use spacing/dividers without nested cards. Notification Save/Discard actions appear only for dirty drafts; Sign out is a quiet action in Security's Current session section. There is no global footer or Save. Short heights, narrow widths and 200% text must keep Close, tabs and all scrolling content/actions reachable. The account dialog must not reuse the authentication brand/form split.
+
+Under X-ACCOUNT, authentication uses an approximately 1040px-wide composition from 1024px: 40% quiet sky brand panel and 60% white form area. Below that use a compact horizontal branded header above the form. Authentication form content is capped at 420px, with 48px inputs/submit targets and a visible language selector. One active form is visible; inactive sign-in/sign-up panels remain hidden and inert to retain drafts. OTP is one paste-friendly field; recipient confirmation, resend, change-contact and existing authenticator/recovery steps remain explicit. Connection checking is neutral; unavailable is a localized warning; available is not a warning. Neither styling nor demo account selection may bypass explicit authentication actions.
+
+My inbox and Corrections use the shared Table geometry and row states. The primary title receives the greatest column width; supporting content stays secondary, and essential titles and identities wrap. Personal-message unread titles use stronger weight than read titles, with explicit Unread/Read status labels. Types/workflows use plain text; only status and actual consequence warnings receive semantic emphasis. Correction reasons and repeated no-consequence text must not inflate rows. Date cells show date above smaller time/timezone. Columns stay stable until the user customizes them; narrow screens scroll within the table.
+
+Inbox labels and child counts must remain consistent in desktop and mobile navigation; no aggregate group badge may imply that unread deliveries, conversations and correction requests share one measure. Report modules are headers in the grade-level Subjects List, with bounded action forms. Notification templates retain their standard List and detail drawers.
+
+Activity-log rows must identify the viewer timezone and use localized action/outcome labels with meaningful text. Actor, action, time, affected record and outcome are primary historical facts. Event context, reason and recorded changes are read-only, with missing values labeled Not recorded / Non enregistré and denied values Restricted / Accès restreint. Only ancillary technical identifiers belong in a collapsed disclosure. Empty copy must say No recorded events / Aucun événement enregistré and identify the current scope; it must not claim that no business activity occurred.
+
+Message history must use right-aligned blue-container staff replies and left-aligned neutral guardian messages, with actual author before selectable content and localized time after it. Position, participant label and accessible description distinguish direction without color. Teacher oversight identifies participant roles; no invented delivery/read indicators. Conversation bubbles cap width at 90% compact / 75% wide and 560px; compact enlarged text can use the available width.
+
+Finance summaries must label net obligations Billed / Montant facturé, active charge allocations Payments / Paiements, remaining obligations Outstanding / Solde restant, and overdue obligations Overdue / En retard. The assigned-student count is a chip on Billed; overdue-student count is a chip on Overdue. Overdue uses the danger text token. No Received/Refunded captions or duplicate summary cards on Billing/Payments. Financial scope and calculation rules remain in the feature contract.
+
+## 7. Accessibility and conformance
+
+Text must meet 4.5:1 contrast for ordinary text and 3:1 for large text; essential active control boundaries need 3:1. Shared typography, control treatment and status tones must be evaluated on their actual backgrounds. Focus must follow reading order, icon controls must have contextual names, and modal/task dismissal and focus restoration must obey the app-shell contract.
+
+The X-DESIGN-SPECIMEN gallery must apply the same wrapping and fixed page/section padding as the shared composition. Its viewport/text preview must enlarge text without doubling its layout gutters. Specimen grids must be bounded by their container so native fields and long French copy cannot widen the page. It must demonstrate production controls without clipping overflowing text or overriding control geometry to conceal failures.
+
+At narrow widths, short heights, 200% text, long FR/EN labels and large values, essentials must wrap and every action must remain reachable. No hidden essential columns, overlapping content, clipped modal actions or hover-only access. Tables retain accessible horizontal scrolling; the page itself must not acquire accidental horizontal scrolling. Reduced motion must preserve state meaning. Every variation must have a named exception in the app-shell spec and a bounded surface assignment; no local styling exception is implicit.

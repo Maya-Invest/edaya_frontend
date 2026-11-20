@@ -3,11 +3,11 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Teacher } from '$lib/types/school';
 import {
 	DEFAULT_LIST_PAGE_SIZE,
+	listAllEntityPages,
+	listAllEntityPagesForIdFilters,
 	paginatedList,
-	teacherAssignmentsForTeachers,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
-import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { formatPersonName } from '$lib/api/teacher-display';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
@@ -24,11 +24,16 @@ function teacherInitials(firstName: string, lastName: string): string {
 export function mapTeacher(member: TeacherRaw): Teacher {
 	return {
 		id: member.id,
+		firstName: member.firstName ?? null,
+		lastName: member.lastName ?? null,
+		sourceFullName: member.sourceFullName ?? null,
+
 		name: formatPersonName(member.firstName, member.lastName),
 		initials: teacherInitials(member.firstName, member.lastName),
 		photoUrl: member.photoUrl ?? null,
 		email: member.email ?? '',
 		phone: member.phone ?? '',
+		identifier: member.identifier ?? null,
 		isActive: member.isActive ?? true,
 		subjectId: member.subjectId ?? null,
 	};
@@ -82,18 +87,33 @@ export async function fetchTeachersPage(
 		return { teachers: [], totalTeachers, assignments: [] };
 	}
 
-	const assignmentsRaw = await safeOptionalEntityList(() =>
-		client.entities.teacherAssignments.list({
-			...teacherAssignmentsForTeachers(teacherIds),
-			academicYearId: scope.academicYearId,
-			status: 'active',
-		}));
+	const assignmentsRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.teacherAssignments.list(query),
+		[{ field: 'teacherId', ids: teacherIds }],
+		{ extraQuery: { academicYearId: scope.academicYearId, status: 'active' } },
+	);
 
 	return {
 		teachers: mapTeachers(teachersRaw ?? []),
 		totalTeachers,
 		assignments: assignmentsRaw,
 	};
+}
+
+export async function fetchAllTeachers(
+	client: SchoolClient,
+	scope: { schoolId: string; academicYearId?: string },
+): Promise<Teacher[]> {
+	const rows = await listAllEntityPages(
+		query => client.entities.teachers.list(query),
+		{
+			baseQuery: {
+				schoolId: scope.schoolId,
+				$orderBy: TEACHER_LIST_ORDER,
+			},
+		},
+	);
+	return mapTeachers(rows);
 }
 
 export async function fetchTeacherById(

@@ -1,14 +1,11 @@
+import type { DrawerTabKey } from './constants';
 import type { DemoContext } from './types';
-import { DRAWER_TAB_LABELS, type DrawerTabKey } from './constants';
-import { drawerTabFromPathname } from './paths';
+import { DRAWER_TAB_LABELS } from './constants';
+import { drawerTabFromPathname, normalizeIntegrationPathname } from './paths';
 
-export function urlTabParam(ctx: DemoContext): string | null {
-	return new URL(ctx.page.url()).searchParams.get('tab');
-}
-
-/** Active drawer tab from `?tab=` (legacy drawers) or the URL path segment (school drawers). */
+/** Active drawer tab from the URL path segment. */
 export function urlTabSegment(ctx: DemoContext): string | null {
-	return urlTabParam(ctx) ?? drawerTabFromPathname(new URL(ctx.page.url()).pathname);
+	return drawerTabFromPathname(normalizeIntegrationPathname(new URL(ctx.page.url()).pathname));
 }
 
 export async function waitForUrlTab(
@@ -28,11 +25,11 @@ export async function waitForUrlTab(
 }
 
 export async function waitForDrawerAside(ctx: DemoContext, timeoutMs = 30_000) {
-	const drawer = ctx.page.locator('aside.fixed.right-0');
+	const drawer = ctx.page.locator('[role="dialog"].ui-drawer');
 	return drawer.waitFor({ state: 'visible', timeout: timeoutMs }).then(() => drawer).catch(() => null);
 }
 
-export async function waitForDrawerTabBar(ctx: DemoContext, timeoutMs = 30_000) {
+export async function waitForDrawerTabLinks(ctx: DemoContext, timeoutMs = 30_000) {
 	const drawer = await waitForDrawerAside(ctx, timeoutMs);
 	if (!drawer) {
 		return null;
@@ -57,13 +54,13 @@ export async function clickDrawerTab(ctx: DemoContext, tabKey: DrawerTabKey): Pr
 	if (!label) {
 		throw new Error(`Unknown drawer tab key: ${tabKey}`);
 	}
-	if (!(await waitForDrawerTabBar(ctx))) {
+	if (!(await waitForDrawerTabLinks(ctx))) {
 		return false;
 	}
 	const testBar = ctx.page.getByTestId('drawer-tab-bar');
 	const root = (await testBar.isVisible().catch(() => false))
 		? testBar
-		: ctx.page.locator('aside.fixed.right-0');
+		: ctx.page.locator('[role="dialog"].ui-drawer');
 	const link = root.getByRole('link', { name: label });
 	if (await link.isVisible({ timeout: 5_000 }).catch(() => false)) {
 		await link.click();
@@ -80,7 +77,7 @@ export async function clickDrawerTab(ctx: DemoContext, tabKey: DrawerTabKey): Pr
 }
 
 export async function closeDrawer(ctx: DemoContext): Promise<boolean> {
-	const drawer = ctx.page.locator('aside.fixed.right-0');
+	const drawer = ctx.page.locator('[role="dialog"].ui-drawer');
 	const footerClose = drawer
 		.locator('footer')
 		.getByRole('button', { name: /close|fermer/i });

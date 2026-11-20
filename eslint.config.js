@@ -1,8 +1,10 @@
+import { importOrder } from './tooling/repo/eslint-imports.js'
 import antfu from '@antfu/eslint-config'
 
 export default antfu({
   ignores: ['.github/workflows/**', '.github/scripts/**'],
   rules: {
+    'perfectionist/sort-imports': importOrder,
     'no-new': 'off',
   },
 }, {

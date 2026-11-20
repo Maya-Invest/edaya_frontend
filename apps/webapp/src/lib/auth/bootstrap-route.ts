@@ -1,7 +1,6 @@
 export function shouldBootstrapAuthOnly(pathname: string): boolean {
-	return pathname === '/login'
+	return pathname === '/account/security'
+		|| pathname === '/login'
 		|| pathname.startsWith('/login/')
-		|| pathname.startsWith('/invite/')
-		|| pathname === '/onboarding'
-		|| pathname.startsWith('/onboarding/');
+		|| pathname.startsWith('/invite/');
 }

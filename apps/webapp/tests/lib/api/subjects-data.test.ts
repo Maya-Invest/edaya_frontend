@@ -1,7 +1,9 @@
+import { ApiError } from '@maya-invest/edaya-api-client';
+import { createRecordingSchoolClient } from '$tests/support/recording-school-client';
+import { fetchGradeSubjectOptions, mapCatalogSubjects, mapClassSubjects } from '$lib/api/subjects-data';
 import { classSubject, staffMember, subject } from '$tests/support/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapClassSubjects } from '$lib/api/subjects-data';
 
 const sources = {
 	classSubjectsRaw: [
@@ -12,11 +14,11 @@ const sources = {
 		classSubject({ id: 'cs-6a-eps', classGroupId: '6a', subjectId: 'subj-eps' }),
 	],
 	subjectsRaw: [
-		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
-		subject({ id: 'subj-fr', name: 'French Literature', code: 'FR', defaultCoefficient: 2, category: 'Littéraire', color: 'warm' }),
-		subject({ id: 'subj-hist', name: 'History & Geography', code: 'HIST', defaultCoefficient: 2, category: 'Sciences humaines', color: 'sky' }),
-		subject({ id: 'subj-en', name: 'English', code: 'EN', defaultCoefficient: 2, category: 'Langues', color: 'sky' }),
-		subject({ id: 'subj-eps', name: 'Physical Education', code: 'EPS', defaultCoefficient: 1, category: 'Sport', color: 'mint' }),
+		subject({ id: 'subj-math', name: 'Mathematics', shortName: 'MATH', coefficient: 3 }),
+		subject({ id: 'subj-fr', name: 'French Literature', shortName: 'FR', coefficient: 2, category: 'Littéraire', color: 'warm' }),
+		subject({ id: 'subj-hist', name: 'History & Geography', shortName: 'HIST', coefficient: 2, category: 'Sciences humaines', color: 'sky' }),
+		subject({ id: 'subj-en', name: 'English', shortName: 'EN', coefficient: 2, category: 'Langues', color: 'sky' }),
+		subject({ id: 'subj-eps', name: 'Physical Education', shortName: 'EPS', coefficient: 1, category: 'Sport', color: 'mint' }),
 	],
 	subjectMattersRaw: [
 		{ id: 'sm-math', subjectId: 'subj-math', name: 'Core programme', description: 'Algebra fundamentals.', sequenceOrder: 1, estimatedHours: 5 },
@@ -34,6 +36,40 @@ const sources = {
 	teachersRaw: [],
 	teacherAssignmentsRaw: [],
 };
+
+describe('permission subject options', () => {
+	it('returns only the authorized grade labels and clears partial choices when a later page is denied', async () => {
+		const rows = sources.subjectsRaw.map(data => ({ data }));
+		const { client, requests } = createRecordingSchoolClient([rows]);
+		expect(await fetchGradeSubjectOptions(client, SEED_SCHOOL_ID, 'year')).toEqual(
+			sources.subjectsRaw.map(({ id, gradeLevelId, name }) => ({ id, gradeLevelId, name })),
+		);
+		expect(requests).toEqual([{
+			method: 'POST', path: '/core/entities/subjects/list', body: { schoolId: SEED_SCHOOL_ID, academicYearId: 'year', $limit: 500, $offset: 0 },
+		}]);
+		let pages = 0;
+		client.entities.subjects.list = async () => {
+			if (++pages === 2) throw new ApiError(403, {});
+			return Array.from({ length: 500 }, () => sources.subjectsRaw[0]!);
+		};
+		expect(await fetchGradeSubjectOptions(client, SEED_SCHOOL_ID, 'year')).toEqual([]);
+		expect(pages).toBe(2);
+	});
+});
+
+describe('mapCatalogSubjects', () => {
+	it('keeps same-name subjects separate and loads only their own chapters', () => {
+		const entries = mapCatalogSubjects({ classSubjectsRaw: [], subjectsRaw: [subject({ id: 'math-6', name: 'Math', gradeLevelId: '6' }), subject({ id: 'math-5', name: 'Math', gradeLevelId: '5' }), subject({ id: 'math-6b', name: 'Math', gradeLevelId: '6' })], subjectMattersRaw: [{ id: 'fractions', subjectId: 'math-6', name: 'Fractions', sequenceOrder: 1 }, { id: 'algebra', subjectId: 'math-5', name: 'Algebra', sequenceOrder: 1 }] });
+		expect(entries).toHaveLength(3);
+		expect(entries.find(row => row.id === 'math-6')?.catalogChapters?.map(chapter => chapter.name)).toEqual(['Fractions']);
+		expect(entries.find(row => row.id === 'math-5')?.catalogChapters?.map(chapter => chapter.name)).toEqual(['Algebra']);
+		expect(entries.find(row => row.id === 'math-6b')?.catalogChapters).toEqual([]);
+	});
+	it('keeps more than one page of subjects', () => {
+		const entries = mapCatalogSubjects({ classSubjectsRaw: [], subjectMattersRaw: [], subjectsRaw: Array.from({ length: 52 }, (_, index) => subject({ id: `subject-${index}`, name: 'Math' })) });
+		expect(entries).toHaveLength(52);
+	});
+});
 
 describe('mapClassSubjects', () => {
 	it('maps category and color from API subject fields', () => {
@@ -65,7 +101,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6b-math', classGroupId: '6b', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
-				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, name: 'Mathematics', code: 'MATH', defaultCoefficient: 3, category: 'Scientifique', color: 'mint' },
+				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0, name: 'Mathematics', shortName: 'MATH', coefficient: 3, categoryId: `${SEED_SCHOOL_ID}:subject-category:scientifique`, color: 'mint' },
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],
@@ -84,7 +120,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6a-sci', classGroupId: '6a', subjectId: 'subj-sci' }),
 			],
 			subjectsRaw: [
-				subject({ id: 'subj-sci', name: 'Natural Sciences', code: 'SCI', defaultCoefficient: 2 }),
+				subject({ id: 'subj-sci', name: 'Natural Sciences', shortName: 'SCI', coefficient: 2 }),
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],
@@ -102,7 +138,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
-				subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
+				subject({ id: 'subj-math', name: 'Mathematics', shortName: 'MATH', coefficient: 3 }),
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],

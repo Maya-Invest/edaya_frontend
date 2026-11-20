@@ -1,5 +1,5 @@
+import type { ActivityOption } from '$lib/api/activities-data';
 import type {
-	Activity,
 	PlanningEvent,
 	SchoolYearEvent,
 	Student,
@@ -13,7 +13,7 @@ export interface TimetablePageSlice {
 	schedules: TimetableSchedule[];
 	students: Student[];
 	subjects: Subject[];
-	activities: Activity[];
+	activities: ActivityOption[];
 	schoolYearEvents: SchoolYearEvent[];
 }
 
@@ -34,5 +34,14 @@ export function timetableClassIdFromUrl(url: URL): string | undefined {
 }
 
 export function sessionDetailIdFromUrl(url: URL): string | undefined {
-	return url.pathname.match(/\/classes\/[^/]+\/timetable\/([^/]+)/)?.[1];
+	const raw = url.pathname.match(/\/classes\/[^/]+\/timetable\/([^/]+)/)?.[1];
+	if (!raw) {
+		return undefined;
+	}
+	try {
+		return decodeURIComponent(raw);
+	}
+	catch {
+		return raw;
+	}
 }

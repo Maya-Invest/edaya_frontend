@@ -1,622 +1,268 @@
-# Route State Spec
+# Route, state and navigation contract
 
-> **Applies to:** `apps/webapp` — URL-driven loading, route-scoped state, mutations, colocation, smart components
+Normative for `apps/webapp`. Route/layout state must own entity data, reads and mutations; the URL must reconstruct substantive views. This contract governs desired behavior, including target presentation choices in the other five specs. It must not create new server commands, alter save granularity or turn UI closure into server cancellation.
 
-This document defines how the webapp loads server data, holds state, mutates records, and organizes code. **Route state owns entity data.** There is no session-wide entity hydration.
+## 1. Ownership and lifecycle
 
----
+Opening `/` shows a loading status while the account session resolves. A signed-in account goes directly to its staff, onboarding or portal destination. An anonymous visitor proceeds to sign-in. Switching schools shows the same status while the selected membership’s permissions load and preserves the current route when permitted.
 
-## Goals
+| Owner | Data / responsibility | Lifetime |
+| --- | --- | --- |
+| Shell | Auth, school/year/term/class selectors and permitted navigation counts | Authenticated session |
+| Version ledger | Entity-family counters only, no entity payloads | Session |
+| Route/layout state | Matching rows, detail/tab data, filters, selection, batches, commands and drafts spanning components | Route subtree and captured scope |
+| Smart workflow state | Explicit shared picker/authentication/permission workflow I/O and orchestration | Workflow instance |
+| Presentation | Local field drafts, hover, focus, disclosure and other transient visual state | Mounted component |
 
-1. **URL-driven loading** — fetch only what the current route needs; URL params and search params are the navigation contract.
-2. **Route-scoped data** — loaded records live on the route (or layout) state class, not a global entity cache.
-3. **Colocation** — route-specific UI and state live under the route directory; `lib/` holds shared infrastructure only.
-4. **Optimistic mutations** — local UI updates immediately; rollback on failure.
-5. **Cross-route consistency** — a lightweight version ledger signals when other routes should invalidate stale data.
-
----
-
-## Architecture overview
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Shell (session) — lib/academic/context.svelte.ts               │
-│  schools, years, periods, classes, nav counts, auth             │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  Version ledger (session) — lib/entity-versions.svelte.ts       │
-│  { students: 0, guardians: 1, … } — bumped on successful writes │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  Route / layout state — routes/.../*-page.svelte.ts             │
-│  PageQuery(url) → fetch → seed route state · views read state   │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-              ┌───────────────┴───────────────┐
-              ▼                               ▼
-┌──────────────────────────┐    ┌──────────────────────────────┐
-│  Route components        │    │  Nested tab routes           │
-│  routes/.../components/  │    │  [[id]]/guardians/+page.svelte│
-└──────────────────────────┘    └──────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  Mutations — page state methods via a route mutation runner     │
-│  apply → request → onSuccess → bump versions → toast / rollback │
-└─────────────────────────────────────────────────────────────────┘
-```
+Terms acceptance and dialog-open state belong to the authentication workflow instance, never URL parameters or browser persistence. The identity service owns immutable versions and durable account/version receipts. Existing session restoration and token renewal preserve access without a new acceptance prompt.
 
-### Four tiers
+There must be no session-wide entity hydration or global `detailDataContext`. URL-derived query keys and the version ledger are metadata, not another entity store. I/O, multi-component orchestration and testable business logic must not live in presentation scripts/effects. Entity optimistic patches and rollback belong to the owning state.
 
-| Tier | What | Where | Lifetime |
-|------|------|-------|----------|
-| **1 — Shell** | Auth, academic selectors, nav counts | `lib/academic/context.svelte.ts` | Session |
-| **2 — Version ledger** | Per-entity-family version counters | `lib/entity-versions.svelte.ts` | Session |
-| **3 — Route / layout state** | Entity collections, filters, selection, mutations | `routes/.../*-page.svelte.ts` | Route subtree |
-| **4 — UI** | Modal open, form binding, visual flags | Component `<script>` | Component |
+Human creation forms retain the optional manual identifier and stable request ID across failed submissions. The service checks uniqueness at Save. Onboarding Review shows entered identifiers or Not provided. Scope changes invalidate the previous form attempt.
 
-**Smart components** (pickers, scope builders) are a parallel pattern: not route-bound, but use the same class + context structure as Tier 3. See §8.
+The shell must bootstrap schools, years, periods, grade levels, class groups, authorized navigation counts and authentication only. Students, staff, guardians, subjects, permissions, planning, assessments, finance, school life, report results and logbooks load on demand. A full shell refresh is limited to changed shell-shaped school/year/period/class data, never a name, contact, financial or lesson-record edit.
 
-**Rule:** I/O, multi-component orchestration, or testable business logic → **not** Tier 4.
+Under X-SCHOOL-YEAR-SWITCHER, dialog visibility and its uncommitted choice are transient shell presentation state, not URL-backed business forms. Opening, previewing or dismissing it cannot change workspace context or persistence. Confirmation invokes the shared dirty-work guard and then the existing year setter, only if the captured account, selected school, academic scope and target remain valid. Refusing discard preserves both workspace drafts and the switcher choice. An account/school change closes the dialog and cancels only its own pending continuation; it must not cancel another workflow’s guard.
 
----
+School/year/term change must invalidate affected PageQuery metadata and active route state, reject stale responses and retain the current structural route if still authorized. Empty years clear the term without borrowing another year's context. Identity changes clear prior content and drafts immediately; user-initiated scope changes first guard dirty work. No old-scope values may be displayed while a new scope loads.
 
-## 1. Shell bootstrap
+The shell owns per-instance `MessageCountState` in Svelte context. The School messages child badge under Inbox counts all authorized school/teacher conversations in awaiting-school and awaiting-guardian states using server totals, independent of filters/loaded rows. It reads one authorized unresolved count on inbox version changes and visibility resume. While visible, it polls after 15 seconds and backs off to at most 60 seconds when counts stay unchanged. Hidden tabs do not poll; no permission means no fetch, unavailable means no number. The page count describes its matching collection, never repeats this sidebar queue badge. My inbox must retain its account-and-recipient-specific unread scope, and Corrections its own workflow scope; relocating entries must not combine query owners or counts. The Inbox group has no aggregate badge.
 
-### Load at bootstrap (always)
+## 2. Colocation and state classes
 
-- Schools, academic years, periods, grade levels, class groups
-- Sidebar student count
-- Auth/session
+Route views, queries, state and mutation runners must live under their route subtree: `*-page.svelte.ts`, route-local `lib/*-queries.ts` or `*.queries.ts`, and `components/`. A parent layout creates state and provides `set*`/`get*` Svelte context; children read that instance. Layout-owned class/record state follows the same pattern. Shared infrastructure, primitives, typed API helpers, i18n, filters and Smart workflows belong in `lib/`; one-feature orchestration must not.
 
-### Do not load at bootstrap
+State classes must use `$state` for mutable data, getters for derivations, bound/arrow event methods and teardown cancellation. They must not contain `$effect`; lifecycle helpers wired during component setup may observe navigation, while owner state executes I/O. Views must not copy route entity arrays into local state or fetch from rendering effects. When two siblings share orchestration, or a view exceeds roughly 60 lines of non-markup logic, that logic belongs to owner state.
 
-- Students, guardians, staff, subjects, planning, evaluations, finance, school-life, staff permission assignments, report cards, teaching log, or any other module entity collection
+Runtime mutation/client imports are forbidden in presentation components. Type imports, API error values and pure display/payload helpers are permitted. Shared subject editors, report comments and documents receive typed callbacks. Self-contained invitation and staff-permission workflows own their declared I/O in Smart state; account-wide photo actions use the app layout's account state. Smart components must not read another route's state. They use a colocated `*-state.svelte.ts`, root component and optional children, fetching only when their workflow requires it.
 
-### Contract
+## 3. Queries, matching scope and loading
 
-```ts
-const shell = await getAppShellData();
-academicContext.initFromShell(shell);
-```
+Every route/tab has one query owner: `PageQuery` invokes a colocated `query<Scope><Entity>Page` or equivalent owner-state query, which loads the minimum authorized scope and seeds its state. `+page.svelte` only orchestrates query, DataState and the view. Query identity must include authentication/authorization context, applicable school/year/class/level/record/tab, relevant filters and revisions; cosmetic popover state must not refetch data.
 
-### When to refresh shell
+Every request must have an abort/lifetime generation. Completion may publish only when target, context and generation still match. Deletion, profile switch, navigation and unmount must reject late results. Concurrent optional domains resolve independently; a forbidden optional enrichment cannot turn an authorized parent into empty data or expose stale data from a prior target.
 
-Use a full shell refresh **only** when the mutation changes shell-shaped data:
+PageQuery caches URL-keyed `PageLoadMeta` status only. Entity payloads remain on route/tab state. `cache={false}` is required when cached status cannot reconstruct the current slice (including current-only subject data and class teacher-assignment reads). On layout teardown `releaseRoutePageQueryOnDestroy(getUrl)` releases metadata so a new instance reloads. Successful seeding records every loaded version family; failed/aborted reads must not mark a stale snapshot fresh.
 
-- Create/activate academic year or period
-- Create/update class group
-- School switch
-
-Never use full shell refresh for record-level edits (student name, timetable slot, guardian phone, etc.).
-
----
-
-## 2. File colocation
-
-### Route features
-
-```
-routes/(app)/school/students/
-  +layout.svelte                 # sets StudentsPageState, renders list shell
-  students-page.svelte.ts        # route state class + set/get context
-  students.queries.ts            # querySchoolStudentsPage(url)
-  +page.svelte                   # list — /school/students
-  [[id]]/
-    +layout.svelte               # route-local drawer shell
-    +page.svelte                 # default tab — /school/students/:id
-    guardians/
-      +page.svelte               # /school/students/:id/guardians
-    components/
-      StudentDetailHeader.svelte
-      GuardianTab.svelte
-  components/
-    StudentsList.svelte
-    StudentCreateModal.svelte
-```
-
-### `lib/` — shared only
-
-| In `lib/` | Not in `lib/` |
-|-----------|----------------|
-| `PageQuery`, `DataState`, shared mutation runner contracts | `StudentsList.svelte`, one-route mutation runners |
-| API clients, types, i18n, URL filter helpers | `students-page.svelte.ts` |
-| Dumb UI (`lib/components/ui/`) | Route-specific modals |
-| Smart components (`lib/smart-components/`) | Feature orchestration state |
-| Shell + version ledger | |
-
-**Litmus test:** used by more than one route, or generic infrastructure? → `lib/`. Otherwise → colocate under the route.
-
-### Layout state
-
-Layouts that need their own data follow the same pattern as pages:
-
-```
-routes/(app)/classes/[classId]/
-  +layout.svelte
-  class-layout.svelte.ts         # class-scoped shared state for child routes
-  class-layout.queries.ts
-```
-
-Set layout state in `+layout.svelte`; child routes and components access it via `set*` / `get*` context.
-
----
-
-## 3. Route state class
-
-### Pattern
-
-```ts
-// routes/(app)/school/students/students-page.svelte.ts
-import { getContext, setContext } from 'svelte';
-import { entityVersions } from '$lib/entity-versions.svelte';
-
-const KEY = Symbol('StudentsPageState');
-
-export class StudentsPageState {
-  students = $state<Student[]>([]);
-  private loadedVersion = 0;
-
-  readonly filters: ListFiltersState<{ q: string; class: string; status: string }>;
-
-  constructor(getUrl: () => URL) {
-    this.filters = new ListFiltersState({ getUrl, write: writeStudentListFilters, … });
-  }
-
-  seed(students: Student[]) {
-    this.students = students;
-    this.loadedVersion = entityVersions.students;
-  }
-
-  get visibleStudents() {
-    return this.filterVisible(this.students);
-  }
-
-  get selected() {
-    return this.students.find(s => s.id === this.selectedId);
-  }
-
-  patchStudent(id: string, patch: Partial<Student>) {
-    const i = this.students.findIndex(s => s.id === id);
-    if (i >= 0) this.students[i] = { ...this.students[i], ...patch };
-  }
-
-  async updateStudent(input: UpdateStudentInput) {
-    const previous = this.students.find(s => s.id === input.id);
-    await runStudentRouteMutation({
-      request: () => api.updateStudent(input),
-      apply: () => {
-        this.patchStudent(input.id, input.patch);
-      },
-      rollback: () => {
-        if (previous) this.patchStudent(input.id, previous);
-      },
-      successMessage: input.successMessage,
-      errorMessage: input.errorMessage,
-      versionKeys: ['students'],
-    });
-  }
-
-  async invalidateIfStale() {
-    if (this.loadedVersion === entityVersions.students) return;
-    await this.refetch();
-    this.loadedVersion = entityVersions.students;
-  }
-}
-
-export function setStudentsPageState(state: StudentsPageState) {
-  setContext(KEY, state);
-}
-
-export function getStudentsPageState() {
-  return getContext<StudentsPageState>(KEY);
-}
-```
-
-### Class rules
-
-- `$state` fields for mutable data
-- Getters for derived values
-- Arrow methods for handlers passed to DOM events
-- Cleanup via `onDestroy` in constructor when needed
-- **No `$effect` in state classes**
-- **Route `PageQuery` performs fetch** — state class receives `seed()`; tab routes may call `seedTab()` on the same instance
-- **Mutations live on the state class** — components call `state.updateStudent(…)`, not a raw API client or mutation runner
-
-### Context wiring
-
-- **Parent** (`+layout.svelte` or `+page.svelte`): `setStudentsPageState(new StudentsPageState(() => $page.url))`
-- **Children** (`routes/.../components/*`, nested tab pages): `getStudentsPageState()`
-
-### Do not
-
-- Copy entity arrays into component-local `$state` when the route state already holds them
-- Fetch in component `$effect` — extend the route query or call a state method triggered by URL change
-
----
-
-## 4. URL-driven loading
-
-### Standard list route
-
-```svelte
-<!-- +page.svelte -->
-<script lang="ts">
-  import { page } from '$app/stores';
-  import { setStudentsPageState, StudentsPageState } from './students-page.svelte';
-  import { querySchoolStudentsPage } from './students.queries';
-
-  const state = new StudentsPageState(() => $page.url);
-  setStudentsPageState(state);
-  const query = querySchoolStudentsPage(state);
-</script>
-
-<PageQuery {query} loadingTitle={$t('school.students')}>
-  {#snippet children(data)}
-    <DataState status={data.status} …>
-      <StudentsList />
-    </DataState>
-  {/snippet}
-</PageQuery>
-```
-
-```ts
-// students.queries.ts
-import type { PageLoadMeta } from '$lib/page/load-state';
-
-export function querySchoolStudentsPage(state: StudentsPageState) {
-  return async (url: URL): Promise<PageLoadMeta> => {
-    try {
-      const students = await getSchoolStudents(url);
-      state.seed(students);
-      return { status: state.students.length > 0 ? 'ready' : 'empty' };
-    }
-    catch {
-      return { status: 'error', errorMessage: 'Unable to load this page.' };
-    }
-  };
-}
-```
+### 3.1 Filters, views, sorting and selection
 
-Route query functions may use a shared or route-local page-load resolver, but the resolver must return `PageLoadMeta` (`ready` / `empty` / `error`), keep entity payloads on route state, expose an `errorMessage` on failure, and leave rendering to `PageQuery` + `DataState`.
+Search/facets/sort and supported `view=list|table` are URL state through `ListFiltersState` and typed read/write helpers. All facets use one immediately applied Filter panel. Search debounces 250ms; Enter/clear flush pending text. Reset filters preserves search and workspace context; active count excludes search/sort/context. Facet choices must represent the full authorized scope, not only loaded rows. Canonicalization must preserve unrelated valid query parameters.
 
-### Rules
+Only Students, Class Students and Activities accept both collection views, with Table default. Other collections accept their assigned type only. A view switch preserves scope, matching query, sorting, selected IDs and equivalent loaded position. Column keys/order are versioned per-account/school/collection browser preferences, not permission grants. Unsupported/obsolete keys fall back to declared defaults; missing browser storage must not block the collection.
 
-1. **One query function per route** — named `query<Scope><Entity>Page` (e.g. `querySchoolStaffPage`, `queryClassEvaluationsPage`). Colocate with the route as `<feature>.queries.ts`.
-2. **Fetch the minimum** — filter server-side or client-side to route params (`classId`, `periodId`, etc.).
-3. **Seed route state inside `load`** — not a global store.
-4. **Views read route state** — `PageQuery` owns loading / error / empty status only.
-5. **`+page.svelte` orchestrates** — query + `DataState` + thin wiring; no entity rendering logic.
+Offsets/cursors, loaded batches, total/unknown-total, load-more status and request generations live in route state, not URLs. Infinite loading appends within the same query generation and deduplicates stable IDs. A failed next batch retains rows and retries that batch. Search/facet/scope changes clear batches, cursor and selection. Same-scope refresh retains valid rows and position until replacement; late previous-query pages must not append.
 
-### URL filters and pagination
+The Class Students view reads 30 authorized active placements per page and uses the exact server total for its header. Search matches the displayed pupil name literally. Dates for average marks come from the selected period. The detail drawer reads the selected pupil independently of loaded pages. Export requests the class document for the current class and ID cards for the complete matching membership, including pages the user has not opened. A school, class, filter or permission change invalidates an in-flight export selection.
 
-- **URL** → search, facet filters, page/offset keys (`q`, `class`, `status`, …)
-- **Route state** → loaded pages, `total`, `loadedVersion`
-- **List view** → reads state; never fetches
+Bulk selected IDs are transient state, not the drawer’s open record. Selection mode is transient collection state. Entering it swaps the pinned rightmost table header/menu cells for checkboxes without changing column widths, sort or scroll position. Clear selection empties IDs while retaining the mode; Exit selection empties IDs and exits the mode. Header checked/mixed state derives only from currently selectable loaded rows; zero such rows disables the control. Customization changes preserve selected IDs, query, sorting and scroll position; opening or closing Customize has no query effect. The hidden active sort field/direction remains described beside title/count. Popup dismissal restores focus to its header trigger; exiting selection through its bar restores focus to that trigger when present, otherwise to the collection menu. The header checkbox selects loaded eligible rows and labels that scope. All-matching selection requires explicit server support/count; no unseen selection may be implied. Opening inspection and switching view preserve selection; query/scope changes clear it, permission loss removes ineligible IDs. Mutation effects reconcile deleted/changed rows and counts from authoritative responses.
 
-Filter state uses `ListFiltersState` with `read*ListFilters` / `write*ListFilters` helpers from `lib/list/`.
-
-### `PageQuery` contract
-
-`PageQuery` caches by URL-derived key. **Entity payloads are not in the cache** — only `PageLoadMeta` status. When a route layout unmounts, call `releaseRoutePageQueryOnDestroy(getUrl)` so the next visit re-runs `load` and seeds a new state instance.
-
-The app shell must own academic-context invalidation. When school, academic year, or period changes, the central shell mechanism shall:
+## 4. Addressability and history
 
-1. Clear affected `PageQuery` cache entries.
-2. Invalidate the active route state (`invalidateIfStale()` or a route-scoped refresh callback).
-3. Preserve the current route URL unless the selected scope makes the route inaccessible.
+Pathname owns module/collection, selected record and named domain tabs. Search parameters own filters and overlays/tasks:
 
----
-
-## 5. Drawer detail and tab routes
-
-### List + drawer
-
-Complex entities use optional `[[id]]` segment. The list layout persists; the drawer opens when `id` is present.
-
-```
-/school/students           → list only
-/school/students/stu-1     → list + drawer (default tab)
-/school/students/stu-1/guardians → list + drawer (guardians tab)
-```
+| Key | Required meaning |
+| --- | --- |
+| `modal`, `modalTarget` | Bounded form/confirmation kind and target when not in pathname |
+| `modalStep`, `modalTab` | Bounded form's meaningful step/panel; `account-profile` uses `modalTab` values `profile`, `notifications` or `security` |
+| `task`, `taskTarget` | Focused workspace kind and durable target/batch identity |
+| `taskStep`, `taskPanel` | Meaningful workspace step/panel |
+| `view` | Assigned entity collection mode `list` or `table` only |
+| `correction` | Selected correction request in its queue |
+| `gradeLevel`, `levelQ`, `year`, `date`, `rosterAt` | Declared structural/date context of the corresponding feature |
 
-### Tabs are nested routes — not `?tab=` query params
+Every route must allow-list kinds/steps/panels/views and validate target/context/permission before loading or submitting. Unsupported values canonicalize to the nearest valid URL with replace, with an explicit message for inaccessible/deleted targets. Staff permission forms expose `default-scopes` and `apply-profile`, including a saved binding in `modalTarget`. Account `unlink` and correction `action` are the established feature-specific confirmation selectors; they follow the same bounded-form state contract.
 
-Each drawer tab is a child route with its own `PageQuery`:
+A form or task must resolve its target from the authorized URL context, never solely from an object retained by a click handler. Draft fields, passwords, OTPs, recovery codes, uploaded file contents and unsaved records must never enter the URL. Safe non-secret draft restoration may use scoped in-memory state/SvelteKit snapshots; sensitive auth state must never persist. `page.state` may carry non-authoritative return/focus metadata, never the only record/task identity.
 
-```
-[[id]]/
-  +layout.svelte           # route-local drawer shell, tab bar (route links)
-  +page.svelte             # default tab content
-  guardians/+page.svelte   # lazy-loaded tab data
-  attendance/+page.svelte
-```
-
-**Ownership:**
-
-- Parent layout state holds the list collection and `selected` record (resolved from `id` param).
-- `[[id]]/+layout.svelte` renders drawer chrome and tab navigation. It may use a shared drawer shell or a route-local shell.
-- Each tab `+page.svelte` runs its own query and writes into a tab slice on the parent state (e.g. `state.tabData.guardians`) or a nested `StudentDetailState` set on the `[[id]]` layout.
-
-**Route-local drawer shell contract:**
-
-- Shell header: entity type chip + close button only.
-- Entity header: `DrawerEntityHeader` for identity, chips, and up to two primary actions.
-- Body: route-link tab bar plus read-only tab content; no open form fields on initial render.
-- Close behavior: header close, backdrop click, and `Escape` navigate back to the list URL and remove modal query params.
-- Layout: full-width mobile, `md:w-1/2` desktop overlay, `shadow-panel`, list remains behind the drawer.
-- Footer: omit when the shell header has Close; if present, Close only.
-
-**Default tab:** `[[id]]/+page.svelte` — URL ends at the entity id with no extra segment.
-
-### Deep-link / not-found
-
-1. Parent list query runs.
-2. Route state resolves `selected` by `id` from its collection.
-3. If record missing after list load → **not found** (close drawer, optional toast).
-4. Optional future enhancement: `fetchRecordById` fallback for records outside list scope.
-
-### Drawer sync
-
-Drawer open requires: parent route query finished **and** `selected` resolves in route state (or explicit not-found handling). Do not block on unrelated routes or collections.
-
----
-
-## 6. Version ledger
-
-### Purpose
-
-Coordinate cross-route freshness without a global entity store. When any route mutates students, other routes holding student data can detect drift and refetch.
-
-```ts
-// lib/navigation/route-version-snapshot.ts
-export class RouteVersionSnapshot {
-  constructor(private readonly families: readonly EntityVersionKey[]) {}
-  markLoaded() { /* snapshot entityVersions[f] for each family */ }
-  isStale() { /* true when any family drifted */ }
-}
-```
-
-Register pull-based invalidation in the route layout:
-
-```ts
-registerVersionInvalidation(pageState); // calls invalidateIfStale() after navigate
-```
-
-### API
-
-```ts
-// lib/entity-versions.svelte.ts
-export class EntityVersions {
-  students = $state(0);
-  guardians = $state(0);
-  staff = $state(0);
-  // …
-
-  bump(key: EntityVersionKey) {
-    this[key]++;
-  }
-}
-
-export const entityVersions = new EntityVersions();
-```
-
-### Rules
-
-| Rule | Detail |
-|------|--------|
-| **Bump after server success** | Apply optimistic state before the request, but bump versions only after the request succeeds and any `onSuccess` completes |
-| **Bump per affected entity family** | `students`, not per-record id; cross-entity writes bump every affected family (`students` + `guardians`, etc.) |
-| **Same-route mutations** | Patch local state directly; bump for other routes |
-| **Invalidation is pull-based** | Active route states call `invalidateIfStale()` on navigate or focus — not a global push sync |
-| **Track every loaded family** | Route state keeps a `RouteVersionSnapshot` for each entity family in its slice; `markLoaded()` after fetch, `isStale()` before refetch |
-| **Start coarse** | Add per-scope versions only if profiling shows refetch cost |
-
----
-
-## 7. Mutations
-
-All writes go through a route state method. The method must call the API client through a mutation runner that satisfies the contract below. The runner may be shared infrastructure or route-local when decoupling a route from legacy primitives.
-
-### Mutation runner contract
-
-```ts
-type RouteMutationOptions<T> = {
-  request: () => Promise<T>;
-  apply?: () => void;
-  rollback?: () => void;
-  onSuccess?: (result: T) => void | Promise<void>;
-  successMessage?: string;
-  errorMessage?: string;
-  versionKeys?: EntityVersionKey[];
-};
-```
-
-Execution order is mandatory:
-
-1. Run `apply` before `request`.
-2. Run `rollback` only if `request` or `onSuccess` fails.
-3. Run `onSuccess` after server success.
-4. Bump every `versionKeys` entry after `onSuccess` completes.
-5. Show `successMessage` after version bumps.
-6. Show `errorMessage` or the parsed server error after rollback.
-
-### Standard shape
-
-```ts
-async updateStudent(input: UpdateStudentInput) {
-  const previous = this.students.find(s => s.id === input.id);
-  await runStudentRouteMutation({
-    request: () => api.updateStudent(input),
-    apply: () => {
-      this.patchStudent(input.id, input.patch);
-    },
-    rollback: () => {
-      if (previous) this.patchStudent(input.id, previous);
-    },
-    successMessage: input.successMessage,
-    errorMessage: input.errorMessage,
-    versionKeys: ['students'],
-  });
-}
-```
-
-### Rules
+Opening inspection/form/task and switching domain tabs or substantive steps creates history entries. Search typing and immediate facet changes replace the current entry. A form inside a task may add a bounded confirmation entry without losing task identity. Browser Back/Forward must reconstruct the corresponding view subject to permission and dirty guards, not repeat commands.
 
-| Rule | Detail |
-|------|--------|
-| **Default: optimistic** | Paired `apply` + `rollback` for any mutation that changes visible data |
-| **Rollback required for visible changes** | If `apply` changes route-visible data, `rollback` must restore the previous snapshot or remove the optimistic record |
-| **No full shell refresh** | Do not refresh the app shell for record edits |
-| **Targeted refetch** | When the server generates derived data, refresh only that tab/query domain in `onSuccess` |
-| **Creates** | `apply` appends optimistic record; reconcile id on success if server assigns one |
-| **Deletes** | `apply` removes from collection; `rollback` restores snapshot |
-| **Toasts** | Success/error feedback is mandatory; no silent failures |
-| **Version keys** | `versionKeys` defaults to the primary entity family only when the write affects exactly one family; cross-entity writes must pass every affected family explicitly |
+School/Class student Report card selection is URL-backed by `reportPeriod` (a period ID or `annual`) and optional `annualTarget` (a saved aggregate's target period ID). `reportVersion=draft` explicitly selects an available revised draft; otherwise the published result stays visible. Switching the selected period clears revision selection. Subject comment dialogs use modal=report-comments and modalTarget equal to the captured section ID. Invalid or read-only targets cannot submit. Failed saves retain text and version; successful saves refresh the result and restore focus to the subject menu. The synthetic annual selection never becomes the shared academic period ID. Queries load authorized student/year results across classes and retain identity by student, school, year and effective permissions. Earlier responses cannot populate a new scope. Back/Forward, action dialogs and Close preserve collection context. Successful report mutations refresh the selected result and actions; denied, failed, loading and empty reads remain distinct.
 
-### Mutation tiers
+School/Class student Enrollment uses the canonical `/enrollments` route. Legacy `/profile#schooling` links and Profile links to annual declaration or optional subject forms resolve to Enrollment in the same drawer context with all query parameters. Legacy progression links open the read-only Enrollment tab and clear the obsolete modal parameters. Subject-specific links open the multi-subject form for that class. Enrollment independently loads annual declarations and optional subjects. Persistent student drawer placement data supplies the header date and history availability across all tabs. Its identity includes student, school, selected year and effective permissions, with stale results discarded and successful assignment/transfer invalidating it. The header opens full history at modal=placement-history in the current tab, with loading, denied, empty and retry states. Back/Forward and Close preserve the originating tab and collection context. Profile independently loads portrait, health, guardians and notes. Medical reads require `STUDENT_HEALTH_READ`; denied health cannot discard notes. Section failures expose local recovery rather than empty success or closing the identity drawer. Status changes use `modal=change-status`, the existing permission/command and a bounded form. Related guardian navigation retains the student origin, collection context, scroll and focus for contextual Back; origin metadata never authorizes the destination.
 
-```
-Tier 1 — Optimistic patch (preferred)
-  apply / rollback on route state + versionKeys bump after success
+### 4.1 One drawer, Back and Close
 
-Tier 2 — Targeted domain refresh
-  onSuccess: re-run the affected tab query or state.refetch()
+Following a related record must replace the current drawer, retaining an internal origin descriptor: owning collection URL and matching query, originating record/tab, scroll anchor/offset, loaded extent and focus key. Cross-feature replacement may navigate to the target's canonical route while keeping this origin metadata. It must never render two drawers or require the origin to resolve the target.
 
-Tier 3 — Shell refresh (rare)
-  full shell refresh — academic structure only
-```
+Contextual Back restores the preceding record/tab. Close exits the inspection chain to the originating underlying collection, preserving its query/view/sort, loaded position and focus. A form/workspace opened from inspection returns to that record/tab; Close on a form does not close the record as well. History traversal may be used only when recorded entries prove the destination; otherwise replace to the validated origin/canonical parent without adding a duplicate entry that would reopen the closed surface.
 
-### Inline toggles
+For a direct/reloaded link without valid return metadata, the owning route in the feature catalog is the canonical return. Resolve the record's owning class/level/year first where necessary. Return destinations must be internal, authorized and scope-compatible; arbitrary `returnTo` URLs must not be trusted. An inaccessible/deleted origin falls back to its nearest authorized collection and explains the change.
 
-Boolean / single-value toggles (status chips, attendance checkboxes): flip immediately, persist via state mutation method, toast on success/error.
+Loaded position is an anchor record plus offset, not a promise to reuse stale data. If route state was unmounted, reconstruct the matching scope and fetch enough authorized batches to reach that anchor where available; if deleted/filtered out, use the nearest surviving position. Restore the initiating control if present, otherwise the nearest row, otherwise collection heading. Focus must not land behind an active dialog.
 
----
+### 4.2 Dirty work and running commands
 
-## 8. Smart components
+Close, Escape, backdrop, contextual/browser Back, route/tab/scope change and task Return must guard unsaved changes before committing navigation. Discard changes / Keep editing must identify the pending work; secrets must not be serialized to support the guard. Native unload protection may supplement in-app guards. Clean forms dismiss directly. A confirmed save marks its saved values clean even if refresh fails.
 
-Smart components are shared, self-contained features that are **not** route-bound but large enough to warrant the same structure as a route feature.
+Each task must declare its save unit and persisted/unsaved work. Leaving a durable import/server job stops local polling, not server work. An explicit cancel command is available only when the domain supports it and the caller is authorized. Indeterminate in-flight writes must not be labeled cancelled or automatically replayed. Reopening a durable task resolves current server state before enabling further action.
 
-**Examples:** `StudentPicker`, `StaffPicker`, `GuardianPicker`, `ScopeBuilder`.
+Import task state owns unresolved references, authorized candidate reads, explicit candidate/create-versus-update decisions and their server-persisted internal-ID bindings. Resolution identity includes batch, row, reference field, source revision and complete school/parent/year scope. Late responses for changed inputs are discarded; resolution changes invalidate validation/confirmation. Reopening loads persisted server choices rather than rematching text locally. Confirm binds the exact reviewed resolved IDs and digest; execution cannot substitute a newly matching record. Candidate choice remains distinct from selecting the row’s update target. All candidate and resolution I/O stays in task state, with current authorization checks on the server.
 
-```
-lib/smart-components/
-  student-picker/
-    student-picker-state.svelte.ts
-    StudentPicker.svelte
-    components/
-      StudentPickerRow.svelte
-```
+Import progress polling uses the same scope and response-generation guards as detail reads. Permission loss clears private detail. A failed final-detail read remains retryable without replaying the import command.
 
-| Property | Route feature | Smart component |
-|----------|---------------|-----------------|
-| Bound to URL | Yes | No — props in, events out |
-| Own fetch | Via route `PageQuery` | Self-contained API on open/search |
-| State class + context | Yes | Yes |
-| Version ledger | `invalidateIfStale` on navigate | Optional — refetch open results when version drifts |
-| Location | `routes/.../` | `lib/smart-components/` |
-
-Smart components **do not** read route state from another feature. They fetch what they need independently.
-
----
-
-## 9. Component script (Tier 4)
-
-```svelte
-<script lang="ts">
-  import { getStudentsPageState } from '../students-page.svelte';
-  import StudentsCreateModal from './StudentCreateModal.svelte';
-
-  const state = getStudentsPageState();
-  let createOpen = $state(false);
-  const rows = $derived(state.visibleStudents);
-</script>
-```
-
-**Keep in component:** modal open flags, form binding inside modals, CSS/focus.
-
-**Move out:** fetch, business rules, shared selection, debounce/pagination, mutations.
-
-**Extraction threshold:** extract route state methods when a view script exceeds **~60 lines** of non-markup logic, or when two sibling components share orchestration.
-
----
-
-## 10. Loading and empty states
-
-| State | Owner | UI |
-|-------|-------|-----|
-| Shell not ready | `academicContext.shellReady` | Full-screen spinner in app layout |
-| Route loading | `PageQuery` (`result === null`) | In-content spinner |
-| Empty / error | Route page-load resolver → `PageLoadMeta.status` | `DataState` |
-| Drawer waiting | Route query finished + `selected` resolves | Open drawer; otherwise close |
-| Tab loading | Tab route `PageQuery` | In-drawer `DataState` or section skeleton |
-
----
-
-## 11. SSR
-
-- No user-specific mutable module `$state` during SSR.
-- Guard `localStorage` with `browser`.
-- Route state is created per navigation on the client; layouts recreate state when scope params change.
-
----
-
-## 12. Legacy `detailDataContext`
-
-The session-wide entity store (`lib/detail-data/context.svelte.ts`) is **deprecated for new work**. Existing screens may still use it during migration.
-
-**New features must:**
-
-- Own entity data on route state
-- Bump `entityVersions` via mutation `versionKeys`
-- Colocate state and components under `routes/`
-
-Migrate existing routes incrementally; do not extend `detailDataContext` seed methods for new entity types.
-
----
-
-## 13. Anti-patterns
-
-| Do not | Do instead |
-|--------|------------|
-| Load module entities at app bootstrap | Shell + current route only |
-| Seed a global entity store on route load | `state.seed()` on route state |
-| Put feature views in `lib/components/school/…` | `routes/.../components/` |
-| Put feature state in `lib/<domain>/…` | `routes/.../*-page.svelte.ts` |
-| Fetch in component `$effect` | Route `PageQuery` or smart component state |
-| Full shell refresh after saving a record | Optimistic patch on route state |
-| `?tab=` for drawer tabs | Nested child routes under `[[id]]/` |
-| `apply` without `rollback` | Always pair them |
-| Smart component reads another route's state | Self-fetch via smart component state |
-| `onclick={state.reset}` | `() => state.reset()` or arrow method |
-
----
-
-## 14. Testing
-
-- **Route state classes** — unit-test `seed`, `patch*`, `filterVisible`, mutation apply/rollback with Vitest (`new StudentsPageState()`, mock API). No Svelte mount required.
-- **Route queries** — unit-test `load`, `hasItems`, and state seeding with mocked API.
-- **Loading contracts** — `*.loading.test.ts` with `createRecordingSchoolClient` to assert payloads and request counts per route.
-- **Version ledger** — test that mutation bumps every affected version key and `invalidateIfStale` triggers refetch.
-- **Detail routing** — test `selected` resolution and missing-id handling from route state.
-- **Smart components** — unit-test picker state search and selection independently of routes.
-
----
-
-## 15. Agent checklist
-
-- [ ] Route state class colocated under `routes/.../*-page.svelte.ts`
-- [ ] Route components under `routes/.../components/` — not `lib/components/<domain>/`
-- [ ] One `query*Page` per route; `load` seeds route state
-- [ ] Views read route state — `PageQuery` supplies status only
-- [ ] Mutations on state class via a mutation runner with `request`, paired `apply` / `rollback`, toasts, and `versionKeys`
-- [ ] Successful mutation bumps `entityVersions` for every affected entity family
-- [ ] No full shell refresh except academic-structure changes
-- [ ] Drawer tabs are nested routes under `[[id]]/`
-- [ ] No fetch in component `$effect`
-- [ ] Smart components in `lib/smart-components/` with own state — no route state reads
-- [ ] No new `detailDataContext` seeding
+## 5. Inspection and independent tabs
+
+A persistent collection layout owns its rows and selected-record resolver. `[[id]]` or the declared detail path opens the one inspection shell; child routes own independent tabs. Drawer type/Back/Close, identity/actions and body must satisfy the app-shell dimensions and scroll contract. No default editable fields, single-tab strip or global footer actions.
+
+The default domain is available at the record path; named tabs have child paths. Each can seed a parent tab slice or nested detail state through its own PageQuery, without requiring a prior tab visit. Unauthorized domains are omitted and direct access is denied; a partial restriction must not appear as no records.
+
+When an ID is absent from loaded rows, resolve it through the authorized detail query independently of filter/cursor. A loading drawer shows identity skeleton and local progress; read failure shows Retry, denied/not-found shows explicit state and Close. It must not silently close during loading or substitute a different record. A failing optional tab must not blank the identity. Related sections and direct links preserve the same data contract.
+
+## 6. Version ledger and refresh
+
+`entityVersions` contains monotonic entity-family counters only. `RouteVersionSnapshot` tracks every family loaded by a state; `registerVersionInvalidation` calls `invalidateIfStale()` on navigation/focus. Invalidations are pull-based, not global push entity synchronization. Same-route writes reconcile local state and bump families for other owners. Cross-entity writes bump every affected family; school settings and period definitions have their own families.
+
+`VersionedRouteQuery` retains last visited query/URL metadata while data remains on tab state. Refresh only visited stale tabs; abort/clear on drawer teardown. Failed/aborted background refresh remains stale for later retry. Confirmed partial import writes must invalidate their affected domains even if other rows fail. Coarse family counters are the default; scope refinements require demonstrated refresh cost.
+
+## 7. Mutation semantics
+
+All writes must use owner-state methods and a mutation runner accepting `request`, optional paired `apply`/`rollback`, `onSuccess`, localized success/error messages and explicit `versionKeys`. No generic automatic write retries.
+
+Required order:
+
+1. If the operation meets the reversible-patch rule below, apply its captured patch before the request.
+2. On apply/request failure, restore the captured snapshot; preserve form drafts and parsed localized errors.
+3. After confirmed server success, reconcile result and run `onSuccess`/targeted read refresh.
+4. After `onSuccess` settles, bump every affected version key even when the read refresh failed.
+5. Report confirmed success or Saved, refresh failed. A failed read must never roll back or resend the successful write.
+
+Optimism is bounded to reversible local record patches with a valid rollback. Financial/authentication/permission-review/revision-sensitive operations must await authoritative success. Create/delete may patch optimistically only under that rule; server IDs and derived fields reconcile on success. Use targeted domain refresh, not full shell refresh, for derived results. Writes must capture target/auth/school/year and reject late UI publication into a different context.
+
+HTTP 409 requires reload-and-review guidance, not blind retry. Family-feedback domain codes must map to prerequisite messages; a rejected lifecycle command reloads that campaign once without repeating the command. Changed form input invalidates reviewed previews. Duplicate submit remains disabled while pending; stable request identities required by a domain survive safe explicit retry.
+
+Drawers are read-only. Boolean/status toggles are not a general mutation exception. X-REVIEW-DECISION permits named lifecycle actions; X-PERMISSION-ORDER permits explicit binding reorder; X-PERIOD-GRID permits calendar gestures; X-SCHOOL-SETTINGS permits per-slot immediate asset saves. Each uses the same authorization, state, pending/error and confirmed-write rules. Attendance cells may be editable only inside the assigned recording form/workspace.
+
+## 8. State semantics and feedback
+
+| State | Owner and required outcome |
+| --- | --- |
+| Shell pending | Shell progress with accessible label; no unrelated entity hydration |
+| Initial route/detail/tab load | Owner skeleton/status; no stale cross-scope content or fake totals |
+| Refresh | Retain valid same-scope content, position and selection with refresh indicator |
+| Loading more / failed append | Retain rows, trailing status or Retry; do not replace with empty |
+| No records / no matches | Successful authorized query; distinguish truly empty scope from search/facets, name applicable recovery |
+| Denied | Explicit access state; no empty-success message or forbidden data |
+| Unavailable | Unsupported/missing capability or absent persisted detail; distinct from denied, failed and successful empty reads. Retry only for a meaningful read or capability recheck; never invent a write or fabricate historical values |
+| Failed read | Local error and safe read Retry; unknown values do not become zero |
+| Failed write | Retain draft, restore any optimistic snapshot, explain safe next step |
+| Confirmed write, failed refresh | Saved outcome retained; retry reads only |
+
+Announce relevant outcomes in the active locale without repeatedly announcing the full list. Focus and scroll restoration are state responsibilities shared with the shell, not incidental DOM timing. Open record derives from the active inspection target; bulk selected derives from the selection set; keyboard focus belongs to the focused target. They must remain independent through view changes, inspection and return, with presentation from [design-language §3.1](design-language-spec.md#31-collection-row-states). Form opening/loading must use app-shell §4.1 focus rules without stealing focus after user navigation. Keyboard submission must use the existing guarded validation/mutation path; destructive confirmation requires explicit activation and IME composition must never submit. Server data is authoritative; “Not provided”, “Unavailable”, “Restricted”, zero and false must remain distinguishable through selectors and renderers.
+
+## 9. Browser and authentication boundaries
+
+No user-specific mutable module state is allowed during SSR. Browser storage access must be guarded and failure-tolerant. Route instances are client-scoped and recreated/cleared on incompatible scope changes; views must not share one user's payloads with another. Authentication state is independent of school actors. Phone availability is capability-discovered and fails closed to email-only; normal verified-email/authenticator/recovery flows remain available.
+
+## 10. Feature-specific state contracts
+
+### Account dialog and section state
+
+Opening the account trigger must use `modal=account-profile`, with `modalTab=profile|notifications|security` and Profile as the default. Invalid sections canonicalize to Profile without changing the underlying route or its collection query. Opening and changing sections are history entries; Close removes the account surface and its owned query state, restores the invoking route/control and must not discard unrelated filters, detail targets or background history.
+
+Shell-owned account state must own the active dialog and return metadata; independent section owners provide Profile, Notifications and Security data/actions keyed by authenticated account and applicable actor identity. Section navigation must not merge business profile grants with account authority. School selection is not required for Security. Section failures/loading are local and leave navigation/Close available. Late responses from a replaced actor or unmounted section must not publish into a new section/session.
+
+In-workspace links to account settings open the corresponding dialog section. `/account/notifications` and `/account/security` remain direct-entry pages reusing the same section content and workflow ownership; they must not require an underlying collection. Security works before school creation. A valid captured return restores its origin; without one, Close/Return uses the authorized workspace landing when available or the account entry surface when no workspace exists. No external or unauthorized return destination may be accepted.
+
+Section changes, Close, Escape, Back and Sign out must guard unsaved section edits before changing state. Each section owns its save and confirmed-result state; no global Save may combine unrelated commands. Reload reconstructs the section from the URL but restarts any sensitive authentication challenge. Leaving/unmounting a challenge clears its transient secrets and rejects late responses; it does not reverse a confirmed contact or authenticator change. `unlink` remains the addressable confirmation selector within Security, including a dialog opened with `modalTab=security`. Dismissing that confirmation restores Security rather than closing the whole account dialog.
+
+### Account authentication flows
+
+`/account/security` is an Account-level route, independent of a selected school profile. Removal confirmation is addressable with `?unlink=<identifier-id>`. OTP/TOTP challenges, enrollment secrets and recovery codes stay in the mounted authentication workflow state and never enter URLs, browser storage, or entity caches. Reloading an in-progress challenge restarts authentication. Security mutations require fresh authentication; sensitive enrollment/recovery submissions are pessimistic and never optimistic.
+
+The registration proof stays in mounted authentication state and never enters a URL, browser storage, entity cache, log or capture. Changing the email, restarting, reloading or leaving the flow discards the proof. An expired proof requires fresh verification. Changed terms require acceptance of the current version before submission; they do not require another OTP while the proof remains valid. If the completion response is lost, check the session before offering fresh verification; do not replay creation automatically. Preserve the validated return destination or invitation through registration and MFA.
+
+Authentication invitation acceptance uses route-owned I/O with its existing explicit committed-write/session-refresh handling; a failed session refresh must not repeat a confirmed acceptance. Credentials and form drafts remain local to the view.
+
+### Correction route state
+
+`corrections-page.svelte.ts` owns the scoped queue and selected request. Filter options must come from the authorized query scope, not just its loaded batch. URL keys are workflow, status, classGroupId, teacherSubjectId, studentId, search, from, to, correction and action. Loaded batches and the next offset stay in route state; filter/scope changes reset to the first batch, and stale pagination responses cannot append to a newer collection. The URL-selected inspection request persists on reload; transient bulk selection does not. Decisions carry the displayed request version; stale review must reload before deciding. Mutations retain filters and refresh the queue.
+
+### Conversation route state
+
+The `/school/messages` layout owns its list, selected thread, read positions, infinite-loading batches and transient reply draft through MessagesPageState and PageQuery. Optional conversation type, status, order, selected conversation and reply-modal state are reconstructed from the URL. Immutable messages use command request identities; successful replies/resolution bump inbox versions and refresh the owning route. Identity switches clear content and drafts and discard stale completions. Refresh all loaded conversation batches every 15 seconds and on visibility resume; stop when hidden or unmounted.
+
+Messaging has one initial/identity query owner: the identity-keyed `PageQuery`. Its query key tracks pathname and queue filters, excluding reply modal navigation. Polling and visibility refresh retain stale-response guards and reviewed-version reply conflicts.
+
+### Timetable generation
+
+Configuration Tools owns the generation workspace and submits the selected class IDs in one `generateSchoolTimetable` request. The backend transaction preserves protected sessions and replaces only eligible slots. On success invalidate planning once and show generated-session results. On failure retain the previous timetable; there is no partial class-by-class success or publication phase. Unsupported publish/republish URLs canonicalize to Tools because generation has no publication phase. `timetableGenerated` is a boolean provenance marker, not a lifecycle state.
+
+### School and grading-scale editors
+
+School profile section modals are `identity`, `issuing`, `location`, and `assets`; there is no page-wide edit modal. The dedicated `/configuration/grade-scales` page owns `scale` for expansion plus `create`, `edit`, `delete`, `add-interval`, `edit-interval`, and `delete-interval` modals. Interval targets include scale and interval IDs. Level/year report-settings mutations carry optional passThreshold; null clears it. Generation captures it without updating existing results. Legacy scale URLs retain their search parameters when redirecting.
+
+
+### Level configuration scope
+
+`/configuration/structure/{details|subjects|classes}` uses `gradeLevel` as its URL-backed level selection and `levelQ` for level search. Switching level resets its child collection query and detail context after dirty guarding. Switching Details/Subjects/Classes preserves each child collection query independently while closing incompatible inspection/form targets. The parent retains the level settings state; child routes own their collections and drawers. The level form owns metadata and grading drafts with one Save action and URL-backed calculation confirmation. Keep the opened policy revision and retain drafts after errors; after a partial save, retry only unsaved changes using the same created level ID. Legacy `level-grading` links canonicalize to `edit-level`. Deep-linked subject/class records resolve their actual level before canonicalizing the filter. Subject reads query grade-level allocations by level and academic year, then only their linked subjects and chapters; an empty year must stay empty. Page query keys include level and academic context, and aborted/stale loads cannot seed a newer selection. Subjects use an uncached PageQuery because route state retains only the active slice. Old configuration links redirect into this hierarchy with valid modal and tab context preserved.
+
+### Staff permission presentation
+
+Staff detail tabs are Profile and Permissions; legacy staff Assignments child routes redirect to Permissions with query parameters preserved and do not load assignments. Permissions route state retains structured scope-render results for effective tags and separately renders saved default selections. Late scope-label loads must not overwrite a newer school/year or refresh. Disclosure state follows binding identity across reorder and resets when the staff, school or year changes.
+
+Permission forms share a preview state owner that captures complete immutable command snapshots and checks payload, active form session, and request generation before publishing results. The staff page owns combined creation-form profile/catalog data, loading, errors, retry, and cancellation on school or form-session replacement.
+
+### Teacher timetable agenda
+
+The teacher timetable tab owns the full-year event collection keyed by teacher, school, selected academic year, year bounds and school time zone. Use the existing date-range query with UTC bounds covering the school's civil year, then trim and group by local start date. Reject late responses after identity changes. Date controls use `?date=YYYY-MM-DD`; legacy `week` values become date targets. Date-only navigation never invalidates the data cache. Render day groups in batches of 30 through `InfiniteList`, reveal the target before scrolling the timetable session container, and preserve all earlier groups. Keep at most one temporary empty target day. Register planning/teacher/subject invalidation and preserve existing authorization and occurrence membership.
+
+### Modules in the grade-level Subjects tab
+
+SubjectsPageState and its PageQuery load the authorized level/year report configuration, including modules, subject summaries and the configuration revision. Chapter details load only with curriculum-read authority. Scope identity includes school, academic year and grade level. Changes invalidate subjects and reportCards version families.
+
+Module modals are `module-create`, `module-edit`, `module-members`, `module-delete`, and `report-settings`; the target is a module ID. Capture scope/revision when opening and submit expectedRevision with each command. Keep user input after a failed or stale save. Existing subject modal and drawer navigation remains unchanged. Module grouping uses the entire authorized result set before search/category filtering. Legacy template links redirect to Subjects with the grade-level selection and no retired modal target.
+
+### Activity-log reads and inspection
+
+`/configuration/tools/activity-log` owns its school-scoped Table and `/configuration/tools/activity-log/{eventId}` its read-only inspection. Query identity must include authenticated account, effective audit-read scope, selected school, search, date range, actor, domain/action, outcome and the explicit academic-year filter. That year filter defaults to All years; the sidebar year must not silently narrow history. The public read must apply school scope and authorization before search/facets/counts/batch loading and event lookup. A missing audit capability is Unavailable, not an empty successful history or permission to read private storage.
+
+On entry without date bounds, materialize the last 30 days ending at entry time as explicit URL bounds; reload and detail navigation retain that same range. Reset restores a fresh last-30-days range and unrestricted facets while keeping search and school. Search/facets/order are URL state; loaded batches/cursors stay in owner state. Newest-first ordering must use stable event-ID ties. Stale loads after a school, identity, filter or permission change must be aborted/discarded; no prior school's history may remain visible.
+
+An event outside the loaded batch must resolve through its authorized public detail read. No event query or inspection may execute a command, replay a receipt or mutate its source record. Stored changed values must remain immutable historical facts; missing snapshots cannot be synthesized by reading today's record. Event metadata and sensitive related content require their own authorized projections. A denied related-record read must not turn the authorized event into a zero/empty result or leak restricted details.
+
+Related links replace inspection and retain Back to the event. Close restores the log's matching query, sort, loaded position and focus; a direct link closes to the canonical log page. Failed list/detail reads retain independent Retry behavior. Initial load, refresh, load-more failure, no recorded events, no matches, denied and unavailable states must stay distinct. There is no mutation runner, bulk selection, export or replay workflow for this surface. The contract requires a dedicated public audit read capability without prescribing a backend endpoint or changing existing transaction semantics.
+
+### Finance reads and surfaces
+
+The Fees list, school/year overview and selected fee load independently. Billing selected charges load by ID independently of list pagination. Billing child paths `/{chargeId}/payments` and `/{chargeId}/history` share the persistent drawer header and lazily load account settlement history filtered to the selected charge. Preserve loaded detail across tab changes. Fee detail is `/finance/fees/{feeId}` with ordered sections and no one-tab navigation. Old fee edit/archive modal links canonicalize to that drawer while preserving filters; modal query keys remain compatible. Closing a modal restores its originating tab; closing a drawer restores the filtered parent list using route-surface history without duplicate entries.
+
+Named reads `getFinanceOverview`, `getFeeFinanceOverview`, `getFinanceBillingPage`, `getFinancePaymentsPage`, `getFinanceBillingDetail` use trusted tenant/year/resource scopes before aggregation, count, pagination and export. Preserve fee membership through charge → service enrollment → catalog service, including cancelled enrollments. Scope summaries to PAYMENT_READ records; keep report permission for checks. Summary data errors are independent of catalog errors and never represented as zero.
+
+Query identities include school, year, selected entity, relevant filters and authorization context. Discard stale responses on workspace changes; guard user-initiated dirty exits before clearing drafts, and clear immediately on authentication loss. Route-owned payment drafts retain user input after failed commands. All financial mutations invalidate affected overview, fee, billing, payment and student-finance state via the version ledger, with authoritative refresh instead of speculative financial totals. Keep existing commands/models and account invoice generation.
+
+### Annual and optional directory data
+
+Annual-profile query identities include authenticated subject, school, person and academic year. Directory sidecar identities additionally include the loaded person IDs and selected column keys. Abort/stale-context guards prevent earlier requests from populating a later context. State-owned widget queries which cannot restore their state from a cached payload disable PageQuery caching. Queries batch selected optional groups and never issue a request per row. Column visibility cannot authorize a read.
+
+Profile edits preserve omitted values and clear only explicit nulls. They must retain canonical name components, full guardian contact collections, arbitrary medical text, graduated lifecycle state and exact unmodified validity instants. Failed saves preserve the draft. Audit actors, revision/sequence counters and calculated results are server-controlled.
+
+### Subject participation routes
+
+The shared student Enrollments owner loads `getStudentSubjectEnrollments`; the class-subject Students route loads `getClassSubjectRoster`. Optional writes use `manageStudentSubjectEnrollments`, a stable retry request identity and expected offering revisions. The `subjectEnrollments` version key invalidates both owners. Subject mutations use URL-backed modals (`subject-selection`, `subject-roster`); the roster date is persisted as `rosterAt` in the URL.
+
+Participation forms initialize only after their URL target has loaded, retain annual/period choices and request identity on roster conflicts. No participation date editor is exposed. Bulk actions resolve eligible placements and current participation independently of the displayed roster date. Refresh the roster revision and saved participation selections after conflicts; those records are not an edit-history UI.
+
+### Durable imports and focused entry
+
+Timetable preparation uses canonical setup with subjects, periods and advanced panels. Legacy preparation addresses preserve valid panels; preferences defaults to periods and other preparation addresses default to subjects. Success and error remain addressable. Panel and result changes retain one draft; exits guard dirty work. Preferred IDs are filtered against current teaching periods before submission, and unavailable selections are reported. School-default editing owns an independent draft. Import retains its existing batch identity, stages and polling under the inset shell.
+
+
+Tools import state must retain `task=import`, `taskTarget` batch identity and allow-listed task step/panel in the URL. State owns settings, server validation revision/digest, polling, file revisions, preview, explicit reference/target resolutions and execution. Closing stops polling only; reopening queries persisted batch state. Settings/file changes invalidate preview. Confirm sends the exact validated revision/digest. Blocked rows remain visible while ready rows run; partial saved outcomes invalidate their domains and never become an all-or-nothing fiction.
+
+Assessment entry must use `task=grade-entry&taskTarget={assessmentId}&taskPanel=entry`; substantive correction entry must use the same task kind with `taskPanel=correction`. The assessment and class must match the authorized detail route. These panels have no task steps. Legacy `modal=request-correction` links must canonicalize to the correction workspace without executing a command. Single-student `modal=grade-entry&modalTarget={studentId}` links must remain bounded forms and must resolve an exact authorized roster member. Individual corrections must use `modal=correct-mark&modalTarget={resultId}` and resolve the exact authorized result in that assessment; unknown or ineligible targets must not fall back to another result.
+
+Grade-entry and class/session-attendance workspaces capture assessment/day/session, school/class/year, roster revision and return context. Separate draft/confirmed/failed units must be visible. Submission, correction, published-result and roster locks remain domain-owned. One daily class command remains one save; per-record operations remain per-record unless the existing command already accepts a batch. A single-record mark/attendance action uses its bounded URL form and the same eligibility.
+
+### Action and filter consistency
+
+An action descriptor's key, target, permission, state reason, label and request must be the same in the authoritative location and any permitted row shortcut. Collection primary action is a menu entry, not an extra URL-independent header control. Opening Filter has no query effect; changing a facet does, reset restores defaults without clearing search/context. Selection clears when the matching query changes. Saved view/columns cannot disclose unavailable fields or authorize requests.
+
+## 11. Conformance evidence
+
+State behavior must be verifiable through owner-state/query tests with mocked APIs and focused navigation scenarios. Required cases are: direct links outside loaded batches; reload and Back/Forward; related-record replacement and Back versus Close; dirty form/task exits; stale/aborted scope responses; Filter reset and view/selection continuity; each empty/denied/failure state; confirmed write followed by failed refresh; partial task completion and durable-job reopening; auth/permission changes; account section reload/history/dirty exits with Security independent of school; separate Inbox recipient/count scopes; report-model search/facet reset; activity-log range persistence, school isolation, missing historical values and independently denied related records. Query tests must verify payload scope and request counts, version tests every affected family, and mutation tests no duplicate committed write. Pure helpers and compiled rune-state suites need no UI mount; keyboard/focus/narrow-screen/200% text acceptance requires surface-level verification. Evidence and implementation findings belong outside specs.
+
+### Subject enrolment editor
+
+The existing subject-enrolment Smart workflow serves every entry point. Student drawer `subject-selection` URLs retain their offering target; teaching `subject-roster` URLs retain their subject path. On School/Class student collection paths, `modal=subject-selection` uses the shared class ID as `modalTarget`. Selected student IDs remain transient page state and are validated against the URL class, active year and authorization. Reload without that selection displays reselection guidance and cannot submit. The list modal manager does not own student-detail modal targets.
+
+Reads are bounded to four concurrent student participation queries and reject stale actor/school/year/form responses. Any missing or invalid recipient blocks the full save. Changed pairs use one existing command with captured per-offering revisions and a 500-operation limit. A failed response preserves the exact command identity; an edited command or refreshed revision gets a new identity. Conflicts reload current choices, retain drafts and require an explicit new submission. Confirmed saves invalidate affected families even if a subsequent read fails. Filter/scope changes clear list selection; inspection and view changes retain it. The common editor guards dirty dismissal and pending submissions.

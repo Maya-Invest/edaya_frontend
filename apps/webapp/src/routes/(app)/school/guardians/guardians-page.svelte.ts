@@ -4,6 +4,7 @@ import type { Guardian, Student } from '$lib/types/school';
 import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 import { fetchGuardianById, loadGuardiansPeopleData, loadGuardiansPeopleDataPage } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readGuardianListFilters, writeGuardianListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
@@ -173,7 +174,12 @@ export class GuardiansPageState {
 		this.listLoading = true;
 		this.fullRosterGuardians = [];
 		try {
+			const schoolId = authSession.schoolId ?? '';
+			if (!schoolId) {
+				return;
+			}
 			const result = await loadGuardiansPeopleDataPage(getBrowserSchoolClient(), {
+				schoolId,
 				offset: 0,
 				limit: SCHOOL_GUARDIANS_PAGE_SIZE,
 			});
@@ -200,7 +206,12 @@ export class GuardiansPageState {
 		const version = this.listRequestVersion;
 		this.listLoadingMore = true;
 		try {
+			const schoolId = authSession.schoolId ?? '';
+			if (!schoolId) {
+				return;
+			}
 			const result = await loadGuardiansPeopleDataPage(getBrowserSchoolClient(), {
+				schoolId,
 				offset: this.guardians.length,
 				limit: SCHOOL_GUARDIANS_PAGE_SIZE,
 			});
@@ -224,7 +235,11 @@ export class GuardiansPageState {
 		this.listLoading = true;
 		this.loadingFullRoster = true;
 		try {
-			const result = await loadGuardiansPeopleData(getBrowserSchoolClient());
+			const schoolId = authSession.schoolId ?? '';
+			if (!schoolId) {
+				return;
+			}
+			const result = await loadGuardiansPeopleData(getBrowserSchoolClient(), schoolId);
 			if (version !== this.listRequestVersion) {
 				return;
 			}
@@ -241,7 +256,7 @@ export class GuardiansPageState {
 	}
 
 	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
+		if (!this.versions.hasLoaded() || !this.versions.isStale()) {
 			return;
 		}
 		await this.refreshList();

@@ -13,9 +13,13 @@ export interface GuardianNotificationSettings {
 	initials: string;
 	subjectId: string | null;
 	hasAccess: boolean;
-	notificationEmail: string | null;
-	notificationPhone: string | null;
-	contactMethods: GuardianRaw['contactMethods'];
+	phone: GuardianRaw['phone'];
+	alternativePhone: GuardianRaw['alternativePhone'];
+	email: GuardianRaw['email'];
+	emailNotificationsEnabled: GuardianRaw['emailNotificationsEnabled'];
+	smsNotificationsEnabled: GuardianRaw['smsNotificationsEnabled'];
+	pushNotificationsEnabled: GuardianRaw['pushNotificationsEnabled'];
+
 	links: GuardianLinkRaw[];
 }
 
@@ -44,9 +48,12 @@ export async function fetchGuardianNotificationSettings(
 		initials: guardianInitials(guardian.firstName, guardian.lastName),
 		subjectId: guardian.subjectId ?? null,
 		hasAccess: guardian.hasAccess ?? true,
-		notificationEmail: guardian.notificationEmail ?? null,
-		notificationPhone: guardian.notificationPhone ?? null,
-		contactMethods: guardian.contactMethods ?? [],
+		phone: guardian.phone,
+		alternativePhone: guardian.alternativePhone,
+		email: guardian.email,
+		emailNotificationsEnabled: guardian.emailNotificationsEnabled,
+		smsNotificationsEnabled: guardian.smsNotificationsEnabled,
+		pushNotificationsEnabled: guardian.pushNotificationsEnabled,
 		links: links ?? [],
 	};
 }

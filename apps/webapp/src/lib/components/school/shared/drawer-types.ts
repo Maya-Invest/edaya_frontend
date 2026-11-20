@@ -1,24 +1,26 @@
-import type { ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
+import type { FamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
+import type { ReportCardResult } from '$lib/types/report-cards';
 import type {
-	ClassNode,
-	GradeLevel,
-	Student,
-	Subject,
-	PlanningEvent,
-	Evaluation,
-	Guardian,
-	StaffMember,
-	Teacher,
-	StudentBilling,
-	SchoolYearEvent,
-	Incident,
 	Activity,
 	Announcement,
 	AttendanceDay,
+	ClassNode,
+	Evaluation,
+	GradeLevel,
+	Guardian,
+	Incident,
+	PlanningEvent,
+	SchoolYearEvent,
+	StaffMember,
+	Student,
+	StudentBilling,
+	Subject,
+	Teacher,
 } from '$lib/types/school';
 
 export type DrawerItem
 	= | { kind: 'student'; data: Student }
+		| { kind: 'catalogSubject'; data: Subject }
 		| { kind: 'subject'; data: Subject }
 		| { kind: 'planning'; data: PlanningEvent }
 		| { kind: 'evaluation'; data: Evaluation }
@@ -32,7 +34,7 @@ export type DrawerItem
 		| { kind: 'level'; data: { label: string; subtitle: string; items: Subject[] } }
 		| { kind: 'activity'; data: Activity }
 		| { kind: 'announcement'; data: Announcement }
-		| { kind: 'reportCardDefinition'; data: ReportCardDefinition }
+		| { kind: 'familyFeedback'; data: FamilyFeedbackCampaign }
 		| { kind: 'reportCardResult'; data: ReportCardResult }
 		| { kind: 'gradeLevel'; data: GradeLevel }
 		| { kind: 'classGroup'; data: ClassNode }

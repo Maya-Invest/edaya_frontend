@@ -1,109 +1,185 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Incident, Student } from '$lib/types/school';
+import { academicContext } from '$lib/academic/context.svelte';
+import { runRouteMutation } from '$lib/api/mutations/route-mutation';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { loadIncidentInvolvements, loadIncidentSanctions, loadIncidentResolveModalData } from '$lib/api/school-life-data';
+import { authSession } from '$lib/auth/session.svelte';
+import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { queryClient } from '$lib/queries/client';
+import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
+import { SvelteMap } from 'svelte/reactivity';
 import { incidentDetailIdFromUrl } from './lib/event-selectors';
-import {
-	ensureIncidentDrawerSelection,
-	loadEventsSlice,
-	querySchoolEventsPage,
-} from './lib/events-queries';
-import {
-	createIncidentOnPage,
-	deleteIncidentOnPage,
-	resolveIncidentWithOutcomesOnPage,
-	updateIncidentOnPage,
-} from './lib/incident-detail-mutations';
+import { readEventsListFilters, writeEventsListFilters } from './lib/events-list-filters';
+import { ensureIncidentDrawerSelection, loadEventsSlice, querySchoolEventsPage } from './lib/events-queries';
+import { createIncidentOnPage, deleteIncidentOnPage, resolveIncidentWithOutcomesOnPage, updateIncidentOnPage } from './lib/incident-detail-mutations';
 
-const EVENTS_VERSION_FAMILIES = ['incidents'] as const satisfies readonly EntityVersionKey[];
-
+const EVENTS_VERSION_FAMILIES = ['incidents', 'students'] as const satisfies readonly EntityVersionKey[];
 const EVENTS_PAGE_STATE_KEY = Symbol('events-page-state');
-
 export class EventsPageState {
-	incidents = $state<Incident[]>([]);
-	students = $state<Student[]>([]);
+    readonly lessonScope = $derived(JSON.stringify([authSession.authUserId, authSession.userId, authSession.schoolId, academicContext.yearId, academicContext.scopeGeneration, authSession.grants]));
 
-	private readonly versions = new RouteVersionSnapshot(EVENTS_VERSION_FAMILIES);
+    loadIncidentLessons(input: { classGroupId: string; selectedId?: string; q?: string; cursor?: string }, signal: AbortSignal) {
+        return queryClient().queries.getIncidentLessonOptions(input, { signal });
+    }
 
-	constructor(private readonly getUrl: () => URL) {}
+    involvements = $state<Awaited<ReturnType<typeof loadIncidentInvolvements>>>([]);
+    sanctions = $state<Awaited<ReturnType<typeof loadIncidentSanctions>>>([]);
+    detailLoading = $state(false);
+    private detailGeneration = 0;
+    async refreshDetail(incidentId: string) {
+        const generation = ++this.detailGeneration;
+        this.detailLoading = true;
+        const client = getBrowserSchoolClient();
+        const names = new SvelteMap(this.students.map(student => [student.id, student.name]));
+        try {
+            const [involvements, sanctions] = await Promise.all([
+                loadIncidentInvolvements(client, incidentId),
+                loadIncidentSanctions(client, incidentId, names),
+            ]);
+            if (generation === this.detailGeneration && incidentId === this.selectedId) {
+                this.involvements = involvements;
+                this.sanctions = sanctions;
+            }
+        }
+        finally {
+            if (generation === this.detailGeneration)
+                this.detailLoading = false;
+        }
+    }
 
-	get selectedId() {
-		return incidentDetailIdFromUrl(this.getUrl());
-	}
+    queryDetail = (url: URL) => resolvePageLoad(url, {
+        empty: () => ({}),
+        load: async () => {
+            const id = incidentDetailIdFromUrl(url);
+            if (id) {
+                await this.ensureDrawerSelection(id);
+                await this.refreshDetail(id);
+            }
+            return {};
+        },
+        hasItems: () => true,
+    });
 
-	get selected() {
-		const id = this.selectedId;
-		if (!id) {
-			return undefined;
-		}
-		return this.findIncident(id);
-	}
+    loadIncidentResolution = (...args: Parameters<typeof loadIncidentResolveModalData> extends [
+        unknown,
+        ...infer Rest,
+    ] ? Rest : never) => loadIncidentResolveModalData(getBrowserSchoolClient(), ...args);
 
-	findIncident(id: string): Incident | undefined {
-		return this.incidents.find(incident => incident.id === id);
-	}
+    async takeOverIncident(incidentId: string): Promise<boolean> {
+        return await runRouteMutation({ request: () => getBrowserSchoolClient().commands.takeOverTeacherIncident({ requestId: crypto.randomUUID(), incidentId }), versionKeys: ['incidents'], onSuccess: () => this.refreshSlice() }) !== null;
+    }
 
-	seed(data: { incidents: Incident[]; students: Student[] }) {
-		this.incidents = data.incidents;
-		this.students = data.students;
-		this.versions.markLoaded();
-	}
+    incidents = $state<Incident[]>([]);
+    students = $state<Student[]>([]);
+    readonly filters: ListFiltersState<{
+        q: string;
+        class: string;
+        category: string;
+        severity: string;
+        status: string;
+    }>;
 
-	appendIncident(incident: Incident) {
-		this.incidents = [incident, ...this.incidents.filter(entry => entry.id !== incident.id)];
-	}
+    private readonly versions = new RouteVersionSnapshot(EVENTS_VERSION_FAMILIES);
+    constructor(private readonly getUrl: () => URL) {
+        this.filters = new ListFiltersState({
+            getUrl,
+            write: writeEventsListFilters,
+            goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+        }, () => readEventsListFilters(getUrl()));
+    }
 
-	removeIncident(id: string) {
-		this.incidents = this.incidents.filter(incident => incident.id !== id);
-	}
+    get selectedId() {
+        return incidentDetailIdFromUrl(this.getUrl());
+    }
 
-	patchIncident(id: string, patch: Partial<Incident>) {
-		this.incidents = this.incidents.map(incident =>
-			incident.id === id ? { ...incident, ...patch } : incident,
-		);
-	}
+    get selected() {
+        const id = this.selectedId;
+        if (!id) {
+            return undefined;
+        }
+        return this.findIncident(id);
+    }
 
-	async refreshSlice() {
-		const data = await loadEventsSlice();
-		this.seed(data);
-	}
+    findIncident(id: string): Incident | undefined {
+        return this.incidents.find(incident => incident.id === id);
+    }
 
-	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
-			return;
-		}
-		await this.refreshSlice();
-	}
+    seed(data: {
+        incidents: Incident[];
+        students: Student[];
+    }) {
+        this.incidents = data.incidents;
+        this.students = data.students;
+        this.versions.markLoaded();
+    }
 
-	queryListPage() {
-		return querySchoolEventsPage(this);
-	}
+    appendIncident(incident: Incident) {
+        this.incidents = [incident, ...this.incidents.filter(entry => entry.id !== incident.id)];
+    }
 
-	ensureDrawerSelection(incidentId: string) {
-		return ensureIncidentDrawerSelection(this, incidentId);
-	}
+    removeIncident(id: string) {
+        this.incidents = this.incidents.filter(incident => incident.id !== id);
+    }
 
-	createIncident(...args: Parameters<typeof createIncidentOnPage> extends [EventsPageState, ...infer R] ? R : never) {
-		return createIncidentOnPage(this, ...args);
-	}
+    patchIncident(id: string, patch: Partial<Incident>) {
+        this.incidents = this.incidents.map(incident => incident.id === id ? { ...incident, ...patch } : incident);
+    }
 
-	updateIncident(...args: Parameters<typeof updateIncidentOnPage> extends [EventsPageState, ...infer R] ? R : never) {
-		return updateIncidentOnPage(this, ...args);
-	}
+    async refreshSlice() {
+        const data = await loadEventsSlice();
+        this.seed(data);
+    }
 
-	resolveIncidentWithOutcomes(...args: Parameters<typeof resolveIncidentWithOutcomesOnPage> extends [EventsPageState, ...infer R] ? R : never) {
-		return resolveIncidentWithOutcomesOnPage(this, ...args);
-	}
+    async invalidateIfStale() {
+        if (!this.versions.hasLoaded() || !this.versions.isStale()) {
+            return;
+        }
+        await this.refreshSlice();
+    }
 
-	deleteIncident(...args: Parameters<typeof deleteIncidentOnPage> extends [EventsPageState, ...infer R] ? R : never) {
-		return deleteIncidentOnPage(this, ...args);
-	}
+    queryListPage() {
+        return querySchoolEventsPage(this);
+    }
+
+    ensureDrawerSelection(incidentId: string) {
+        return ensureIncidentDrawerSelection(this, incidentId);
+    }
+
+    createIncident(...args: Parameters<typeof createIncidentOnPage> extends [
+        EventsPageState,
+        ...infer R,
+    ] ? R : never) {
+        return createIncidentOnPage(this, ...args);
+    }
+
+    updateIncident(...args: Parameters<typeof updateIncidentOnPage> extends [
+        EventsPageState,
+        ...infer R,
+    ] ? R : never) {
+        return updateIncidentOnPage(this, ...args);
+    }
+
+    resolveIncidentWithOutcomes(...args: Parameters<typeof resolveIncidentWithOutcomesOnPage> extends [
+        EventsPageState,
+        ...infer R,
+    ] ? R : never) {
+        return resolveIncidentWithOutcomesOnPage(this, ...args);
+    }
+
+    deleteIncident(...args: Parameters<typeof deleteIncidentOnPage> extends [
+        EventsPageState,
+        ...infer R,
+    ] ? R : never) {
+        return deleteIncidentOnPage(this, ...args);
+    }
 }
-
 export function setEventsPageState(state: EventsPageState) {
-	setContext(EVENTS_PAGE_STATE_KEY, state);
+    setContext(EVENTS_PAGE_STATE_KEY, state);
 }
-
 export function getEventsPageState(): EventsPageState {
-	return getContext<EventsPageState>(EVENTS_PAGE_STATE_KEY);
+    return getContext<EventsPageState>(EVENTS_PAGE_STATE_KEY);
 }

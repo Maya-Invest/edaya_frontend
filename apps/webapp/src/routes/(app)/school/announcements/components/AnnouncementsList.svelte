@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { AnnouncementListFilters } from '$lib/list/list-url-filters';
 	import type { Announcement, AnnouncementPriority, AnnouncementStatus } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -10,12 +11,13 @@
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getAnnouncementsPageState } from '../announcements-page.svelte';
 	import AnnouncementFormModal from './AnnouncementFormModal.svelte';
@@ -46,7 +48,7 @@
 	const statusKeys = ['all', 'draft', 'published', 'archived'] as const;
 	const priorityKeys = ['all', 'normal', 'important', 'urgent'] as const;
 
-	let priority = $state<string>('all');
+	const priority = $derived(announcementsPage.filters.values.priority);
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
@@ -71,7 +73,7 @@
 		if (!value) {
 			return '—';
 		}
-		return new Date(value).toLocaleDateString('fr-FR', {
+		return new Date(value).toLocaleDateString($locale, {
 			day: '2-digit',
 			month: 'short',
 			year: 'numeric',
@@ -88,7 +90,7 @@
 
 	function handleCreated(announcementId: string) {
 		const path = detailHref.schoolAnnouncement(announcementId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 
 	$effect(() => {
@@ -118,24 +120,28 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[announcementsPage.filters.values.status, priority].filter(value => value !== 'all').length}
+		onResetFilters={() => announcementsPage.filters.patchImmediate({ status: 'all', priority: 'all' })}
 		eyebrow={$t('announcements.eyebrow')}
 		title={$t('announcements.count', { n: filtered.length })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => announcementsPage.filters.syncNow()}
 				bind:value={announcementsPage.filters.values.q}
 				oninput={() => announcementsPage.filters.scheduleSync()}
 			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={announcementsPage.filters.values.status}
+				value={announcementsPage.filters.values.status}
+				onchange={value => announcementsPage.filters.patchImmediate({ status: value })}
 				class="h-9 w-44 rounded-full text-xs"
 				options={statusFilterOptions}
 			/>
 			<FilterPanel activeCount={priorityFilterActive} title={$t('announcements.priorityFilter')}>
 				<FilterSelect
-					bind:value={priority}
+					value={priority}
+					onchange={value => announcementsPage.filters.patchImmediate({ priority: value as AnnouncementListFilters['priority'] })}
 					class="h-9 w-full rounded-md text-xs"
 					options={priorityFilterOptions}
 				/>
@@ -143,17 +149,17 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="COMMUNICATION_CREATE"
+				permission="COMMUNICATION_DRAFT_MANAGE"
 				mode="disable"
 				tooltip={$t('announcements.permissionCreate')}
 			>
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('announcements.new')}
@@ -162,15 +168,29 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'announcements.csv',
+					headers: ['title', 'status', 'date', 'targets'],
+					loadAll: async () => filtered.map(announcement => [
+						announcement.title,
+						announcement.status,
+						announcement.publishedAt ?? announcement.createdAt,
+						announcement.targets.length,
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 
-	<AnnouncementFormModal bind:open={createOpen.open} onCreated={handleCreated} />
+	{#if createOpen.open}
+		<AnnouncementFormModal bind:open={createOpen.open} onCreated={handleCreated} />
+	{/if}
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+	<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 		<div
-			class="grid grid-cols-[1.6fr_1fr_1fr_0.8fr] gap-4 border-b border-border bg-secondary/40 px-4 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+			class="grid grid-cols-[1.6fr_1fr_1fr_0.8fr] gap-4 border-b border-border bg-secondary/40 px-4 py-2.5 font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground"
 		>
 			<span>{$t('announcements.titleLabel')}</span>
 			<span>{$t('announcements.statusLabel')}</span>
@@ -219,11 +239,11 @@
 							</span>
 							<div class="flex items-center gap-1.5 text-xs text-foreground/80">
 								<Mail class="h-3.5 w-3.5 text-muted-foreground" />
-								<span class="font-mono tabular-nums">
+								<span class="font-sans tabular-nums">
 									{fmtDate(announcement.publishedAt ?? announcement.createdAt)}
 								</span>
 							</div>
-							<div class="text-right font-mono text-xs tabular-nums text-foreground/80">
+							<div class="text-right font-sans tabular-nums text-xs tabular-nums text-foreground/80">
 								{announcement.targets.length}
 							</div>
 						</button>

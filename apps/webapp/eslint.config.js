@@ -1,3 +1,4 @@
+import { importOrder } from '../../tooling/repo/eslint-imports.js'
 import antfu from '@antfu/eslint-config'
 
 export default antfu(
@@ -16,6 +17,7 @@ export default antfu(
       'src/generated/**',
     ],
     rules: {
+    'perfectionist/sort-imports': importOrder,
       'no-new': 'off',
       'perfectionist/sort-named-imports': 'off',
       'svelte/html-quotes': ['error', { prefer: 'double' }],

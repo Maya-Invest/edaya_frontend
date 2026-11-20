@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { StaffMember } from '$lib/types/school';
 	import type { StaffSortColumn } from '../lib/staff-list-filters';
@@ -12,76 +15,54 @@
 	import ListSelectionBar from '$lib/components/ui/ListSelectionBar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Mail, Plus } from '$lib/icons';
-	import { downloadCsv } from '$lib/list/list-csv-export';
+	import { Plus } from '$lib/icons';
+	import { loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { toast } from '$lib/toast.svelte';
+	import { DirectoryColumnsState } from '$lib/smart-components/directory-columns/directory-columns-state.svelte';
+	import DirectoryColumnData from '$lib/smart-components/directory-columns/DirectoryColumnData.svelte';
 	import { cn } from '$lib/utils';
-	import {
-		cycleStaffListSort,
-		staffListUsesFullRoster,
-
-	} from '../lib/staff-list-filters';
+	import { cycleStaffListSort, staffListUsesFullRoster } from '../lib/staff-list-filters';
 	import { getStaffPageState, SCHOOL_STAFF_PAGE_SIZE } from '../staff-page.svelte';
 	import StaffCreateModal from './StaffCreateModal.svelte';
 
-	const {
-		onSelect,
-		selectedId,
-	}: {
+	const { onSelect, selectedId }: {
 		onSelect?: (member: StaffMember) => void;
 		selectedId?: string;
 	} = $props();
-
 	const staffPage = getStaffPageState();
 	const classes = $derived(staffPage.classes);
 	const selection = new ListSelectionState<StaffMember>();
-
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
 	const createOpen = bindUrlModal(modals, 'create');
-
 	const usesFullRoster = $derived(staffListUsesFullRoster(staffPage.filters.values));
-
-	const filtered = $derived(staffPage.filterVisible(
-		usesFullRoster
-			? (staffPage.fullRosterStaff.length > 0
-				? staffPage.fullRosterStaff
-				: staffPage.staff)
-			: staffPage.staff,
-	));
+	const filtered = $derived(staffPage.filterVisible(usesFullRoster
+		? (staffPage.fullRosterStaff.length > 0
+			? staffPage.fullRosterStaff
+			: staffPage.staff)
+		: staffPage.staff));
 	const windowed = useInfiniteList(() => filtered, SCHOOL_STAFF_PAGE_SIZE);
-
-	const listTotal = $derived(
-		usesFullRoster ? filtered.length : staffPage.totalStaff,
-	);
-	const listLoading = $derived(
-		usesFullRoster ? staffPage.loadingFullRoster : staffPage.listLoading,
-	);
+	const listTotal = $derived(usesFullRoster ? filtered.length : staffPage.totalStaff);
+	const listLoading = $derived(usesFullRoster ? staffPage.loadingFullRoster : staffPage.listLoading);
 	const listLoadingMore = $derived(usesFullRoster ? false : staffPage.listLoadingMore);
-	const listHasMore = $derived(
-		usesFullRoster ? windowed.hasMore : staffPage.staff.length < staffPage.totalStaff,
-	);
-	const listVisible = $derived(
-		usesFullRoster ? windowed.visible : filtered,
-	);
+	const listHasMore = $derived(usesFullRoster ? windowed.hasMore : staffPage.staff.length < staffPage.totalStaff);
+	const listVisible = $derived(usesFullRoster ? windowed.visible : filtered);
 	const listVisibleCount = $derived(listVisible.length);
 	const selectionPool = $derived([...staffPage.staff, ...staffPage.fullRosterStaff]);
-
+	const directoryColumns = new DirectoryColumnsState('staff');
 	const columns = $derived<ListEntityTableColumn[]>([
 		{ key: 'name', label: $t('people.name'), span: 5, spanInSelectionMode: 4, sortable: true },
 		{ key: 'role', label: $t('people.role'), span: 3, sortable: true },
 		{ key: 'classes', label: $t('people.classes'), span: 4, sortable: true },
+		...directoryColumns.columns(listVisible).filter(extra => !['name', 'role', 'classes'].includes(extra.key)),
 	]);
-
 	function classNameFor(classId: string) {
 		return classes.find(entry => entry.id === classId)?.name ?? classId;
 	}
-
 	function loadMoreStaff() {
 		if (usesFullRoster) {
 			windowed.loadMore();
@@ -89,28 +70,30 @@
 		}
 		void staffPage.loadMore();
 	}
-
 	function cycleSort(column: StaffSortColumn) {
 		const next = cycleStaffListSort(staffPage.filters.values, column);
 		staffPage.filters.patch(next);
 		staffPage.filters.syncNow();
 	}
-
-	function exportSelected() {
-		const selectedStaff = selection.resolveSelected(selectionPool);
-		if (selectedStaff.length === 0) {
+	function exportValue(row: StaffMember, key: string) {
+		return key === 'classes' ? row.classes.map(classId => classNameFor(classId)).join('; ') : undefined;
+	}
+	async function exportSelected() {
+		const rows = selection.resolveSelected(selectionPool);
+		if (!rows.length)
 			return;
-		}
-		downloadCsv('staff-selected.csv', [
-			['name', 'email', 'role', 'classes'],
-			...selectedStaff.map(member => [
-				member.name,
-				member.email,
-				member.role,
-				member.classes.map(classId => classNameFor(classId)).join('; '),
-			]),
-		]);
-		toast.success($t('list.exportedCount', { n: selectedStaff.length }));
+		await directoryColumns.exportCsv('staff-selected.csv', rows, columns, exportValue);
+	}
+	async function exportMatching() {
+		const matching = await loadMatchingCollection({
+			isComplete: () => staffPage.fullRosterStaff.length >= staffPage.totalStaff
+				|| staffPage.staff.length >= staffPage.totalStaff,
+			ensureComplete: () => staffPage.loadFullRoster(),
+			current: () => staffPage.filterVisible(staffPage.fullRosterStaff.length > 0
+				? staffPage.fullRosterStaff
+				: staffPage.staff),
+		});
+		await directoryColumns.exportCsv('staff.csv', matching, columns, exportValue);
 	}
 </script>
 
@@ -128,17 +111,17 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="STAFF_CREATE"
+				permission="STAFF_MANAGE"
 				mode="disable"
 				tooltip={$t('staff.permissionCreate')}
 			>
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('staff.addStaff')}
@@ -150,6 +133,7 @@
 			<ListMoreMenu
 				exportOnly
 				onEnterSelectMode={selection.selectionMode ? undefined : () => selection.enterSelectionMode()}
+				onExport={() => void exportMatching()}
 			/>
 		{/snippet}
 	</ListPageHeader>
@@ -160,11 +144,14 @@
 		<ListSelectionBar
 			selectedCount={selection.selectedIds.length}
 			onExport={exportSelected}
-			onClear={() => selection.exitSelectionMode()}
+			onClear={() => selection.clearSelection()} onExit={() => selection.exitSelectionMode()}
 		/>
 	{/if}
 
-	<ListEntityTable
+	<DirectoryColumnData owner={directoryColumns} rows={listVisible} />
+	<ListEntityTable onVisibleColumnsChange={(keys) => {
+		directoryColumns.keys = keys;
+	}} listKey="StaffList"
 		{columns}
 		rows={listVisible}
 		highlightId={selectedId}
@@ -181,47 +168,48 @@
 		total={listTotal}
 		visibleCount={listVisibleCount}
 		onLoadMore={loadMoreStaff}
-		onRowClick={member => selection.handleRowClick(member, onSelect)}
+		onRowClick={onSelect}
 		rowClass={member => !member.isActive && 'opacity-60'}
 	>
-		{#snippet row(member, ctx)}
-			<div class={cn('flex items-center gap-3', ctx.selectionMode ? 'col-span-4' : 'col-span-5')}>
-				<PersonAvatar
-					name={member.name}
-					initials={member.initials}
-					photoUrl={member.photoUrl}
-					size="list"
-				/>
-				<div class="min-w-0">
-					<p class="truncate text-sm font-medium">{member.name}</p>
-					<p class="flex items-center gap-1 truncate text-xs text-muted-foreground">
-						<Mail class="h-3 w-3" />
-						{member.email}
-					</p>
-				</div>
-			</div>
-			<div class="col-span-3">
-				<span
-					class="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground/80"
-				>
-					{$t(`staff.role.${member.role}`)}
-				</span>
-			</div>
-			<div class="col-span-4">
-				{#if member.classes.length > 0}
-					<div class="flex flex-wrap gap-1">
-						{#each member.classes as classId (classId)}
-							<span
-								class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-accent-foreground"
-							>
-								{classNameFor(classId)}
-							</span>
-						{/each}
+		{#snippet cell(member, column, ctx)}
+
+			{#if column.key === 'name'}
+				<div class={cn('flex items-center gap-3', ctx.selectionMode ? 'col-span-4' : 'col-span-5')}>
+					<PersonAvatar
+						name={member.name}
+						initials={member.initials}
+						photoUrl={member.photoUrl}
+						size="list"
+					/>
+					<div class="min-w-0">
+						<p class="truncate text-sm font-medium">{member.name}</p>
 					</div>
-				{:else}
-					<span class="text-xs text-muted-foreground">—</span>
-				{/if}
-			</div>
+				</div>
+			{:else if column.key === 'role'}
+				<div class="col-span-3">
+					<span
+						class="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground/80"
+					>
+						{$t(`staff.role.${member.role}`)}
+					</span>
+				</div>
+			{:else if column.key === 'classes'}
+				<div class="col-span-4">
+					{#if member.classes.length > 0}
+						<div class="flex flex-wrap gap-1">
+							{#each member.classes as classId (classId)}
+								<span
+									class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-accent-foreground"
+								>
+									{classNameFor(classId)}
+								</span>
+							{/each}
+						</div>
+					{:else}
+						<span class="text-xs text-muted-foreground">—</span>
+					{/if}
+				</div>
+			{:else}{#if directoryColumns.value(member, column.key).includes('; ')}<details><summary class="cursor-pointer truncate text-sm">{directoryColumns.value(member, column.key).split('; ')[0]}…</summary><p class="whitespace-pre-wrap break-words text-sm">{directoryColumns.value(member, column.key)}</p></details>{:else}<span class="whitespace-pre-wrap break-words text-sm">{directoryColumns.value(member, column.key)}</span>{/if}{/if}
 		{/snippet}
 	</ListEntityTable>
 </div>

@@ -1,7 +1,9 @@
 ---
-description: Documentation taxonomy — specs vs reference vs plans; agent config hygiene
+description: Specs, engineering READMEs, external archives and agent configuration
 globs:
   - docs/**/*
+  - "**/README.md"
+  - "**/README.MD"
   - AGENTS.md
   - .cursor/rules/**/*
 alwaysApply: false
@@ -9,26 +11,14 @@ alwaysApply: false
 
 # Documentation (normative)
 
-**Before creating or editing docs or agent configuration, read:**
+Before editing documentation or agent configuration, read:
 
 [`docs/specs/documentation-spec.md`](../../docs/specs/documentation-spec.md)
 
-## Document types
-
-| Type | Path | For agents |
-|------|------|------------|
-| **Specs** | `docs/specs/` | Yes — normative |
-| **Reference** | `docs/reference/` | No — humans only |
-| **Plans** | `docs/sprints/` | No — lifecycle trackers |
-
-## Must follow
-
-1. **One concern per spec** — self-contained; no links to other documents.
-2. **`AGENTS.md` and `.cursor/rules/`** — index specs only; never link reference or plans.
-3. **Architecture changes** — update the relevant spec in the same PR as code.
-4. **Progress / gaps** — reference docs or plans only; never specs.
-5. **Portal authorization** — backend grant/seed changes: verify portal actor labels in webapp and graceful 403 degradation.
-
-## Cursor rules
-
-One rule file per spec in `.cursor/rules/` — each points to exactly one spec in `docs/specs/`.
+- Keep exactly the six normative specs under `docs/specs/`; each is self-contained.
+- Put engineering guidance in the README nearest its owning code.
+- Keep plans, audit/gap reports, historical packs and galleries outside the repository; verify archival copies before removal.
+- Keep generated evidence in ignored output directories, with source identity and original provenance.
+- `AGENTS.md` indexes specs; each Cursor rule points to one spec. Do not use human guides or archives as requirements.
+- Update affected specs with architecture changes. Preserve intended requirements when code drifts; record documentation-only findings externally.
+- Backend grant/seed changes require checking portal actor names and graceful forbidden-enrichment handling.

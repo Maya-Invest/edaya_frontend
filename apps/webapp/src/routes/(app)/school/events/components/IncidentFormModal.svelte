@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { ClassNode, Incident, Student } from '$lib/types/school';
+	import type { Incident } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import StudentPicker from '$lib/components/school/shared/pickers/StudentPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -9,38 +8,26 @@
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
+	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getEventsPageState } from '../events-page.svelte';
+	import IncidentLessonSelect from './IncidentLessonSelect.svelte';
 
 	type IncidentKind = 'positive' | 'minor_infraction' | 'major_infraction' | 'emergency';
-
 	const INCIDENT_KINDS: IncidentKind[] = [
 		'positive',
 		'minor_infraction',
 		'major_infraction',
 		'emergency',
 	];
-
-	let {
-		incident,
-		students = [],
-		classes = [],
-		open = $bindable(false),
-		onCreated,
-		disabled = false,
-		title: triggerTitle,
-	}: {
+	let { incident, open = $bindable(false), onCreated, disabled = false, title: triggerTitle }: {
 		incident?: Incident;
-		students?: Student[];
-		classes?: ClassNode[];
 		open?: boolean;
 		onCreated?: (incidentId: string) => void;
 		disabled?: boolean;
 		title?: string;
 	} = $props();
-
 	const eventsPage = getEventsPageState();
-
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let studentId = $state('');
@@ -48,51 +35,57 @@
 	let description = $state('');
 	let kind = $state<IncidentKind>('minor_infraction');
 	let date = $state('');
-
+	let lessonSessionId = $state('');
+	let showAdditionalFields = $state(false);
 	const isEdit = $derived(incident !== undefined);
-	const schoolId = $derived(academicContext.schools[0]?.id ?? '');
-
-	const selectedStudent = $derived(students.find(entry => entry.id === studentId));
+	const schoolId = $derived.by(() => {
+		return academicContext.schoolScopeId || academicContext.schools[0]?.id || '';
+	});
+	const selectedStudent = $derived(eventsPage.students.find(entry => entry.id === studentId));
+	const lessonClassId = $derived(incident?.classGroupId ?? selectedStudent?.classId);
+	let previousClass: string | undefined;
+	$effect(() => {
+		const next = lessonClassId;
+		if (open && !isEdit && previousClass !== undefined && next !== previousClass)
+			lessonSessionId = '';
+		previousClass = open ? next : undefined;
+	});
 	const kindLabel = $derived($t(`events.kind.${kind}`));
-	const studentClass = $derived(
-		selectedStudent
-			? classes.find(entry => entry.id === selectedStudent.classId)
-			: undefined,
-	);
-
-	const canSubmit = $derived(
-		incidentTitle.trim().length > 0 && description.trim().length > 0 && (isEdit || (studentId.length > 0 && schoolId.length > 0)),
-	);
-
+	const studentClass = $derived(selectedStudent
+		? academicContext.classes.find(entry => entry.id === selectedStudent.classId)
+		: undefined);
+	const canSubmit = $derived.by(() => {
+		return incidentTitle.trim().length > 0 && description.trim().length > 0 && (isEdit || (studentId.length > 0 && schoolId.length > 0));
+	});
 	function resetForm() {
+		showAdditionalFields = false;
 		if (incident) {
 			studentId = incident.studentId;
-			incidentTitle = incident.summary.slice(0, 80);
-			description = incident.summary;
-			kind = 'minor_infraction';
+			incidentTitle = incident.title ?? incident.summary;
+			description = incident.description ?? incident.summary;
+			kind = incident.kind;
 			date = incident.date;
+			lessonSessionId = incident.lessonSessionId ?? '';
 		}
 		else {
-			studentId = students[0]?.id ?? '';
+			studentId = '';
 			incidentTitle = '';
 			description = '';
 			kind = 'minor_infraction';
 			date = new Date().toISOString().slice(0, 10);
+			lessonSessionId = '';
 		}
 	}
-
 	$effect(() => {
 		if (open && !wasOpen) {
 			resetForm();
 		}
 		wasOpen = open;
 	});
-
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
-
 		busy = true;
 		try {
 			if (incident) {
@@ -102,6 +95,7 @@
 					description,
 					kind,
 					date,
+					lessonSessionId: lessonSessionId || null,
 					successMessage: get(t)('events.updateSuccess'),
 				});
 				if (ok) {
@@ -117,6 +111,7 @@
 					description,
 					kind,
 					date,
+					lessonSessionId: lessonSessionId || null,
 					successMessage: get(t)('events.createSuccess', {
 						name: selectedStudent?.name ?? '',
 					}),
@@ -138,7 +133,7 @@
 	<Button
 		variant="outline"
 		size="sm"
-		class="rounded-full"
+
 		{disabled}
 		title={triggerTitle}
 		onclick={() => (open = true)}
@@ -162,18 +157,29 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('events.student')}
 			</Label>
-			<StudentPicker bind:value={studentId} {students} {classes} />
+			<StudentPicker bind:value={studentId} active={open} />
 			{#if studentClass}
 				<p class="text-xs text-muted-foreground">{studentClass.name}</p>
 			{/if}
 		</div>
 	{/if}
 	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+		<Label
+			for="incident-title"
+			class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+		>
 			{$t('events.titleField')}
 		</Label>
-		<Input bind:value={incidentTitle} />
+		<Input id="incident-title" data-testid="incident-title-input" bind:value={incidentTitle} />
 	</div>
+	<details bind:open={showAdditionalFields} class="space-y-3 rounded-collection border p-3">
+		<summary>{$t('profile.additionalFields')}</summary>
+		{#if open && showAdditionalFields}
+			{#key JSON.stringify([eventsPage.lessonScope, lessonClassId])}
+				<IncidentLessonSelect classGroupId={lessonClassId} bind:value={lessonSessionId} />
+			{/key}
+		{/if}
+	</details>
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

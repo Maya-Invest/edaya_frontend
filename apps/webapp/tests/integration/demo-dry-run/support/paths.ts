@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-export const DEMO_DRY_RUN_OUT_DIR = path.join(
+export const DEMO_DRY_RUN_OUT_DIR = process.env.DEMO_DRY_RUN_OUT_DIR ?? path.join(
 	import.meta.dirname,
 	'../../../../.demo-dry-run',
 );
@@ -17,11 +17,56 @@ export function webappReadinessPath(): string {
 		?? (integrationUsesDemoLogin() ? '/login/demo' : '/login');
 }
 
-const PATH_TAB_ROUTE_PREFIXES = [
+/** Decode percent-encoding in URL path segments (e.g. colons in timetable session ids). */
+export function normalizeIntegrationPathname(pathname: string): string {
+	try {
+		return pathname
+			.split('/')
+			.map(segment => (segment ? decodeURIComponent(segment) : segment))
+			.join('/');
+	}
+	catch {
+		return pathname;
+	}
+}
+
+export function pathMatchesPrefix(pathname: string, prefix: string): boolean {
+	return normalizeIntegrationPathname(pathname).startsWith(normalizeIntegrationPathname(prefix));
+}
+
+const STAFF_APP_PATH = /\/(dashboard|school|classes|configuration|onboarding|finance)(\/|$)/;
+
+/** True when a URL is already inside the staff app (not `/login`). */
+export function isSignedInStaffUrl(url: string): boolean {
+	try {
+		const pathname = new URL(url, 'http://localhost').pathname;
+		if (pathname === '/login' || pathname.startsWith('/login/')) {
+			return false;
+		}
+		return STAFF_APP_PATH.test(pathname);
+	}
+	catch {
+		return false;
+	}
+}
+
+/** Sidebar smoke: current path is the target or a nested drawer under it. */
+export function pathnameReachedSidebarTarget(pathname: string, resolvedPath: string): boolean {
+	const current = normalizeIntegrationPathname(pathname);
+	const target = normalizeIntegrationPathname(resolvedPath);
+	return current === target || current.startsWith(`${target}/`);
+}
+
+const SCHOOL_DRAWER_PREFIXES = [
 	'/school/students/',
 	'/school/teachers/',
 	'/school/staff/',
 	'/school/activities/',
+] as const;
+
+const CONFIG_DRAWER_PREFIXES = [
+	'/configuration/structure/classes/',
+	'/configuration/structure/subjects/',
 ] as const;
 
 export function schoolStudentPath(id: string, tab = 'profile'): string {
@@ -38,6 +83,26 @@ export function schoolStaffPath(id: string, tab = 'profile'): string {
 
 export function schoolActivityPath(id: string, tab = 'profile'): string {
 	return `/school/activities/${id}/${tab}`;
+}
+
+export function schoolGuardianPath(id: string): string {
+	return `/school/guardians/${id}`;
+}
+
+export function financeBillingPath(id: string): string {
+	return `/finance/billing/${id}`;
+}
+
+export function configClassGroupPath(id: string, tab: 'profile' | 'assignments' = 'profile'): string {
+	return `/configuration/structure/classes/${id}/${tab}`;
+}
+
+export function configSubjectPath(id: string, tab: 'progression' | 'logbook' = 'progression'): string {
+	return `/configuration/structure/subjects/${id}/${tab}`;
+}
+
+export function classStudentsPath(classId: string, studentId: string, tab = 'profile'): string {
+	return `/classes/${classId}/students/${studentId}/${tab}`;
 }
 
 export function classTeachingDrawerPath(classId: string, subjectId: string): string {
@@ -68,16 +133,43 @@ export function classTimetableDrawerPath(classId: string, sessionId: string): st
 	return `/classes/${classId}/timetable/${sessionId}`;
 }
 
+export function classTimetablePath(
+	classId: string,
+	sessionId: string,
+	tab: 'details' | 'attendance' | 'logbook' = 'details',
+): string {
+	return `${classTimetableDrawerPath(classId, sessionId)}/${tab}`;
+}
+
+function tabFromSchoolDrawerPath(pathname: string, prefix: string): string | null {
+	if (!pathname.startsWith(prefix)) {
+		return null;
+	}
+	const segments = pathname.slice(prefix.length).split('/').filter(Boolean);
+	if (segments.length === 0) {
+		return null;
+	}
+	return segments[1] ?? 'profile';
+}
+
 export function drawerTabFromPathname(pathname: string): string | null {
-	for (const prefix of PATH_TAB_ROUTE_PREFIXES) {
-		if (!pathname.startsWith(prefix)) {
-			continue;
+	for (const prefix of SCHOOL_DRAWER_PREFIXES) {
+		const tab = tabFromSchoolDrawerPath(pathname, prefix);
+		if (tab !== null) {
+			return tab;
 		}
-		const segments = pathname.slice(prefix.length).split('/').filter(Boolean);
-		if (segments.length === 0) {
-			return null;
+	}
+
+	for (const prefix of CONFIG_DRAWER_PREFIXES) {
+		const tab = tabFromSchoolDrawerPath(pathname, prefix);
+		if (tab !== null) {
+			return tab;
 		}
-		return segments[1] ?? 'profile';
+	}
+
+	const classStudentMatch = pathname.match(/^\/classes\/[^/]+\/students\/[^/]+\/([^/]+)/);
+	if (classStudentMatch) {
+		return classStudentMatch[1] ?? null;
 	}
 
 	const classDrawerMatch = pathname.match(

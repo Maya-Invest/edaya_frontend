@@ -1,6 +1,8 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ClassActivityEnrollment } from '$lib/types/school';
 import type { ActivitiesPageState } from '../../../activities-page.svelte';
-import { fetchActivityById } from '$lib/api/activities-data';
+import { listAllEntityPages } from '$lib/api/entity-list-filters';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
 import { activityDetailIdFromUrl } from '../../../lib/activity-selectors';
@@ -27,32 +29,37 @@ export class ActivityClassesTabState {
 
 	syncFromPage(activityId: string) {
 		const activity = this.getPage().findActivity(activityId);
-		if (!activity) {
+		if (!activity?.classEnrollments) {
 			return;
 		}
 		this.slice = { activityId, classEnrollments: activity.classEnrollments };
 	}
 
 	query() {
-		return (url: URL) => resolvePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const activityId = activityDetailIdFromUrl(url);
 				if (!activityId) {
 					return {};
 				}
 
 				const page = this.getPage();
-				const activity = await fetchActivityById(page.client(), activityId);
-				if (activity) {
-					page.mergeActivities([activity]);
-					this.slice = { activityId, classEnrollments: activity.classEnrollments };
+				const scope = page.scope;
+				const rows = await safeOptionalEntityList(() => listAllEntityPages(
+					q => page.client().entities.classActivityEnrollments.list(q),
+{ baseQuery: { activityId }, signal },
+				));
+				signal.throwIfAborted();
+				if (scope === page.scope && page.selectedId === activityId) {
+					page.patchActivity(activityId, { classEnrollments: rows.map(({ id, classGroupId }) => ({ id, classGroupId })) });
+					this.syncFromPage(activityId);
 				}
 				return {};
 			},
 			hasItems: listPageHasItems,
 			errorMessage: 'Unable to load activity classes.',
-		});
+		}, request);
 	}
 }
 

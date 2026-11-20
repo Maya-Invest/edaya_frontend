@@ -1,217 +1,24 @@
-import type { ImportTypeDefinition, ImportTypeColumnDefinition, ImportTypeKey } from './types';
-import {
-	BookOpen,
-	FileText,
-	GraduationCap,
-	HeartHandshake,
-	Layers,
-	User,
-	Users,
-} from '$lib/icons';
-import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
-import {
-	downloadStudentImportCsvTemplate,
-	downloadStudentImportExcelTemplate,
-	STUDENT_IMPORT_CSV_TEMPLATE_FILENAME,
-	STUDENT_IMPORT_EXCEL_TEMPLATE_FILENAME,
-} from '$lib/import/students/template';
-import { STUDENT_IMPORT_COLUMNS } from '$lib/import/students/types';
+import type { ImportTypeDefinition, ImportTypeKey } from './types';
+import { BookOpen, Users, User, GraduationCap, HeartHandshake, Layers, Receipt, Wallet, ClipboardCheck, FileText } from '$lib/icons';
 
-const STUDENT_COLUMN_LABEL_KEYS: Record<string, string> = {
-	prenom: 'import.students.columns.prenom',
-	nom: 'import.students.columns.nom',
-	classe: 'import.students.columns.classe',
-	date_naissance: 'import.students.columns.date_naissance',
-	genre: 'import.students.columns.genre',
-	matricule: 'import.students.columns.matricule',
-};
-
-function catalogColumns(
-	columns: readonly ImportTypeColumnDefinition[],
-): readonly ImportTypeColumnDefinition[] {
-	return sortImportColumnsRequiredFirst(columns);
-}
-
+/** Presentation metadata only. Templates and import rules come from the generated backend API. */
 export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
-	{
-		key: 'students',
-		labelKey: 'import.types.students.label',
-		descriptionKey: 'import.types.students.description',
-		hintKey: 'import.students.templateHint',
-		status: 'active',
-		icon: Users,
-		csvFilename: STUDENT_IMPORT_CSV_TEMPLATE_FILENAME,
-		xlsxFilename: STUDENT_IMPORT_EXCEL_TEMPLATE_FILENAME,
-		xlsxSheetName: 'Eleves',
-		columns: catalogColumns(STUDENT_IMPORT_COLUMNS.map(column => ({
-			key: column.key,
-			required: column.required,
-			labelKey: STUDENT_COLUMN_LABEL_KEYS[column.key] ?? column.key,
-		}))),
-		exampleRow: {
-			prenom: 'Jean',
-			nom: 'Dupont',
-			classe: '6ème A',
-			date_naissance: '2012-03-15',
-			genre: 'M',
-			matricule: 'MAT-2024-001',
-		},
-		permission: 'STUDENT_CREATE',
-		downloadCsvTemplate: downloadStudentImportCsvTemplate,
-		downloadExcelTemplate: downloadStudentImportExcelTemplate,
-	},
-	{
-		key: 'guardians',
-		labelKey: 'import.types.guardians.label',
-		descriptionKey: 'import.types.guardians.description',
-		hintKey: 'import.types.guardians.hint',
-		status: 'active',
-		icon: HeartHandshake,
-		csvFilename: 'tuteurs-template.csv',
-		xlsxFilename: 'tuteurs-template.xlsx',
-		xlsxSheetName: 'Tuteurs',
-		columns: catalogColumns([
-			{ key: 'prenom', required: true, labelKey: 'import.types.guardians.columns.prenom' },
-			{ key: 'nom', required: true, labelKey: 'import.types.guardians.columns.nom' },
-			{ key: 'eleve_matricule', required: true, labelKey: 'import.types.guardians.columns.eleve_matricule' },
-			{ key: 'email', required: false, labelKey: 'import.types.guardians.columns.email' },
-			{ key: 'telephone', required: false, labelKey: 'import.types.guardians.columns.telephone' },
-		]),
-		exampleRow: {
-			prenom: 'Aminata',
-			nom: 'Koné',
-			email: 'aminata.kone@example.com',
-			telephone: '+225 07 00 00 00 00',
-			eleve_matricule: 'MAT-2024-001',
-		},
-		permission: 'STUDENT_CREATE',
-	},
-	{
-		key: 'staff',
-		labelKey: 'import.types.staff.label',
-		descriptionKey: 'import.types.staff.description',
-		hintKey: 'import.types.staff.hint',
-		status: 'template_only',
-		icon: User,
-		csvFilename: 'personnel-template.csv',
-		xlsxFilename: 'personnel-template.xlsx',
-		xlsxSheetName: 'Personnel',
-		columns: catalogColumns([
-			{ key: 'prenom', required: true, labelKey: 'import.types.staff.columns.prenom' },
-			{ key: 'nom', required: true, labelKey: 'import.types.staff.columns.nom' },
-			{ key: 'role', required: true, labelKey: 'import.types.staff.columns.role' },
-			{ key: 'email', required: false, labelKey: 'import.types.staff.columns.email' },
-			{ key: 'telephone', required: false, labelKey: 'import.types.staff.columns.telephone' },
-		]),
-		exampleRow: {
-			prenom: 'Fatou',
-			nom: 'Diallo',
-			email: 'fatou.diallo@example.com',
-			role: 'Secrétaire',
-			telephone: '+225 05 00 00 00 00',
-		},
-		permission: 'STAFF_CREATE',
-	},
-	{
-		key: 'teachers',
-		labelKey: 'import.types.teachers.label',
-		descriptionKey: 'import.types.teachers.description',
-		hintKey: 'import.types.teachers.hint',
-		status: 'template_only',
-		icon: GraduationCap,
-		csvFilename: 'enseignants-template.csv',
-		xlsxFilename: 'enseignants-template.xlsx',
-		xlsxSheetName: 'Enseignants',
-		columns: catalogColumns([
-			{ key: 'prenom', required: true, labelKey: 'import.types.teachers.columns.prenom' },
-			{ key: 'nom', required: true, labelKey: 'import.types.teachers.columns.nom' },
-			{ key: 'email', required: false, labelKey: 'import.types.teachers.columns.email' },
-			{ key: 'matieres', required: false, labelKey: 'import.types.teachers.columns.matieres' },
-			{ key: 'telephone', required: false, labelKey: 'import.types.teachers.columns.telephone' },
-		]),
-		exampleRow: {
-			prenom: 'Kofi',
-			nom: 'Mensah',
-			email: 'kofi.mensah@example.com',
-			matieres: 'Mathématiques, Physique',
-			telephone: '+225 01 00 00 00 00',
-		},
-		permission: 'STAFF_CREATE',
-	},
-	{
-		key: 'classes',
-		labelKey: 'import.types.classes.label',
-		descriptionKey: 'import.types.classes.description',
-		hintKey: 'import.types.classes.hint',
-		status: 'active',
-		icon: Layers,
-		csvFilename: 'classes-template.csv',
-		xlsxFilename: 'classes-template.xlsx',
-		xlsxSheetName: 'Classes',
-		columns: catalogColumns([
-			{ key: 'nom', required: true, labelKey: 'import.types.classes.columns.nom' },
-			{ key: 'niveau', required: true, labelKey: 'import.types.classes.columns.niveau' },
-			{ key: 'capacite', required: false, labelKey: 'import.types.classes.columns.capacite' },
-		]),
-		exampleRow: {
-			nom: '6ème A',
-			niveau: '6ème',
-			capacite: '35',
-		},
-		permission: 'SCHOOL_STRUCTURE_READ',
-	},
-	{
-		key: 'subjects',
-		labelKey: 'import.types.subjects.label',
-		descriptionKey: 'import.types.subjects.description',
-		hintKey: 'import.types.subjects.hint',
-		status: 'template_only',
-		icon: BookOpen,
-		csvFilename: 'matieres-template.csv',
-		xlsxFilename: 'matieres-template.xlsx',
-		xlsxSheetName: 'Matieres',
-		columns: catalogColumns([
-			{ key: 'nom', required: true, labelKey: 'import.types.subjects.columns.nom' },
-			{ key: 'code', required: false, labelKey: 'import.types.subjects.columns.code' },
-			{ key: 'coefficient', required: false, labelKey: 'import.types.subjects.columns.coefficient' },
-		]),
-		exampleRow: {
-			nom: 'Mathématiques',
-			code: 'MATH',
-			coefficient: '3',
-		},
-		permission: 'SCHOOL_STRUCTURE_READ',
-	},
-	{
-		key: 'chapters',
-		labelKey: 'import.types.chapters.label',
-		descriptionKey: 'import.types.chapters.description',
-		hintKey: 'import.types.chapters.hint',
-		status: 'template_only',
-		icon: FileText,
-		csvFilename: 'chapitres-template.csv',
-		xlsxFilename: 'chapitres-template.xlsx',
-		xlsxSheetName: 'Chapitres',
-		columns: catalogColumns([
-			{ key: 'matiere', required: true, labelKey: 'import.types.chapters.columns.matiere' },
-			{ key: 'titre', required: true, labelKey: 'import.types.chapters.columns.titre' },
-			{ key: 'ordre', required: false, labelKey: 'import.types.chapters.columns.ordre' },
-			{ key: 'description', required: false, labelKey: 'import.types.chapters.columns.description' },
-		]),
-		exampleRow: {
-			matiere: 'Mathématiques',
-			titre: 'Les fractions',
-			ordre: '1',
-			description: 'Introduction aux fractions simples',
-		},
-		permission: 'SCHOOL_STRUCTURE_READ',
-	},
-] as const;
-
-export const IMPORT_TYPE_BY_KEY: Record<ImportTypeKey, ImportTypeDefinition> = Object.fromEntries(
-	IMPORT_TYPE_DEFINITIONS.map(definition => [definition.key, definition]),
-) as Record<ImportTypeKey, ImportTypeDefinition>;
-
-export function getImportTypeDefinition(key: ImportTypeKey): ImportTypeDefinition {
+	{ key: 'students', icon: Users, permission: 'STUDENT_CREATE' },
+	{ key: 'guardians', icon: HeartHandshake, permission: 'PARENT_MANAGE' },
+	{ key: 'teachers', icon: GraduationCap, permission: 'ACCESS_CONTROL_MANAGE' },
+	{ key: 'staff', icon: User, permission: 'STAFF_MANAGE' },
+	{ key: 'classes', icon: Layers, permission: 'SCHOOL_CONFIGURE' },
+	{ key: 'subjects', icon: BookOpen, permission: 'ACADEMIC_PROGRAM_MANAGE' },
+	{ key: 'teacher_assignments', icon: ClipboardCheck, permission: 'ACCESS_CONTROL_MANAGE' },
+	{ key: 'chapters', icon: FileText, permission: 'ACADEMIC_PROGRAM_MANAGE' },
+	{ key: 'billing', icon: Receipt, permission: 'PAYMENT_RECORD' },
+	{ key: 'payments', icon: Wallet, permission: 'PAYMENT_RECORD' },
+	{ key: 'academic_disciplines', icon: BookOpen, permission: 'ACADEMIC_CATALOG_MANAGE' },
+	{ key: 'placement_statuses', icon: Layers, permission: 'ACADEMIC_CATALOG_MANAGE' },
+	{ key: 'guardian_relationships', icon: Users, permission: 'PARENT_MANAGE' },
+	{ key: 'class_offerings', icon: BookOpen, permission: 'ACADEMIC_PROGRAM_MANAGE' },
+].map(item => ({ ...item, key: item.key as ImportTypeKey, permission: item.permission as ImportTypeDefinition['permission'], labelKey: ['academic_disciplines', 'placement_statuses', 'guardian_relationships', 'class_offerings'].includes(item.key) ? `durableImport.types.${item.key}` : `import.types.${item.key === 'teacher_assignments' ? 'teacherAssignments' : item.key}.label`, descriptionKey: 'durableImport.description', hintKey: 'durableImport.description', status: 'active', csvFilename: `${item.key}-v2.csv`, xlsxFilename: `${item.key}-v2.xlsx`, xlsxSheetName: item.key, columns: [], exampleRow: {} }));
+export const IMPORT_TYPE_BY_KEY = Object.fromEntries(IMPORT_TYPE_DEFINITIONS.map(item => [item.key, item])) as Record<ImportTypeKey, ImportTypeDefinition>;
+export function getImportTypeDefinition(key: ImportTypeKey) {
 	return IMPORT_TYPE_BY_KEY[key];
 }

@@ -1,0 +1,47 @@
+name: Finalization
+on:
+  workflow_call:
+    inputs:
+      source_sha:
+        type: string
+        required: true
+      target:
+        type: string
+        required: true
+      job_results:
+        type: string
+        required: true
+      backend_sha:
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+jobs:
+  qualification:
+    name: Full validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      CI_SOURCE_SHA: ${{ inputs.source_sha }}
+      CI_BACKEND_SHA: ${{ inputs.backend_sha }}
+      CI_TARGET: ${{ inputs.target }}
+    steps:
+      - name: Require every task to succeed
+        env:
+          RESULTS: ${{ inputs.job_results }}
+        run: echo "$RESULTS" | jq -e '. as $results | ["preparation", "quality", "unit", "build", "integration"] | all(.[]; $results[.].result == "success")'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          source_sha: ${{ inputs.source_sha }}
+          backend_sha: ${{ inputs.backend_sha }}
+          target: ${{ inputs.target }}
+      - uses: ./.github/actions/finalize
+        with:
+          target: ${{ inputs.target }}

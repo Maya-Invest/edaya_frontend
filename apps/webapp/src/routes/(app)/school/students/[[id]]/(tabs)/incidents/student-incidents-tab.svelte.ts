@@ -1,14 +1,18 @@
 import type { Incident } from '$lib/types/school';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadIncidentRouteData } from '$lib/api/school-life-data';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { authSession } from '$lib/auth/session.svelte';
 import { nowIso } from '$lib/date/format';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 import { summarizeStudentIncidents } from './student-incidents-tab.selectors';
 
 export { summarizeStudentIncidents };
@@ -29,7 +33,10 @@ function emptySlice(studentId: string): StudentIncidentsTabSlice {
 }
 
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+	return academicContext.schoolScopeId
+		|| authSession.schoolId
+		|| academicContext.schools[0]?.id
+		|| '';
 }
 
 function incidentCategoryFromKind(kind: IncidentKind): Incident['category'] {
@@ -59,11 +66,17 @@ function incidentSeverityFromKind(kind: IncidentKind): Incident['severity'] {
 }
 
 export class StudentIncidentsTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['incidents', 'students']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
 	slice = $state<StudentIncidentsTabSlice | null>(null);
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
+		this.versionedQuery.clear();
 		this.slice = null;
 	}
 
@@ -106,10 +119,10 @@ export class StudentIncidentsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+			load: async (signal) => {
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}
@@ -124,13 +137,16 @@ export class StudentIncidentsTabState {
 					academicYearId: academicContext.yearId,
 				};
 				const { incidents } = await loadIncidentRouteData(getBrowserSchoolClient(), scope);
+				signal.throwIfAborted();
 				this.seed(studentId, {
-					incidents: incidents.filter(incident => incident.involvedStudentIds.includes(studentId)),
+					incidents: incidents.filter(incident =>
+						incident.involvedStudentIds.includes(studentId) || incident.studentId === studentId,
+					),
 				});
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request));
 	}
 
 	async recordIncident(input: {
@@ -153,6 +169,7 @@ export class StudentIncidentsTabState {
 			involvedStudentIds: [input.studentId],
 			involvedCount: 1,
 			date: incidentDate,
+			kind: input.kind,
 			category: incidentCategoryFromKind(input.kind),
 			severity: incidentSeverityFromKind(input.kind),
 			summary: input.title.trim(),

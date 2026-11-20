@@ -3,12 +3,13 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
 import type { LogEntry } from '$lib/types/teaching-log';
 import {
-	assignmentsForClassSubjects,
 	classGroupScope,
-	entitiesByIds,
-	progressForLessonSessions,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
+import { readableLogbookNote } from '$lib/api/session-detail-data';
 import {
 	fetchClassSubjectInstructorSourcesBundle,
 
@@ -24,6 +25,7 @@ type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectRaw = components['schemas']['Subject'];
 
 export interface TeachingLogSources extends ClassSubjectInstructorSources {
+	subjectMattersRaw?: components['schemas']['SubjectMatter'][];
 	lessonSessionsRaw: LessonSessionRaw[];
 	classSubjectProgressRaw: ClassSubjectProgressRaw[];
 	classSubjectMattersRaw: ClassSubjectMatterRaw[];
@@ -68,43 +70,50 @@ function teacherNameForClassSubjectFromSources(
 export async function fetchClassTeachingLogSources(
 	client: SchoolClient,
 	classGroupId: string,
+	classSubjectId?: string,
 ): Promise<TeachingLogSources> {
 	const [
 		lessonSessionsRaw,
 		classSubjectsRaw,
 	] = await Promise.all([
-		client.entities.lessonSessions.list(classGroupScope(classGroupId)),
-		client.entities.classSubjects.list(classGroupScope(classGroupId)),
+		listAllEntityPages(query => client.entities.lessonSessions.list(query), {
+			baseQuery: { ...classGroupScope(classGroupId), ...(classSubjectId ? { classSubjectId } : {}) },
+		}),
+		listAllEntityPages(query => client.entities.classSubjects.list(query), {
+			baseQuery: { ...classGroupScope(classGroupId), ...(classSubjectId ? { id: classSubjectId } : {}) },
+		}),
 	]);
 
-	const lessonSessionIds = uniqueIds((lessonSessionsRaw ?? []).map(session => session.id));
-	const classSubjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.id));
-	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
+	const lessonSessionIds = uniqueIds(lessonSessionsRaw.map(session => session.id));
+	const classSubjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.id));
+	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
 
 	const [
 		classSubjectProgressRaw,
 		classSubjectMattersRaw,
 		subjectsRaw,
 	] = await Promise.all([
-		lessonSessionIds.length > 0
-			? client.entities.classSubjectProgress.list(progressForLessonSessions(lessonSessionIds))
-			: Promise.resolve([]),
-		classSubjectIds.length > 0
-			? client.entities.classSubjectMatters.list(assignmentsForClassSubjects(classSubjectIds))
-			: Promise.resolve([]),
-		subjectIds.length > 0
-			? client.entities.subjects.list(entitiesByIds(subjectIds))
-			: Promise.resolve([]),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.classSubjectProgress.list(query),
+			[{ field: 'lessonSessionId', ids: lessonSessionIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.classSubjectMatters.list(query),
+			[{ field: 'classSubjectId', ids: classSubjectIds }],
+		),
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
 	]);
 
+	const subjectMattersRaw = await listAllEntityPagesByIds(query => client.entities.subjectMatters.list(query), uniqueIds(classSubjectMattersRaw.map(link => link.subjectMatterId)));
 	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);
 
 	return {
-		lessonSessionsRaw: lessonSessionsRaw ?? [],
-		classSubjectProgressRaw: classSubjectProgressRaw ?? [],
-		classSubjectMattersRaw: classSubjectMattersRaw ?? [],
-		classSubjectsRaw: classSubjectsRaw ?? [],
-		subjectsRaw: subjectsRaw ?? [],
+		lessonSessionsRaw,
+		classSubjectProgressRaw,
+		classSubjectMattersRaw,
+		classSubjectsRaw,
+		subjectsRaw,
+		subjectMattersRaw,
 		...instructorSources,
 	};
 }
@@ -151,13 +160,12 @@ export function mapTeachingLogEntries(
 				sources.subjectsRaw,
 			);
 			const progressRecords = progressBySession.get(session.id) ?? [];
-			const primaryProgress = progressRecords[0];
-			const averageProgress = progressRecords.length > 0
-				? Math.round(
-						progressRecords.reduce((sum, entry) => sum + entry.completedPercentage, 0)
-						/ progressRecords.length,
-					)
-				: 0;
+			const chapters = progressRecords.map(entry => ({
+				matterId: entry.classSubjectMatterId,
+				name: matterNameForProgress(entry, sources.classSubjectMattersRaw, sources.subjectMattersRaw),
+				completed: entry.completed,
+				notes: entry.notes,
+			}));
 
 			return {
 				id: session.id,
@@ -168,14 +176,11 @@ export function mapTeachingLogEntries(
 					session.classSubjectId,
 					sources,
 				),
-				chapter: primaryProgress
-					? matterNameForProgress(primaryProgress, sources.classSubjectMattersRaw)
-					: session.displayLabel,
-				content: session.sessionNote ?? '',
-				objectives: primaryProgress?.notes ? [primaryProgress.notes] : [],
-				homework: undefined,
+				chapter: chapters.map(row => row.name).filter(Boolean).join(' · ') || session.displayLabel,
+				chapters,
+				content: readableLogbookNote(session.sessionNote),
+				notes: '',
 				attachments: undefined,
-				progress: primaryProgress?.completedPercentage ?? averageProgress,
 			} satisfies LogEntry;
 		})
 		.sort((left, right) => (left.date < right.date ? 1 : -1));
@@ -184,9 +189,9 @@ export function mapTeachingLogEntries(
 export async function fetchTeachingLogEntries(
 	classGroupId: string,
 	client?: SchoolClient,
-	options?: { subjectName?: string },
+	options?: { subjectName?: string; classSubjectId?: string },
 ): Promise<LogEntry[]> {
 	const resolvedClient = client ?? (await import('$lib/api/school-client')).getBrowserSchoolClient();
-	const sources = await fetchClassTeachingLogSources(resolvedClient, classGroupId);
+	const sources = await fetchClassTeachingLogSources(resolvedClient, classGroupId, options?.classSubjectId);
 	return mapTeachingLogEntries(sources, options?.subjectName);
 }

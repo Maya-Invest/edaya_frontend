@@ -1,9 +1,11 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import type { StudentDetailTabSegment } from '../../lib/student-detail-tabs';
 	import { page } from '$app/stores';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
+	import { followDrawerTabLink } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { activeStudentDetailTab, STUDENT_DETAIL_TABS } from '../../lib/student-detail-tabs';
 
@@ -11,33 +13,33 @@
 
 	const activeTab = $derived(activeStudentDetailTab($page.url.pathname, student.id));
 
-	function tabHref(segment: string) {
+	function tabHref(segment: StudentDetailTabSegment) {
 		const next = new URL($page.url);
 		next.searchParams.delete(MODAL_QUERY_KEY);
 		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const base = detailHref.schoolStudentTab(
-			student.id,
-			segment as 'profile' | 'grades' | 'attendance' | 'incidents' | 'finances' | 'report-card' | 'enrollments',
-		);
+		const base = detailHref.schoolStudentTab(student.id, segment);
 		return `${base}${next.search}`;
 	}
 </script>
 
-<div
+<nav
 	data-testid="drawer-tab-bar"
-	class="flex items-center gap-1 overflow-x-auto rounded-full border border-border bg-secondary/40 p-1 text-xs"
+	class="ui-drawer-tabs" aria-label={$t('student.profile.sections')}
 >
 	{#each STUDENT_DETAIL_TABS as tab (tab.key)}
 		<a
 			href={tabHref(tab.segment)}
+			aria-current={activeTab === tab.key ? 'page' : undefined}
+			data-sveltekit-noscroll
+			onclick={event => followDrawerTabLink(event, tabHref(tab.segment))}
 			class={cn(
-				'whitespace-nowrap rounded-full px-2.5 py-1.5 font-medium transition',
+				'ui-section-tab control-focus shrink-0',
 				activeTab === tab.key
-					? 'bg-card text-foreground shadow-soft'
+					? 'ui-drawer-tab-active'
 					: 'text-muted-foreground hover:text-foreground',
 			)}
 		>
 			{$t(tab.labelKey)}
 		</a>
 	{/each}
-</div>
+</nav>

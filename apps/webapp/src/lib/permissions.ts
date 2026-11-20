@@ -1,27 +1,30 @@
 import type { PermissionCode } from '$lib/auth/types';
 import type { PermissionContext } from '$lib/permission-check';
 import type { StaffMember, StaffRole } from '$lib/types/school';
+import { academicContext } from '$lib/academic/context.svelte';
 import { authSession } from '$lib/auth/session.svelte';
 import { checkAnyPermission, checkPermission } from '$lib/permission-check';
 
-interface Ctx { classId?: string; subject?: string }
+type Ctx = Omit<PermissionContext, 'schoolId' | 'academicYearId'>;
 
 const P = {
 	GRADE_READ: 'GRADE_READ',
-	GRADE_INPUT: 'GRADE_INPUT',
+	GRADE_MANAGE: 'GRADE_MANAGE',
 	DISCIPLINE_CREATE: 'DISCIPLINE_CREATE',
-	DISCIPLINE_UPDATE: 'DISCIPLINE_UPDATE',
+	DISCIPLINE_MANAGE: 'DISCIPLINE_MANAGE',
 	ATTENDANCE_RECORD: 'ATTENDANCE_RECORD',
-	CLASS_LOGBOOK_CREATE: 'CLASS_LOGBOOK_CREATE',
+	CLASS_LOGBOOK_MANAGE: 'CLASS_LOGBOOK_MANAGE',
 	REPORT_CARD_CONFIGURE: 'REPORT_CARD_CONFIGURE',
 	REPORT_CARD_GENERATE: 'REPORT_CARD_GENERATE',
-	TIMETABLE_UPDATE: 'TIMETABLE_UPDATE',
+	TIMETABLE_MANAGE: 'TIMETABLE_MANAGE',
 } as const satisfies Record<string, PermissionCode>;
 
 function sessionContext(ctx: Ctx = {}): PermissionContext {
 	return {
 		...ctx,
+		gradeLevelId: ctx.gradeLevelId ?? academicContext.classes.find(group => group.id === ctx.classId)?.gradeLevelId,
 		schoolId: authSession.schoolId ?? '',
+		academicYearId: academicContext.yearId,
 	};
 }
 
@@ -33,8 +36,14 @@ export function hasAnyPermission(permissions: readonly PermissionCode[], ctx: Ct
 	return checkAnyPermission(authSession.grants, permissions, sessionContext(ctx));
 }
 
+export function canOpenStudentClassForm(studentId: string, classId: string, assign = false): boolean {
+	return hasPermission('ENROLLMENT_MANAGE', { studentId, classId })
+		|| ((assign || !classId) && academicContext.classes.some(group =>
+			group.academicYearId === academicContext.yearId && hasPermission('ENROLLMENT_MANAGE', { studentId, classId: group.id })));
+}
+
 export function canUploadProfilePhoto(updatePermission: PermissionCode): boolean {
-	return hasPermission('ATTACHMENT_CONFIGURE') && hasPermission(updatePermission);
+	return hasPermission(updatePermission);
 }
 
 export function getCurrentUser(): StaffMember | null {
@@ -42,11 +51,11 @@ export function getCurrentUser(): StaffMember | null {
 }
 
 export function getCurrentRole(): StaffRole {
-	return getCurrentUser()?.role ?? 'professeur';
+	return getCurrentUser()?.role ?? 'staff';
 }
 
 export function canEditGrades(ctx: Ctx = {}): boolean {
-	return hasPermission(P.GRADE_INPUT, ctx);
+	return hasPermission(P.GRADE_MANAGE, ctx);
 }
 
 export function canViewGrades(_ctx: Ctx = {}): boolean {
@@ -56,9 +65,9 @@ export function canViewGrades(_ctx: Ctx = {}): boolean {
 export function canEditSchoolLife(_ctx: Ctx = {}): boolean {
 	return hasAnyPermission([
 		P.DISCIPLINE_CREATE,
-		P.DISCIPLINE_UPDATE,
+		P.DISCIPLINE_MANAGE,
 		P.ATTENDANCE_RECORD,
-		P.CLASS_LOGBOOK_CREATE,
+		P.CLASS_LOGBOOK_MANAGE,
 	]);
 }
 
@@ -67,21 +76,31 @@ export function canEditReportsAndOrientation(ctx: Ctx = {}): boolean {
 }
 
 export function canEditTimetable(ctx: Ctx = {}): boolean {
-	return hasPermission(P.TIMETABLE_UPDATE, ctx);
+	return hasPermission(P.TIMETABLE_MANAGE, ctx);
 }
 
 export const ROLE_LABEL_FR: Record<StaffRole, string> = {
 	owner: 'Propriétaire',
 	directeur: 'Directeur',
-	prof_principal: 'Professeur principal',
-	professeur: 'Professeur',
+	deputy_director: 'Directeur adjoint',
+	studies_director: 'Directeur d\'études',
 	educateur: 'Éducateur',
+	cpe: 'CPE / Vie scolaire',
+	secretary: 'Secrétaire',
+	accountant: 'Comptable',
+	it_admin: 'Informaticien',
+	staff: 'Personnel',
 };
 
 export const ROLE_LABEL_EN: Record<StaffRole, string> = {
 	owner: 'Owner',
 	directeur: 'Principal',
-	prof_principal: 'Lead teacher',
-	professeur: 'Teacher',
+	deputy_director: 'Deputy director',
+	studies_director: 'Director of studies',
 	educateur: 'Educator',
+	cpe: 'Pastoral / Student life',
+	secretary: 'Secretary',
+	accountant: 'Accountant',
+	it_admin: 'IT administrator',
+	staff: 'Staff',
 };

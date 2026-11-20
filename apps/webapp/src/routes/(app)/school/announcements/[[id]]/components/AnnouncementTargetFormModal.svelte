@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { AnnouncementTargetKind, Guardian, StaffMember, Student } from '$lib/types/school';
+	import type { AnnouncementTargetKind } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import GuardianPicker from '$lib/components/school/shared/pickers/GuardianPicker.svelte';
-	import StaffPicker from '$lib/components/school/shared/pickers/StaffPicker.svelte';
-	import StudentPicker from '$lib/components/school/shared/pickers/StudentPicker.svelte';
+	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
+	import GuardianPicker from '$lib/smart-components/guardian-picker/GuardianPicker.svelte';
+	import StaffPicker from '$lib/smart-components/staff-picker/StaffPicker.svelte';
+	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getAnnouncementsPageState } from '../../announcements-page.svelte';
 	import { announcementTargetNeedsEntity } from '../../lib/announcement-target-label';
@@ -41,7 +42,7 @@
 	let targetKind = $state<AnnouncementTargetKind>('school');
 	let targetId = $state('');
 
-	const sortedLevels = $derived([...academicContext.gradeLevels].sort((a, b) => a.order - b.order));
+	const sortedLevels = $derived(sortGradeLevels(academicContext.gradeLevels));
 	const needsEntity = $derived(announcementTargetNeedsEntity(targetKind));
 	const targetKindLabel = $derived($t(`announcements.targetKind.${targetKind}`));
 
@@ -82,17 +83,9 @@
 			targetId = '';
 			return;
 		}
-		if (usesPersonPicker) {
-			const pool: readonly (Student | Guardian | StaffMember)[] = targetKind === 'student'
-				? announcementsPage.students
-				: targetKind === 'guardian'
-				? announcementsPage.guardians
-				: announcementsPage.staff;
-			if (!pool.some(entry => entry.id === targetId)) {
-				targetId = '';
-			}
+		if (usesPersonPicker)
 			return;
-		}
+
 		if (!entityOptions.some(entry => entry.id === targetId)) {
 			targetId = entityOptions[0]?.id ?? '';
 		}
@@ -132,7 +125,12 @@
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('announcements.targetKindLabel')}
 		</Label>
-		<Select.Root type="single" value={targetKind} onValueChange={v => v && (targetKind = v as AnnouncementTargetKind)}>
+		<Select.Root type="single" value={targetKind} onValueChange={(v) => {
+			if (v && v !== targetKind) {
+				targetId = '';
+				targetKind = v as AnnouncementTargetKind;
+			}
+		}}>
 			<Select.Trigger>
 				<Select.Value placeholder={$t('announcements.targetKindLabel')}>
 					{targetKindLabel}
@@ -159,11 +157,11 @@
 				{$t('announcements.targetEntityLabel')}
 			</Label>
 			{#if targetKind === 'student'}
-				<StudentPicker bind:value={targetId} students={announcementsPage.students} />
+				<StudentPicker bind:value={targetId} active={open} />
 			{:else if targetKind === 'guardian'}
-				<GuardianPicker bind:value={targetId} guardians={announcementsPage.guardians} />
+				<GuardianPicker bind:value={targetId} active={open} />
 			{:else if targetKind === 'staff_member'}
-				<StaffPicker bind:value={targetId} staff={announcementsPage.staff} />
+				<StaffPicker bind:value={targetId} active={open} />
 			{:else}
 				<Select.Root type="single" value={targetId} onValueChange={v => v && (targetId = v)}>
 					<Select.Trigger>

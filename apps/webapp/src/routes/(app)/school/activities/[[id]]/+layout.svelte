@@ -1,9 +1,10 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { appPath } from '$lib/navigation/app-navigation';
+	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
+	import { untrack } from 'svelte';
 	import { getActivitiesPageState } from '../activities-page.svelte';
 	import {
 		clearActivityDetailTabStates,
@@ -16,54 +17,47 @@
 	const activitiesPage = getActivitiesPageState();
 	const detailTabs = createAndRegisterActivityDetailStates(() => activitiesPage);
 	const activity = $derived(activitiesPage.selected);
-	let selectionRequestVersion = 0;
+	const selectedId = $derived($page.params.id);
 
 	function closeDetail() {
 		clearActivityDetailTabStates(detailTabs);
-		const next = new URL($page.url);
-		next.searchParams.delete(MODAL_QUERY_KEY);
-		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const href = `${appPath('/(app)/school/activities/[[id]]')}${next.search}` as ResolvedPathname;
-		appGoto(href);
+		closeDetailDrawer(listSurfaceHref(appPath('/(app)/school/activities/[[id]]'), $page.url));
 	}
 
 	$effect(() => {
-		const activityId = $page.params.id;
-		if (!activityId) {
+		const id = selectedId;
+		const ready = academicContext.shellReady;
+		const denied = activitiesPage.list.denied;
+		void activitiesPage.scope;
+		void activitiesPage.detailRevision;
+		untrack(() => {
 			clearActivityDetailTabStates(detailTabs);
+			activitiesPage.clearDetail();
+		});
+		if (!id || !ready)
+			return;
+		if (denied) {
+			closeDetail();
 			return;
 		}
-
-		const version = ++selectionRequestVersion;
-		activitiesPage.selectedResolving = true;
-
-		void activitiesPage.ensureDrawerSelection(activityId)
-			.then((ok) => {
-				if (version !== selectionRequestVersion) {
-					return;
-				}
-				if (!ok) {
+		const controller = new AbortController();
+		untrack(() => void activitiesPage.ensureDrawerSelection(id, controller.signal)
+			.then((found) => {
+				if (!found && !controller.signal.aborted)
 					closeDetail();
-				}
 			})
 			.catch(() => {
-				if (version !== selectionRequestVersion) {
-					return;
-				}
-				closeDetail();
-			})
-			.finally(() => {
-				if (version === selectionRequestVersion) {
-					activitiesPage.selectedResolving = false;
-				}
-			});
+				if (!controller.signal.aborted)
+					closeDetail();
+			}));
+		return () => controller.abort();
 	});
 </script>
 
 {#if $page.params.id}
 	<ActivityDrawer
 		{activity}
-		loading={activitiesPage.selectedResolving || !activity}
+		loading={activity?.id !== $page.params.id}
 		onClose={closeDetail}
 	>
 		{@render children()}

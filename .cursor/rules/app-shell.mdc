@@ -13,10 +13,10 @@ alwaysApply: false
 ## Core invariants
 
 1. **Shell:** sidebar + header (school, year/period, lang, user menu) + body + overlay drawer + modals + toasts.
-2. **List page:** title/description top-left; `[Primary CTA] [Search] [Main filter select] [Filter] [More]` top-right; main filter always a `<select>`; table or cards; row `···` on every row; URL-backed detail via `[[id]]` for **complex** entities only.
+2. **List page:** title/description top-left; `[Primary CTA] [Search] [Main filter select] [Filter] [More]` top-right; main filter uses a `<select>`; table or cards; row `···` where row mutations exist; preserve the spec's explicit layout exceptions and URL-backed complex detail routes.
 3. **Detail drawer (complex entities)** — read-only; **entity header** (identity + up to 2 primary actions → modals); body = related content via **sections**, **tab child routes**, or **both**; no global Save on the shell.
 4. **Simple entities (§3.5)** — no drawer; row `···` menu → modals. Row click must not open an empty detail surface.
-5. **All mutations use modals** — create (list CTA), edit (entity-header or row `···`), delete (confirm modal), sub-collection add/edit (tab `+ Add` / row Edit).
+5. **Multi-field and destructive mutations use modals** — create (list CTA), edit (entity-header or row `···`), delete (confirm modal), sub-collection add/edit (tab `+ Add` / row Edit). Preserve explicitly specified inline and workflow exceptions.
 6. **Pragmatic toggles only** — boolean/single-value flips (status chip, attendance checkbox) may toggle inline. **Not** `staffPermissionAssignments` — modal-only on Staff → Permissions tab.
 7. **Complex entities** — drawer tabs as nested routes under `[[id]]/`; sub-collection `+ Add` on inline section header; row Edit → modal.
 8. **States** — wrap lists in `DataState`; toast on mutation success/error.

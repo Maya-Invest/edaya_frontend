@@ -4,13 +4,16 @@
 
 	interface Props {
 		connected: boolean;
+		checking?: boolean;
 	}
 
-	const { connected }: Props = $props();
+	const { connected, checking = false }: Props = $props();
 </script>
 
-{#if !connected}
-	<p class="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+{#if checking}
+	<p role="status" class="mb-4 rounded-collection bg-muted px-4 py-3 text-sm text-muted-foreground">{$t('auth.checkingConnection')}</p>
+{:else if !connected}
+	<p role="status" class="mb-4 rounded-collection border border-highlight/25 bg-highlight-soft px-4 py-3 text-sm text-highlight">
 		{#if isLocalDevApi()}
 			{$t('auth.apiUnavailableLocal')}
 		{:else}

@@ -1,10 +1,6 @@
 <script lang="ts">
-	import type { components } from '$lib/api/schema';
 	import type { Incident } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { loadIncidentInvolvements, loadIncidentSanctions } from '$lib/api/school-life-data';
 	import { incidentSevTone, incidentCatTone } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
@@ -15,29 +11,22 @@
 	import { locale, t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import IncidentFormModal from '../../components/IncidentFormModal.svelte';
 	import { getEventsPageState } from '../../events-page.svelte';
 	import IncidentResolveModal from './IncidentResolveModal.svelte';
 
-	type Involvement = components['schemas']['StudentIncidentInvolvement'];
-	type IncidentDrawerModal = 'edit' | 'resolve';
-
-	const {
-		incident,
-		onDeleted,
-	}: {
+	type IncidentDrawerModal = 'edit' | 'resolve' | 'delete';
+	const { incident, onDeleted }: {
 		incident: Incident;
 		onDeleted?: () => void;
 	} = $props();
-
 	const eventsPage = getEventsPageState();
 	const students = $derived(eventsPage.students);
-	const classes = $derived(academicContext.classes);
-
 	const modals = createUrlSyncedModals<IncidentDrawerModal>({
-		allowed: ['edit', 'resolve'],
+		allowed: ['edit', 'resolve', 'delete'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -46,38 +35,16 @@
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
 	const resolveOpen = bindUrlModal(modals, 'resolve');
-
-	let deleteOpen = $state(false);
+	const deleteOpen = bindUrlModal(modals, 'delete');
 	let deleteBusy = $state(false);
-	let involvements = $state<Involvement[]>([]);
-	let sanctions = $state<Awaited<ReturnType<typeof loadIncidentSanctions>>>([]);
-	let detailLoading = $state(false);
-
+	const involvements = $derived(eventsPage.involvements);
+	const sanctions = $derived(eventsPage.sanctions);
+	const detailLoading = $derived(eventsPage.detailLoading);
 	const live = $derived(eventsPage.findIncident(incident.id) ?? incident);
 	const isResolved = $derived(live.status === 'resolved');
-
-	$effect(() => {
-		const incidentId = live.id;
-		const names = new Map(students.map(student => [student.id, student.name]));
-		void (async () => {
-			detailLoading = true;
-			try {
-				const client = getBrowserSchoolClient();
-				[involvements, sanctions] = await Promise.all([
-					loadIncidentInvolvements(client, incidentId),
-					loadIncidentSanctions(client, incidentId, names),
-				]);
-			}
-			finally {
-				detailLoading = false;
-			}
-		})();
-	});
-
 	function studentFor(studentId: string) {
 		return students.find(student => student.id === studentId);
 	}
-
 	async function confirmDelete() {
 		deleteBusy = true;
 		try {
@@ -85,7 +52,7 @@
 				successMessage: get(t)('events.toastDeleted'),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -93,15 +60,7 @@
 			deleteBusy = false;
 		}
 	}
-
-	async function refreshDetail() {
-		const client = getBrowserSchoolClient();
-		const names = new Map(students.map(student => [student.id, student.name]));
-		[involvements, sanctions] = await Promise.all([
-			loadIncidentInvolvements(client, live.id),
-			loadIncidentSanctions(client, live.id, names),
-		]);
-	}
+	const refreshDetail = () => eventsPage.refreshDetail(live.id);
 </script>
 
 <div class="space-y-5">
@@ -120,12 +79,10 @@
 			{/if}
 		{/snippet}
 		{#snippet actions()}
-			<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('events.permissionUpdate')}>
+			<PermissionGate permission="DISCIPLINE_MANAGE" mode="disable" tooltip={$t('events.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<IncidentFormModal
 						incident={live}
-						{students}
-						{classes}
 						{disabled}
 						{title}
 						bind:open={editOpen.open}
@@ -133,12 +90,19 @@
 				{/snippet}
 			</PermissionGate>
 			{#if !isResolved}
-				<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('events.permissionUpdate')}>
+				<PermissionGate permission="DISCIPLINE_VALIDATE"><Button variant="outline" size="sm" onclick={async () => {
+					try {
+						await eventsPage.takeOverIncident(live.id);
+						toast.success($t('corrections.takeOver'));
+					}
+					catch (error) { toast.error(error instanceof Error ? error.message : $t('corrections.error')); }
+				}}>{$t('corrections.takeOver')}</Button></PermissionGate>
+				<PermissionGate permission="DISCIPLINE_VALIDATE" mode="disable" tooltip={$t('events.permissionValidate')}>
 					{#snippet children({ disabled, title })}
 						<Button
 							variant="outline"
 							size="sm"
-							class="rounded-full"
+
 							{disabled}
 							{title}
 							onclick={() => modals.open('resolve')}
@@ -150,13 +114,13 @@
 			{/if}
 		{/snippet}
 		{#snippet overflow()}
-			<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('events.permissionUpdate')}>
+			<PermissionGate permission="DISCIPLINE_MANAGE" mode="disable" tooltip={$t('events.permissionArchive')}>
 				{#snippet children({ disabled, title })}
 					<RowActionMenuItem
 						{disabled}
 						{title}
 						destructive
-						onclick={() => (deleteOpen = true)}
+						onclick={() => (deleteOpen.open = true)}
 					>
 						{$t('common.delete')}
 					</RowActionMenuItem>
@@ -174,10 +138,11 @@
 			<ul class="space-y-2">
 				{#each involvements as involvement (involvement.id)}
 					{@const student = studentFor(involvement.studentId)}
-					<li class="flex items-center justify-between gap-3 rounded-xl border border-border bg-secondary/20 px-3 py-2">
+					<li class="flex items-center justify-between gap-3 rounded-collection border border-border bg-secondary/20 px-3 py-2">
 						<div class="min-w-0">
 							<p class="truncate text-sm font-medium">{student?.name ?? involvement.studentId}</p>
 							<p class="text-xs text-muted-foreground">{$t(`events.role.${involvement.role}`)}</p>
+							{#if involvement.notes}<p class="mt-1 text-xs">{involvement.notes}</p>{/if}
 						</div>
 					</li>
 				{/each}
@@ -194,7 +159,7 @@
 			{:else}
 				<ul class="space-y-2">
 					{#each sanctions as sanction (sanction.id)}
-						<li class="rounded-xl border border-border bg-secondary/20 px-3 py-2.5">
+						<li class="rounded-collection border border-border bg-secondary/20 px-3 py-2.5">
 							<div class="flex items-start justify-between gap-3">
 								<div>
 									<p class="text-sm font-medium">{sanction.actionName}</p>
@@ -216,9 +181,15 @@
 
 	<DrawerField label={$t('events.summary')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm whitespace-pre-wrap">
-			{live.summary}
+			{live.description ?? live.summary}
 		</div>
 	</DrawerField>
+	<details class="space-y-2 rounded-collection border p-3"><summary>{$t('profile.audit')}</summary>
+		<p class="text-sm">{$t('profile.reporter')}: {live.reporterId ?? $t('profile.notProvided')}</p>
+		{#if live.lessonSessionId}<p class="text-sm">{$t('profile.lessonOccurrence')}: {live.lessonSessionId}</p>{/if}
+		{#if live.resolvedAt}<p class="text-sm">{$t('profile.resolved')}: {live.resolvedAt} · {live.resolvedByStaffId ?? '—'}</p>{/if}
+		{#if live.resolutionNotes}<p class="whitespace-pre-wrap text-sm">{live.resolutionNotes}</p>{/if}
+	</details>
 	<div class="grid grid-cols-2 gap-3">
 		<DrawerField label={$t('events.date')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{live.date}</div>
@@ -238,14 +209,12 @@
 
 <IncidentResolveModal
 	incident={live}
-	{students}
-	{classes}
 	bind:open={resolveOpen.open}
 	onResolved={refreshDetail}
 />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('events.deleteConfirm', { title: live.summary })}
 	confirmLabel={$t('common.delete')}

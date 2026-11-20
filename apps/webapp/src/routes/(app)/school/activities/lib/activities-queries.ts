@@ -1,40 +1,34 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ActivitiesPageState } from '../activities-page.svelte';
-import { fetchActivityById } from '$lib/api/activities-data';
+import { academicContext } from '$lib/academic/context.svelte';
+import { queryClient } from '$lib/queries/client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
-import { ApiError } from '@maya-invest/edaya-api-client';
 
 export function querySchoolActivitiesPage(state: ActivitiesPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => ({}),
-		load: async () => {
-			state.hydrateFiltersFromUrl();
-			await state.loadActivities();
+		waitForShell: !academicContext.shellReady,
+		load: async (signal) => {
+			signal.throwIfAborted();
+			await state.refreshList(signal);
+			signal.throwIfAborted();
 			return {};
 		},
 		hasItems: listPageHasItems,
 		errorMessage: 'Unable to load activities.',
-	});
+	}, request);
 }
 
 export async function ensureActivityDrawerSelection(
 	state: ActivitiesPageState,
 	activityId: string,
+	signal: AbortSignal,
 ): Promise<boolean> {
-	try {
-		if (state.findActivity(activityId)) {
-			return true;
-		}
-		const activity = await fetchActivityById(state.client(), activityId);
-		if (!activity) {
-			return false;
-		}
-		state.mergeActivities([activity]);
-		return true;
-	}
-	catch (error) {
-		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-			return true;
-		}
-		throw error;
-	}
+	const scope = state.scope;
+	const activity = state.takeListSelection(activityId) ?? (await queryClient().queries.getStaffActivityProfile({ activityId }, { signal })).activity;
+	signal.throwIfAborted();
+	if (!activity || scope !== state.scope || activityId !== state.selectedId || state.list.denied)
+		return false;
+	state.appendActivity(activity);
+	return true;
 }

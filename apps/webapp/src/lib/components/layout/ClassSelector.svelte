@@ -21,7 +21,7 @@
 </script>
 
 <Select.Root type="single" value={classId} onValueChange={onValueChange}>
-	<Select.Trigger class="h-9 w-full rounded-lg">
+	<Select.Trigger class="w-full">
 		<Select.Value placeholder={$t('roles.selectClassGroup')}>
 			{selectedClassLabel || $t('roles.selectClassGroup')}
 		</Select.Value>

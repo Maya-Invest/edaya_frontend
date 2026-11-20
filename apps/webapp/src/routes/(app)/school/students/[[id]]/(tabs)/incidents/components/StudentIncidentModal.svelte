@@ -37,10 +37,12 @@
 
 	const kindLabel = $derived($t(`events.kind.${kind}`));
 	const studentClass = $derived(academicContext.classes.find(entry => entry.id === s.classId));
-	const schoolId = $derived(studentClass?.schoolId ?? academicContext.schools[0]?.id ?? '');
-	const canSubmit = $derived(
-		schoolId.length > 0 && incidentTitle.trim().length > 0 && description.trim().length > 0,
-	);
+	const schoolId = $derived.by(() => {
+		return studentClass?.schoolId ?? academicContext.schoolScopeId ?? academicContext.schools[0]?.id ?? '';
+	});
+	const canSubmit = $derived.by(() => {
+		return schoolId.length > 0 && incidentTitle.trim().length > 0 && description.trim().length > 0;
+	});
 
 	function resetForm() {
 		incidentTitle = '';
@@ -81,7 +83,7 @@
 {#if showTrigger}
 	<Button
 		variant="ghost"
-		class="w-full rounded-full border border-dashed border-border"
+		class="w-full border border-dashed border-border"
 		{disabled}
 		{title}
 		onclick={() => (open = true)}
@@ -101,8 +103,8 @@
 	onSubmit={submit}
 >
 	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Titre</Label>
-		<Input bind:value={incidentTitle} />
+		<Label for="incident-title" class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Titre</Label>
+		<Input id="incident-title" data-testid="incident-title-input" bind:value={incidentTitle} />
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Type</Label>

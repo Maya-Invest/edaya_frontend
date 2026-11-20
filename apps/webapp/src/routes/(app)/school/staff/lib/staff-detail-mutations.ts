@@ -1,21 +1,28 @@
+import type { UserScopeSelection } from '$lib/api/grant-scopes';
 import type { components } from '$lib/api/schema';
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
+import type { StaffMemberProfileRolePatch, StaffProfileRole } from '$lib/staff/staff-profile-roles';
 import type { StaffMember } from '$lib/types/school';
 import type { StaffPageState } from '../staff-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
 	createStaffPermissionAssignmentPayload,
 } from '$lib/api/mutations/staff-permission-assignments.mutations';
-import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
+import {
+	applyStaffPermissionProfileMutation,
+	removeStaffPermissionProfileMutation,
+	reorderStaffPermissionProfilesMutation,
+} from '$lib/api/mutations/staff-permission-profiles.mutations';
+import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { humanCreationInput } from '$lib/people-profile-fields';
 import { runStaffRouteMutation } from './staff-route-mutation';
 
-type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignment'];
 type StaffPermissionAssignmentConfigCommand = components['schemas']['StaffPermissionAssignmentConfigCommand'];
 
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
+	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-ci-cocody';
 }
 
 function staffInitials(firstName: string, lastName: string): string {
@@ -23,7 +30,7 @@ function staffInitials(firstName: string, lastName: string): string {
 }
 
 function toStaffPermissionConfigCommand(
-	assignment: StaffPermissionAssignment,
+	assignment: StaffPermissionAssignmentView,
 ): StaffPermissionAssignmentConfigCommand {
 	return {
 		id: assignment.id,
@@ -31,26 +38,36 @@ function toStaffPermissionConfigCommand(
 		schoolId: assignment.schoolId,
 		academicYearId: assignment.academicYearId,
 		permission: assignment.permission,
-		scopeIds: assignment.scopeIds ?? '',
+		customScopes: assignment.customScopes ?? assignment.scopes.filter(scope => scope.kind !== 'school'),
+		useDefaultScopes: assignment.useDefaultScopes ?? false,
+		startsAt: assignment.startsAt,
+		endsAt: assignment.endsAt,
 		status: assignment.status,
-		sourceStaffAssignmentId: assignment.sourceStaffAssignmentId ?? null,
 	};
 }
 
 function buildOptimisticStaff(input: {
 	id: string;
+	identifier?: string;
 	firstName: string;
+	profile?: Record<string, string>;
 	lastName: string;
 	email?: string;
+	phone?: string;
+	profileRole: StaffProfileRole;
 }): StaffMember {
 	const email = input.email?.trim() ?? '';
 	return {
+		identifier: input.identifier?.trim() || null,
 		id: input.id,
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
 		name: `${input.firstName.trim()} ${input.lastName.trim()}`,
 		initials: staffInitials(input.firstName, input.lastName),
-		role: 'professeur',
+		role: input.profileRole,
 		department: '—',
 		email,
+		phone: input.phone?.trim() || null,
 		classes: [],
 		isActive: true,
 		subjectId: null,
@@ -62,30 +79,43 @@ export async function createStaffOnPage(
 	state: StaffPageState,
 	input: {
 		firstName: string;
+		profile?: Record<string, string>;
 		lastName: string;
+		identifier?: string;
 		email?: string;
+		phone?: string;
+		profileRole: StaffProfileRole;
 		sendAccountInvitation?: boolean;
+		permissionProfileId?: string;
+		customScopes?: UserScopeSelection[];
+		useDefaultScopes?: boolean;
 		successMessage?: string;
 	},
 ): Promise<string | null> {
 	const client = getBrowserSchoolClient();
-	const id = `stf-${Date.now().toString(36)}`;
 	const email = input.email?.trim() ?? '';
+	const identifier = input.profile?.identifier?.trim() || input.identifier?.trim() || undefined;
+	const creation = humanCreationInput(input.profile);
+	const id = creation.id;
 	const optimistic = buildOptimisticStaff({ id, ...input });
 
+	const payload: components['schemas']['RegisterStaffMemberCommand'] & StaffMemberProfileRolePatch = {
+		...creation,
+		schoolId: schoolId(),
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
+		...(identifier ? { identifier } : {}),
+		email: email || null,
+		...(input.phone !== undefined ? { phone: input.phone.trim() || null } : {}),
+		accountKind: 'human',
+		isActive: true,
+		serviceElevated: false,
+		profileRole: input.profileRole,
+		sendAccountInvitation: input.sendAccountInvitation ?? true,
+	};
+
 	const result = await runStaffRouteMutation({
-		request: () => client.commands.registerStaffMember({
-			id,
-			schoolId: schoolId(),
-			firstName: input.firstName.trim(),
-			lastName: input.lastName.trim(),
-			email: email || null,
-			accountKind: 'human',
-			isActive: true,
-			serviceElevated: false,
-			sendAccountInvitation: input.sendAccountInvitation ?? true,
-			createdAt: new Date().toISOString(),
-		}),
+		request: () => client.commands.registerStaffMember(payload),
 		apply: () => {
 			state.appendStaff(optimistic);
 		},
@@ -96,16 +126,32 @@ export async function createStaffOnPage(
 		versionKeys: ['staff'],
 	});
 
-	return result ? id : null;
+	if (!result) {
+		return null;
+	}
+
+	if (input.permissionProfileId) {
+		await applyStaffPermissionProfileOnPage(state, {
+			staffId: id,
+			profileId: input.permissionProfileId,
+			customScopes: input.customScopes ?? [],
+			useDefaultScopes: input.useDefaultScopes ?? true,
+		});
+	}
+
+	return id;
 }
 
 export async function updateStaffProfileOnPage(
 	state: StaffPageState,
 	input: {
 		staffId: string;
+		profile?: Record<string, string>;
 		firstName: string;
 		lastName: string;
 		email?: string;
+		phone?: string;
+		profileRole?: StaffProfileRole | null;
 		successMessage?: string;
 	},
 ): Promise<boolean> {
@@ -114,18 +160,29 @@ export async function updateStaffProfileOnPage(
 	const email = input.email?.trim() ?? '';
 	const nextName = `${input.firstName.trim()} ${input.lastName.trim()}`;
 
+	const payload: components['schemas']['UpdateStaffMemberProfileCommand'] & StaffMemberProfileRolePatch = {
+		staffId: input.staffId,
+		...(input.profile && 'identifier' in input.profile ? { identifier: input.profile.identifier?.trim() || undefined } : {}),
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
+		email: email || null,
+		...(input.profile && 'phone' in input.profile ? { phone: input.profile.phone?.trim() || null } : {}),
+		...(input.phone !== undefined ? { phone: input.phone.trim() || null } : {}),
+		profileRole: input.profileRole ?? null,
+	};
+
 	const result = await runStaffRouteMutation({
-		request: () => client.commands.updateStaffMemberProfile({
-			staffId: input.staffId,
-			firstName: input.firstName.trim(),
-			lastName: input.lastName.trim(),
-			email: email || null,
-		}),
+		request: () => client.commands.updateStaffMemberProfile(payload),
 		apply: () => {
 			state.patchStaff(input.staffId, {
+				firstName: input.firstName.trim(),
+				lastName: input.lastName.trim(),
+				...(input.profile && 'identifier' in input.profile ? { identifier: input.profile.identifier?.trim() || undefined } : {}),
 				name: nextName,
 				initials: staffInitials(input.firstName, input.lastName),
 				email,
+				...(input.profile && 'phone' in input.profile ? { phone: input.profile.phone?.trim() || null } : {}),
+				...(input.profileRole ? { role: input.profileRole } : {}),
 			});
 		},
 		rollback: () => {
@@ -219,7 +276,11 @@ export async function updateStaffProfilePhotoOnPage(
 				file: input.file,
 				schoolId: resolvedSchoolId,
 			});
-			return withPhotoCacheBust(uploaded.photoUrl);
+			await getBrowserSchoolClient().commands.updateStaffMemberProfile({
+				staffId: input.staffId,
+				photoUrl: uploaded.photoUrl,
+			});
+			return displayProfilePhotoUrl(uploaded.attachmentId);
 		},
 		apply: () => {},
 		rollback: () => {
@@ -241,53 +302,16 @@ export async function updateStaffProfilePhotoOnPage(
 	return result !== null;
 }
 
-export async function saveStaffPermissionOnPage(
-	state: StaffPageState,
-	input: {
-		assignment: StaffPermissionAssignment;
-		successMessage?: string;
-	},
-): Promise<boolean> {
-	const client = getBrowserSchoolClient();
-	const previous = state.permissionAssignmentsForStaff(input.assignment.staffId)
-		.find(row => row.id === input.assignment.id);
-
+export async function saveStaffPermissionOnPage(state: StaffPageState, input: { assignment: StaffPermissionAssignmentView; successMessage?: string }): Promise<boolean> {
 	const result = await runStaffRouteMutation({
-		request: () => client.commands.assignStaffPermission(
-			toStaffPermissionConfigCommand(input.assignment),
-		),
-		apply: () => {
-			state.upsertPermissionAssignment({
-				...input.assignment,
-				scopeLabel: previous?.scopeLabel ?? input.assignment.scopeIds ?? '—',
-				tenantWide: (input.assignment.scopeIds ?? '') === '',
-				isSynced: Boolean(input.assignment.sourceStaffAssignmentId),
-				hasMissingScope: previous?.hasMissingScope ?? false,
-			});
-		},
-		rollback: () => {
-			if (previous) {
-				state.upsertPermissionAssignment(previous);
-			}
-			else {
-				state.removePermissionAssignment(input.assignment.id);
-			}
-		},
-		onSuccess: (assignment) => {
-			const existing = state.permissionAssignmentsForStaff(assignment.staffId)
-				.find(row => row.id === assignment.id);
-			state.upsertPermissionAssignment({
-				...assignment,
-				scopeLabel: existing?.scopeLabel ?? assignment.scopeIds ?? '—',
-				tenantWide: (assignment.scopeIds ?? '') === '',
-				isSynced: Boolean(assignment.sourceStaffAssignmentId),
-				hasMissingScope: existing?.hasMissingScope ?? false,
-			});
-		},
+		request: () => getBrowserSchoolClient().commands.assignStaffPermission(toStaffPermissionConfigCommand(input.assignment)),
+		apply: () => {},
+		rollback: () => {},
 		successMessage: input.successMessage,
 		versionKeys: ['staff'],
 	});
-
+	if (result)
+		await state.reloadPermissionData();
 	return result !== null;
 }
 
@@ -304,7 +328,7 @@ export async function deleteStaffPermissionOnPage(
 		.find(row => row.id === input.assignmentId);
 
 	const result = await runStaffRouteMutation({
-		request: () => client.entities.staffPermissionAssignments.delete({ id: input.assignmentId }),
+		request: () => client.commands.removeStaffPermission({ assignmentId: input.assignmentId }),
 		apply: () => {
 			state.removePermissionAssignment(input.assignmentId);
 		},
@@ -320,18 +344,84 @@ export async function deleteStaffPermissionOnPage(
 	return result !== null;
 }
 
+export async function applyStaffPermissionProfileOnPage(
+	state: StaffPageState,
+	input: {
+		staffId: string;
+		profileId: string;
+		customScopes: UserScopeSelection[];
+		useDefaultScopes: boolean;
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	const ok = await applyStaffPermissionProfileMutation({
+		staffId: input.staffId,
+		profileId: input.profileId,
+		customScopes: input.customScopes,
+		useDefaultScopes: input.useDefaultScopes,
+		academicYearId: state.staffScope().academicYearId,
+		successMessage: input.successMessage,
+	});
+	if (ok) {
+		await state.reloadPermissionData();
+	}
+	return ok;
+}
+
+export async function reorderStaffPermissionProfilesOnPage(
+	state: StaffPageState,
+	input: {
+		staffId: string;
+		profileIds: string[];
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	const ok = await reorderStaffPermissionProfilesMutation({
+		staffId: input.staffId,
+		profileIds: input.profileIds,
+		academicYearId: state.staffScope().academicYearId,
+		successMessage: input.successMessage,
+	});
+	if (ok) {
+		await state.reloadPermissionData();
+	}
+	return ok;
+}
+
+export async function removeStaffPermissionProfileOnPage(
+	state: StaffPageState,
+	input: {
+		staffId: string;
+		profileId: string;
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	const ok = await removeStaffPermissionProfileMutation({
+		staffId: input.staffId,
+		profileId: input.profileId,
+		academicYearId: state.staffScope().academicYearId,
+		successMessage: input.successMessage,
+	});
+	if (ok) {
+		await state.reloadPermissionData();
+	}
+	return ok;
+}
+
 export function buildStaffPermissionPayload(
 	staff: StaffMember,
 	input: {
 		id: string;
 		permission: StaffPermissionAssignmentView['permission'];
-		scopeIds: string;
+		scopes: StaffPermissionAssignmentView['scopes'];
+		customScopes?: StaffPermissionAssignmentView['scopes'];
+		useDefaultScopes?: boolean;
 	},
 ) {
 	return createStaffPermissionAssignmentPayload({
 		id: input.id,
 		staffId: staff.id,
 		permission: input.permission,
-		scopeIds: input.scopeIds,
+		scopes: input.scopes,
 	});
 }

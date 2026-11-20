@@ -1,10 +1,14 @@
 import type { StudentListFilters } from '$lib/list/list-url-filters';
 import type { Student } from '$lib/types/school';
+import { studentMatchesSearchQuery } from '$lib/students/matches-student-search-query';
 
 export type StudentSortColumn = Exclude<StudentListFilters['sort'], 'roster'>;
 
-export function studentListUsesFullRoster(filters: Pick<StudentListFilters, 'q' | 'status' | 'sort'>) {
-	return filters.q.trim() !== '' || filters.status !== 'all' || filters.sort !== 'roster';
+export function studentListUsesFullRoster(filters: Pick<StudentListFilters, 'q' | 'status' | 'sort' | 'photoReview'>) {
+	return filters.q.trim() !== ''
+		|| filters.status !== 'all'
+		|| filters.sort !== 'roster'
+		|| filters.photoReview === 'pending';
 }
 
 export function cycleStudentListSort(
@@ -50,7 +54,7 @@ function sortStudentList(
 			);
 		case 'attendance':
 			return [...students].sort(
-				(left, right) => direction * (left.attendance - right.attendance) || compareNames(left, right),
+				(left, right) => direction * ((left.attendance ?? -1) - (right.attendance ?? -1)) || compareNames(left, right),
 			);
 		case 'status':
 			return [...students].sort(
@@ -64,18 +68,16 @@ function sortStudentList(
 export function filterStudentList(
 	students: readonly Student[],
 	filters: StudentListFilters,
-	options?: { classNameById?: ReadonlyMap<string, string> },
+	options?: {
+		classNameById?: ReadonlyMap<string, string>;
+		pendingPhotoStudentIds?: ReadonlySet<string>;
+	},
 ): Student[] {
-	const needle = filters.q.trim().toLowerCase();
+	const pendingIds = options?.pendingPhotoStudentIds;
 	const filtered = students
 		.filter(student => filters.class === 'all' || student.classId === filters.class)
 		.filter(student => filters.status === 'all' || student.status === filters.status)
-		.filter((student) => {
-			if (!needle) {
-				return true;
-			}
-			const haystack = `${student.name} ${student.email}`.toLowerCase();
-			return haystack.includes(needle);
-		});
+		.filter(student => filters.photoReview !== 'pending' || Boolean(pendingIds?.has(student.id)))
+		.filter(student => studentMatchesSearchQuery(student, filters.q));
 	return sortStudentList(filtered, filters.sort, filters.sortDir, options?.classNameById);
 }

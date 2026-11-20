@@ -10,13 +10,15 @@
 		summary,
 		avatar,
 		chips,
+		facts,
 		actions,
 		overflow,
 	}: {
-		name: string;
+		name?: string;
 		summary?: string;
 		avatar?: Snippet;
 		chips?: Snippet;
+		facts?: Snippet;
 		actions?: Snippet;
 		overflow?: Snippet;
 	} = $props();
@@ -34,18 +36,21 @@
 			{/if}
 			<div class="min-w-0 flex-1">
 				{#if chips}
-					<div class="mb-2 flex flex-wrap items-center gap-2">
+					<div class={['flex flex-wrap items-center gap-2', name || summary ? 'mb-2' : '']}>
 						{@render chips()}
 					</div>
 				{/if}
-				<h3 class="font-display text-2xl font-semibold leading-tight">{name}</h3>
+				{#if name}
+					<h3 class="font-display text-xl font-semibold leading-tight">{name}</h3>
+				{/if}
+				{#if facts}<div class="mt-3 space-y-2">{@render facts()}</div>{/if}
 				{#if summary}
-					<p class="mt-1 text-sm text-muted-foreground">{summary}</p>
+					<p class={['text-sm text-muted-foreground', name ? 'mt-1' : '']}>{summary}</p>
 				{/if}
 			</div>
 		</div>
 		{#if actions || overflow}
-			<div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+			<div class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2">
 				{@render actions?.()}
 				{#if overflow}
 					<Popover.Popover bind:open={overflowOpen}>
@@ -54,8 +59,8 @@
 								<Button
 									{...props}
 									variant="outline"
-									size="sm"
-									class="h-9 w-9 rounded-full p-0"
+									size="icon"
+
 									aria-label={$t('list.moreActions')}
 								>
 									<MoreHorizontal class="h-4 w-4" />
@@ -63,7 +68,7 @@
 							{/snippet}
 						</Popover.PopoverTrigger>
 						<Popover.PopoverContent class="w-44 p-1" align="end">
-							<div class="p-1">
+							<div class="p-1" role="presentation" onclick={() => overflowOpen = false}>
 								{@render overflow()}
 							</div>
 						</Popover.PopoverContent>

@@ -1,16 +1,22 @@
 <script lang="ts">
 	import type { Announcement } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
+	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
+	import { Trash2 } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { writeModalSurface } from '$lib/modal/modal-url';
+	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAnnouncementsPageState } from '../../announcements-page.svelte';
@@ -18,36 +24,38 @@
 	import { resolveAnnouncementTargetLabel } from '../../lib/announcement-target-label';
 	import AnnouncementTargetFormModal from './AnnouncementTargetFormModal.svelte';
 
-	const {
-		announcement,
-		onDeleted,
-	}: {
+	const { announcement, onDeleted }: {
 		announcement: Announcement;
 		onDeleted?: () => void;
 	} = $props();
-
-	type AnnouncementDrawerModal = 'add-target';
-
+	type AnnouncementDrawerModal = 'edit' | 'add-target' | 'publish' | 'delete';
 	const announcementsPage = getAnnouncementsPageState();
 	const modals = createUrlSyncedModals<AnnouncementDrawerModal>({
-		allowed: ['add-target'],
+		allowed: ['edit', 'add-target', 'publish', 'delete'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
+	afterNavigate(() => {
+		modals.hydrate();
+		if (modals.active && modals.target) {
+			replaceRouteSurface(writeModalSurface($page.url, { modal: modals.active }));
+		}
+	});
+	const editOpen = bindUrlModal(modals, 'edit');
 	const addTargetOpen = bindUrlModal(modals, 'add-target');
-
-	const live = $derived(
-		announcementsPage.findAnnouncement(announcement.id) ?? announcement,
-	);
+	const publishOpen = bindUrlModal(modals, 'publish');
+	const deleteOpen = bindUrlModal(modals, 'delete');
+	const live = $derived(announcementsPage.findAnnouncement(announcement.id) ?? announcement);
+	$effect(() => announcementsPage.watchTargetPeople(live.targets));
 	const isDraft = $derived(live.status === 'draft');
-
-	let publishOpen = $state(false);
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
-
+	let deliveryOpen = $state(false);
+	let removeTargetBusy = $state(false);
+	let pendingRemoveTarget = $state<Announcement['targets'][number] | null>(null);
+	let removeTargetOpen = $state(false);
 	function fmtDate(value: string | undefined) {
 		if (!value) {
 			return '—';
@@ -60,23 +68,20 @@
 			minute: '2-digit',
 		});
 	}
-
 	function targetLabel(target: Announcement['targets'][number]) {
 		return resolveAnnouncementTargetLabel(target, {
 			academic: academicContext,
-			detail: announcementsPage,
+			detail: announcementsPage.targetPeople,
 			labelForKind: kind => get(t)(`announcements.targetKind.${kind}`),
 		});
 	}
-
 	function confirmPublish() {
-		publishOpen = false;
+		publishOpen.open = false;
 		void announcementsPage.publishAnnouncement({
 			announcementId: live.id,
 			successMessage: get(t)('announcements.publishSuccess', { title: live.title }),
 		});
 	}
-
 	async function confirmDelete() {
 		deleteBusy = true;
 		try {
@@ -84,7 +89,7 @@
 				successMessage: get(t)('announcements.toastDeleted', { title: live.title }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -92,7 +97,26 @@
 			deleteBusy = false;
 		}
 	}
-
+	async function confirmRemoveTarget() {
+		if (!pendingRemoveTarget || removeTargetBusy) {
+			return;
+		}
+		removeTargetBusy = true;
+		try {
+			const ok = await announcementsPage.removeTarget({
+				announcementId: live.id,
+				targetId: pendingRemoveTarget.id,
+				successMessage: get(t)('announcements.targetRemoved'),
+			});
+			if (ok) {
+				removeTargetOpen = false;
+				pendingRemoveTarget = null;
+			}
+		}
+		finally {
+			removeTargetBusy = false;
+		}
+	}
 	const dateSummary = $derived.by(() => {
 		const parts = [`${$t('announcements.createdAt')}: ${fmtDate(live.createdAt)}`];
 		if (live.publishedAt) {
@@ -127,26 +151,35 @@
 		{#snippet actions()}
 			{#if isDraft}
 				<PermissionGate
-					permission="COMMUNICATION_CREATE"
+					permission="COMMUNICATION_DRAFT_MANAGE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
 					{#snippet children({ disabled, title })}
-						<AnnouncementFormModal announcement={live} {disabled} {title} />
+						<Button
+							variant="outline"
+							size="sm"
+
+							{disabled}
+							{title}
+							onclick={() => modals.open('edit')}
+						>
+							{$t('common.edit')}
+						</Button>
 					{/snippet}
 				</PermissionGate>
 				<PermissionGate
-					permission="COMMUNICATION_CREATE"
+					permission="COMMUNICATION_DRAFT_MANAGE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
 					{#snippet children({ disabled, title })}
 						<Button
 							size="sm"
-							class="rounded-full"
+
 							disabled={disabled || live.targets.length === 0}
 							{title}
-							onclick={() => (publishOpen = true)}
+							onclick={() => (publishOpen.open = true)}
 						>
 							{$t('announcements.publish')}
 						</Button>
@@ -157,23 +190,16 @@
 		{#snippet overflow()}
 			{#if isDraft}
 				<PermissionGate
-					permission="COMMUNICATION_CREATE"
+					permission="COMMUNICATION_DRAFT_MANAGE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
 					{#snippet children({ disabled, title })}
 						<RowActionMenuItem
-							{disabled}
-							{title}
-							onclick={() => modals.open('add-target')}
-						>
-							{$t('announcements.addTarget')}
-						</RowActionMenuItem>
-						<RowActionMenuItem
 							destructive
 							{disabled}
 							{title}
-							onclick={() => (deleteOpen = true)}
+							onclick={() => (deleteOpen.open = true)}
 						>
 							{$t('common.delete')}
 						</RowActionMenuItem>
@@ -185,14 +211,14 @@
 
 	<p class="whitespace-pre-wrap text-sm text-foreground/80">{live.content}</p>
 
-	<div class="rounded-2xl border border-border bg-card">
+	<div class="rounded-collection border border-border bg-card">
 		<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
-			<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+			<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('announcements.targetsLabel')} ({live.targets.length})
 			</p>
 			{#if isDraft}
 				<PermissionGate
-					permission="COMMUNICATION_CREATE"
+					permission="COMMUNICATION_DRAFT_MANAGE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
@@ -200,7 +226,7 @@
 						<Button
 							size="sm"
 							variant="outline"
-							class="h-7 rounded-full text-xs"
+							class="text-xs"
 							{disabled}
 							{title}
 							onclick={() => modals.open('add-target')}
@@ -218,8 +244,33 @@
 		{:else}
 			<ul class="divide-y divide-border">
 				{#each live.targets as target (target.id)}
-					<li class="px-4 py-2.5 text-sm text-foreground/80">
-						{targetLabel(target)}
+					<li class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-foreground/80">
+						<span class="min-w-0 truncate">{targetLabel(target)}</span>
+						{#if isDraft}
+							<PermissionGate
+								permission="COMMUNICATION_DRAFT_MANAGE"
+								mode="disable"
+								tooltip={$t('announcements.permissionCreate')}
+							>
+								{#snippet children({ disabled, title })}
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										class="w-8 text-muted-foreground hover:text-destructive"
+										disabled={disabled || removeTargetBusy}
+										title={title ?? $t('announcements.removeTarget')}
+										aria-label={$t('announcements.removeTarget')}
+										onclick={() => {
+											pendingRemoveTarget = target;
+											removeTargetOpen = true;
+										}}
+									>
+										<Trash2 class="h-4 w-4" />
+									</Button>
+								{/snippet}
+							</PermissionGate>
+						{/if}
 					</li>
 				{/each}
 			</ul>
@@ -227,10 +278,34 @@
 	</div>
 </div>
 
+<AnnouncementFormModal announcement={live} bind:open={editOpen.open} />
 <AnnouncementTargetFormModal announcementId={live.id} bind:open={addTargetOpen.open} />
 
+<PermissionGate permission="COMMUNICATION_READ">
+	<details class="my-3 space-y-2 rounded-collection border p-3" bind:open={deliveryOpen}>
+		<summary class="cursor-pointer text-sm font-medium">{$t('profile.deliveryHistory')}</summary>
+		{#if deliveryOpen}
+			<PageQuery cache={false} query={(url, request) => announcementsPage.queryDeliveries(live.id, url, request)} cacheKey={() => `announcement-deliveries:${live.id}`}>
+				{#snippet children(data)}
+					<DataState status={data.status} errorMessage={data.errorMessage} preserveShell>
+						{#each data.deliveries as delivery (delivery.id)}
+							<details class="my-2 space-y-1 rounded-collection border p-2 text-xs"><summary>{delivery.title} · {$t(`profile.deliveryStatus.${delivery.status}`)}</summary>
+								<p class="whitespace-pre-wrap">{delivery.body}</p>
+								<p>{$t('profile.recipient')}: {delivery.recipientName ?? $t('profile.restricted')}</p>
+								{#if delivery.failureReason}<p>{$t('profile.failureReason')}: {delivery.failureReason}</p>{/if}
+								{#if delivery.sentAt}<p>{$t('profile.lastSentAt')}: {String(delivery.sentAt)}</p>{/if}
+								{#if delivery.readAt}<p>{$t('profile.readAt')}: {String(delivery.readAt)}</p>{/if}
+							</details>
+						{:else}<p class="text-xs">{$t('profile.notProvided')}</p>{/each}
+					</DataState>
+				{/snippet}
+			</PageQuery>
+		{/if}
+	</details>
+</PermissionGate>
+
 <FormModal
-	bind:open={publishOpen}
+	bind:open={publishOpen.open}
 	title={$t('announcements.publishTitle')}
 	description={$t('announcements.publishDescription', { title: live.title })}
 	submitLabel={$t('announcements.publish')}
@@ -239,11 +314,22 @@
 />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('announcements.deleteConfirm', { title: live.title })}
 	confirmLabel={$t('common.delete')}
 	cancelLabel={$t('common.cancel')}
 	busy={deleteBusy}
 	onConfirm={confirmDelete}
+/>
+
+<ConfirmModal
+	bind:open={removeTargetOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('announcements.removeTargetConfirm', { name: pendingRemoveTarget ? targetLabel(pendingRemoveTarget) : '' })}
+	confirmLabel={$t('announcements.removeTarget')}
+	cancelLabel={$t('common.cancel')}
+	busy={removeTargetBusy}
+	onConfirm={confirmRemoveTarget}
+	onCancel={() => { pendingRemoveTarget = null; }}
 />

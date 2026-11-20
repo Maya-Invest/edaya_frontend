@@ -2,8 +2,8 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Activity } from '$lib/types/school';
 import {
-	activityEnrollmentsForActivities,
-	classActivityEnrollmentsForActivities,
+	listAllEntityPages,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
@@ -47,24 +47,38 @@ function formatDate(value: unknown): string {
 	return String(value).slice(0, 10);
 }
 
+export type ActivityOption = Pick<Activity, 'id' | 'name'>;
+
+function listSchoolActivities(client: SchoolClient, schoolId: string, signal?: AbortSignal) {
+	return safeOptionalEntityList(() => listAllEntityPages(
+		query => client.entities.activities.list(query),
+		{ baseQuery: { schoolId }, signal },
+	));
+}
+
+export async function fetchActivityOptions(client: SchoolClient, schoolId: string, signal?: AbortSignal): Promise<ActivityOption[]> {
+	const activities = await listSchoolActivities(client, schoolId, signal);
+	return activities.map(({ id, name }) => ({ id, name }));
+}
+
 export async function fetchActivitySources(
 	client: SchoolClient,
 	schoolId: string,
 ): Promise<ActivitySources> {
-	const activitiesRaw = await safeOptionalEntityList(
-		() => client.entities.activities.list({ schoolId }),
-	);
+	const activitiesRaw = await listSchoolActivities(client, schoolId);
 	const activityIds = uniqueIds(activitiesRaw.map(activity => activity.id));
-	const activityEnrollmentsRaw = activityIds.length > 0
-		? await safeOptionalEntityList(
-				() => client.entities.activityEnrollments.list(activityEnrollmentsForActivities(activityIds)),
-			)
-		: [];
-	const classActivityEnrollmentsRaw = activityIds.length > 0
-		? await safeOptionalEntityList(
-				() => client.entities.classActivityEnrollments.list(classActivityEnrollmentsForActivities(activityIds)),
-			)
-		: [];
+	const activityEnrollmentsRaw = await safeOptionalEntityList(
+		() => listAllEntityPagesForIdFilters(
+			query => client.entities.activityEnrollments.list(query),
+			[{ field: 'activityId', ids: activityIds }],
+		),
+	);
+	const classActivityEnrollmentsRaw = await safeOptionalEntityList(
+		() => listAllEntityPagesForIdFilters(
+			query => client.entities.classActivityEnrollments.list(query),
+			[{ field: 'activityId', ids: activityIds }],
+		),
+	);
 
 	return {
 		activitiesRaw,
@@ -91,6 +105,7 @@ export function mapActivities(sources: ActivitySources): Activity[] {
 	return sources.activitiesRaw.map(activity => ({
 		id: activity.id,
 		name: activity.name,
+		shortName: activity.shortName,
 		category: CATEGORY_TO_UI[activity.category] ?? 'Science',
 		coach: activity.coach,
 		schedule: activity.schedule,
@@ -119,7 +134,9 @@ export async function fetchActivities(client: SchoolClient, schoolId: string): P
 export async function fetchActivityById(
 	client: SchoolClient,
 	activityId: string,
+	signal?: AbortSignal,
 ): Promise<Activity | null> {
+	signal?.throwIfAborted();
 	const activitiesRaw = await safeOptionalEntityList(async () => {
 		const activity = await client.entities.activities.one({ id: activityId });
 		return activity ? [activity] : [];
@@ -128,12 +145,12 @@ export async function fetchActivityById(
 		return null;
 	}
 
-	const activityEnrollmentsRaw = await safeOptionalEntityList(
-		() => client.entities.activityEnrollments.list({ activityId }),
-	);
-	const classActivityEnrollmentsRaw = await safeOptionalEntityList(
-		() => client.entities.classActivityEnrollments.list({ activityId }),
-	);
+	const options = { baseQuery: { activityId }, signal };
+	const [activityEnrollmentsRaw, classActivityEnrollmentsRaw] = await Promise.all([
+		safeOptionalEntityList(() => listAllEntityPages(query => client.entities.activityEnrollments.list(query), options)),
+		safeOptionalEntityList(() => listAllEntityPages(query => client.entities.classActivityEnrollments.list(query), options)),
+	]);
+	signal?.throwIfAborted();
 
 	return mapActivities({ activitiesRaw, activityEnrollmentsRaw, classActivityEnrollmentsRaw })[0] ?? null;
 }

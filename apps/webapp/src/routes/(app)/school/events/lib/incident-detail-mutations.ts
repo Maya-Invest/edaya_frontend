@@ -12,9 +12,12 @@ export type IncidentInvolvementRole = 'subject' | 'witness' | 'victim';
 export interface ResolveIncidentStudentInput {
 	studentId: string;
 	role: IncidentInvolvementRole;
-	notes?: string;
+	notes?: string | null;
 	involvementId?: string;
 	disciplinaryActionId?: string;
+	sanctionStartsAt?: string;
+	sanctionEndsAt?: string;
+	sanctionNotes?: string;
 }
 
 function incidentCategoryFromKind(kind: IncidentKind): Incident['category'] {
@@ -49,6 +52,7 @@ function buildStoreIncident(input: {
 	description: string;
 	kind: IncidentKind;
 	date?: string;
+	lessonSessionId?: string | null;
 }, incidentId: string): Incident {
 	return {
 		id: incidentId,
@@ -59,6 +63,10 @@ function buildStoreIncident(input: {
 		category: incidentCategoryFromKind(input.kind),
 		severity: incidentSeverityFromKind(input.kind),
 		summary: input.title.trim(),
+		title: input.title.trim(),
+		description: input.description,
+		kind: input.kind,
+		lessonSessionId: input.lessonSessionId,
 		status: 'open',
 	};
 }
@@ -73,6 +81,7 @@ export async function createIncidentOnPage(
 		description: string;
 		kind: IncidentKind;
 		date?: string;
+		lessonSessionId?: string | null;
 		successMessage?: string;
 	},
 ): Promise<string | null> {
@@ -93,7 +102,7 @@ export async function createIncidentOnPage(
 				date: incidentDate,
 				kind: input.kind,
 				classGroupId: input.classGroupId ?? null,
-				lessonSessionId: null,
+				lessonSessionId: input.lessonSessionId ?? null,
 				createdAt: now,
 			});
 			return client.commands.addStudentInvolvement({
@@ -125,6 +134,7 @@ export async function updateIncidentOnPage(
 		description: string;
 		kind: IncidentKind;
 		date?: string;
+		lessonSessionId?: string | null;
 		successMessage?: string;
 	},
 ): Promise<boolean> {
@@ -136,6 +146,10 @@ export async function updateIncidentOnPage(
 
 	const patch = {
 		summary: input.title.trim(),
+		title: input.title.trim(),
+		description: input.description,
+		kind: input.kind,
+		lessonSessionId: input.lessonSessionId,
 		date: input.date ?? previous.date,
 		category: incidentCategoryFromKind(input.kind),
 		severity: incidentSeverityFromKind(input.kind),
@@ -150,6 +164,7 @@ export async function updateIncidentOnPage(
 				description: input.description.trim(),
 				kind: input.kind,
 				date: input.date ?? existing.date,
+				...(input.lessonSessionId !== undefined ? { lessonSessionId: input.lessonSessionId } : {}),
 				updatedAt: new Date().toISOString(),
 			};
 			return client.entities.incidents.save(payload);
@@ -186,7 +201,7 @@ export async function resolveIncidentWithOutcomesOnPage(
 		id: entry.involvementId ?? `involv-${input.incidentId}-${entry.studentId}`,
 		studentId: entry.studentId,
 		role: entry.role,
-		notes: entry.notes?.trim() || undefined,
+		notes: entry.notes === undefined ? undefined : entry.notes?.trim() || null,
 		createdAt: now,
 	}));
 	const sanctions = input.involvedStudents
@@ -195,6 +210,9 @@ export async function resolveIncidentWithOutcomesOnPage(
 			id: `sda-${input.incidentId}-${entry.studentId}-${index}`,
 			studentId: entry.studentId,
 			disciplinaryActionId: entry.disciplinaryActionId!,
+			startsAt: entry.sanctionStartsAt ? new Date(entry.sanctionStartsAt).toISOString() : undefined,
+			endsAt: entry.sanctionEndsAt ? new Date(entry.sanctionEndsAt).toISOString() : undefined,
+			notes: entry.sanctionNotes?.trim() || null,
 			createdAt: now,
 		}));
 

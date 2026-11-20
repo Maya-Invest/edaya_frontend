@@ -1,0 +1,1550 @@
+[
+  {
+    "id": "view.configuration.report-cards",
+    "feature": "configuration",
+    "path": "/configuration/structure/details",
+    "title": "/configuration/structure/details",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.permission-profiles",
+    "feature": "configuration",
+    "path": "/configuration/permission-profiles/[id]",
+    "title": "/configuration/permission-profiles",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools",
+    "feature": "configuration",
+    "path": "/configuration/tools",
+    "title": "/configuration/tools",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.teacher-assignments",
+    "feature": "configuration",
+    "path": "/configuration/tools/teacher-assignments",
+    "title": "/configuration/tools/teacher-assignments",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.classes",
+    "feature": "configuration",
+    "path": "/configuration/structure/classes",
+    "title": "/configuration/structure/classes",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.classes.record.assignments",
+    "feature": "configuration",
+    "path": "/configuration/structure/classes/[id]/assignments",
+    "title": "/configuration/structure/classes/[id]/assignments",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.classes.record.profile",
+    "feature": "configuration",
+    "path": "/configuration/structure/classes/[id]/profile",
+    "title": "/configuration/structure/classes/[id]/profile",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.other.subject-categories",
+    "feature": "configuration",
+    "path": "/configuration/other/subject-categories",
+    "title": "/configuration/other/subject-categories",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.other.grade-scales",
+    "feature": "configuration",
+    "path": "/configuration/grade-scales",
+    "title": "/configuration/grade-scales",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.other.discipline",
+    "feature": "configuration",
+    "path": "/configuration/other/discipline",
+    "title": "/configuration/other/discipline",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.period-grid",
+    "feature": "configuration",
+    "path": "/configuration/period-grid",
+    "title": "/configuration/period-grid",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.academic",
+    "feature": "configuration",
+    "path": "/configuration/academic",
+    "title": "/configuration/academic",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.subjects",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects",
+    "title": "/configuration/structure/subjects",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.subjects.record.progression",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects/[id]/progression",
+    "title": "/configuration/structure/subjects/[id]/progression",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.school",
+    "feature": "configuration",
+    "path": "/configuration/school",
+    "title": "/configuration/school",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.notifications",
+    "feature": "configuration",
+    "path": "/configuration/notifications",
+    "title": "/configuration/notifications",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.notifications.record",
+    "feature": "configuration",
+    "path": "/configuration/notifications/[id]",
+    "title": "/configuration/notifications/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.attendance",
+    "feature": "classes",
+    "path": "/classes/[classId]/attendance",
+    "title": "/classes/[classId]/attendance",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.attendance.record",
+    "feature": "classes",
+    "path": "/classes/[classId]/attendance/[id]",
+    "title": "/classes/[classId]/attendance/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.report-cards",
+    "feature": "classes",
+    "path": "/classes/[classId]/report-cards",
+    "title": "/classes/[classId]/report-cards",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.report-cards.record",
+    "feature": "classes",
+    "path": "/classes/[classId]/report-cards/[id]",
+    "title": "/classes/[classId]/report-cards/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.evaluations",
+    "feature": "classes",
+    "path": "/classes/[classId]/evaluations",
+    "title": "/classes/[classId]/evaluations",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.evaluations.record.grading",
+    "feature": "classes",
+    "path": "/classes/[classId]/evaluations/[id]/grading",
+    "title": "/classes/[classId]/evaluations/[id]/grading",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.evaluations.record.details",
+    "feature": "classes",
+    "path": "/classes/[classId]/evaluations/[id]/details",
+    "title": "/classes/[classId]/evaluations/[id]/details",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students",
+    "feature": "classes",
+    "path": "/classes/[classId]/students",
+    "title": "/classes/[classId]/students",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.record.attendance",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/attendance",
+    "title": "/classes/[classId]/students/[id]/attendance",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.record.grades",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/grades",
+    "title": "/classes/[classId]/students/[id]/grades",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.record.report-card",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/report-card",
+    "title": "/classes/[classId]/students/[id]/report-card",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.record.profile",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/profile",
+    "title": "/classes/[classId]/students/[id]/profile",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.record.enrollments",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/enrollments",
+    "title": "/classes/[classId]/students/[id]/enrollments",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.record.documents",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/documents",
+    "title": "/classes/[classId]/students/[id]/documents",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.record.finances",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/finances",
+    "title": "/classes/[classId]/students/[id]/finances",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.record.incidents",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/incidents",
+    "title": "/classes/[classId]/students/[id]/incidents",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.teaching",
+    "feature": "classes",
+    "path": "/classes/[classId]/teaching",
+    "title": "/classes/[classId]/teaching",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.teaching.record.logbook",
+    "feature": "classes",
+    "path": "/classes/[classId]/teaching/[id]/logbook",
+    "title": "/classes/[classId]/teaching/[id]/logbook",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.teaching.record.progression",
+    "feature": "classes",
+    "path": "/classes/[classId]/teaching/[id]/progression",
+    "title": "/classes/[classId]/teaching/[id]/progression",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.teaching.record.students",
+    "feature": "classes",
+    "path": "/classes/[classId]/teaching/[id]/students",
+    "title": "Dated subject roster",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.timetable",
+    "feature": "classes",
+    "path": "/classes/[classId]/timetable",
+    "title": "/classes/[classId]/timetable",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.timetable.record.attendance",
+    "feature": "classes",
+    "path": "/classes/[classId]/timetable/[id]/attendance",
+    "title": "/classes/[classId]/timetable/[id]/attendance",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.timetable.record.logbook",
+    "feature": "classes",
+    "path": "/classes/[classId]/timetable/[id]/logbook",
+    "title": "/classes/[classId]/timetable/[id]/logbook",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.timetable.record.details",
+    "feature": "classes",
+    "path": "/classes/[classId]/timetable/[id]/details",
+    "title": "/classes/[classId]/timetable/[id]/details",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.dashboard",
+    "feature": "dashboard",
+    "path": "/dashboard",
+    "title": "/dashboard",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.finance-checks",
+    "feature": "configuration",
+    "path": "/configuration/tools/finance-checks",
+    "title": "Finance checks",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.fees",
+    "feature": "finance",
+    "path": "/finance/fees",
+    "title": "/finance/fees",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.payment",
+    "feature": "finance",
+    "path": "/finance/payment",
+    "title": "/finance/payment",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing",
+    "feature": "finance",
+    "path": "/finance/billing",
+    "title": "/finance/billing",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.record",
+    "feature": "finance",
+    "path": "/finance/billing/[id]",
+    "title": "/finance/billing/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.account.inbox.record",
+    "feature": "account",
+    "path": "/account/inbox/[id]",
+    "title": "/account/inbox/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.account.notifications",
+    "feature": "account",
+    "path": "/account/notifications",
+    "title": "/account/notifications",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.messages.record",
+    "feature": "school",
+    "path": "/school/messages/[id]",
+    "title": "/school/messages/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.calendar",
+    "feature": "school",
+    "path": "/school/calendar",
+    "title": "/school/calendar",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.setup",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/setup",
+    "title": "/school/family-feedback/[id]/setup",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.results",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/results",
+    "title": "/school/family-feedback/[id]/results",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.audience",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/audience",
+    "title": "/school/family-feedback/[id]/audience",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.moderation",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/moderation",
+    "title": "/school/family-feedback/[id]/moderation",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.announcements.record",
+    "feature": "school",
+    "path": "/school/announcements/[id]",
+    "title": "/school/announcements/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers",
+    "feature": "school",
+    "path": "/school/teachers",
+    "title": "/school/teachers",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.assignments",
+    "feature": "school",
+    "path": "/school/teachers/[id]/assignments",
+    "title": "/school/teachers/[id]/assignments",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.evaluations",
+    "feature": "school",
+    "path": "/school/teachers/[id]/evaluations",
+    "title": "/school/teachers/[id]/evaluations",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.family-feedback",
+    "feature": "school",
+    "path": "/school/teachers/[id]/family-feedback",
+    "title": "/school/teachers/[id]/family-feedback",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.profile",
+    "feature": "school",
+    "path": "/school/teachers/[id]/profile",
+    "title": "/school/teachers/[id]/profile",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.availability",
+    "feature": "school",
+    "path": "/school/teachers/[id]/availability",
+    "title": "/school/teachers/[id]/availability",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.documents",
+    "feature": "school",
+    "path": "/school/teachers/[id]/documents",
+    "title": "/school/teachers/[id]/documents",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.timetable",
+    "feature": "school",
+    "path": "/school/teachers/[id]/timetable",
+    "title": "/school/teachers/[id]/timetable",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students",
+    "feature": "school",
+    "path": "/school/students",
+    "title": "/school/students",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.attendance",
+    "feature": "school",
+    "path": "/school/students/[id]/attendance",
+    "title": "/school/students/[id]/attendance",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.grades",
+    "feature": "school",
+    "path": "/school/students/[id]/grades",
+    "title": "/school/students/[id]/grades",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.report-card",
+    "feature": "school",
+    "path": "/school/students/[id]/report-card",
+    "title": "/school/students/[id]/report-card",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.profile",
+    "feature": "school",
+    "path": "/school/students/[id]/profile",
+    "title": "/school/students/[id]/profile",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.enrollments",
+    "feature": "school",
+    "path": "/school/students/[id]/enrollments",
+    "title": "/school/students/[id]/enrollments",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.documents",
+    "feature": "school",
+    "path": "/school/students/[id]/documents",
+    "title": "/school/students/[id]/documents",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.finances",
+    "feature": "school",
+    "path": "/school/students/[id]/finances",
+    "title": "/school/students/[id]/finances",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.incidents",
+    "feature": "school",
+    "path": "/school/students/[id]/incidents",
+    "title": "/school/students/[id]/incidents",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.guardians",
+    "feature": "school",
+    "path": "/school/guardians",
+    "title": "/school/guardians",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.guardians.record",
+    "feature": "school",
+    "path": "/school/guardians/[id]",
+    "title": "/school/guardians/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.activities",
+    "feature": "school",
+    "path": "/school/activities",
+    "title": "/school/activities",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.activities.record.classes",
+    "feature": "school",
+    "path": "/school/activities/[id]/classes",
+    "title": "/school/activities/[id]/classes",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.activities.record.students",
+    "feature": "school",
+    "path": "/school/activities/[id]/students",
+    "title": "/school/activities/[id]/students",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.activities.record.profile",
+    "feature": "school",
+    "path": "/school/activities/[id]/profile",
+    "title": "/school/activities/[id]/profile",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.staff",
+    "feature": "school",
+    "path": "/school/staff",
+    "title": "/school/staff",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.staff.record.permissions",
+    "feature": "school",
+    "path": "/school/staff/[id]/permissions",
+    "title": "/school/staff/[id]/permissions",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.staff.record.profile",
+    "feature": "school",
+    "path": "/school/staff/[id]/profile",
+    "title": "/school/staff/[id]/profile",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.events.record",
+    "feature": "school",
+    "path": "/school/events/[id]",
+    "title": "/school/events/[id]",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.corrections",
+    "feature": "school",
+    "path": "/school/corrections",
+    "title": "/school/corrections",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.invite.token",
+    "feature": "auth",
+    "path": "/invite/[token]",
+    "title": "/invite/[token]",
+    "kind": "page",
+    "identity": "anonymous"
+  },
+  {
+    "id": "view.account.security",
+    "feature": "account",
+    "path": "/account/security",
+    "title": "/account/security",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.auth.signup",
+    "feature": "auth",
+    "path": "/login?panel=signup&method=email-otp&stage=form",
+    "title": "Create account",
+    "kind": "page",
+    "identity": "anonymous"
+  },
+  {
+    "id": "view.auth.demo",
+    "feature": "auth",
+    "path": "/login/demo",
+    "title": "Demo account picker",
+    "kind": "page",
+    "identity": "anonymous"
+  },
+  {
+    "id": "view.school.students.modal.create",
+    "feature": "school",
+    "path": "/school/students?modal=create",
+    "title": "create · /school/students",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.guardians.modal.create",
+    "feature": "school",
+    "path": "/school/guardians?modal=create",
+    "title": "create · /school/guardians",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.staff.modal.create",
+    "feature": "school",
+    "path": "/school/staff?modal=create",
+    "title": "create · /school/staff",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.modal.create",
+    "feature": "school",
+    "path": "/school/teachers?modal=create",
+    "title": "create · /school/teachers",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.calendar.modal.create",
+    "feature": "school",
+    "path": "/school/calendar?modal=create",
+    "title": "create · /school/calendar",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.calendar.modal.edit",
+    "feature": "school",
+    "path": "/school/calendar?modal=edit",
+    "title": "edit · /school/calendar",
+    "kind": "modal",
+    "identity": "owner",
+    "target": "calendarEventId"
+  },
+  {
+    "id": "view.school.activities.modal.create",
+    "feature": "school",
+    "path": "/school/activities?modal=create",
+    "title": "create · /school/activities",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.announcements.modal.create",
+    "feature": "school",
+    "path": "/school/announcements?modal=create",
+    "title": "create · /school/announcements",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.modal.create",
+    "feature": "school",
+    "path": "/school/family-feedback?modal=create",
+    "title": "create · /school/family-feedback",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.messages.record.modal.reply",
+    "feature": "school",
+    "path": "/school/messages/[id]?modal=reply",
+    "title": "reply · /school/messages/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.events.modal.create",
+    "feature": "school",
+    "path": "/school/events?modal=create",
+    "title": "create · /school/events",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.profile.modal.edit-profile",
+    "feature": "school",
+    "path": "/school/students/[id]/profile?modal=edit-profile",
+    "title": "edit-profile · /school/students/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.profile.modal.change-class",
+    "feature": "school",
+    "path": "/school/students/[id]/profile?modal=change-class",
+    "title": "change-class · /school/students/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.profile.modal.link-guardian",
+    "feature": "school",
+    "path": "/school/students/[id]/profile?modal=link-guardian",
+    "title": "link-guardian · /school/students/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.profile.modal.note",
+    "feature": "school",
+    "path": "/school/students/[id]/profile?modal=note",
+    "title": "note · /school/students/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.attendance.modal.add-absence",
+    "feature": "school",
+    "path": "/school/students/[id]/attendance?modal=add-absence",
+    "title": "add-absence · /school/students/[id]/attendance",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.record.incidents.modal.add-incident",
+    "feature": "school",
+    "path": "/school/students/[id]/incidents?modal=add-incident",
+    "title": "add-incident · /school/students/[id]/incidents",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.guardians.record.modal.edit-profile",
+    "feature": "school",
+    "path": "/school/guardians/[id]?modal=edit-profile",
+    "title": "edit-profile · /school/guardians/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.staff.record.profile.modal.edit-profile",
+    "feature": "school",
+    "path": "/school/staff/[id]/profile?modal=edit-profile",
+    "title": "edit-profile · /school/staff/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.staff.record.permissions.modal.add-permission",
+    "feature": "school",
+    "path": "/school/staff/[id]/permissions?modal=add-permission",
+    "title": "add-permission · /school/staff/[id]/permissions",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.assignments.modal.form",
+    "feature": "school",
+    "path": "/school/teachers/[id]/assignments?modal=form",
+    "title": "form · /school/teachers/[id]/assignments",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.assignments.modal.delete-assignment",
+    "feature": "school",
+    "path": "/school/teachers/[id]/assignments?modal=delete-assignment",
+    "title": "delete-assignment · /school/teachers/[id]/assignments",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.teachers.record.documents.modal.generate-document",
+    "feature": "school",
+    "path": "/school/teachers/[id]/documents?modal=generate-document",
+    "title": "generate-document · /school/teachers/[id]/documents",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.announcements.record.modal.edit",
+    "feature": "school",
+    "path": "/school/announcements/[id]?modal=edit",
+    "title": "edit · /school/announcements/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.announcements.record.modal.add-target",
+    "feature": "school",
+    "path": "/school/announcements/[id]?modal=add-target",
+    "title": "add-target · /school/announcements/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.announcements.record.modal.publish",
+    "feature": "school",
+    "path": "/school/announcements/[id]?modal=publish",
+    "title": "publish · /school/announcements/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.setup.modal.edit",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/setup?modal=edit",
+    "title": "edit · /school/family-feedback/[id]/setup",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.setup.modal.assign-moderator",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/setup?modal=assign-moderator",
+    "title": "assign-moderator · /school/family-feedback/[id]/setup",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.setup.modal.schedule",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/setup?modal=schedule",
+    "title": "schedule · /school/family-feedback/[id]/setup",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.setup.modal.open",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/setup?modal=open",
+    "title": "open · /school/family-feedback/[id]/setup",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.setup.modal.close",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/setup?modal=close",
+    "title": "close · /school/family-feedback/[id]/setup",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.setup.modal.cancel",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/setup?modal=cancel",
+    "title": "cancel · /school/family-feedback/[id]/setup",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.moderation.modal.theme",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/moderation?modal=theme",
+    "title": "theme · /school/family-feedback/[id]/moderation",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.results.modal.publish",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/results?modal=publish",
+    "title": "publish · /school/family-feedback/[id]/results",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.family-feedback.record.results.modal.archive",
+    "feature": "school",
+    "path": "/school/family-feedback/[id]/results?modal=archive",
+    "title": "archive · /school/family-feedback/[id]/results",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.events.record.modal.edit",
+    "feature": "school",
+    "path": "/school/events/[id]?modal=edit",
+    "title": "edit · /school/events/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.events.record.modal.resolve",
+    "feature": "school",
+    "path": "/school/events/[id]?modal=resolve",
+    "title": "resolve · /school/events/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.students.modal.create",
+    "feature": "classes",
+    "path": "/classes/[classId]/students?modal=create",
+    "title": "create · /classes/[classId]/students",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.teaching.record.progression.modal.edit-subject",
+    "feature": "classes",
+    "path": "/classes/[classId]/teaching/[id]/progression?modal=edit-subject",
+    "title": "edit-subject · /classes/[classId]/teaching/[id]/progression",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.fees.modal.create",
+    "feature": "finance",
+    "path": "/finance/fees?modal=create",
+    "title": "create · /finance/fees",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.modal.assign-fee",
+    "feature": "finance",
+    "path": "/finance/billing?modal=assign-fee",
+    "title": "assign-fee · /finance/billing",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.record.modal.payment",
+    "feature": "finance",
+    "path": "/finance/billing/[id]?modal=payment",
+    "title": "payment · /finance/billing/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.record.modal.allocate",
+    "feature": "finance",
+    "path": "/finance/billing/[id]?modal=allocate",
+    "title": "allocate · /finance/billing/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.record.modal.unallocate",
+    "feature": "finance",
+    "path": "/finance/billing/[id]?modal=unallocate",
+    "title": "unallocate · /finance/billing/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.payment.modal.reverse",
+    "feature": "finance",
+    "path": "/finance/payment?modal=reverse",
+    "title": "reverse · /finance/payment",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.payment.modal.refund",
+    "feature": "finance",
+    "path": "/finance/payment?modal=refund",
+    "title": "refund · /finance/payment",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.school.modal.edit",
+    "feature": "configuration",
+    "path": "/configuration/school?modal=location",
+    "title": "location · /configuration/school",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.grade-levels.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/structure/details?modal=create-level",
+    "title": "Create grade level",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.grade-levels.record.modal.edit",
+    "feature": "configuration",
+    "path": "/configuration/structure/details?modal=edit-level",
+    "title": "Edit selected grade level",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.classes.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/structure/classes?modal=create",
+    "title": "create · /configuration/structure/classes",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.classes.record.profile.modal.edit",
+    "feature": "configuration",
+    "path": "/configuration/structure/classes/[id]/profile?modal=edit",
+    "title": "edit · /configuration/structure/classes/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.classes.record.assignments.modal.form",
+    "feature": "configuration",
+    "path": "/configuration/structure/classes/[id]/assignments?modal=form",
+    "title": "form · /configuration/structure/classes/[id]/assignments",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.subjects.modal.create-subject",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=create-subject",
+    "title": "create-subject · /configuration/structure/subjects",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.subjects.record.progression.modal.add-chapter",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects/[id]/progression?modal=add-chapter",
+    "title": "add-chapter · /configuration/structure/subjects/[id]/progression",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.other.grade-scales.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/grade-scales?modal=create",
+    "title": "create · /configuration/grade-scales",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.report-cards.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/structure/details?modal=create",
+    "title": "create · /configuration/structure/details",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.notifications.modal.reset-all",
+    "feature": "configuration",
+    "path": "/configuration/notifications?modal=reset-all",
+    "title": "reset-all · /configuration/notifications",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.notifications.record.modal.edit",
+    "feature": "configuration",
+    "path": "/configuration/notifications/[id]?modal=edit",
+    "title": "edit · /configuration/notifications/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.notifications.record.modal.reset-key",
+    "feature": "configuration",
+    "path": "/configuration/notifications/[id]?modal=reset-key",
+    "title": "reset-key · /configuration/notifications/[id]",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.other.discipline.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/other/discipline?modal=create",
+    "title": "create · /configuration/other/discipline",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.other.subject-categories.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/other/subject-categories?modal=create",
+    "title": "create · /configuration/other/subject-categories",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.permission-profiles.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/permission-profiles?modal=create",
+    "title": "create · /configuration/permission-profiles",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.teacher-assignments.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/tools/teacher-assignments?modal=create",
+    "title": "create · /configuration/tools/teacher-assignments",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.dashboard.modal.account-profile",
+    "feature": "dashboard",
+    "path": "/dashboard?modal=account-profile",
+    "title": "account-profile · /dashboard",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=students&modalStep=upload",
+    "title": "import · /configuration/tools",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.generate-timetable",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=generate-timetable",
+    "title": "generate-timetable · /configuration/tools",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.academic.modal.create",
+    "feature": "configuration",
+    "path": "/configuration/academic?modal=create",
+    "title": "create · /configuration/academic",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.period-grid.modal.period-def",
+    "feature": "configuration",
+    "path": "/configuration/period-grid?modal=period-def",
+    "title": "period-def · /configuration/period-grid",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.period-grid.modal.period-def-wizard",
+    "feature": "configuration",
+    "path": "/configuration/period-grid?modal=period-def-wizard&modalStep=preset",
+    "title": "period-def-wizard · /configuration/period-grid",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.timetable.modal.new-session",
+    "feature": "classes",
+    "path": "/classes/[classId]/timetable?modal=new-session&modalStep=type",
+    "title": "new-session · /classes/[classId]/timetable",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.class.evaluations.modal.create",
+    "feature": "classes",
+    "path": "/classes/[classId]/evaluations?modal=create",
+    "title": "create · /classes/[classId]/evaluations",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.cards",
+    "feature": "school",
+    "path": "/school/students?view=cards",
+    "title": "Student cards",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.students.table",
+    "feature": "school",
+    "path": "/school/students?view=table",
+    "title": "Student table",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.generate-timetable.periods",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=generate-timetable&modalStep=setup&modalTab=periods",
+    "title": "Timetable generator · periods",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.generate-timetable.advanced",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=generate-timetable&modalStep=setup&modalTab=advanced",
+    "title": "Timetable generator · advanced",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.students.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=students&modalStep=download",
+    "title": "Import template · students",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.guardians.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=guardians&modalStep=download",
+    "title": "Import template · guardians",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.staff.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=staff&modalStep=download",
+    "title": "Import template · staff",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.teachers.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=teachers&modalStep=download",
+    "title": "Import template · teachers",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.teacher_assignments.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=teacher_assignments&modalStep=download",
+    "title": "Import template · teacher_assignments",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.classes.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=classes&modalStep=download",
+    "title": "Import template · classes",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.subjects.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=subjects&modalStep=download",
+    "title": "Import template · subjects",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.chapters.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=chapters&modalStep=download",
+    "title": "Import template · chapters",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.billing.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=billing&modalStep=download",
+    "title": "Import template · billing",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.payments.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=payments&modalStep=download",
+    "title": "Import template · payments",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.structure.modal.level-grading",
+    "feature": "configuration",
+    "path": "/configuration/structure/details?modal=level-grading",
+    "title": "level-grading",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.structure.details",
+    "feature": "configuration",
+    "path": "/configuration/structure/details",
+    "title": "Grade level details",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.fees.feeId",
+    "feature": "finance",
+    "path": "/finance/fees/[feeId]",
+    "title": "Fee Overview",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.id.payments",
+    "feature": "finance",
+    "path": "/finance/billing/[id]/payments",
+    "title": "Payments",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.id.history",
+    "feature": "finance",
+    "path": "/finance/billing/[id]/history",
+    "title": "Billing history",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.payment.modal.payment",
+    "feature": "finance",
+    "path": "/finance/payment?modal=payment",
+    "title": "Record payment",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.fees.feeId.modal.assign-fee",
+    "feature": "finance",
+    "path": "/finance/fees/[feeId]?modal=assign-fee",
+    "title": "Assign selected fee",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.other.academic-disciplines",
+    "feature": "configuration",
+    "path": "/configuration/other/academic-disciplines",
+    "title": "Academic disciplines",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.other.placement-statuses",
+    "feature": "configuration",
+    "path": "/configuration/other/placement-statuses",
+    "title": "Placement statuses",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.academic_disciplines.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=academic_disciplines&modalStep=download",
+    "title": "Import session · academic_disciplines",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.placement_statuses.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=placement_statuses&modalStep=download",
+    "title": "Import session · placement_statuses",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.guardian_relationships.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=guardian_relationships&modalStep=download",
+    "title": "Import session · guardian_relationships",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.tools.modal.import.class_offerings.template",
+    "feature": "configuration",
+    "path": "/configuration/tools?modal=import&modalTab=class_offerings&modalStep=download",
+    "title": "Import session · class_offerings",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.subjects.modal.module-create",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=module-create",
+    "title": "module-create",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.subjects.modal.module-edit",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=module-edit",
+    "title": "module-edit",
+    "kind": "modal",
+    "identity": "owner",
+    "target": "reportModuleId"
+  },
+  {
+    "id": "view.configuration.subjects.modal.module-members",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=module-members",
+    "title": "module-members",
+    "kind": "modal",
+    "identity": "owner",
+    "target": "reportModuleId"
+  },
+  {
+    "id": "view.configuration.subjects.modal.module-delete",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=module-delete",
+    "title": "module-delete",
+    "kind": "modal",
+    "identity": "owner",
+    "target": "reportModuleId"
+  },
+  {
+    "id": "view.configuration.subjects.modal.report-settings",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=report-settings",
+    "title": "report-settings",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.school.student-profile.modal.change-status",
+    "feature": "school",
+    "path": "/school/students/[id]/profile?modal=change-status",
+    "title": "change-status · /school/students/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.classes.student-profile.modal.change-status",
+    "feature": "classes",
+    "path": "/classes/[classId]/students/[id]/profile?modal=change-status",
+    "title": "change-status · /classes/[classId]/students/[id]/profile",
+    "kind": "modal",
+    "identity": "owner"
+  }
+]

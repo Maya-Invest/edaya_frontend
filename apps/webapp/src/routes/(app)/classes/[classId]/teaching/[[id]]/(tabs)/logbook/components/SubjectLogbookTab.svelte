@@ -1,21 +1,39 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
+	import type { LogEntry } from '$lib/types/teaching-log';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import { t } from '$lib/i18n';
-	import { Check, FileText, Paperclip } from '$lib/icons';
+	import { Paperclip } from '$lib/icons';
 	import { getTeachingPageState } from '../../../../teaching-page.svelte';
 
-	const { subject }: { subject: Subject } = $props();
+	const { subject, entries }: { subject: Subject; entries: LogEntry[] } = $props();
 
 	const teachingPage = getTeachingPageState();
-	const entries = $derived(teachingPage.logEntriesForSubject(subject));
+	const classId = $derived(subject.classId);
 </script>
 
 <div class="space-y-3">
+	<div class="flex flex-wrap items-center gap-3">
+		<AcademicPeriodSelector />
+		<DocumentPdfButton onRequestDocumentIssuance={teachingPage.performRequestDocumentIssuance}
+			disabled={!academicContext.periodId}
+			templateKey="logbook.v1"
+			sourceId={classId}
+			classGroupId={classId}
+			classSubjectId={subject.id}
+			academicPeriodId={academicContext.periodId}
+			permission="CLASS_LOGBOOK_READ"
+			classId={classId}
+			label={$t('documents.exportLogbook')}
+		/>
+	</div>
 	{#each entries as entry (entry.id)}
-		<article class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+		<article class="rounded-collection border border-border bg-card p-4 shadow-soft">
 			<header class="mb-2 flex items-start justify-between gap-2">
 				<div>
-					<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+					<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 						{new Date(entry.date).toLocaleDateString('fr-FR', {
 							weekday: 'short',
 							day: '2-digit',
@@ -25,29 +43,20 @@
 					</p>
 					<h4 class="mt-0.5 font-display text-sm font-semibold">{entry.chapter}</h4>
 				</div>
-				<span class="font-mono text-[10px] text-muted-foreground">{entry.progress}%</span>
+				{#each entry.chapters ?? [] as chapter (chapter.matterId)}
+					<p>{chapter.name} · {$t(chapter.completed === null ? 'logbook.reference' : chapter.completed ? 'logbook.finished' : 'logbook.covered')}{chapter.notes ? ` · ${chapter.notes}` : ''}</p>
+				{/each}
 			</header>
 			<p class="text-xs leading-relaxed text-foreground/80">{entry.content}</p>
-			{#if entry.objectives.length > 0}
-				<ul class="mt-2 space-y-1">
-					{#each entry.objectives as objective (objective)}
-						<li class="flex items-start gap-1.5 text-[11px]">
-							<Check class="mt-0.5 h-3 w-3 text-accent" />
-							{objective}
-						</li>
-					{/each}
-				</ul>
+			{#if entry.notes.trim().length > 0}
+				<p class="mt-2 text-[11px] text-muted-foreground">
+					<span class="font-medium text-foreground">{$t('teaching.notes')} :</span>
+					{entry.notes}
+				</p>
 			{/if}
-			{#if entry.homework || entry.attachments?.length}
+			{#if entry.attachments?.length}
 				<div class="mt-2 flex flex-wrap items-center gap-2 border-t border-border pt-2 text-[11px]">
-					{#if entry.homework}
-						<span class="flex items-center gap-1 text-muted-foreground">
-							<FileText class="h-3 w-3" />
-							<span class="font-medium text-foreground">{$t('teaching.homework')} :</span>
-							{entry.homework}
-						</span>
-					{/if}
-					{#each entry.attachments ?? [] as attachment (attachment)}
+					{#each entry.attachments as attachment (attachment)}
 						<span
 							class="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-muted-foreground"
 						>
@@ -59,7 +68,7 @@
 			{/if}
 		</article>
 	{:else}
-		<p class="rounded-2xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
+		<p class="rounded-collection border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
 			{$t('teaching.empty')}
 		</p>
 	{/each}

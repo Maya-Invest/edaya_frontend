@@ -1,36 +1,18 @@
 import type { components } from '$lib/api/schema';
-import type { ScheduleDayOfWeek } from '$lib/components/school/scheduling/planning-calendar';
+import type { ScheduleDayOfWeek } from '$lib/scheduling/planning-calendar';
 import type { PlanningEvent } from '$lib/types/school';
+import type { MutationOptions } from './execute-mutation';
 import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { t } from '$lib/i18n';
 import {
 	mondayOfWeekUtc,
 	sessionInstantsForSlot,
-} from '$lib/components/school/scheduling/planning-calendar';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
-import { t } from '$lib/i18n';
+} from '$lib/scheduling/planning-calendar';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
-
-function sessionInstantsForWeek(
-	weekStart: Date,
-	day: PlanningEvent['day'],
-	start: string,
-	end: string,
-): { startsAt: string; endsAt: string } {
-	const weekAnchor = mondayOfWeekUtc(weekStart).toISOString();
-	const instants = sessionInstantsForSlot(weekAnchor, {
-		day,
-		startTime: start,
-		endTime: end,
-	});
-	return {
-		startsAt: instants.startsAt.toISOString(),
-		endsAt: instants.endsAt.toISOString(),
-	};
-}
 
 function sessionInstantsForExistingWeek(
 	referenceStartsAt: string,
@@ -49,14 +31,10 @@ function sessionInstantsForExistingWeek(
 	};
 }
 
-function planningSnapshot(sessionId: string): PlanningEvent | undefined {
-	return detailDataContext.planning.find(event => event.id === sessionId);
-}
-
 function specificDateForWeek(weekStart: Date, day: PlanningEvent['day']): string {
 	const weekAnchor = mondayOfWeekUtc(weekStart);
 	const date = new Date(weekAnchor);
-	const offset = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4 }[day] ?? 0;
+	const offset = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }[day] ?? 0;
 	date.setUTCDate(date.getUTCDate() + offset);
 	return date.toISOString().slice(0, 10);
 }
@@ -111,24 +89,6 @@ export async function createSessionMutation(input: {
 	}
 
 	const specificDate = specificDateForWeek(input.weekStart, input.day);
-	const { startsAt, endsAt } = sessionInstantsForWeek(input.weekStart, input.day, input.start, input.end);
-	const subject = detailDataContext.subjects.find(entry => entry.id === input.classSubjectId);
-	const optimisticId = `ls-${Date.now().toString(36)}`;
-	const optimistic: PlanningEvent = {
-		id: optimisticId,
-		classId: input.classGroupId,
-		scheduleId: input.scheduleId,
-		kind: 'lesson',
-		title: input.title.trim(),
-		subject: subject?.name ?? input.title.trim(),
-		day: input.day,
-		start: input.start,
-		end: input.end,
-		startsAt,
-		endsAt,
-		room: '—',
-		teacher: 'Non assigné',
-	};
 
 	const result = await runMutation(async () => {
 		const scheduleId = input.scheduleId ?? `sched-${Date.now().toString(36)}`;
@@ -174,23 +134,7 @@ export async function createSessionMutation(input: {
 	}, {
 		successMessage: input.successMessage,
 		errorMessage: get(t)('planning.createError'),
-		apply: () => {
-			detailDataContext.appendPlanningEvent(optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removePlanningEvent(optimisticId);
-		},
-		onSuccess: (session) => {
-			detailDataContext.removePlanningEvent(optimisticId);
-			detailDataContext.appendPlanningEvent({
-				...optimistic,
-				id: session.id,
-				kind: 'lesson',
-				scheduleId: session.scheduleId ?? undefined,
-				startsAt: String(session.startsAt),
-				endsAt: String(session.endsAt),
-			});
-		},
+		versionKeys: ['planning'],
 	});
 	return result?.id ?? null;
 }
@@ -205,17 +149,6 @@ export async function updateSessionMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = planningSnapshot(input.sessionId);
-	const subject = input.classSubjectId
-		? detailDataContext.subjects.find(entry => entry.id === input.classSubjectId)
-		: undefined;
-	const patch = {
-		title: input.title.trim(),
-		subject: subject?.name ?? input.title.trim(),
-		day: input.day,
-		start: input.start,
-		end: input.end,
-	};
 
 	let existing;
 	try {
@@ -232,7 +165,6 @@ export async function updateSessionMutation(input: {
 		input.start,
 		input.end,
 	);
-	const resolvedPatch = { ...patch, startsAt, endsAt };
 
 	const result = await runMutation(async () => {
 		await client.commands.rescheduleOccurrence({
@@ -248,14 +180,7 @@ export async function updateSessionMutation(input: {
 		);
 	}, {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchPlanningEvent(input.sessionId, resolvedPatch);
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchPlanningEvent(input.sessionId, previous);
-			}
-		},
+		versionKeys: ['planning'],
 	});
 	return result !== null;
 }
@@ -272,7 +197,6 @@ export async function reschedulePlanningSlotMutation(input: {
 	errorMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = planningSnapshot(input.sessionId);
 	const isActivity = input.kind === 'activity';
 
 	let sessionStartsAt: string;
@@ -296,23 +220,19 @@ export async function reschedulePlanningSlotMutation(input: {
 		startTime: input.startTime,
 		endTime: input.endTime,
 	});
-	const patch = {
-		day: input.day,
-		start: input.startTime,
-		end: input.endTime,
-		startsAt: instants.startsAt.toISOString(),
-		endsAt: instants.endsAt.toISOString(),
-	};
 
 	const result = await runMutation(async () => {
 		if (input.scheduleId) {
 			const schedule = await client.entities.schedules.get(input.scheduleId);
 			if (!schedule.isRecurring) {
-				await client.entities.schedules.save({
-					...schedule,
-					startTime: input.startTime,
-					endTime: input.endTime,
-					specificDate: instants.startsAt.toISOString().slice(0, 10),
+				await client.commands.saveSchedule({
+					schedule: {
+						...schedule,
+						startTime: input.startTime,
+						endTime: input.endTime,
+						specificDate: instants.startsAt.toISOString().slice(0, 10),
+					},
+					materialize: false,
 				});
 			}
 		}
@@ -331,14 +251,9 @@ export async function reschedulePlanningSlotMutation(input: {
 					},
 		);
 	}, {
-		apply: () => detailDataContext.patchPlanningEvent(input.sessionId, patch),
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchPlanningEvent(input.sessionId, previous);
-			}
-		},
 		successMessage: input.successMessage,
 		errorMessage: input.errorMessage,
+		versionKeys: ['planning'],
 	});
 
 	return result !== null;
@@ -346,14 +261,13 @@ export async function reschedulePlanningSlotMutation(input: {
 
 export async function cancelPlanningEventMutation(
 	event: Pick<PlanningEvent, 'id' | 'kind' | 'title'>,
-	opts?: { successMessage?: string },
+	opts?: Pick<MutationOptions<void>, 'successMessage' | 'apply' | 'rollback' | 'onSuccess'>,
 ): Promise<boolean> {
 	if (event.kind !== 'lesson' && event.kind !== 'activity') {
 		return false;
 	}
 
 	const client = getBrowserSchoolClient();
-	const previous = planningSnapshot(event.id);
 	const result = await runMutation(async () => {
 		if (event.kind === 'activity') {
 			await client.commands.cancelActivitySession({ activitySessionId: event.id });
@@ -361,15 +275,8 @@ export async function cancelPlanningEventMutation(
 		}
 		await client.commands.cancelLessonSession({ lessonSessionId: event.id });
 	}, {
-		successMessage: opts?.successMessage,
-		apply: () => {
-			detailDataContext.patchPlanningEvent(event.id, { status: 'cancelled' });
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchPlanningEvent(event.id, previous);
-			}
-		},
+		...opts,
+		versionKeys: ['planning'],
 	});
 	return result !== null;
 }

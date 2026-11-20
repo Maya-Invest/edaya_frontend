@@ -3,8 +3,8 @@ import type { Teacher } from '$lib/types/school';
 
 export type TeacherSortColumn = Exclude<TeacherListFilters['sort'], 'roster'>;
 
-export function teacherListUsesFullRoster(filters: Pick<TeacherListFilters, 'q' | 'sort'>) {
-	return filters.q.trim() !== '' || filters.sort !== 'roster';
+export function teacherListUsesFullRoster(filters: Pick<TeacherListFilters, 'q' | 'sort' | 'status'>) {
+	return filters.q.trim() !== '' || filters.sort !== 'roster' || (filters.status ?? 'all') !== 'all';
 }
 
 export function cycleTeacherListSort(
@@ -57,11 +57,18 @@ export function filterTeacherList(
 ): Teacher[] {
 	const assignmentCount = options?.assignmentCount ?? (() => 0);
 	const needle = filters.q.trim().toLowerCase();
+	const status = filters.status ?? 'all';
 	const filtered = teachers.filter((teacher) => {
+		if (status === 'active' && !teacher.isActive) {
+			return false;
+		}
+		if (status === 'inactive' && teacher.isActive) {
+			return false;
+		}
 		if (!needle) {
 			return true;
 		}
-		const haystack = `${teacher.name} ${teacher.email} ${teacher.phone}`.toLowerCase();
+		const haystack = `${teacher.name} ${teacher.email} ${teacher.phone} ${teacher.identifier ?? ''}`.toLowerCase();
 		return haystack.includes(needle);
 	});
 	return sortTeacherList(filtered, filters.sort, filters.sortDir, assignmentCount);

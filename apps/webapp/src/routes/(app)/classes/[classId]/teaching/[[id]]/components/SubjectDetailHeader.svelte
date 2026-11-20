@@ -6,7 +6,9 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogSubjectName } from '$lib/i18n/catalog-label';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachingPageState } from '../../teaching-page.svelte';
@@ -19,20 +21,22 @@
 		onDeleted?: () => void;
 	} = $props();
 
-	type SubjectDrawerModal = 'edit-subject';
+	type SubjectDrawerModal = 'edit-subject' | 'delete';
 
 	const teachingPage = getTeachingPageState();
 	const modals = createUrlSyncedModals<SubjectDrawerModal>({
-		allowed: ['edit-subject'],
+		allowed: ['edit-subject', 'delete'],
 		getUrl: () => $page.url,
 	});
+	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
 	const editSubjectOpen = bindUrlModal(modals, 'edit-subject');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
+	const localizedName = $derived(catalogSubjectName(subject.name, $lang, subject.shortName));
 
 	const teacherInitials = $derived(
 		subject.teacher
@@ -52,7 +56,7 @@
 				successMessage: get(t)('subjects.toastDeleted', { name: subject.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -62,10 +66,10 @@
 	}
 </script>
 
-<DrawerEntityHeader name={subject.name} summary={subject.description}>
+<DrawerEntityHeader name={localizedName} summary={subject.description}>
 	{#snippet chips()}
-		<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
-			{$t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
+		<span class="rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] tabular-nums text-foreground/80">
+			{subject.hoursPerWeek === null ? '—' : $t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
 		</span>
 		<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
 			{subject.teacher}
@@ -73,29 +77,29 @@
 	{/snippet}
 	{#snippet avatar()}
 		<span
-			class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-sm font-semibold text-primary-foreground"
+			class="flex h-14 w-14 items-center justify-center rounded-collection bg-primary font-display text-sm font-semibold text-primary-foreground"
 		>
 			{teacherInitials}
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<Button variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
+		<Button variant="outline" size="sm" onclick={() => modals.open('edit-subject')}>
 			{$t('common.edit')}
 		</Button>
 	{/snippet}
 	{#snippet overflow()}
-		<RowActionMenuItem destructive onclick={() => (deleteOpen = true)}>
+		<RowActionMenuItem destructive onclick={() => (deleteOpen.open = true)}>
 			{$t('common.delete')}
 		</RowActionMenuItem>
 	{/snippet}
 </DrawerEntityHeader>
 
-<SubjectFormModal subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
+<SubjectFormModal onLoadParticipationRevisions={teachingPage.onLoadParticipationRevisions} onLoadCategories={teachingPage.onLoadCategories} onCreateSchedule={teachingPage.performCreateSchedule} onCreateSubjectForClass={teachingPage.performCreateSubjectForClass} onUpdateSubject={teachingPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
-	description={$t('subjects.deleteConfirm', { name: subject.name })}
+	description={$t('subjects.deleteConfirm', { name: localizedName })}
 	confirmLabel={$t('common.delete')}
 	cancelLabel={$t('common.cancel')}
 	busy={deleteBusy}

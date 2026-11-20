@@ -11,8 +11,9 @@ import {
 	assessmentResultsForStudents,
 	attendanceForStudents,
 	disciplinaryActionsForIncident,
-	entitiesByIds,
 	enrollmentsForStudents,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 
@@ -66,9 +67,16 @@ export function mapStudentEnrollmentHistory(
 			className: classNames.get(enrollment.classGroupId) ?? enrollment.classGroupId,
 			academicYearId: enrollment.academicYearId,
 			status: enrollment.status,
-			enrolledAt: formatDate(enrollment.enrolledAt ?? enrollment.createdAt),
+			enrolledAt: formatDate(enrollment.enrolledAt),
 			endedAt: enrollment.endedAt ? formatDate(enrollment.endedAt) : undefined,
 			endReason: enrollment.endReason ?? null,
+			progressionDecision: enrollment.progressionDecision,
+			progressionDecidedAt: enrollment.progressionDecidedAt ? formatDate(enrollment.progressionDecidedAt) : undefined,
+			progressionDecidedBy: enrollment.progressionDecidedBy,
+			progressionNotes: enrollment.progressionNotes,
+			previousEnrollmentId: enrollment.previousEnrollmentId,
+			closedBy: enrollment.closedBy,
+			enrollmentIndex: enrollment.enrollmentIndex,
 		}))
 		.sort((left, right) => right.enrolledAt.localeCompare(left.enrolledAt));
 }
@@ -77,13 +85,17 @@ export async function loadStudentEnrollmentHistory(
 	client: SchoolClient,
 	studentId: string,
 ): Promise<StudentEnrollmentHistoryItem[]> {
-	const enrollmentsRaw = await client.entities.enrollments.list(enrollmentsForStudents([studentId]));
-	const classIds = uniqueIds((enrollmentsRaw ?? []).map(enrollment => enrollment.classGroupId));
-	const classGroupsRaw = classIds.length > 0
-		? await client.entities.classGroups.list(entitiesByIds(classIds))
-		: [];
-	const classNames = new Map((classGroupsRaw ?? []).map(entry => [entry.id, entry.name]));
-	return mapStudentEnrollmentHistory(enrollmentsRaw ?? [], classNames);
+	const enrollmentsRaw = await listAllEntityPages(
+		query => client.entities.enrollments.list(query),
+		{ baseQuery: enrollmentsForStudents([studentId]) },
+	);
+	const classIds = uniqueIds(enrollmentsRaw.map(enrollment => enrollment.classGroupId));
+	const classGroupsRaw = await listAllEntityPagesByIds(
+		query => client.entities.classGroups.list(query),
+		classIds,
+	);
+	const classNames = new Map(classGroupsRaw.map(entry => [entry.id, entry.name]));
+	return mapStudentEnrollmentHistory(enrollmentsRaw, classNames);
 }
 
 export function mapStudentGradeRows(
@@ -131,29 +143,35 @@ export async function loadStudentGradeRows(
 	client: SchoolClient,
 	studentId: string,
 ): Promise<StudentGradeRow[]> {
-	const resultsRaw = await client.entities.assessmentResults.list(
-		assessmentResultsForStudents([studentId]),
+	const resultsRaw = await listAllEntityPages(
+		query => client.entities.assessmentResults.list(query),
+		{ baseQuery: assessmentResultsForStudents([studentId]) },
 	);
-	const assessmentIds = uniqueIds((resultsRaw ?? []).map(result => result.assessmentId));
+	const assessmentIds = uniqueIds(resultsRaw.map(result => result.assessmentId));
 	if (assessmentIds.length === 0) {
 		return [];
 	}
 
-	const assessmentsRaw = await client.entities.assessments.list(entitiesByIds(assessmentIds));
-	const classSubjectIds = uniqueIds((assessmentsRaw ?? []).map(assessment => assessment.classSubjectId));
-	const classSubjectsRaw = classSubjectIds.length > 0
-		? await client.entities.classSubjects.list(entitiesByIds(classSubjectIds))
-		: [];
-	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(entry => entry.subjectId));
-	const subjectsRaw = subjectIds.length > 0
-		? await client.entities.subjects.list(entitiesByIds(subjectIds))
-		: [];
+	const assessmentsRaw = await listAllEntityPagesByIds(
+		query => client.entities.assessments.list(query),
+		assessmentIds,
+	);
+	const classSubjectIds = uniqueIds(assessmentsRaw.map(assessment => assessment.classSubjectId));
+	const classSubjectsRaw = await listAllEntityPagesByIds(
+		query => client.entities.classSubjects.list(query),
+		classSubjectIds,
+	);
+	const subjectIds = uniqueIds(classSubjectsRaw.map(entry => entry.subjectId));
+	const subjectsRaw = await listAllEntityPagesByIds(
+		query => client.entities.subjects.list(query),
+		subjectIds,
+	);
 
 	return mapStudentGradeRows(
-		resultsRaw ?? [],
-		assessmentsRaw ?? [],
-		subjectsRaw ?? [],
-		classSubjectsRaw ?? [],
+		resultsRaw,
+		assessmentsRaw,
+		subjectsRaw,
+		classSubjectsRaw,
 	);
 }
 
@@ -212,8 +230,11 @@ export async function loadStudentAttendanceHistory(
 	client: SchoolClient,
 	studentId: string,
 ): Promise<StudentAttendanceHistoryItem[]> {
-	const recordsRaw = await client.entities.attendance.list(attendanceForStudents([studentId]));
-	if (!recordsRaw?.length) {
+	const recordsRaw = await listAllEntityPages(
+		query => client.entities.attendance.list(query),
+		{ baseQuery: attendanceForStudents([studentId]) },
+	);
+	if (!recordsRaw.length) {
 		return [];
 	}
 
@@ -231,18 +252,10 @@ export async function loadStudentAttendanceHistory(
 	);
 
 	const [occurrencesRaw, lessonSessionsRaw, activitySessionsRaw, assessmentsRaw] = await Promise.all([
-		occurrenceIds.length > 0
-			? client.entities.attendances.list(entitiesByIds(occurrenceIds))
-			: Promise.resolve([]),
-		lessonSessionIds.length > 0
-			? client.entities.lessonSessions.list(entitiesByIds(lessonSessionIds))
-			: Promise.resolve([]),
-		activitySessionIds.length > 0
-			? client.entities.activitySessions.list(entitiesByIds(activitySessionIds))
-			: Promise.resolve([]),
-		assessmentIds.length > 0
-			? client.entities.assessments.list(entitiesByIds(assessmentIds))
-			: Promise.resolve([]),
+		listAllEntityPagesByIds(query => client.entities.attendances.list(query), occurrenceIds),
+		listAllEntityPagesByIds(query => client.entities.lessonSessions.list(query), lessonSessionIds),
+		listAllEntityPagesByIds(query => client.entities.activitySessions.list(query), activitySessionIds),
+		listAllEntityPagesByIds(query => client.entities.assessments.list(query), assessmentIds),
 	]);
 
 	return mapStudentAttendanceHistory(
@@ -278,17 +291,19 @@ export async function loadIncidentSanctions(
 	incidentId: string,
 	studentNames: ReadonlyMap<string, string>,
 ): Promise<IncidentSanctionRow[]> {
-	const sanctionsRaw = await client.entities.studentDisciplinaryActions.list(
-		disciplinaryActionsForIncident(incidentId),
+	const sanctionsRaw = await listAllEntityPages(
+		query => client.entities.studentDisciplinaryActions.list(query),
+		{ baseQuery: disciplinaryActionsForIncident(incidentId) },
 	);
-	if (!sanctionsRaw?.length) {
+	if (!sanctionsRaw.length) {
 		return [];
 	}
 
 	const actionIds = uniqueIds(sanctionsRaw.map(sanction => sanction.disciplinaryActionId));
-	const disciplinaryActionsRaw = actionIds.length > 0
-		? await client.entities.disciplinaryActions.list(entitiesByIds(actionIds))
-		: [];
+	const disciplinaryActionsRaw = await listAllEntityPagesByIds(
+		query => client.entities.disciplinaryActions.list(query),
+		actionIds,
+	);
 
-	return mapIncidentSanctions(sanctionsRaw, disciplinaryActionsRaw ?? [], studentNames);
+	return mapIncidentSanctions(sanctionsRaw, disciplinaryActionsRaw, studentNames);
 }

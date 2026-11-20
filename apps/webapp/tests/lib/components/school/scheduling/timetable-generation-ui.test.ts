@@ -1,13 +1,12 @@
-import { describe, expect, test } from 'bun:test';
 import type { GenerateClassResult } from '$lib/api/mutations/timetable-generation.mutations';
+import { describe, expect, test } from 'bun:test';
 import {
 	activeRangePresetId,
 	buildPreferredPeriodWeekGrid,
 	buildTimetableRangePresets,
 	summarizeClassGeneration,
-	summarizePublish,
 	summarizeSchoolGeneration,
-} from '$lib/components/school/scheduling/timetable-generation-ui';
+} from '../../../../../src/routes/(app)/configuration/tools/lib/timetable-generation-ui';
 
 describe('timetable-generation-ui', () => {
 	test('builds trimester and full-year presets', () => {
@@ -57,16 +56,6 @@ describe('timetable-generation-ui', () => {
 			sessionCount: 1,
 			isComplete: true,
 		});
-
-		expect(summarizePublish({
-			classGroupId: 'class-1',
-			publishedSessionIds: ['s1', 's2'],
-			skippedSessionIds: ['s3'],
-		})).toEqual({
-			publishedCount: 2,
-			skippedCount: 1,
-			isComplete: false,
-		});
 	});
 
 	test('detects active preset from range', () => {
@@ -91,6 +80,7 @@ describe('timetable-generation-ui', () => {
 				startTime: '08:00',
 				endTime: '08:45',
 				isBreak: false,
+				isTeachingSlot: true,
 			},
 			{
 				id: 'p1-tue',
@@ -102,6 +92,7 @@ describe('timetable-generation-ui', () => {
 				startTime: '08:00',
 				endTime: '08:45',
 				isBreak: false,
+				isTeachingSlot: true,
 			},
 			{
 				id: 'break-mon',
@@ -113,6 +104,7 @@ describe('timetable-generation-ui', () => {
 				startTime: '09:00',
 				endTime: '09:15',
 				isBreak: true,
+				isTeachingSlot: false,
 			},
 		]);
 

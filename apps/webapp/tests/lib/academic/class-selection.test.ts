@@ -16,6 +16,10 @@ describe('resolveActiveClassId', () => {
 		expect(resolveActiveClassId(undefined, classes)).toBe('ci-6a');
 		expect(resolveActiveClassId('6a', classes)).toBe('ci-6a');
 	});
+
+	it('keeps the route class id while classes are still loading', () => {
+		expect(resolveActiveClassId('ci-6b', [])).toBe('ci-6b');
+	});
 });
 
 describe('classLabelForId', () => {

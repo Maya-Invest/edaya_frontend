@@ -1,26 +1,53 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { authSession } from '$lib/auth/session.svelte';
-	import OnboardingShell from '$lib/components/onboarding/OnboardingShell.svelte';
-	import OnboardingStepContent from '$lib/components/onboarding/OnboardingStepContent.svelte';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
+	import { t } from '$lib/i18n';
+	import { onDestroy } from 'svelte';
+	import { get } from 'svelte/store';
+	import OnboardingShell from './components/OnboardingShell.svelte';
+	import OnboardingStepContent from './components/OnboardingStepContent.svelte';
+	import { onboardingContext } from './context.svelte';
 	import {
 		OnboardingWizardState,
 		setOnboardingWizardState,
-	} from '$lib/onboarding/onboarding-wizard-state.svelte';
+	} from './onboarding-wizard-state.svelte';
 
 	const wizard = new OnboardingWizardState(() => $page.url);
 	setOnboardingWizardState(wizard);
+	onDestroy(() => wizard.dispose());
+	$effect(() => {
+		if (onboardingContext.initialized)
+			wizard.loadDataset(authSession.authUserId, onboardingContext.draft.school.country, onboardingContext.draft.structure.dataset);
+	});
+
+	const busyMessage = $derived.by(() => {
+		if (!wizard.busy) {
+			return null;
+		}
+		if (wizard.provisionPhase === 'bootstrap') {
+			return get(t)('onboarding.provision.phase.bootstrap');
+		}
+		if (wizard.provisionPhase === 'provision' || wizard.currentStep === 4) {
+			return get(t)('onboarding.provision.phase.provision');
+		}
+		return get(t)('onboarding.provision.busy');
+	});
 
 	$effect(() => {
 		wizard.initAuthUser(authSession.authUserId);
 	});
 
 	$effect(() => {
+		void wizard.maxReachedStep;
+		void $page.url;
 		wizard.enforceStepAccess();
+		const timer = setInterval(() => wizard.enforceStepAccess(), 250);
+		return () => clearInterval(timer);
 	});
 
 	$effect(() => {
+		void authSession.isLoggedIn;
+		void authSession.serverOnboardingStatus?.wizardCompleted;
 		void wizard.syncServerStatusOnce();
 	});
 </script>
@@ -38,12 +65,21 @@
 		showSkipOnboarding={wizard.showSkipOnboarding}
 		canSkipOnboarding={wizard.canSkipOnboarding}
 		busy={wizard.busy}
-		onBack={wizard.goBack}
+		busyMessage={busyMessage}
+		actionError={wizard.lastActionError}
+		provisionProgressVisible={wizard.provisionProgressVisible}
+		provisionPercent={wizard.provisionPercent}
+		provisionActiveStepId={wizard.provisionActiveStepId}
+		provisionCompletedIds={wizard.provisionCompletedIds}
+		provisionSteps={wizard.provisionSteps}
+		provisionSucceeded={wizard.provisionSucceeded}
+		bootstrapRecoveryNeeded={wizard.bootstrapRecoveryNeeded}
+		onBack={() => wizard.goBack()}
 		onContinue={() => void wizard.goNext()}
 		onFinish={() => void wizard.finishOnboarding()}
 		onSkipOnboarding={() => void wizard.skipOnboarding()}
-		onSkip={wizard.skipStep}
-		onStepSelect={wizard.navigateToStep}
+		onSkip={() => wizard.skipStep()}
+		onStepSelect={step => wizard.navigateToStep(step)}
 		onSignOut={() => void wizard.signOut()}
 	>
 		<OnboardingStepContent step={wizard.currentStep} busy={wizard.busy} />

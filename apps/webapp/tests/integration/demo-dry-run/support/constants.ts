@@ -8,15 +8,32 @@ export const IGNORED_BROWSER_ERROR =
 export const DEMO_PASSWORD = 'DevPassword1!';
 export const STAFF_EMAIL = 'j.aka@ecole-ci.edaya.dev';
 export const COORDINATOR_EMAIL = 'f.assi@ecole-ci.edaya.dev';
+export const OWNER_EMAIL = 'a.kone@ecole-ci.edaya.dev';
 
 export const CLASS_6A = 'ci-6a';
 export const CLASS_6B = 'ci-6b';
 export const CLASS_SUBJECT_ID = 'ci-cs-6a-math';
+/** Config subjects list uses grade-level catalog ids (not class-subject ids). */
+export const CATALOG_SUBJECT_ID = 'gls-ci-gl-6-ci-math';
+export const EVALUATION_ID = 'ci-asm-6a-t1-math';
+/** Monday inside demo-ci T1 — recurring maths slots are visible this week. */
+export const SEEDED_TIMETABLE_WEEK = '2026-09-14';
+export const T1_PERIOD_ID = 'ci-2025-t1';
+export const T1_PERIOD_LABEL = /Trimestre 1|Term 1|T1/i;
 export const STUDENT_ID = 'ci-s1';
+export const STUDENT_NAME = /Aminata|Koné|ci-s1/i;
 export const TEACHER_ID = 'ci-t1';
 export const STAFF_ID = 'ci-st3';
+export const GUARDIAN_ID = 'ci-g1';
+export const BILLING_ID = 'ci-enr-60';
+export const ACTIVITY_ID = 'ci-act-robot';
+export const FAMILY_FEEDBACK_CAMPAIGN = /1 campagnes?|1 campaigns?|Brouillon|Draft|Touré|Mathématiques|Confidentiel/i;
+export const ATTENDANCE_EXPORT_NAME = /PDF feuille d['’]appel|Attendance sheet PDF|export|exporter/i;
 
-/** Bilingual drawer tab button labels (en + fr). */
+/** Routes without a `<main>` shell — finance uses layout + DataState only. */
+export const APP_SHELL_SELECTOR = 'aside#app-sidebar';
+
+/** Bilingual drawer tab button labels keyed by URL segment. */
 export const DRAWER_TAB_LABELS = {
 	profile: /^(Profile|Profil)$/i,
 	grades: /^(Grades|Notes)$/i,
@@ -26,9 +43,18 @@ export const DRAWER_TAB_LABELS = {
 	enrollments: /^(Enrollments|Inscriptions)$/i,
 	assignments: /^(Assignments|Affectations|Staff assignments)$/i,
 	permissions: /^(Permissions)$/i,
+	availability: /^(Availability|Disponibilité|Disponibilités)$/i,
+	timetable: /^(Timetable|Emploi du temps)$/i,
+	evaluations: /^(Evaluations|Évaluations)$/i,
+	'family-feedback': /^(Family feedback|Retour des familles)$/i,
 	progression: /^(Chapters|Chapitres)$/i,
 	logbook: /^(Lessons|Leçons)$/i,
 	details: /^(Details|Détails)$/i,
+	grading: /^(Grading|Saisie des notes|Correction|Notation)$/i,
+	students: /^(Students|Élèves|Participants)$/i,
+	classes: /^(Classes)$/i,
+	'report-card': /^(Report card|Bulletin|Bulletin scolaire)$/i,
+	documents: /^(Documents)$/i,
 } as const satisfies Record<string, RegExp>;
 
 export type DrawerTabKey = keyof typeof DRAWER_TAB_LABELS;

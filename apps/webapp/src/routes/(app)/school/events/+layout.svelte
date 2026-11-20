@@ -6,12 +6,13 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import EventsList from './components/EventsList.svelte';
 	import { EventsPageState, setEventsPageState } from './events-page.svelte';
+	import { readEventsListFilters } from './lib/events-list-filters';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 
@@ -21,10 +22,15 @@
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 
 	const query = eventsPage.queryListPage();
+	const urlFilters = $derived(readEventsListFilters($page.url));
+
+	$effect(() => {
+		eventsPage.filters.hydrate(urlFilters);
+	});
 
 	function selectIncident(incident: Incident) {
 		const path = detailHref.schoolIncident(incident.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 </script>
 

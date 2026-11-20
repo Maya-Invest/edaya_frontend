@@ -1,17 +1,20 @@
 import type { TeachersPageState } from '../teachers-page.svelte';
+import type { PageQueryRequest } from './teacher-page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { listPageHasItems, resolveTeacherPageLoad } from './teacher-page-status';
 
 export function querySchoolTeachersPage(state: TeachersPageState) {
-	return (url: URL) => resolveTeacherPageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 		empty: () => ({ totalTeachers: 0 }),
-		load: async () => {
+		load: async (signal) => {
+			signal.throwIfAborted();
 			state.hydrateFiltersFromUrl();
 			await state.loadFirstPage();
+			signal.throwIfAborted();
 			return { totalTeachers: state.totalTeachers };
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }
 
 export async function ensureTeacherDrawerSelection(

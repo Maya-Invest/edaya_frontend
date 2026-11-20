@@ -1,7 +1,8 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Announcement, AnnouncementPriority, AnnouncementStatus, AnnouncementTarget } from '$lib/types/school';
-import { recordsForFieldIds } from '$lib/api/entity-list-filters';
+import { listAllEntityPages, listAllEntityPagesByIds, listAllEntityPagesForIdFilters } from '$lib/api/entity-list-filters';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type AnnouncementRaw = components['schemas']['Announcement'];
@@ -35,12 +36,18 @@ function resolveStatus(raw: AnnouncementRaw): AnnouncementStatus {
 export async function fetchAnnouncementSources(
 	client: SchoolClient,
 	schoolId: string,
+	signal?: AbortSignal,
 ): Promise<AnnouncementSources> {
-	const announcementsRaw = (await client.entities.announcements.list({ schoolId })) ?? [];
+	const announcementsRaw = await listAllEntityPages(
+		query => client.entities.announcements.list(query),
+		{ baseQuery: { schoolId }, signal },
+	);
 	const announcementIds = announcementsRaw.map(announcement => announcement.id);
-	const announcementTargetsRaw = announcementIds.length > 0
-		? (await client.entities.announcementTargets.list(recordsForFieldIds('announcementId', announcementIds))) ?? []
-		: [];
+	const announcementTargetsRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.announcementTargets.list(query),
+		[{ field: 'announcementId', ids: announcementIds }],
+		{ signal },
+	);
 
 	return {
 		announcementsRaw,
@@ -81,7 +88,55 @@ export function mapAnnouncements(sources: AnnouncementSources): Announcement[] {
 		});
 }
 
-export async function fetchAnnouncements(client: SchoolClient, schoolId: string): Promise<Announcement[]> {
-	const sources = await fetchAnnouncementSources(client, schoolId);
+export async function fetchAnnouncements(client: SchoolClient, schoolId: string, signal?: AbortSignal): Promise<Announcement[]> {
+	const sources = await fetchAnnouncementSources(client, schoolId, signal);
 	return mapAnnouncements(sources);
+}
+
+export interface AnnouncementPersonRef {
+	kind?: string | null;
+	id?: string | null;
+}
+
+export type AnnouncementPeople = Record<'guardians' | 'students' | 'staff', ReadonlyMap<string, string>>;
+
+export function emptyAnnouncementPeople(): AnnouncementPeople {
+	return { guardians: new Map(), students: new Map(), staff: new Map() };
+}
+
+/** Resolve authorized person labels for a drawer. Old deliveries may lack a recipient kind. */
+export async function fetchAnnouncementPeople(
+	client: SchoolClient,
+	schoolId: string,
+	academicYearId: string | null,
+	refs: readonly AnnouncementPersonRef[],
+	signal: AbortSignal,
+): Promise<AnnouncementPeople> {
+	if (!schoolId)
+		return emptyAnnouncementPeople();
+	const ids = (...kinds: string[]) => refs.flatMap(ref =>
+		ref.id && (!ref.kind || kinds.includes(ref.kind)) ? [ref.id] : []);
+	const options = { extraQuery: { schoolId }, signal };
+	const [guardians, students, staff] = await Promise.all([
+		safeOptionalEntityList(() => listAllEntityPagesByIds(query => client.entities.guardians.list(query), ids('guardian'), options)),
+		safeOptionalEntityList(() => listAllEntityPagesByIds(query => client.entities.students.list(query), ids('student'), options)),
+		academicYearId
+			? safeOptionalEntityList(() => listAllEntityPagesByIds(query => client.entities.staffMembers.list(query), ids('staff', 'staff_member', 'teacher'), { ...options, extraQuery: { schoolId, accountKind: 'human' } }))
+			: [],
+	]);
+	signal.throwIfAborted();
+	const labels = (rows: { id: string; firstName: string; lastName: string }[]) => new Map(rows.map(row => [row.id, `${row.firstName} ${row.lastName}`]));
+	return { guardians: labels(guardians), students: labels(students), staff: labels(staff) };
+}
+
+export function deliveryRecipientName(ref: AnnouncementPersonRef, people: AnnouncementPeople): string | undefined {
+	if (!ref.id)
+		return undefined;
+	switch (ref.kind) {
+		case 'guardian': return people.guardians.get(ref.id);
+		case 'student': return people.students.get(ref.id);
+		case 'staff':
+		case 'teacher': return people.staff.get(ref.id);
+		default: return people.guardians.get(ref.id) ?? people.students.get(ref.id) ?? people.staff.get(ref.id);
+	}
 }

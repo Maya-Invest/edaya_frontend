@@ -7,7 +7,7 @@ const calendarListFiltersCodec = defineUrlFilterCodec({
 
 const configSubjectListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
-	mode: { type: 'enum', default: 'level', values: ['level', 'category'] as const },
+	gradeLevel: { type: 'string', default: 'all' },
 });
 
 const teachingListFiltersCodec = defineUrlFilterCodec({
@@ -24,14 +24,23 @@ const classStudentListFiltersCodec = defineUrlFilterCodec({
 	status: { type: 'string', default: 'all' },
 });
 
+const activitySortColumns = ['roster', 'name', 'category', 'coach', 'period', 'enrolled'] as const;
+const activitySortDirections = ['asc', 'desc'] as const;
+
 const activityListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	category: { type: 'string', default: 'all' },
-	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'category', 'coach', 'period', 'enrolled'] as const },
-	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
+	sort: { type: 'enum', default: 'roster', values: activitySortColumns },
+	sortDir: { type: 'enum', default: 'asc', values: activitySortDirections },
 });
 
 const announcementListFiltersCodec = defineUrlFilterCodec({
+	q: { type: 'search', default: '' },
+	status: { type: 'string', default: 'all' },
+	priority: { type: 'enum', default: 'all', values: ['all', 'normal', 'important', 'urgent'] as const },
+});
+
+const familyFeedbackListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	status: { type: 'string', default: 'all' },
 });
@@ -40,6 +49,7 @@ const studentListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	class: { type: 'string', default: 'all' },
 	status: { type: 'string', default: 'all' },
+	photoReview: { type: 'enum', default: 'all', values: ['all', 'pending'] as const },
 	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'class', 'average', 'attendance', 'status'] as const },
 	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
 });
@@ -58,6 +68,7 @@ const staffListFiltersCodec = defineUrlFilterCodec({
 
 const teacherListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
+	status: { type: 'string', default: 'all' },
 	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'assignments', 'status'] as const },
 	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
 });
@@ -73,11 +84,6 @@ const paymentListFiltersCodec = defineUrlFilterCodec({
 	class: { type: 'string', default: 'all' },
 });
 
-const reportCardDefinitionListFiltersCodec = defineUrlFilterCodec({
-	q: { type: 'search', default: '' },
-	status: { type: 'string', default: 'all' },
-});
-
 const roleListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 });
@@ -89,6 +95,7 @@ const gradeScaleListFiltersCodec = defineUrlFilterCodec({
 const feeListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	category: { type: 'string', default: 'all' },
+	status: { type: 'string', default: 'all' },
 });
 
 const classGroupListFiltersCodec = defineUrlFilterCodec({
@@ -100,9 +107,17 @@ const academicAdminListFiltersCodec = defineUrlFilterCodec({
 	status: { type: 'string', default: 'all' },
 });
 
+const subjectCategoryListFiltersCodec = defineUrlFilterCodec({
+	q: { type: 'search', default: '' },
+});
+
 const disciplineCatalogListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	kind: { type: 'string', default: 'all' },
+});
+
+const permissionProfileListFiltersCodec = defineUrlFilterCodec({
+	q: { type: 'search', default: '' },
 });
 
 const resourceListFiltersCodec = defineUrlFilterCodec({
@@ -128,21 +143,23 @@ export type ConfigSubjectListFilters = ReturnType<typeof configSubjectListFilter
 export type TeachingListFilters = ReturnType<typeof teachingListFiltersCodec.read>;
 export type PlanningListFilters = ReturnType<typeof planningListFiltersCodec.read>;
 export type ClassStudentListFilters = ReturnType<typeof classStudentListFiltersCodec.read>;
-export type ActivityListFilters = ReturnType<typeof activityListFiltersCodec.read>;
+export type ActivityListFilters = ReturnType<typeof readActivityListFilters>;
 export type AnnouncementListFilters = ReturnType<typeof announcementListFiltersCodec.read>;
+export type FamilyFeedbackListFilters = ReturnType<typeof familyFeedbackListFiltersCodec.read>;
 export type StudentListFilters = ReturnType<typeof studentListFiltersCodec.read>;
 export type GuardianListFilters = ReturnType<typeof guardianListFiltersCodec.read>;
 export type StaffListFilters = ReturnType<typeof staffListFiltersCodec.read>;
 export type TeacherListFilters = ReturnType<typeof teacherListFiltersCodec.read>;
 export type ClassReportCardListFilters = ReturnType<typeof classReportCardListFiltersCodec.read>;
 export type PaymentListFilters = ReturnType<typeof paymentListFiltersCodec.read>;
-export type ReportCardDefinitionListFilters = ReturnType<typeof reportCardDefinitionListFiltersCodec.read>;
 export type RoleListFilters = ReturnType<typeof roleListFiltersCodec.read>;
 export type GradeScaleListFilters = ReturnType<typeof gradeScaleListFiltersCodec.read>;
 export type FeeListFilters = ReturnType<typeof feeListFiltersCodec.read>;
 export type ClassGroupListFilters = ReturnType<typeof classGroupListFiltersCodec.read>;
 export type AcademicAdminListFilters = ReturnType<typeof academicAdminListFiltersCodec.read>;
+export type SubjectCategoryListFilters = ReturnType<typeof subjectCategoryListFiltersCodec.read>;
 export type DisciplineCatalogListFilters = ReturnType<typeof disciplineCatalogListFiltersCodec.read>;
+export type PermissionProfileListFilters = ReturnType<typeof permissionProfileListFiltersCodec.read>;
 export type ResourceListFilters = ReturnType<typeof resourceListFiltersCodec.read>;
 export type EducatorDashboardListFilters = ReturnType<typeof educatorDashboardListFiltersCodec.read>;
 export type ClassEvaluationListFilters = ReturnType<typeof classEvaluationListFiltersCodec.read>;
@@ -188,8 +205,9 @@ export function writeClassStudentListFilters(url: URL, filters: ClassStudentList
 	return classStudentListFiltersCodec.write(url, filters);
 }
 
-export function readActivityListFilters(url: URL): ActivityListFilters {
-	return activityListFiltersCodec.read(url);
+export function readActivityListFilters(url: URL) {
+	const values = activityListFiltersCodec.read(url);
+	return { ...values, sort: values.sort as typeof activitySortColumns[number], sortDir: values.sortDir as typeof activitySortDirections[number] };
 }
 
 export function writeActivityListFilters(url: URL, filters: ActivityListFilters): string {
@@ -202,6 +220,14 @@ export function readAnnouncementListFilters(url: URL): AnnouncementListFilters {
 
 export function writeAnnouncementListFilters(url: URL, filters: AnnouncementListFilters): string {
 	return announcementListFiltersCodec.write(url, filters);
+}
+
+export function readFamilyFeedbackListFilters(url: URL): FamilyFeedbackListFilters {
+	return familyFeedbackListFiltersCodec.read(url);
+}
+
+export function writeFamilyFeedbackListFilters(url: URL, filters: FamilyFeedbackListFilters): string {
+	return familyFeedbackListFiltersCodec.write(url, filters);
 }
 
 export function readStudentListFilters(url: URL): StudentListFilters {
@@ -252,17 +278,6 @@ export function writePaymentListFilters(url: URL, filters: PaymentListFilters): 
 	return paymentListFiltersCodec.write(url, filters);
 }
 
-export function readReportCardDefinitionListFilters(url: URL): ReportCardDefinitionListFilters {
-	return reportCardDefinitionListFiltersCodec.read(url);
-}
-
-export function writeReportCardDefinitionListFilters(
-	url: URL,
-	filters: ReportCardDefinitionListFilters,
-): string {
-	return reportCardDefinitionListFiltersCodec.write(url, filters);
-}
-
 export function readRoleListFilters(url: URL): RoleListFilters {
 	return roleListFiltersCodec.read(url);
 }
@@ -303,6 +318,14 @@ export function writeAcademicAdminListFilters(url: URL, filters: AcademicAdminLi
 	return academicAdminListFiltersCodec.write(url, filters);
 }
 
+export function readSubjectCategoryListFilters(url: URL): SubjectCategoryListFilters {
+	return subjectCategoryListFiltersCodec.read(url);
+}
+
+export function writeSubjectCategoryListFilters(url: URL, filters: SubjectCategoryListFilters): string {
+	return subjectCategoryListFiltersCodec.write(url, filters);
+}
+
 export function readDisciplineCatalogListFilters(url: URL): DisciplineCatalogListFilters {
 	return disciplineCatalogListFiltersCodec.read(url);
 }
@@ -312,6 +335,17 @@ export function writeDisciplineCatalogListFilters(
 	filters: DisciplineCatalogListFilters,
 ): string {
 	return disciplineCatalogListFiltersCodec.write(url, filters);
+}
+
+export function readPermissionProfileListFilters(url: URL): PermissionProfileListFilters {
+	return permissionProfileListFiltersCodec.read(url);
+}
+
+export function writePermissionProfileListFilters(
+	url: URL,
+	filters: PermissionProfileListFilters,
+): string {
+	return permissionProfileListFiltersCodec.write(url, filters);
 }
 
 export function readResourceListFilters(url: URL): ResourceListFilters {

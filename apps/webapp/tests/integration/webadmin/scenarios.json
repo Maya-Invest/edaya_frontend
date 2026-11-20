@@ -1,0 +1,6 @@
+[
+  { "id": "webadmin.navigation.overview", "route": "/", "heading": "Overview", "placeholder": "Internal console for EDaya platform operators." },
+  { "id": "webadmin.navigation.tenants", "route": "/tenants", "heading": "Tenants", "placeholder": "Tenant directory and onboarding workflows are not connected yet." },
+  { "id": "webadmin.navigation.users", "route": "/users", "heading": "Users", "placeholder": "Platform operator accounts and role management will be implemented here." },
+  { "id": "webadmin.navigation.billing", "route": "/billing", "heading": "Billing", "placeholder": "Subscription plans, invoices, and usage metrics will be surfaced in this section." }
+]

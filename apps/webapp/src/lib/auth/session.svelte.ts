@@ -1,11 +1,19 @@
 import type { GuardianNotificationSettings } from '$lib/api/account-data';
 import type { AccountActor, SessionKind } from '$lib/auth/account-actor';
-import type { EffectiveGrantsSnapshot, SessionSnapshot } from '$lib/auth/types';
+import type { ActionGrantsSnapshot, SessionSnapshot, StaffSchoolMembership } from '$lib/auth/types';
 import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import type { StaffMember } from '$lib/types/school';
 import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
+import { directoryCache } from '$lib/api/directory-cache';
+import { studentPortraitCache } from '$lib/api/student-portrait-cache';
 import { clearAuthGate } from '$lib/auth/auth-gate';
+import {
+	clearOnboardingSummaryHold,
+	clearWizardCompletedInSession,
+} from '$lib/onboarding/wizard-completion-flag';
+import { authPrincipalChanged } from './access-token';
+import { accessTokens } from './bearer-fetch';
 import { authClient } from './client';
 
 class AuthSession {
@@ -13,6 +21,7 @@ class AuthSession {
 	authUserId = $state<string | null>(null);
 	needsOnboarding = $state(false);
 	serverOnboardingStatus = $state<ServerOnboardingAccountStatus | null>(null);
+	onboardingStatusUnknown = $state(false);
 	schoolId = $state<string | null>(null);
 	sessionKind = $state<SessionKind | null>(null);
 	subjectId = $state<string | null>(null);
@@ -21,7 +30,8 @@ class AuthSession {
 	notificationPhone = $state<string | null>(null);
 	userProfile = $state<StaffMember | null>(null);
 	guardianSettings = $state<GuardianNotificationSettings | null>(null);
-	grants = $state<EffectiveGrantsSnapshot | null>(null);
+	grants = $state<ActionGrantsSnapshot | null>(null);
+	staffMemberships = $state<StaffSchoolMembership[]>([]);
 	ready = $state(!browser);
 
 	get isLoggedIn(): boolean {
@@ -58,11 +68,11 @@ class AuthSession {
 				name: this.userProfile?.name ?? 'Staff',
 				initials: this.userProfile?.initials ?? 'ST',
 				photoUrl: this.userProfile?.photoUrl ?? null,
-				subtitleKey: this.grants?.isElevated
+				subtitleKey: this.grants?.some(grant => grant.source === 'owner')
 					? 'staff.role.owner'
 					: this.userProfile
 						? `staff.role.${this.userProfile.role}`
-						: 'staff.role.professeur',
+						: 'staff.role.staff',
 				subjectId: this.subjectId,
 				email: this.userProfile?.email,
 			};
@@ -77,6 +87,13 @@ class AuthSession {
 		return academicContext.schools.find(entry => entry.id === this.schoolId) ?? null;
 	});
 
+	activeStaffMembership = $derived.by(() => {
+		if (!this.schoolId) {
+			return null;
+		}
+		return this.staffMemberships.find(entry => entry.schoolId === this.schoolId) ?? null;
+	});
+
 	markLoading() {
 		this.ready = false;
 	}
@@ -86,9 +103,15 @@ class AuthSession {
 	}
 
 	setPendingOnboarding(options: { authUserId: string; loginEmail: string | null }) {
+		if (authPrincipalChanged(this.authUserId, options.authUserId)) {
+			directoryCache.clear();
+			studentPortraitCache.clear();
+			accessTokens.clear();
+		}
 		this.authUserId = options.authUserId;
 		this.needsOnboarding = true;
 		this.serverOnboardingStatus = null;
+		this.onboardingStatusUnknown = false;
 		this.loginEmail = options.loginEmail;
 		this.userId = null;
 		this.schoolId = null;
@@ -99,10 +122,23 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 		this.ready = true;
 	}
 
 	setAuthAccountOnly(options: { authUserId: string; loginEmail: string | null }) {
+		if (authPrincipalChanged(this.authUserId, options.authUserId)) {
+			directoryCache.clear();
+			studentPortraitCache.clear();
+			accessTokens.clear();
+		}
+		if (this.grants && this.userId) {
+			this.authUserId = options.authUserId;
+			this.loginEmail = options.loginEmail;
+			this.ready = true;
+			return;
+		}
+
 		this.authUserId = options.authUserId;
 		this.loginEmail = options.loginEmail;
 		this.needsOnboarding = false;
@@ -115,11 +151,19 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 		this.ready = true;
 	}
 
 	setServerOnboardingStatus(status: ServerOnboardingAccountStatus | null) {
 		this.serverOnboardingStatus = status;
+		if (status) {
+			this.onboardingStatusUnknown = false;
+		}
+	}
+
+	setOnboardingStatusUnknown(unknown: boolean) {
+		this.onboardingStatusUnknown = unknown;
 	}
 
 	setFromServer(
@@ -140,22 +184,42 @@ class AuthSession {
 		}
 
 		this.needsOnboarding = false;
-		this.authUserId = options?.authUserId ?? options?.subjectId ?? this.authUserId;
+		const nextAuthUserId = options?.authUserId ?? options?.subjectId ?? this.authUserId;
+		if (authPrincipalChanged(this.authUserId, nextAuthUserId)) {
+			directoryCache.clear();
+			studentPortraitCache.clear();
+			accessTokens.clear();
+		}
+		this.authUserId = nextAuthUserId;
+		if (this.userId !== session.actorId || this.schoolId !== session.schoolId || this.sessionKind !== session.kind) {
+			directoryCache.clear();
+			studentPortraitCache.clear();
+		}
 		this.userId = session.actorId;
 		this.schoolId = session.schoolId;
 		this.sessionKind = session.kind;
-		this.grants = session.effectiveGrants;
+		this.grants = session.grants;
 		this.userProfile = options?.staffProfile ?? null;
 		this.guardianSettings = options?.guardianSettings ?? null;
 		this.subjectId = options?.subjectId ?? null;
 		this.loginEmail = options?.loginEmail ?? null;
 		this.notificationEmail = options?.notificationEmail
-			?? options?.guardianSettings?.notificationEmail
 			?? null;
 		this.notificationPhone = options?.notificationPhone
-			?? options?.guardianSettings?.notificationPhone
 			?? null;
 		this.ready = true;
+	}
+
+	setStaffMemberships(memberships: StaffSchoolMembership[]) {
+		this.staffMemberships = memberships;
+	}
+
+	selectStaffMembership(membership: StaffSchoolMembership) {
+		this.needsOnboarding = false;
+		this.sessionKind = 'staff';
+		this.schoolId = membership.schoolId;
+		this.userId = membership.actorId;
+		this.grants = null;
 	}
 
 	updateNotificationContact(contact: {
@@ -168,20 +232,17 @@ class AuthSession {
 		if (contact.notificationPhone !== undefined) {
 			this.notificationPhone = contact.notificationPhone;
 		}
-		if (this.guardianSettings) {
-			this.guardianSettings = {
-				...this.guardianSettings,
-				notificationEmail: this.notificationEmail,
-				notificationPhone: this.notificationPhone,
-			};
-		}
 	}
 
 	clear() {
+		directoryCache.clear();
+		studentPortraitCache.clear();
+		accessTokens.clear();
 		this.userId = null;
 		this.authUserId = null;
 		this.needsOnboarding = false;
 		this.serverOnboardingStatus = null;
+		this.onboardingStatusUnknown = false;
 		this.schoolId = null;
 		this.sessionKind = null;
 		this.subjectId = null;
@@ -191,9 +252,12 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 	}
 
 	async logout() {
+		clearWizardCompletedInSession(this.authUserId);
+		clearOnboardingSummaryHold(this.authUserId);
 		this.clear();
 		clearAuthGate();
 		if (browser) {

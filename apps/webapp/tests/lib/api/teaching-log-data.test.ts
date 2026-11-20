@@ -1,7 +1,7 @@
 import type { TeachingLogSources } from '$lib/api/teaching-log-data';
+import { mapTeachingLogEntries } from '$lib/api/teaching-log-data';
 import { classSubject, lessonSession, staffMember, subject } from '$tests/support/openapi-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapTeachingLogEntries } from '$lib/api/teaching-log-data';
 
 const classSources: TeachingLogSources = {
 	lessonSessionsRaw: [
@@ -19,7 +19,7 @@ const classSources: TeachingLogSources = {
 			id: 'csp-1',
 			classSubjectMatterId: 'csm-1',
 			lessonSessionId: 'ls-cs-6a-math-0',
-			completedPercentage: 62,
+			completed: false,
 			notes: 'Mettre au même dénominateur',
 		},
 	],
@@ -36,7 +36,7 @@ const classSources: TeachingLogSources = {
 		classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
 	],
 	subjectsRaw: [
-		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
+		subject({ id: 'subj-math', name: 'Mathematics', shortName: 'MATH', coefficient: 3 }),
 	],
 	staffMembersRaw: [
 		staffMember({ id: 'st1', firstName: 'Marie', lastName: 'Dupont', email: 'm.dupont@school.edu' }),
@@ -44,8 +44,8 @@ const classSources: TeachingLogSources = {
 	staffAssignmentsRaw: [
 		{ id: 'sa-st1-math', staffId: 'st1', academicYearId: '2025', responsibility: 'Teacher', classSubjectId: 'cs-6a-math', permissions: [] },
 	],
-	teachersRaw: [],
-	teacherAssignmentsRaw: [],
+	teachersRaw: [{ id: 'teacher', firstName: 'Aminata', lastName: 'Touré', isActive: true }],
+	teacherAssignmentsRaw: [{ id: 'teaching', teacherId: 'teacher', academicYearId: '2025', kind: 'subject', classSubjectId: 'cs-6a-math', status: 'active' }],
 };
 
 describe('mapTeachingLogEntries', () => {
@@ -58,8 +58,8 @@ describe('mapTeachingLogEntries', () => {
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [...classSources.staffMembersRaw],
 			staffAssignmentsRaw: [...classSources.staffAssignmentsRaw],
-			teachersRaw: [],
-			teacherAssignmentsRaw: [],
+			teachersRaw: classSources.teachersRaw,
+			teacherAssignmentsRaw: classSources.teacherAssignmentsRaw,
 		});
 
 		expect(entries).toHaveLength(1);
@@ -67,9 +67,9 @@ describe('mapTeachingLogEntries', () => {
 			id: 'ls-cs-6a-math-0',
 			classId: '6a',
 			subject: 'Mathematics',
-			teacher: 'Marie Dupont',
+			teacher: 'Aminata Touré',
 			content: 'Addition et soustraction de fractions.',
-			progress: 62,
+			chapters: [{ matterId: 'csm-1', name: '', completed: false, notes: 'Mettre au même dénominateur' }],
 		});
 	});
 
@@ -82,8 +82,8 @@ describe('mapTeachingLogEntries', () => {
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [...classSources.staffMembersRaw],
 			staffAssignmentsRaw: [...classSources.staffAssignmentsRaw],
-			teachersRaw: [],
-			teacherAssignmentsRaw: [],
+			teachersRaw: classSources.teachersRaw,
+			teacherAssignmentsRaw: classSources.teacherAssignmentsRaw,
 		}, 'Mathematics');
 
 		expect(entries).toHaveLength(1);
@@ -102,8 +102,8 @@ describe('mapTeachingLogEntries', () => {
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [],
 			staffAssignmentsRaw: [],
-			teachersRaw: [],
-			teacherAssignmentsRaw: [],
+			teachersRaw: classSources.teachersRaw,
+			teacherAssignmentsRaw: classSources.teacherAssignmentsRaw,
 		});
 
 		expect(entries.map(entry => entry.date)).toEqual(['2026-05-22', '2026-05-18']);

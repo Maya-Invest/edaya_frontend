@@ -1,21 +1,29 @@
 <script lang="ts">
-	import type { ReportCardResult } from '$lib/types/report-cards';
+	import type { ReportListHeader } from '../lib/report-cards-queries';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
+	import ReportCardAvailabilityNotice from '$lib/components/school/report-cards/ReportCardAvailabilityNotice.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
+
+	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { downloadDocumentLabel } from '$lib/documents/titles';
 	import { t } from '$lib/i18n';
-	import { FileSpreadsheet, Search, Sparkles } from '$lib/icons';
+	import { Sparkles } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readClassReportCardListFilters, writeClassReportCardListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
-	import { formatGrade } from '$lib/types/report-cards';
+	import { formatPersistedGrade, formatReportRank } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getReportCardsPageState } from '../report-cards-page.svelte';
 
@@ -25,15 +33,14 @@
 		selectedId,
 	}: {
 		classId: string;
-		onSelect?: (result: ReportCardResult) => void;
+		onSelect?: (result: ReportListHeader) => void;
 		selectedId?: string;
 	} = $props();
 
 	const reportCardsPage = getReportCardsPageState();
 	const initialFilters = $derived(readClassReportCardListFilters($page.url));
-	const results = $derived(reportCardsPage.resultsFor(classId));
-	const scales = $derived(reportCardsPage.scalesFor(classId));
-	const classStudents = $derived(reportCardsPage.studentsFor(classId));
+	const list = reportCardsPage.list;
+	const rows = $derived(list.current?.items ?? []);
 	const period = $derived(academicContext.period);
 
 	const listFilters = new ListFiltersState<{ q: string; status: string }>(
@@ -47,33 +54,6 @@
 
 	const statusKeys = ['all', 'none', 'draft', 'generated', 'published'] as const;
 	type StatusFilter = (typeof statusKeys)[number];
-
-	const status = $derived(
-		statusKeys.includes(listFilters.values.status as StatusFilter)
-			? listFilters.values.status as StatusFilter
-			: 'all',
-	);
-
-	const filteredStudents = $derived(
-		classStudents.filter((student) => {
-			const needle = listFilters.values.q.trim().toLowerCase();
-			if (needle && !student.name.toLowerCase().includes(needle)) {
-				return false;
-			}
-			const result = results.find(entry => entry.studentId === student.id);
-			if (status === 'none') {
-				return !result;
-			}
-			if (status === 'all') {
-				return true;
-			}
-			return result?.status === status;
-		}),
-	);
-
-	function resultForStudent(studentId: string) {
-		return results.find(entry => entry.studentId === studentId);
-	}
 
 	function statusLabel(key: (typeof statusKeys)[number]) {
 		if (key === 'all') {
@@ -91,7 +71,7 @@
 		return $t('reportCards.statusPublished');
 	}
 
-	function resultStatusLabel(result: ReportCardResult) {
+	function resultStatusLabel(result: ReportListHeader) {
 		if (result.status === 'published') {
 			return $t('reportCards.statusPublished');
 		}
@@ -102,20 +82,13 @@
 	}
 
 	$effect(() => {
-		listFilters.hydrate({
-			q: initialFilters.q,
-			status: statusKeys.includes(initialFilters.status as StatusFilter)
-				? initialFilters.status
+		const next = initialFilters;
+		untrack(() => listFilters.hydrate({
+			q: next.q,
+			status: statusKeys.includes(next.status as StatusFilter)
+				? next.status
 				: 'all',
-		});
-	});
-
-	$effect(() => {
-		if (!listFilters.ready) {
-			return;
-		}
-		void listFilters.values.status;
-		listFilters.scheduleSync();
+		}));
 	});
 
 	const statusFilterOptions = $derived(
@@ -140,40 +113,34 @@
 		});
 	}
 
-	async function publishOne(resultId: string) {
-		const result = results.find(entry => entry.id === resultId);
-		if (!result) {
-			return;
-		}
+	async function publishOne(result: ReportListHeader) {
 		const name = reportCardsPage.studentFor(result.studentId)?.name ?? '';
 		await reportCardsPage.publishResult({
-			resultId,
+			resultId: result.id,
 			successMessage: get(t)('reportCards.toastPublished', { name }),
 		});
+	}
+
+	function exportBulletinPack() {
+		return reportCardsPage.exportPublished(classId, get(t)('documents.toastRequested')).catch(error => toast.error(String(error)));
 	}
 </script>
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[listFilters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => listFilters.patchImmediate({ status: 'all' })}
 		eyebrow="{$t('reportCards.classSubtitle')} · {period?.label ?? '—'}"
-		title={$t('reportCards.studentsCount', { n: filteredStudents.length })}
+		title={$t('reportCards.studentsCount', { n: list.current?.total ?? 0 })}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={listFilters.values.q}
-					oninput={() => listFilters.scheduleSync()}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField onCommit={() => listFilters.syncNow()} bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
+			<AcademicPeriodSelector />
 			<FilterSelect
-				bind:value={listFilters.values.status}
+				value={listFilters.values.status}
+				onchange={status => listFilters.patchImmediate({ status })}
 				class="h-9 min-w-[10rem] rounded-full text-xs"
 				options={statusFilterOptions}
 			/>
@@ -185,7 +152,7 @@
 				tooltip={$t('reportCards.generateAll')}
 			>
 				{#snippet children({ disabled, title })}
-					<Button class="rounded-full" {disabled} {title} onclick={generateAll}>
+					<Button disabled={disabled || !academicContext.periodId} {title} onclick={generateAll}>
 						<Sparkles class="h-4 w-4" />
 						{$t('reportCards.generateAll')}
 					</Button>
@@ -193,92 +160,30 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportBulletinPack')} onExport={() => void exportBulletinPack()} />
 		{/snippet}
 	</ListPageHeader>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		<table class="w-full text-sm">
-			<thead class="border-b border-border bg-secondary/30 text-left">
-				<tr>
-					<th class="px-4 py-3 font-medium">{$t('tab.students')}</th>
-					<th class="px-4 py-3 font-medium">{$t('reportCards.overall')}</th>
-					<th class="px-4 py-3 font-medium">{$t('reportCards.rank')}</th>
-					<th class="px-4 py-3 font-medium">{$t('reportCards.status')}</th>
-					<th class="px-4 py-3 text-right font-medium">{$t('classGroups.actions')}</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each filteredStudents as student (student.id)}
-					{@const result = resultForStudent(student.id)}
-					{@const scale = result ? scales.find(entry => entry.id === result.gradeScaleId) : null}
-					<tr
-						class={cn(
-							'border-b border-border/60 last:border-0',
-							selectedId === result?.id && 'bg-primary/5',
-						)}
-					>
-						<td class="px-4 py-3">
-							<button
-								type="button"
-								class="text-left font-medium hover:text-primary"
-								onclick={() => result && onSelect?.(result)}
-							>
-								{student.name}
-							</button>
-						</td>
-						<td class="px-4 py-3 font-mono">
-							{result && scale ? formatGrade(result.overallAverage, scale) : '—'}
-						</td>
-						<td class="px-4 py-3 font-mono">
-							{result ? `${result.classRank}/${result.classSize}` : '—'}
-						</td>
-						<td class="px-4 py-3">
-							{#if result}
-								<span
-									class={cn(
-										'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
-										result.status === 'published'
-											? 'bg-accent/15'
-											: result.status === 'generated'
-											? 'bg-highlight-soft text-highlight'
-											: 'bg-secondary text-muted-foreground',
-									)}
-								>
-									{resultStatusLabel(result)}
-								</span>
-							{:else}
-								<span class="text-muted-foreground">—</span>
-							{/if}
-						</td>
-						<td class="px-4 py-3">
-							<div class="flex justify-end gap-1">
-								{#if !result}
-									<Button size="sm" variant="outline" class="rounded-full" onclick={() => generateOne(student.id)}>
-										<FileSpreadsheet class="h-3.5 w-3.5" />
-										{$t('reportCards.generate')}
-									</Button>
-								{:else if result.status === 'generated'}
-									<Button size="sm" class="rounded-full" onclick={() => publishOne(result.id)}>
-										{$t('reportCards.publish')}
-									</Button>
-								{/if}
-								{#if result}
-									<Button size="sm" variant="ghost" class="rounded-full" onclick={() => onSelect?.(result)}>
-										{$t('reportCards.view')}
-									</Button>
-								{/if}
-							</div>
-						</td>
-					</tr>
-				{:else}
-					<tr>
-						<td colspan="5" class="px-4 py-10 text-center text-sm text-muted-foreground">
-							{$t('dataState.emptyDescription')}
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+	<ReportCardAvailabilityNotice summary={list.current} />
+
+	<ListEntityTable listKey="ReportCardsList" {rows} total={list.current?.total ?? 0} visibleCount={rows.length}
+		hasMore={Boolean(list.current?.nextCursor) && !list.failed} loadingMore={list.loadingMore} onLoadMore={() => list.more()} highlightId={selectedId ? rows.find(student => student.report?.id === selectedId)?.id : undefined} canInspect={student => Boolean(student.report)} onRowClick={(student) => {
+			const result = student.report;
+			if (result)
+				onSelect?.(result);
+		}} emptyLabel={$t('dataState.emptyDescription')} columns={[{ key: 'name', label: $t('tab.students'), span: 4, required: true }, { key: 'overall', label: $t('reportCards.overall'), span: 2 }, { key: 'rank', label: $t('reportCards.rank'), span: 2 }, { key: 'status', label: $t('reportCards.status'), span: 2 }, { key: 'actions', label: '', span: 1 }]}>
+		{#snippet cell(student, column)}{@const result = student.report}
+			{#if column.key === 'name'}{student.name}
+			{:else if column.key === 'overall'}<span class="tabular-nums">{formatPersistedGrade(result?.grading, result?.overallAverage)}</span>
+			{:else if column.key === 'rank'}<span class="tabular-nums">{formatReportRank(result)}</span>
+			{:else if column.key === 'status'}{#if result}<span class={cn('text-xs', result.status === 'published' ? 'text-accent' : result.status === 'generated' ? 'text-highlight' : 'text-muted-foreground')}>{resultStatusLabel(result)}</span>{:else}<span class="text-muted-foreground">—</span>{/if}
+			{:else if !result || result.status === 'generated' || result.status === 'published'}<RowActionMenu label={`${$t('list.rowActions')} · ${student.name}`}>
+				{#if !result}<RowActionMenuItem onclick={() => generateOne(student.id)}>{$t('reportCards.generate')}</RowActionMenuItem>
+				{:else if result.status === 'generated'}<RowActionMenuItem onclick={() => publishOne(result)}>{$t('reportCards.publish')}</RowActionMenuItem>
+				{:else if result.status === 'published'}<RowActionMenuItem onclick={() => void reportCardsPage.performRequestDocumentIssuance({ templateKey: 'report-card.v1', sourceId: result.id, studentId: result.studentId, classGroupId: classId, successMessage: get(t)('documents.toastRequested') })}>{downloadDocumentLabel($t, 'report-card.v1')}</RowActionMenuItem>{/if}
+			</RowActionMenu>{/if}{/snippet}
+	</ListEntityTable>
+	{#if list.failed}
+		<Button variant="outline" onclick={() => list.failed === 'more' ? list.more() : reportCardsPage.refreshList().catch(() => {})}>{$t('dataState.retry')}</Button>
+	{/if}
 </div>

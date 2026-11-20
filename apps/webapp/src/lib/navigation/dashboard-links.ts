@@ -14,9 +14,11 @@ export function dashboardActionHref(
 		case 'overdue_fees':
 			return appPath('/(app)/finance/billing/[[id]]');
 		case 'unpublished_report_cards':
-			return appPath('/(app)/configuration/report-cards/[[id]]');
+			return appPath('/(app)/configuration/structure/details');
 		case 'pending_justifications':
 			return appPath('/(app)/school/students/[[id]]');
+		case 'pending_student_photos':
+			return `${appPath('/(app)/school/students/[[id]]')}?photoReview=pending` as ResolvedPathname;
 		case 'high_severity_incidents':
 			return appPath('/(app)/school/events/[[id]]');
 		case 'incomplete_grading':
@@ -29,4 +31,15 @@ export function dashboardClassStudentsHref(
 	classes: ClassNode[],
 ): ResolvedPathname {
 	return classItemHref(resolveActiveClassId(classGroupId, classes), 'students');
+}
+
+/** First daily class attendance route, or null when no class uses daily roll call. */
+export function dashboardAttendanceTodayHref(classes: ClassNode[]): ResolvedPathname | null {
+	const daily = classes.filter(cls => cls.attendanceMode === 'daily');
+	if (daily.length === 0) {
+		return null;
+	}
+	const preferredId = resolveActiveClassId(undefined, classes);
+	const target = daily.find(cls => cls.id === preferredId) ?? daily[0];
+	return classItemHref(target.id, 'attendance');
 }

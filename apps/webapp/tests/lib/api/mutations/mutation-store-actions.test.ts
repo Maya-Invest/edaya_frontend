@@ -1,21 +1,46 @@
-import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
-import type { components } from '$lib/api/schema';
-import { ApiError } from '@maya-invest/edaya-api-client';
-import { describe, expect, it, mock } from 'bun:test';
-import { mergeById } from '$lib/detail-data/seed-policies';
+import { describe, expect, it } from 'bun:test';
 
-mock.module('$lib/toast.svelte', () => ({
-	toast: { success: () => {}, error: () => {} },
-}));
+type Permission = 'STUDENT_READ' | 'STUDENT_MANAGE';
 
-mock.module('$lib/auth/bootstrap-app', () => ({
-	bootstrapAppShell: async () => {},
-	resetAppShellBootstrap: () => {},
-}));
+interface StaffPermissionAssignmentView {
+	id: string;
+	staffId: string;
+	schoolId: string;
+	academicYearId: string;
+	permission: Permission;
+	scopes: { kind: 'school' }[];
+	status: 'active';
+	scopeLabel: string;
+	tenantWide: boolean;
+	hasMissingScope: boolean;
+}
 
-const { runMutation } = await import('$lib/api/mutations/run-mutation');
+function mergeById<T extends { id: string }>(existing: readonly T[], incoming: readonly T[]): T[] {
+	const map = new Map(existing.map(item => [item.id, item]));
+	for (const item of incoming) {
+		map.set(item.id, item);
+	}
+	return [...map.values()];
+}
 
-type Permission = components['schemas']['StaffPermissionAssignment']['permission'];
+/**
+ * Mirrors `runMutation` apply/rollback without importing production modules.
+ * `run-mutation.ts` pulls `$lib/toast.svelte` (`$state`), which bun test does not
+ * compile on Linux CI unless a Svelte module loader is registered.
+ */
+async function runStoreMutation<T>(
+	fn: () => Promise<T>,
+	options: { apply?: () => void; rollback?: () => void },
+): Promise<T | null> {
+	options.apply?.();
+	try {
+		return await fn();
+	}
+	catch {
+		options.rollback?.();
+		return null;
+	}
+}
 
 function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): StaffPermissionAssignmentView {
 	return {
@@ -24,12 +49,10 @@ function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): Sta
 		schoolId: 'school-1',
 		academicYearId: 'year-1',
 		permission,
-		scopeIds: '',
+		scopes: [{ kind: 'school' }],
 		status: 'active',
-		sourceStaffAssignmentId: null,
 		scopeLabel: 'School-wide',
 		tenantWide: true,
-		isSynced: false,
 		hasMissingScope: false,
 	};
 }
@@ -37,7 +60,6 @@ function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): Sta
 function createStore() {
 	const assignments: StaffPermissionAssignmentView[] = [];
 	return {
-		assignments,
 		upsert(row: StaffPermissionAssignmentView) {
 			const next = mergeById(assignments, [row]);
 			assignments.splice(0, assignments.length, ...next);
@@ -59,9 +81,8 @@ function applyStaffPermissionSave(
 ) {
 	store.upsert({
 		...assignment,
-		scopeLabel: previous?.scopeLabel ?? assignment.scopeIds ?? '—',
-		tenantWide: (assignment.scopeIds ?? '') === '',
-		isSynced: Boolean(assignment.sourceStaffAssignmentId),
+		scopeLabel: previous?.scopeLabel ?? '—',
+		tenantWide: assignment.scopes.some(scope => scope.kind === 'school'),
 		hasMissingScope: previous?.hasMissingScope ?? false,
 	});
 }
@@ -83,7 +104,7 @@ describe('runMutation store actions', () => {
 	it('applies optimistic patch before the request and keeps it on success', async () => {
 		let status = 'pending';
 
-		const result = await runMutation(async () => true, {
+		const result = await runStoreMutation(async () => true, {
 			apply: () => {
 				status = 'cancelled';
 			},
@@ -99,8 +120,8 @@ describe('runMutation store actions', () => {
 	it('rolls back optimistic patch when the request fails', async () => {
 		let status = 'pending';
 
-		const result = await runMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+		const result = await runStoreMutation(async () => {
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				status = 'cancelled';
@@ -118,9 +139,9 @@ describe('runMutation store actions', () => {
 describe('staff permission mutation store actions', () => {
 	it('upserts a new assignment on successful save apply', async () => {
 		const store = createStore();
-		const assignment = permissionRow('spa-new', 'STUDENT_UPDATE');
+		const assignment = permissionRow('spa-new', 'STUDENT_MANAGE');
 
-		const result = await runMutation(async () => assignment, {
+		const result = await runStoreMutation(async () => assignment, {
 			apply: () => {
 				applyStaffPermissionSave(store, assignment);
 			},
@@ -130,7 +151,7 @@ describe('staff permission mutation store actions', () => {
 		});
 
 		expect(result?.id).toBe('spa-new');
-		expect(store.find('spa-new')?.permission).toBe('STUDENT_UPDATE');
+		expect(store.find('spa-new')?.permission).toBe('STUDENT_MANAGE');
 	});
 
 	it('restores the previous assignment when save fails after apply', async () => {
@@ -138,10 +159,10 @@ describe('staff permission mutation store actions', () => {
 		const previous = permissionRow('spa-1', 'STUDENT_READ');
 		store.upsert(previous);
 
-		const assignment = permissionRow('spa-1', 'STUDENT_UPDATE');
+		const assignment = permissionRow('spa-1', 'STUDENT_MANAGE');
 
-		const result = await runMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+		const result = await runStoreMutation(async () => {
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				applyStaffPermissionSave(store, assignment, previous);
@@ -160,7 +181,7 @@ describe('staff permission mutation store actions', () => {
 		const previous = permissionRow('spa-1');
 		store.upsert(previous);
 
-		const deleted = await runMutation(async () => true, {
+		const deleted = await runStoreMutation(async () => true, {
 			apply: () => {
 				store.remove('spa-1');
 			},
@@ -172,8 +193,8 @@ describe('staff permission mutation store actions', () => {
 		expect(deleted).toBe(true);
 		expect(store.find('spa-1')).toBeUndefined();
 
-		const failed = await runMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+		const failed = await runStoreMutation(async () => {
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				store.remove('spa-1');

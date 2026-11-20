@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { CalendarRange, Users } from '$lib/icons';
 	import { cn } from '$lib/utils';
 	import { getActivitiesPageState } from '../../../activities-page.svelte';
@@ -41,24 +41,24 @@
 			<div class={cn(fieldClass, 'text-foreground/80')}>{activity.schedule}</div>
 		</DrawerField>
 		<DrawerField label={$t('activities.startDate')}>
-			<div class={cn(fieldClass, 'flex items-center gap-2 font-mono tabular-nums text-foreground/80')}>
+			<div class={cn(fieldClass, 'flex items-center gap-2 font-sans tabular-nums text-foreground/80')}>
 				<CalendarRange class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-				{fmtActivityDate(activity.startDate)}
+				{fmtActivityDate(activity.startDate, $locale)}
 			</div>
 		</DrawerField>
 		<DrawerField label={$t('activities.endDate')}>
-			<div class={cn(fieldClass, 'flex items-center gap-2 font-mono tabular-nums text-foreground/80')}>
+			<div class={cn(fieldClass, 'flex items-center gap-2 font-sans tabular-nums text-foreground/80')}>
 				<CalendarRange class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-				{fmtActivityDate(activity.endDate)}
+				{fmtActivityDate(activity.endDate, $locale)}
 			</div>
 		</DrawerField>
 		<DrawerField label={$t('activities.capacity')}>
-			<div class={cn(fieldClass, 'font-mono tabular-nums text-foreground/80')}>{activity.capacity}</div>
+			<div class={cn(fieldClass, 'font-sans tabular-nums text-foreground/80')}>{activity.capacity}</div>
 		</DrawerField>
 		<DrawerField label={$t('activities.enrolled')}>
-			<div class={cn(fieldClass, 'flex items-center gap-2 font-mono tabular-nums text-foreground/80')}>
+			<div class={cn(fieldClass, 'flex items-center gap-2 font-sans tabular-nums text-foreground/80')}>
 				<Users class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-				{activity.enrollments.length}
+				{activity.enrollmentCount}
 			</div>
 		</DrawerField>
 	</div>

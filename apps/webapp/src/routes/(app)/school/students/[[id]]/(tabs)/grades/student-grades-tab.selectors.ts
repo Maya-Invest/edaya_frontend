@@ -28,17 +28,16 @@ export function buildStudentGradeSummaryFromRows(
 		submissions: [],
 		submittedCount: 0,
 	}));
-	const marks = rows.map(row => row.score);
-	const valid = marks.filter((mark): mark is number => mark !== null);
-	const weightedSum = valid.reduce(
-		(accumulator, mark, index) =>
-			accumulator + (mark / rows[index].outOf) * 20 * rows[index].coefficient,
-		0,
-	);
-	const weightTotal = valid.reduce(
-		(accumulator, _mark, index) => accumulator + rows[index].coefficient,
-		0,
-	);
+	const valid: number[] = [];
+	let weightedSum = 0;
+	let weightTotal = 0;
+	for (const row of rows) {
+		if (row.score === null)
+			continue;
+		valid.push(row.score);
+		weightedSum += (row.score / row.outOf) * 20 * row.coefficient;
+		weightTotal += row.coefficient;
+	}
 	const overall = valid.length ? weightedSum / weightTotal : 0;
 
 	const groups: Record<string, StudentSubjectGroupItem[]> = {};

@@ -1,5 +1,5 @@
-/** État de chargement d'une page (après résolution PageQuery — pas de `loading` ici). */
-export type PageLoadState = 'ready' | 'empty' | 'error';
+/** Explicit collection/read outcomes; domains retain their payload and refresh lifecycle. */
+export type PageLoadState = 'ready' | 'empty' | 'no-match' | 'denied' | 'unavailable' | 'error' | 'loading' | 'refreshing' | 'loading-more';
 
 /** ?demo= — preview dev ; `loading` simule le délai via PageQuery, pas DataState. */
 export type DemoPreviewState = PageLoadState | 'loading';

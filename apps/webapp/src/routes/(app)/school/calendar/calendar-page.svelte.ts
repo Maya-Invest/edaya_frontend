@@ -1,7 +1,8 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import type { AbsenceRecord, SchoolYearEvent } from '$lib/types/school';
+import type { SchoolYearEvent } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadAbsences, loadCalendarEvents } from '$lib/api/school-life-data';
+import { loadCalendarEvents } from '$lib/api/school-life-data';
+import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readCalendarListFilters, writeCalendarListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
@@ -9,6 +10,7 @@ import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { queryClient } from '$lib/queries/client';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { getContext, setContext } from 'svelte';
+import { createCalendarEventOnPage, updateCalendarEventOnPage, deleteCalendarEventOnPage } from './lib/calendar-mutations';
 import { querySchoolCalendarPage } from './lib/calendar-queries';
 
 const CALENDAR_VERSION_FAMILIES = ['schoolYearEvents'] as const satisfies readonly EntityVersionKey[];
@@ -16,8 +18,13 @@ const CALENDAR_VERSION_FAMILIES = ['schoolYearEvents'] as const satisfies readon
 const CALENDAR_PAGE_STATE_KEY = Symbol('calendar-page-state');
 
 export class CalendarPageState {
+	createCalendarEvent = (...args: Parameters<typeof createCalendarEventOnPage> extends [unknown, ...infer Rest] ? Rest : never) => createCalendarEventOnPage(this, ...args);
+
+	updateCalendarEvent = (...args: Parameters<typeof updateCalendarEventOnPage> extends [unknown, ...infer Rest] ? Rest : never) => updateCalendarEventOnPage(this, ...args);
+
+	deleteCalendarEvent = (...args: Parameters<typeof deleteCalendarEventOnPage> extends [unknown, ...infer Rest] ? Rest : never) => deleteCalendarEventOnPage(this, ...args);
+
 	events = $state<SchoolYearEvent[]>([]);
-	absences = $state<AbsenceRecord[]>([]);
 	readonly filters: ListFiltersState<{ q: string; type: string }>;
 
 	private readonly versions = new RouteVersionSnapshot(CALENDAR_VERSION_FAMILIES);
@@ -33,9 +40,8 @@ export class CalendarPageState {
 		);
 	}
 
-	seed(events: SchoolYearEvent[], absences: AbsenceRecord[]) {
+	seed(events: SchoolYearEvent[]) {
 		this.events = events;
-		this.absences = absences;
 		this.versions.markLoaded();
 	}
 
@@ -61,28 +67,27 @@ export class CalendarPageState {
 		return querySchoolCalendarPage(this);
 	}
 
-	async refreshSlice() {
-		const client = queryClient();
-		const classIds = academicContext.classes.map(entry => entry.id);
-		const [events, absences] = await Promise.all([
-			loadCalendarEvents(client, academicContext.yearId).catch((error) => {
-				if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-					return [];
-				}
+	async refreshSlice(signal?: AbortSignal) {
+		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+		const yearId = academicContext.yearId;
+		let events: SchoolYearEvent[];
+		try {
+			events = await loadCalendarEvents(queryClient(), yearId, schoolId, signal);
+		}
+		catch (error) {
+			if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
 				throw error;
-			}),
-			loadAbsences(client, classIds).catch((error) => {
-				if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-					return [];
-				}
-				throw error;
-			}),
-		]);
-		this.seed(events, absences);
+			}
+			events = [];
+		}
+		signal?.throwIfAborted();
+		if (yearId === academicContext.yearId && schoolId === (authSession.schoolId ?? academicContext.schools[0]?.id ?? '')) {
+			this.seed(events);
+		}
 	}
 
 	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
+		if (!this.versions.hasLoaded() || !this.versions.isStale()) {
 			return;
 		}
 		await this.refreshSlice();

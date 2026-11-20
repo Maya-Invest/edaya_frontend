@@ -1,17 +1,22 @@
+import type { UserScopeSelection } from '$lib/api/grant-scopes';
+import type { RenderedPermissionScope } from '$lib/api/permission-scope-labels';
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import { listAllEntityPages } from '$lib/api/entity-list-filters';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignment'];
 type PermissionCatalogEntry = components['schemas']['PermissionCatalogEntry'];
-type ScopeRenderItem = components['schemas']['ScopeRenderResponse']['items'][number];
 
 export type { PermissionCatalogEntry, StaffPermissionAssignment };
 
 export interface StaffPermissionAssignmentView extends StaffPermissionAssignment {
+	customScopes?: UserScopeSelection[];
+	useDefaultScopes?: boolean;
+	warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'];
 	scopeLabel: string;
+	renderedScopes: RenderedPermissionScope[];
 	tenantWide: boolean;
-	isSynced: boolean;
 	hasMissingScope: boolean;
 }
 
@@ -35,30 +40,6 @@ export function formatPermissionLabel(
 		.join(' ');
 }
 
-function scopeLabelFromRender(
-	item: ScopeRenderItem | undefined,
-	scopeIds: string,
-	translate?: (key: string) => string,
-): string {
-	if (!item) {
-		return scopeIds || '—';
-	}
-	if (item.tenantWide) {
-		return translate?.('roles.wholeSchool') ?? 'Whole school';
-	}
-	if (item.clauses.length === 0) {
-		return scopeIds || '—';
-	}
-	return item.clauses.map(clause => clause.label).join('; ');
-}
-
-function hasMissingScope(item: ScopeRenderItem | undefined): boolean {
-	if (!item) {
-		return false;
-	}
-	return item.clauses.some(clause => clause.segments.some(segment => Boolean(segment.missing)));
-}
-
 export async function loadPermissionCatalog(client: SchoolClient): Promise<PermissionCatalogEntry[]> {
 	const response = await client.authorization.permissionCatalog();
 	return response.items ?? [];
@@ -67,47 +48,50 @@ export async function loadPermissionCatalog(client: SchoolClient): Promise<Permi
 export async function loadStaffPermissionAssignments(
 	client: SchoolClient,
 	scope: { schoolId: string; academicYearId: string },
-): Promise<StaffPermissionAssignment[]> {
-	return client.entities.staffPermissionAssignments.list({
-		schoolId: scope.schoolId,
-		academicYearId: scope.academicYearId,
-		status: 'active',
-	}) ?? [];
+): Promise<(StaffPermissionAssignment & { customScopes?: UserScopeSelection[]; useDefaultScopes?: boolean; warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'] })[]> {
+	const [grants, manuals] = await Promise.all([
+		listAllEntityPages(query => client.entities.staffPermissionAssignments.list(query), { baseQuery: { ...scope, status: 'active' } }),
+		listAllEntityPages(query => client.entities.staffManualPermissionAssignments.list(query), { baseQuery: scope }),
+	]);
+	return [
+		...grants.filter(row => !row.sourceManualAssignmentId),
+		...manuals.map(source => ({ ...source, scopes: grants.find(row => row.sourceManualAssignmentId === source.id)?.scopes ?? [] })),
+	];
 }
 
 export async function buildStaffPermissionAssignmentViews(
 	client: SchoolClient,
-	assignments: readonly StaffPermissionAssignment[],
+	assignments: readonly (StaffPermissionAssignment & { customScopes?: UserScopeSelection[]; useDefaultScopes?: boolean; warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'] })[],
 	academicYearId: string,
-	translate?: (key: string) => string,
+	_translate?: (key: string) => string,
 ): Promise<StaffPermissionAssignmentView[]> {
 	if (assignments.length === 0) {
 		return [];
 	}
 
-	const rendered = await client.authorization.scopeRender({
-		academicYearId,
-		items: assignments.map(assignment => ({
-			permission: assignment.permission,
-			scopeIds: assignment.scopeIds ?? '',
-		})),
-	});
-
-	const renderedByScopeIds = new Map(
-		(rendered.items ?? []).map(item => [`${item.permission ?? ''}:${item.scopeIds}`, item]),
-	);
-
-	return assignments.map((assignment) => {
-		const renderKey = `${assignment.permission}:${assignment.scopeIds ?? ''}`;
-		const renderedItem = renderedByScopeIds.get(renderKey);
-		return {
+	// The API accepts at most 100 rows per rendering request.
+	const views: StaffPermissionAssignmentView[] = [];
+	for (let offset = 0; offset < assignments.length; offset += 100) {
+		const batch = assignments.slice(offset, offset + 100);
+		const scopedAssignments = batch.filter(row => row.scopes.length);
+		const rendered = scopedAssignments.length
+			? await client.authorization.scopeRender({
+					academicYearId,
+					items: scopedAssignments.map(({ permission, scopes }) => ({ permission, scopes })),
+				})
+			: { items: [] };
+		const scopesById = new Map(scopedAssignments.map((row, index) => [row.id, rendered.items[index]?.scopes ?? []]));
+		views.push(...batch.map(assignment => ({
 			...assignment,
-			scopeLabel: scopeLabelFromRender(renderedItem, assignment.scopeIds ?? '', translate),
-			tenantWide: renderedItem?.tenantWide ?? (assignment.scopeIds ?? '') === '',
-			isSynced: Boolean(assignment.sourceStaffAssignmentId),
-			hasMissingScope: hasMissingScope(renderedItem),
-		};
-	});
+			renderedScopes: (scopesById.get(assignment.id) ?? []).filter(scope => scope.scope.kind !== 'school'),
+			scopeLabel: assignment.scopes.some(scope => scope.kind === 'school')
+				? ''
+				: scopesById.get(assignment.id)?.map(scope => scope.label).join('; ') || '—',
+			tenantWide: assignment.scopes.some(scope => scope.kind === 'school'),
+			hasMissingScope: scopesById.get(assignment.id)?.some(scope => scope.missing) ?? false,
+		})));
+	}
+	return views;
 }
 
 export async function loadStaffPermissionPageData(

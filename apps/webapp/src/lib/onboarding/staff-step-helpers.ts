@@ -1,5 +1,6 @@
 import type { OnboardingStaffInviteDraft } from '$lib/onboarding/types';
-import { activeStaffInvites } from '$lib/onboarding/staff-step-validation';
+import { defaultStaffInviteRole } from '$lib/onboarding/staff-invite-profiles';
+import { activeStaffInvites, isValidStaffInviteEmail } from '$lib/onboarding/staff-step-validation';
 
 export function addStaffInvite(invites: OnboardingStaffInviteDraft[]): OnboardingStaffInviteDraft[] {
 	return [
@@ -7,7 +8,7 @@ export function addStaffInvite(invites: OnboardingStaffInviteDraft[]): Onboardin
 		{
 			id: crypto.randomUUID(),
 			email: '',
-			role: 'teacher',
+			role: defaultStaffInviteRole(),
 		},
 	];
 }
@@ -22,7 +23,7 @@ export function removeStaffInvite(
 export function updateStaffInvite(
 	invites: OnboardingStaffInviteDraft[],
 	id: string,
-	patch: Partial<Pick<OnboardingStaffInviteDraft, 'email' | 'role'>>,
+	patch: Partial<Pick<OnboardingStaffInviteDraft, 'email' | 'role' | 'identifier'>>,
 ): OnboardingStaffInviteDraft[] {
 	return invites.map(invite =>
 		invite.id === id ? { ...invite, ...patch } : invite);
@@ -30,17 +31,10 @@ export function updateStaffInvite(
 
 export function staffInvitesForSubmit(invites: OnboardingStaffInviteDraft[]) {
 	return activeStaffInvites(invites)
-		.filter(invite => invite.email.trim() && invite.role)
+		.filter(invite => isValidStaffInviteEmail(invite.email) && invite.role)
 		.map(invite => ({
 			email: invite.email.trim(),
+			...(invite.identifier?.trim() ? { identifier: invite.identifier.trim() } : {}),
 			role: invite.role as Exclude<typeof invite.role, ''>,
 		}));
-}
-
-export function partitionStaffInvitesForSubmit(invites: OnboardingStaffInviteDraft[]) {
-	const payload = staffInvitesForSubmit(invites);
-	return {
-		teacherInvites: payload.filter(invite => invite.role === 'teacher'),
-		staffInvites: payload.filter(invite => invite.role !== 'teacher'),
-	};
 }

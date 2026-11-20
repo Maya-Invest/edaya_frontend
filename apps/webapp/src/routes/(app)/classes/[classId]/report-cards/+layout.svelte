@@ -6,10 +6,11 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import { onDestroy } from 'svelte';
 	import ReportCardsList from './components/ReportCardsList.svelte';
 	import {
 		ReportCardsPageState,
@@ -20,24 +21,25 @@
 
 	const reportCardsPage = new ReportCardsPageState(() => $page.url);
 	setReportCardsPageState(reportCardsPage);
+	onDestroy(() => reportCardsPage.list.clear());
 	registerVersionInvalidation(reportCardsPage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 
 	const classId = $derived($page.params.classId ?? '6a');
 	const selectedId = $derived(reportCardsPage.selectedId);
-	const query = $derived(reportCardsPage.queryListPage(classId));
+	const query = reportCardsPage.queryListPage();
 
-	function selectResult(result: import('$lib/types/report-cards').ReportCardResult) {
+	function selectResult(result: { id: string }) {
 		const path = detailHref.classReportCard(classId, result.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 </script>
 
-<PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('reportCards.classTitle')}>
+<PageQuery {query} cache={false} preserveWhileLoading loadingSurfaceKey={listRouteCacheKey} cacheKey={url => listRouteCacheKey(url) + reportCardsPage.list.key} loadingTitle={$t('reportCards.classTitle')}>
 	{#snippet children(data)}
 		<DataState
 			preserveShell
-			status={data.status}
+			status={reportCardsPage.list.denied ? 'denied' : data.status}
 			errorMessage={data.errorMessage}
 			emptyTitle={$t('reportCards.classTitle')}
 			emptyDescription={$t('dataState.emptyDescription')}

@@ -6,7 +6,7 @@
 	<div class="space-y-2">
 		<h2 class="font-display text-3xl font-semibold tracking-tight">Overview</h2>
 		<p class="max-w-2xl text-sm text-muted-foreground">
-			Internal console for Edaya platform operators. Tenant management, billing, and support workflows
+			Internal console for EDaya platform operators. Tenant management, billing, and support workflows
 			will land here as the webadmin control plane grows.
 		</p>
 	</div>
@@ -25,7 +25,7 @@
 		<h3 class="font-display text-lg font-semibold">Next steps</h3>
 		<ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
 			<li>Wire authentication for platform operators.</li>
-			<li>Connect to the Edaya Core API for tenant and subscription data.</li>
+			<li>Connect to the EDaya Core API for tenant and subscription data.</li>
 			<li>Migrate the school webapp into this monorepo when ready.</li>
 		</ul>
 	</article>

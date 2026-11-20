@@ -1,0 +1,236 @@
+{
+  "code": "TLED",
+  "name": "Terminale D",
+  "short_label": "Tle D",
+  "exam_year": true,
+  "exam_name": "BAC D",
+  "sections": [
+    {
+      "role": "subjects",
+      "label": "Bilan Lettre",
+      "order": 1,
+      "subject_codes": [
+        "FR",
+        "ANG",
+        "ALL",
+        "ESP",
+        "HG",
+        "PHILO"
+      ]
+    },
+    {
+      "role": "subjects",
+      "label": "Bilan Science",
+      "order": 2,
+      "subject_codes": [
+        "MATH",
+        "PC",
+        "SVT",
+        "TICE"
+      ]
+    },
+    {
+      "role": "subjects",
+      "label": "Bilan autres",
+      "order": 3,
+      "subject_codes": [
+        "EDHC",
+        "EPS"
+      ]
+    },
+    {
+      "role": "comments",
+      "label": "Appréciations",
+      "order": 4
+    }
+  ],
+  "subjects": [
+    {
+      "code": "FR",
+      "name": "Français",
+      "domain": "Langues",
+      "coefficient": 4,
+      "matters": [
+        "Étude de textes littéraires et argumentatifs",
+        "Grammaire et stylistique avancées",
+        "Expression écrite : dissertation et commentaire",
+        "Oral et méthodologie de l'épreuve de français",
+        "Histoire littéraire et mouvements",
+        "Lecture méthodique et interprétation"
+      ]
+    },
+    {
+      "code": "ANG",
+      "name": "Anglais",
+      "domain": "Langues",
+      "coefficient": 3,
+      "matters": [
+        "Compréhension orale et expression orale",
+        "Compréhension écrite de textes authentiques",
+        "Vocabulaire thématique et expressions utiles",
+        "Grammaire : temps, structures et concordance",
+        "Production écrite guidée et libre",
+        "Civilisation et documents culturels"
+      ]
+    },
+    {
+      "code": "ALL",
+      "name": "Allemand",
+      "domain": "Langues",
+      "coefficient": 2,
+      "matters": [
+        "Compréhension et expression orale de base",
+        "Vocabulaire et structures grammaticales essentielles",
+        "Lecture de textes simples",
+        "Production écrite courte",
+        "Civilisation germanophone",
+        "Interaction en situations quotidiennes"
+      ],
+      "optional": true
+    },
+    {
+      "code": "ESP",
+      "name": "Espagnol",
+      "domain": "Langues",
+      "coefficient": 2,
+      "matters": [
+        "Compréhension et expression orale de base",
+        "Vocabulaire et structures grammaticales essentielles",
+        "Lecture de textes simples",
+        "Production écrite courte",
+        "Civilisation hispanophone",
+        "Interaction en situations quotidiennes"
+      ],
+      "optional": true
+    },
+    {
+      "code": "HG",
+      "name": "Histoire-Géographie",
+      "domain": "Univers Social",
+      "coefficient": 3,
+      "matters": [
+        "Repères chronologiques et sociétés",
+        "Territoires, populations et activités",
+        "Lecture de cartes, frises et documents",
+        "Afrique et Côte d'Ivoire dans le monde",
+        "Enjeux contemporains",
+        "Méthodologie de l'étude de documents"
+      ]
+    },
+    {
+      "code": "PHILO",
+      "name": "Philosophie",
+      "domain": "Univers Social",
+      "coefficient": 4,
+      "matters": [
+        "La conscience et l'inconscient",
+        "Science, épistémologie et vérité",
+        "La société et l'État",
+        "Liberté, devoir et morale",
+        "Méthodologies (Dissertation et Commentaire)"
+      ]
+    },
+    {
+      "code": "MATH",
+      "name": "Mathématiques",
+      "domain": "Sciences",
+      "coefficient": 4,
+      "matters": [
+        "Nombres complexes : algèbre et géométrie",
+        "Fonctions numériques : limites, continuité, dérivabilité",
+        "Fonctions logarithmes et exponentielles",
+        "Suites numériques (arithmétiques, géométriques)",
+        "Calcul intégral et calcul d'aires",
+        "Équations différentielles linéaires d'ordre 1 et 2",
+        "Probabilités : conditionnement, indépendance, variables aléatoires",
+        "Statistiques : nuages de points, droites de régression"
+      ]
+    },
+    {
+      "code": "PC",
+      "name": "Physique-Chimie",
+      "domain": "Sciences",
+      "coefficient": 4,
+      "matters": [
+        "Physique : Cinématique du point matériel (vecteur position, vitesse, accélération)",
+        "Physique : Dynamique du point matériel (Lois de Newton, centre d'inertie)",
+        "Physique : Travail, énergie cinétique, énergie potentielle, énergie mécanique",
+        "Physique : Les oscillateurs mécaniques (pendule simple, pendule élastique)",
+        "Physique : Champ électrostatique et mouvement d'une particule chargée",
+        "Physique : Champ magnétique et force de Lorentz",
+        "Physique : La force de Laplace, le galvanomètre, le haut-parleur",
+        "Physique : Auto-induction et circuits RL",
+        "Physique : Circuits RLC en régime sinusoïdal forcé, résonance",
+        "Physique : Radioactivité, décroissance radioactive, énergie nucléaire (défaut de masse, fission, fusion)",
+        "Chimie : Cinétique chimique, vitesse de réaction, facteurs cinétiques",
+        "Chimie : Autoprotolyse de l'eau, pH des solutions aqueuses",
+        "Chimie : Acides forts/faibles, bases fortes/faibles, réactions acido-basiques, dosage pH-métrique",
+        "Chimie : Alcools (classes, oxydation ménagée)",
+        "Chimie : Composés carbonylés (aldéhydes et cétones)",
+        "Chimie : Acides carboxyliques et dérivés (chlorures d'acyle, anhydrides)",
+        "Chimie : Réaction d'estérification et d'hydrolyse",
+        "Chimie : Les amines, acides aminés et liaisons peptidiques"
+      ]
+    },
+    {
+      "code": "SVT",
+      "name": "Sciences de la Vie et de la Terre",
+      "domain": "Sciences",
+      "coefficient": 6,
+      "matters": [
+        "Le tissu nerveux et les propriétés du nerf (excitabilité, conductibilité, potentiel d'action)",
+        "Le réflexe myotatique et le fonctionnement des synapses",
+        "L'activité cérébrale et la motricité volontaire",
+        "Le milieu intérieur et la régulation de la pression artérielle",
+        "La régulation de la glycémie",
+        "La reproduction humaine : gamétogenèse, régulation hormonale chez l'homme et la femme",
+        "Génétique classique : lois de Mendel, monohybridisme, dihybridisme, liaison sexuelle",
+        "Génétique moléculaire : ADN, transcription, traduction, code génétique",
+        "Le système immunitaire : antigènes, anticorps, lymphocytes T et B, coopération cellulaire, VIH",
+        "L'évolution des espèces et les preuves de l'évolution"
+      ]
+    },
+    {
+      "code": "EDHC",
+      "name": "Éducation aux Droits de l'Homme et à la Citoyenneté",
+      "domain": "Univers Social",
+      "coefficient": 1,
+      "matters": [
+        "Droits et devoirs du citoyen",
+        "Vivre ensemble et respect de la diversité",
+        "Institutions et vie démocratique",
+        "Santé, hygiène et responsabilité sociale",
+        "Développement durable",
+        "Engagement et solidarité"
+      ]
+    },
+    {
+      "code": "EPS",
+      "name": "Éducation Physique et Sportive",
+      "domain": "Développement Physique",
+      "coefficient": 2,
+      "matters": [
+        "Activités athlétiques et motricité",
+        "Sports collectifs",
+        "Gymnastique et expression corporelle",
+        "Condition physique et santé",
+        "Règles de sécurité et fair-play",
+        "Préparation et évaluation des APSA"
+      ]
+    },
+    {
+      "code": "TICE",
+      "name": "TICE",
+      "domain": "Sciences",
+      "coefficient": 1,
+      "matters": [
+        "Système d'exploitation et fichiers",
+        "Traitement de texte et présentation",
+        "Recherche d'information et sources",
+        "Tableurs et multimédia",
+        "Citoyenneté et sécurité numériques",
+        "Collaboration et outils en ligne"
+      ]
+    }
+  ]
+}

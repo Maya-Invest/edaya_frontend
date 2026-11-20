@@ -1,23 +1,40 @@
-# Edaya Webapp
+# EDaya Webapp
 
-SvelteKit staff UI for Edaya Core.
+SvelteKit staff workspace for school administration. Teachers, guardians and students are managed here; their portal accounts use their respective applications.
 
 ## Local development
 
-```sh
-cp .env.example .env   # from apps/webapp
-bun dev                # http://localhost:5173
-```
+Complete [repository setup](../../README.MD#prerequisites-and-first-time-setup), then copy `.env.example` to `.env` in this app if local overrides are needed. Start the local backend using its README. `API_URL` and `PUBLIC_API_URL` must identify the same API origin (default `http://localhost:9999`); browser access tokens use that origin as their resource/audience.
 
-Requires the API running at `API_URL` (the Vite development proxy target, default `http://localhost:9999`). Leave `PUBLIC_API_URL` empty locally so browser requests use the same-origin proxy. From the repo root, `bun dev` starts both apps. Start the API from `edaya_backend` with `bun dev` (PGlite + local-files).
-
-## Quality gates
-
-From the repo root:
+From the frontend root, `bun repo dev` starts both apps and enables explicit test-OTP controls unless `PUBLIC_TEST_OTP_ACCESS=false`. To start only this app with captured-code controls:
 
 ```sh
-bun run verify    # non-mutating lint, check, build, generated drift, boundaries, tests
-bun run lint:fix  # lint:fix when needed
+PUBLIC_TEST_OTP_ACCESS=true PUBLIC_APP_ENV=development bun run dev:webapp
 ```
 
-Webapp-only: `bun run --cwd apps/webapp quality` (lint + svelte-check + test typecheck).
+The staff UI is available at http://localhost:5173. Normal release builds disable test-OTP access.
+
+## Local demo access
+
+Use a disposable local backend with the `demo-ci` fixtures and captured OTP delivery, following the backend's current preparation instructions. Do not reset an existing database just to run a demo. `/login/demo` is available only in development; it prefills the shared passwordless form and never signs in automatically. Send the OTP, reveal/copy the test code explicitly when the backend advertises capture support, then verify it normally. Portal teachers are not included in this picker.
+
+The source of picker identities is [`tooling/web-fixtures/src/demo-login.ts`](../../tooling/web-fixtures/src/demo-login.ts):
+
+| Email | Display role |
+| --- | --- |
+| `a.kone@ecole-ci.edaya.dev` | School owner |
+| `j.aka@ecole-ci.edaya.dev` | Director |
+| `f.assi@ecole-ci.edaya.dev` | Deputy director / staff coordinator |
+| `m.zongo@ecole-ci.edaya.dev` | Educator |
+
+Role labels do not grant permissions. After backend grant or assignment changes, check teacher names in timetables and teacher drawers; forbidden optional enrichment must degrade gracefully.
+
+## Verification
+
+From the frontend root, `bun run verify` runs repository checks, quality, builds, tooling tests and application unit/state tests. App-only quality is `bun run --cwd apps/webapp quality`. Browser workflows and capture prerequisites are documented in [tests/README.md](tests/README.md).
+
+## UI development
+
+Read the relevant [six implementation specs](../../AGENTS.md) before changing product behavior. Compose existing list, drawer, form and smart components. The development-only `/__design` gallery uses production primitives with isolated fixtures and returns 404 in production.
+
+The staff webapp uses bundled Poppins/Inter fonts, supplied logos and generated semantic tokens. See [design-system maintenance](../../design-system/README.md) for token/asset checks and ignored visual evidence. UI-only styling preserves authentication, routes, permissions, data, fields and working layouts.

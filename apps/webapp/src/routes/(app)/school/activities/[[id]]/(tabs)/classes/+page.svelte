@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { PageQueryRequest } from '$lib/queries/page-status';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -10,6 +12,9 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { writeModalSurface } from '$lib/modal/modal-url';
+	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { get } from 'svelte/store';
@@ -18,52 +23,103 @@
 
 	const activitiesPage = getActivitiesPageState();
 	const classesTab = getActivityClassesTabState();
-	const query = classesTab.query();
+	const loadTab = classesTab.query();
 	const activityId = $derived($page.params.id ?? '');
 	const activity = $derived(activityId ? activitiesPage.findActivity(activityId) : undefined);
 	const classEnrollments = $derived(classesTab.classEnrollmentsFor(activityId));
 
-	let addOpen = $state(false);
+	const classesById = $derived(new Map(academicContext.classes.map(group => [group.id, group])));
+
+	type ActivityClassesModal = 'edit' | 'delete' | 'link-classes' | 'unlink-class';
+	const modals = createUrlSyncedModals<ActivityClassesModal>({
+		allowed: ['edit', 'delete', 'link-classes', 'unlink-class'],
+		getUrl: () => $page.url,
+	});
+	afterNavigate(() => {
+		modals.hydrate();
+		validateModal();
+	});
+	const addOpen = bindUrlModal(modals, 'link-classes');
+	const removeOpen = bindUrlModal(modals, 'unlink-class');
 	let classGroupIds = $state<string[]>([]);
+	let pickerSession = 0;
+	$effect(() => {
+		void addOpen.open;
+		void activityId;
+		void academicContext.scopeGeneration;
+		pickerSession += 1;
+		return () => {
+			pickerSession += 1;
+		};
+	});
 	let busy = $state(false);
-	let removeEnrollmentId = $state<string | null>(null);
-	let removeOpen = $state(false);
 	let removeBusy = $state(false);
 
 	const linkedClassGroupIds = $derived(classEnrollments.map(enrollment => enrollment.classGroupId));
 	const removeTarget = $derived(
-		removeEnrollmentId
-			? classEnrollments.find(enrollment => enrollment.id === removeEnrollmentId)
+		modals.isOpen('unlink-class') && modals.target
+			? classEnrollments.find(enrollment => enrollment.id === modals.target)
 			: undefined,
 	);
 	const removeClassName = $derived(
 		removeTarget
-			? (academicContext.classes.find(entry => entry.id === removeTarget.classGroupId)?.name ?? removeTarget.classGroupId)
+			? (classesById.get(removeTarget.classGroupId)?.name ?? removeTarget.classGroupId)
 			: '—',
 	);
 
-	async function confirmAddClasses() {
-		if (!activity || classGroupIds.length === 0 || busy) {
+	function canonicalizeModal(modal: ActivityClassesModal | null) {
+		replaceRouteSurface(writeModalSurface($page.url, { modal }));
+	}
+
+	function validateModal() {
+		if (!modals.ready || classesTab.slice?.activityId !== activityId || !modals.active) {
 			return;
 		}
-
-		busy = true;
-		let linked = 0;
-		for (const classGroupId of classGroupIds) {
-			const ok = await activitiesPage.ensureClassEnrollment({
-				activityId: activity.id,
-				classGroupId,
-			});
-			if (ok) {
-				linked += 1;
-			}
+		if (
+			(modals.active === 'edit' || modals.active === 'delete' || modals.active === 'link-classes')
+			&& modals.target
+		) {
+			canonicalizeModal(modals.active);
+			return;
 		}
-		busy = false;
-		if (linked > 0) {
-			toast.success(get(t)('activities.linkClassesSuccess', { n: linked }));
-			classesTab.syncFromPage(activity.id);
-			addOpen = false;
-			classGroupIds = [];
+		if (
+			modals.active === 'unlink-class'
+			&& !classEnrollments.some(enrollment => enrollment.id === modals.target)
+		) {
+			canonicalizeModal(null);
+		}
+	}
+
+	async function query(url: URL, request: PageQueryRequest) {
+		const result = await loadTab(url, request);
+		request.signal.throwIfAborted();
+		validateModal();
+		return result;
+	}
+
+	async function confirmAddClasses() {
+		if (!activity || classGroupIds.length === 0 || busy)
+			return;
+		const targetId = activity.id;
+		const generation = academicContext.scopeGeneration;
+		const session = pickerSession;
+		const current = () => session === pickerSession && addOpen.open && activityId === targetId && academicContext.scopeGeneration === generation;
+		busy = true;
+		try {
+			const result = await activitiesPage.addClasses(targetId, classGroupIds, current);
+			if (!current())
+				return;
+			classGroupIds = result.remaining;
+			if (result.succeeded.length > 0) {
+				toast.success(get(t)('activities.linkClassesSuccess', { n: result.succeeded.length }));
+				classesTab.syncFromPage(targetId);
+			}
+			if (result.remaining.length === 0)
+				modals.close();
+			else toast.error(get(t)('common.partialSelection', { n: result.remaining.length }));
+		}
+		finally {
+			busy = false;
 		}
 	}
 
@@ -81,32 +137,32 @@
 		removeBusy = false;
 		if (ok) {
 			classesTab.syncFromPage(activity.id);
-			removeOpen = false;
-			removeEnrollmentId = null;
+			modals.close();
 		}
 	}
+
 </script>
 
 {#if activity}
-	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.linkedClasses')}>
+	<PageQuery {query} cache={false} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.linkedClasses')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
 				<p class="text-sm text-muted-foreground">{$t('activities.classesTabHint')}</p>
 
-				<div class="rounded-2xl border border-border bg-card">
+				<div class="rounded-collection border border-border bg-card">
 					<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
-						<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+						<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 							{$t('activities.linkedClasses')}
 						</p>
-						<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+						<PermissionGate permission="ACTIVITY_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 							{#snippet children({ disabled, title })}
 								<Button
 									size="sm"
 									variant="outline"
-									class="h-7 rounded-full text-xs"
+									class="text-xs"
 									disabled={disabled || busy}
 									title={title}
-									onclick={() => (addOpen = true)}
+									onclick={() => modals.open('link-classes')}
 								>
 									<Plus class="mr-1 h-3.5 w-3.5" /> {$t('activities.linkClasses')}
 								</Button>
@@ -118,7 +174,7 @@
 					{:else}
 						<ul class="divide-y divide-border">
 							{#each classEnrollments as enrollment (enrollment.id)}
-								{@const classGroup = academicContext.classes.find(entry => entry.id === enrollment.classGroupId)}
+								{@const classGroup = classesById.get(enrollment.classGroupId)}
 								<li class="flex items-center justify-between gap-3 px-4 py-2.5">
 									<div class="min-w-0">
 										<p class="truncate text-sm font-medium">{classGroup?.name ?? enrollment.classGroupId}</p>
@@ -129,19 +185,16 @@
 											{/if}
 										</p>
 									</div>
-									<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+									<PermissionGate permission="ACTIVITY_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 										{#snippet children({ disabled, title })}
 											<Button
 												type="button"
 												variant="ghost"
 												size="icon"
-												class="h-8 w-8 text-muted-foreground hover:text-destructive"
+												class="w-8 text-muted-foreground hover:text-destructive"
 												disabled={disabled || busy}
 												title={title ?? $t('activities.unlinkClass')}
-												onclick={() => {
-													removeEnrollmentId = enrollment.id;
-													removeOpen = true;
-												}}
+												onclick={() => modals.open('unlink-class', { target: enrollment.id })}
 											>
 												<Trash2 class="h-4 w-4" />
 											</Button>
@@ -158,7 +211,8 @@
 {/if}
 
 <PickerModal
-	bind:open={addOpen}
+	dirty={classGroupIds.length > 0}
+	bind:open={addOpen.open}
 	title={activity ? $t('activities.linkClassesTitle', { name: activity.name }) : $t('activities.linkClasses')}
 	description={$t('activities.linkClassesDescription')}
 	confirmLabel={$t('activities.linkClassesAction')}
@@ -173,19 +227,16 @@
 		bind:values={classGroupIds}
 		mode="multi"
 		variant="panel"
-		active={addOpen}
+		active={addOpen.open}
 		excludeIds={linkedClassGroupIds}
 	/>
 </PickerModal>
 
 <ConfirmModal
-	bind:open={removeOpen}
+	bind:open={removeOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('activities.unlinkClassConfirm', { name: removeClassName })}
 	confirmLabel={$t('activities.unlinkClass')}
 	busy={removeBusy}
-	onCancel={() => {
-		removeEnrollmentId = null;
-	}}
 	onConfirm={confirmRemoveClass}
 />

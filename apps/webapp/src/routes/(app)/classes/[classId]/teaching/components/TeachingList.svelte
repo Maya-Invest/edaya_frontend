@@ -1,16 +1,19 @@
 <script lang="ts">
-	import type { Subject, SubjectCategory } from '$lib/types/school';
+	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import Input from '$lib/components/ui/input/input.svelte';
+
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
-	import { Clock, Search, Sparkles, User } from '$lib/icons';
+	import { lang, t } from '$lib/i18n';
+	import { catalogCategory, catalogSubjectName } from '$lib/i18n/catalog-label';
+	import { Clock, Sparkles, User } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readTeachingListFilters, writeTeachingListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import { getTeachingPageState } from '../teaching-page.svelte';
 
 	const {
@@ -42,24 +45,31 @@
 				return true;
 			}
 			return subject.name.toLowerCase().includes(needle)
+				|| catalogSubjectName(subject.name, $lang, subject.shortName).toLowerCase().includes(needle)
 				|| subject.teacher.toLowerCase().includes(needle)
-				|| subject.category.toLowerCase().includes(needle);
+				|| subject.category.toLowerCase().includes(needle)
+				|| catalogCategory(subject.category, $lang).toLowerCase().includes(needle);
 		}),
 	);
+
+	async function toggleOffered(event: Event, subject: Subject) {
+		event.stopPropagation();
+		const next = !(subject.isOffered ?? true);
+		const ok = await teachingPage.performSetClassSubjectOffered({
+			classSubjectId: subject.id,
+			isOffered: next,
+			expectedParticipationRevision: subject.participationRevision ?? 0,
+			successMessage: get(t)('subjects.offeredUpdated'),
+		});
+		if (ok) {
+			teachingPage.patchSubject(subject.id, { isOffered: next });
+		}
+	}
 
 	const dotColor: Record<Subject['color'], string> = {
 		mint: 'bg-accent',
 		sky: 'bg-accent/60',
 		warm: 'bg-muted-foreground/40',
-	};
-
-	const categoryTone: Record<SubjectCategory, string> = {
-		'Scientifique': 'bg-secondary text-foreground/80',
-		'Littéraire': 'bg-secondary text-foreground/80',
-		'Langues': 'bg-secondary text-foreground/80',
-		'Sciences humaines': 'bg-secondary text-foreground/80',
-		'Sport': 'bg-secondary text-foreground/80',
-		'Arts': 'bg-secondary text-foreground/80',
 	};
 
 	function selectSubject(subject: Subject) {
@@ -87,19 +97,9 @@
 		description={$t('teaching.subtitle')}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={listFilters.values.q}
-					oninput={() => listFilters.scheduleSync()}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
-		{#snippet filters()}
+		{#snippet context()}
 			<div
 				class="flex items-center gap-3 rounded-full border border-border bg-card px-4 py-2 shadow-soft"
 			>
@@ -112,31 +112,43 @@
 						<div class="h-1.5 w-28 overflow-hidden rounded-full bg-secondary">
 							<div class="h-full bg-accent" style:width="{overallProgress}%"></div>
 						</div>
-						<span class="font-mono text-xs">{overallProgress}%</span>
+						<span class="font-sans tabular-nums text-xs">{overallProgress}%</span>
 					</div>
 				</div>
 			</div>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportLogbook')} onExport={() => void teachingPage.performRequestDocumentIssuance({
+				templateKey: 'logbook.v1',
+				sourceId: classId,
+				classGroupId: classId,
+				successMessage: get(t)('documents.toastRequested'),
+			})} />
 		{/snippet}
 	</ListPageHeader>
 
 	<div class="mb-2">
-		<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+		<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 			{$t('teaching.progressByMatter')}
 		</p>
 	</div>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+	<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 		{#each filteredSubjects as subject, idx (subject.id)}
 			{@const active = selectedId === subject.id}
 			{@const progress = teachingPage.subjectProgress(subject)}
-			<button
-				type="button"
+			<div
+				role="button"
+				tabindex="0"
 				onclick={() => selectSubject(subject)}
+				onkeydown={(event) => {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
+						selectSubject(subject);
+					}
+				}}
 				class={cn(
-					'flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-secondary',
+					'flex w-full cursor-pointer items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-secondary',
 					idx !== filteredSubjects.length - 1 && 'border-b border-border',
 					active && 'bg-primary/10',
 				)}
@@ -144,14 +156,14 @@
 				<div class={cn('h-8 w-1.5 shrink-0 rounded-full', dotColor[subject.color])}></div>
 				<div class="min-w-0 flex-1">
 					<div class="flex items-center gap-2">
-						<span class="font-display text-sm font-semibold">{subject.name}</span>
+						<span class="font-display text-sm font-semibold">{catalogSubjectName(subject.name, $lang, subject.shortName)}</span>
 						<span
 							class={cn(
 								'rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
-								categoryTone[subject.category],
+								'bg-secondary text-foreground/80',
 							)}
 						>
-							{subject.category}
+							{catalogCategory(subject.category, $lang)}
 						</span>
 					</div>
 					<p class="mt-0.5 truncate text-xs text-muted-foreground">{subject.description}</p>
@@ -161,7 +173,7 @@
 						<span class="h-1.5 w-24 overflow-hidden rounded-full bg-secondary">
 							<span class="block h-full bg-accent" style:width="{progress}%"></span>
 						</span>
-						<span class="font-mono tabular-nums">{progress}%</span>
+						<span class="font-sans tabular-nums">{progress}%</span>
 					</span>
 					<span class="flex items-center gap-1.5">
 						<User class="h-3.5 w-3.5" />
@@ -169,10 +181,27 @@
 					</span>
 					<span class="flex items-center gap-1.5">
 						<Clock class="h-3.5 w-3.5" />
-						{subject.hoursPerWeek}h
+						{subject.hoursPerWeek === null ? '—' : `${subject.hoursPerWeek}h`}
+					</span>
+					<span
+						role="button"
+						tabindex="0"
+						class={cn(
+							'rounded-full px-2 py-0.5 text-[10px] font-medium',
+							(subject.isOffered ?? true) ? 'bg-secondary text-foreground/80' : 'bg-muted text-muted-foreground',
+						)}
+						onclick={event => void toggleOffered(event, subject)}
+						onkeydown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') {
+								event.preventDefault();
+								void toggleOffered(event as unknown as MouseEvent, subject);
+							}
+						}}
+					>
+						{$t('subjects.toggleOffered')}: {(subject.isOffered ?? true) ? 'on' : 'off'}
 					</span>
 				</div>
-			</button>
+			</div>
 		{:else}
 			<p class="px-5 py-10 text-center text-sm text-muted-foreground">{$t('subjects.none')}</p>
 		{/each}

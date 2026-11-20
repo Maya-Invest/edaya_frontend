@@ -1,4 +1,4 @@
-import type { EffectiveGrantsSnapshot } from '$lib/auth/types';
+import type { ActionGrantsSnapshot, PermissionCode } from '$lib/auth/types';
 import {
 	CONFIG_NAV_DEFS,
 	NAV_MODULE_DEFS,
@@ -14,38 +14,33 @@ import {
 } from '$lib/navigation/nav-permissions';
 import { describe, expect, it } from 'bun:test';
 
-function mockGrants(permissions: readonly string[], isElevated = false): EffectiveGrantsSnapshot {
-	return {
-		isElevated,
-		permissions: [...permissions],
-		scopeGrants: [],
-		scopeIdsByPermission: {},
-	};
+function mockGrants(permissions: readonly PermissionCode[]): ActionGrantsSnapshot {
+	return permissions.map(permission => ({ permission, scopes: [{ kind: 'school' }], source: 'manual' }));
 }
 
 const teacherGrants = mockGrants(TEACHER_NAV_PERMISSIONS);
 const coordinatorGrants = mockGrants(COORDINATOR_NAV_PERMISSIONS);
 const educatorGrants = mockGrants(EDUCATOR_NAV_PERMISSIONS);
-const elevatedGrants = mockGrants([], true);
+const elevatedGrants = mockGrants(Object.values(NAV_MODULE_DEFS).flatMap(items => items.flatMap(item => item.permissions ?? [])));
 const schoolCtx = { schoolId: 'sch1', classId: '6a' };
 
 describe('nav-permissions — professeur (phase 3.2)', () => {
-	it('shows school and classes modules only', () => {
-		expect(visibleNavModuleKeys(teacherGrants, schoolCtx)).toEqual(['school', 'classes']);
+	it('shows Inbox, school and classes modules', () => {
+		expect(visibleNavModuleKeys(teacherGrants, schoolCtx)).toEqual(['inbox', 'school', 'classes']);
 	});
 
-	it('hides staff, announcements, finance and configuration entries', () => {
+	it('keeps personal announcements visible while hiding administrative entries', () => {
 		const schoolKeys = filterNavItems(SCHOOL_NAV_DEFS, teacherGrants).map(item => item.key);
 		expect(schoolKeys).toEqual([
 			'students',
 			'guardians',
 			'calendar',
-			'timetablePlanning',
 			'activities',
+			'announcements',
 			'events',
 		]);
 		expect(schoolKeys).not.toContain('staff');
-		expect(schoolKeys).not.toContain('announcements');
+		expect(schoolKeys).toContain('announcements');
 
 		expect(filterNavItems(NAV_MODULE_DEFS.finance, teacherGrants)).toHaveLength(0);
 		expect(filterNavItems(NAV_MODULE_DEFS.configuration, teacherGrants)).toHaveLength(0);
@@ -59,13 +54,14 @@ describe('nav-permissions — professeur (phase 3.2)', () => {
 		expect(canAccessPath('/dashboard', teacherGrants)).toBe(true);
 		expect(canAccessPath('/school/students', teacherGrants)).toBe(true);
 		expect(canAccessPath('/finance/billing', teacherGrants)).toBe(false);
-		expect(canAccessPath('/school/announcements', teacherGrants)).toBe(false);
+		expect(canAccessPath('/school/announcements', teacherGrants)).toBe(true);
 	});
 });
 
 describe('nav-permissions — prof principal (phase 3.3)', () => {
-	it('shows school, classes and configuration modules', () => {
+	it('shows Inbox, school, classes and configuration modules', () => {
 		expect(visibleNavModuleKeys(coordinatorGrants, schoolCtx)).toEqual([
+			'inbox',
 			'school',
 			'classes',
 			'configuration',
@@ -80,7 +76,6 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 			'staff',
 			'teachers',
 			'calendar',
-			'timetablePlanning',
 			'activities',
 			'announcements',
 			'events',
@@ -92,13 +87,12 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 		expect(filterNavItems(CONFIG_NAV_DEFS, coordinatorGrants).map(item => item.key)).toEqual([
 			'school',
 			'academic',
-			'gradeLevels',
-			'classGroups',
-			'subjects',
+			'periodGrid',
 			'gradeScales',
-			'reportCards',
+			'structure',
 			'notificationTemplates',
-			'discipline',
+			'other',
+			'permissionProfiles',
 		]);
 	});
 
@@ -110,25 +104,86 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 });
 
 describe('nav-permissions — éducateur (phase 3.4)', () => {
-	it('shows school and classes only', () => {
-		expect(visibleNavModuleKeys(educatorGrants, schoolCtx)).toEqual(['school', 'classes']);
+	it('shows Inbox, school and classes', () => {
+		expect(visibleNavModuleKeys(educatorGrants, schoolCtx)).toEqual(['inbox', 'school', 'classes']);
 	});
 
-	it('shows students, guardians and discipline events only in school menu', () => {
+	it('shows personal announcements alongside permitted school entries', () => {
 		const schoolKeys = filterNavItems(SCHOOL_NAV_DEFS, educatorGrants).map(item => item.key);
-		expect(schoolKeys).toEqual(['students', 'guardians', 'events']);
+		expect(schoolKeys).toEqual(['students', 'guardians', 'announcements', 'events']);
+		expect(canAccessPath('/school/calendar', educatorGrants)).toBe(false);
 	});
 
 	it('blocks staff, finance and configuration URLs', () => {
 		expect(canAccessPath('/school/staff', educatorGrants)).toBe(false);
 		expect(canAccessPath('/configuration/academic', educatorGrants)).toBe(false);
 		expect(canAccessPath('/finance/fees', educatorGrants)).toBe(false);
+		expect(canAccessPath('/finance/billing', educatorGrants)).toBe(false);
 	});
 });
 
 describe('nav-permissions — directeur (phase 3.1)', () => {
-	it('shows every module when elevated', () => {
-		expect(visibleNavModuleKeys(elevatedGrants, schoolCtx)).toHaveLength(4);
+	it('shows every module when those actions are granted', () => {
+		expect(visibleNavModuleKeys(elevatedGrants, schoolCtx)).toHaveLength(5);
 		expect(filterNavItems(SCHOOL_NAV_DEFS, elevatedGrants)).toHaveLength(SCHOOL_NAV_DEFS.length);
+	});
+
+	it('allows finance URLs when those actions are granted', () => {
+		expect(canAccessPath('/finance/billing', elevatedGrants)).toBe(true);
+		expect(canAccessPath('/finance/fees', elevatedGrants)).toBe(true);
+		expect(canAccessPath('/finance/payment', elevatedGrants)).toBe(true);
+		expect(canAccessPath('/finance/reconciliation', elevatedGrants)).toBe(true);
+	});
+});
+
+describe('nav-permissions — comptable', () => {
+	const accountantGrants = mockGrants(['FINANCIAL_CONFIG_READ', 'PAYMENT_READ']);
+
+	it('allows finance URLs', () => {
+		expect(canAccessPath('/finance/billing', accountantGrants)).toBe(true);
+		expect(canAccessPath('/finance/fees', accountantGrants)).toBe(true);
+		expect(canAccessPath('/finance/payment', accountantGrants)).toBe(true);
+		expect(canAccessPath('/finance/reconciliation', accountantGrants)).toBe(false);
+	});
+});
+
+describe('personal communications without administrative grants', () => {
+	it('keeps inbox and own announcements reachable without inventing school grants', () => {
+		expect(filterNavItems(SCHOOL_NAV_DEFS, []).map(item => item.key)).toEqual(['announcements']);
+		expect(canAccessPath('/school/announcements', [])).toBe(true);
+		expect(canAccessPath('/account/inbox', [])).toBe(true);
+		expect(filterNavItems(NAV_MODULE_DEFS.inbox, []).map(item => item.key)).toEqual(['personal']);
+		expect(canAccessPath('/school/staff', [])).toBe(false);
+		expect(canAccessPath('/finance/billing', [])).toBe(false);
+	});
+});
+
+it('keeps grade-scale authority out of Other configuration and allows legacy redirects', () => {
+	const grants = mockGrants(['REPORT_CARD_CONFIGURE']);
+	expect(filterNavItems(CONFIG_NAV_DEFS, grants).map(row => row.key)).toContain('gradeScales');
+	expect(filterNavItems(CONFIG_NAV_DEFS, grants).map(row => row.key)).not.toContain('other');
+	expect(canAccessPath('/configuration/grade-scales', grants)).toBe(true);
+	expect(canAccessPath('/configuration/other/grade-scales', grants)).toBe(true);
+});
+
+it('keeps report configuration accessible through Levels and Classes with its own permission', () => {
+	const reportGrants = mockGrants(['REPORT_CARD_CONFIGURE']);
+	expect(filterNavItems(CONFIG_NAV_DEFS, reportGrants).map(item => item.key)).toEqual(['gradeScales', 'structure']);
+	for (const path of ['/configuration/report-cards/template', '/configuration/structure/details/report-cards/template']) {
+		expect(canAccessPath(path, reportGrants)).toBe(true);
+		expect(canAccessPath(path, mockGrants(['SCHOOL_STRUCTURE_READ']))).toBe(false);
+	}
+	expect(canAccessPath('/configuration/structure/details', reportGrants)).toBe(true);
+});
+
+describe('independent assessment and mark capabilities', () => {
+	it.each(['ASSESSMENT_READ', 'ASSESSMENT_MANAGE', 'GRADE_READ', 'GRADE_MANAGE'] as const)('lets %s reach the assessment workspace', (permission) => {
+		const grants: ActionGrantsSnapshot = [{ permission, source: 'manual', scopes: [{ kind: 'subject', gradeLevelId: 'grade', classGroupId: '6a', subjectId: 'math' }] }];
+		expect(canAccessPath('/classes/6a/evaluations', grants)).toBe(true);
+		expect(canAccessPath('/classes/6a/evaluations/quiz/details', grants)).toBe(true);
+	});
+	it('does not grant assessment navigation through unrelated capabilities', () => {
+		expect(canAccessPath('/classes/6a/evaluations', mockGrants(['CLASS_READ']))).toBe(false);
+		expect(canAccessPath('/classes/6a/evaluations', [])).toBe(false);
 	});
 });

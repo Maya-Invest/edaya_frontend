@@ -1,0 +1,216 @@
+{
+  "code": "1ERD",
+  "name": "Première D",
+  "short_label": "1ère D",
+  "sections": [
+    {
+      "role": "subjects",
+      "label": "Bilan Lettre",
+      "order": 1,
+      "subject_codes": [
+        "FR",
+        "ANG",
+        "ALL",
+        "ESP",
+        "HG",
+        "PHILO"
+      ]
+    },
+    {
+      "role": "subjects",
+      "label": "Bilan Science",
+      "order": 2,
+      "subject_codes": [
+        "MATH",
+        "PC",
+        "SVT",
+        "TICE"
+      ]
+    },
+    {
+      "role": "subjects",
+      "label": "Bilan autres",
+      "order": 3,
+      "subject_codes": [
+        "EDHC",
+        "EPS"
+      ]
+    },
+    {
+      "role": "comments",
+      "label": "Appréciations",
+      "order": 4
+    }
+  ],
+  "subjects": [
+    {
+      "code": "FR",
+      "name": "Français",
+      "domain": "Langues",
+      "coefficient": 2,
+      "matters": [
+        "Étude de textes littéraires et argumentatifs",
+        "Grammaire et stylistique avancées",
+        "Expression écrite : dissertation et commentaire",
+        "Oral et méthodologie de l'épreuve de français",
+        "Histoire littéraire et mouvements",
+        "Lecture méthodique et interprétation"
+      ]
+    },
+    {
+      "code": "ANG",
+      "name": "Anglais",
+      "domain": "Langues",
+      "coefficient": 2,
+      "matters": [
+        "Compréhension orale et expression orale",
+        "Compréhension écrite de textes authentiques",
+        "Vocabulaire thématique et expressions utiles",
+        "Grammaire : temps, structures et concordance",
+        "Production écrite guidée et libre",
+        "Civilisation et documents culturels"
+      ]
+    },
+    {
+      "code": "ALL",
+      "name": "Allemand",
+      "domain": "Langues",
+      "coefficient": 2,
+      "matters": [
+        "Compréhension et expression orale de base",
+        "Vocabulaire et structures grammaticales essentielles",
+        "Lecture de textes simples",
+        "Production écrite courte",
+        "Civilisation germanophone",
+        "Interaction en situations quotidiennes"
+      ],
+      "optional": true
+    },
+    {
+      "code": "ESP",
+      "name": "Espagnol",
+      "domain": "Langues",
+      "coefficient": 2,
+      "matters": [
+        "Compréhension et expression orale de base",
+        "Vocabulaire et structures grammaticales essentielles",
+        "Lecture de textes simples",
+        "Production écrite courte",
+        "Civilisation hispanophone",
+        "Interaction en situations quotidiennes"
+      ],
+      "optional": true
+    },
+    {
+      "code": "HG",
+      "name": "Histoire-Géographie",
+      "domain": "Univers Social",
+      "coefficient": 2,
+      "matters": [
+        "Repères chronologiques et sociétés",
+        "Territoires, populations et activités",
+        "Lecture de cartes, frises et documents",
+        "Afrique et Côte d'Ivoire dans le monde",
+        "Enjeux contemporains",
+        "Méthodologie de l'étude de documents"
+      ]
+    },
+    {
+      "code": "PHILO",
+      "name": "Philosophie",
+      "domain": "Univers Social",
+      "coefficient": 3,
+      "matters": [
+        "La conscience et l'inconscient",
+        "Science, épistémologie et vérité",
+        "La société et l'État",
+        "Liberté, devoir et morale",
+        "Méthodologies (Dissertation et Commentaire)"
+      ]
+    },
+    {
+      "code": "MATH",
+      "name": "Mathématiques",
+      "domain": "Sciences",
+      "coefficient": 3,
+      "matters": [
+        "Étude de textes littéraires et argumentatifs",
+        "Grammaire et stylistique avancées",
+        "Expression écrite : dissertation et commentaire",
+        "Oral et méthodologie de l'épreuve de français",
+        "Histoire littéraire et mouvements",
+        "Lecture méthodique et interprétation"
+      ]
+    },
+    {
+      "code": "PC",
+      "name": "Physique-Chimie",
+      "domain": "Sciences",
+      "coefficient": 3,
+      "matters": [
+        "Étude de textes littéraires et argumentatifs",
+        "Grammaire et stylistique avancées",
+        "Expression écrite : dissertation et commentaire",
+        "Oral et méthodologie de l'épreuve de français",
+        "Histoire littéraire et mouvements",
+        "Lecture méthodique et interprétation"
+      ]
+    },
+    {
+      "code": "SVT",
+      "name": "Sciences de la Vie et de la Terre",
+      "domain": "Sciences",
+      "coefficient": 3,
+      "matters": [
+        "Étude de textes littéraires et argumentatifs",
+        "Grammaire et stylistique avancées",
+        "Expression écrite : dissertation et commentaire",
+        "Oral et méthodologie de l'épreuve de français",
+        "Histoire littéraire et mouvements",
+        "Lecture méthodique et interprétation"
+      ]
+    },
+    {
+      "code": "EDHC",
+      "name": "Éducation aux Droits de l'Homme et à la Citoyenneté",
+      "domain": "Univers Social",
+      "coefficient": 1,
+      "matters": [
+        "Droits et devoirs du citoyen",
+        "Vivre ensemble et respect de la diversité",
+        "Institutions et vie démocratique",
+        "Santé, hygiène et responsabilité sociale",
+        "Développement durable",
+        "Engagement et solidarité"
+      ]
+    },
+    {
+      "code": "EPS",
+      "name": "Éducation Physique et Sportive",
+      "domain": "Développement Physique",
+      "coefficient": 1,
+      "matters": [
+        "Activités athlétiques et motricité",
+        "Sports collectifs",
+        "Gymnastique et expression corporelle",
+        "Condition physique et santé",
+        "Règles de sécurité et fair-play",
+        "Préparation et évaluation des APSA"
+      ]
+    },
+    {
+      "code": "TICE",
+      "name": "TICE",
+      "domain": "Sciences",
+      "coefficient": 1,
+      "matters": [
+        "Système d'exploitation et fichiers",
+        "Traitement de texte et présentation",
+        "Recherche d'information et sources",
+        "Tableurs et multimédia",
+        "Citoyenneté et sécurité numériques",
+        "Collaboration et outils en ligne"
+      ]
+    }
+  ]
+}

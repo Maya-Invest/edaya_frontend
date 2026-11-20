@@ -3,68 +3,38 @@
 	import type { HTMLButtonAttributes } from 'svelte/elements';
 	import { cn } from '$lib/utils';
 
-	export type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+	export type ButtonVariant = 'default' | 'destructive' | 'destructive-confirm' | 'outline' | 'secondary' | 'ghost' | 'link';
 	export type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
-
-	const variants: Record<ButtonVariant, string> = {
-		default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-		destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-		outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-		secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-		ghost: 'hover:bg-accent hover:text-accent-foreground',
-		link: 'text-primary underline-offset-4 hover:underline',
-	};
-
-	const sizes: Record<ButtonSize, string> = {
-		default: 'h-10 px-4 py-2',
-		sm: 'h-9 rounded-md px-3',
-		lg: 'h-11 rounded-md px-8',
-		icon: 'h-10 w-10',
-	};
-
-	export function buttonVariants({
-		variant = 'default',
-		size = 'default',
-		class: className,
-	}: {
+	export type IconTreatment = 'circle' | 'quiet';
+	export function buttonVariants({ variant = 'default', size = 'default', class: className, iconTreatment = 'circle', presentation = 'action' }: {
 		variant?: ButtonVariant;
 		size?: ButtonSize;
 		class?: ClassValue;
+		busy?: boolean;
+		iconTreatment?: IconTreatment;
+		presentation?: 'action' | 'menu-item';
 	} = {}) {
-		return cn(
-			'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-			variants[variant],
-			sizes[size],
-			className,
-		);
+		return cn('control-focus ui-action', `ui-action-${variant}`, size === 'icon' && `ui-icon ui-icon-${iconTreatment}`, presentation === 'menu-item' && size !== 'icon' && 'ui-menu-action', className);
 	}
 </script>
-
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { LoaderCircle } from '$lib/icons';
+	import { getContext } from 'svelte';
+	import { COLLECTION_MENU } from '../collection/context';
 
-	const {
-		class: className,
-		variant = 'default',
-		size = 'default',
-		type = 'button',
-		disabled = false,
-		onclick,
-		children,
-		...restProps
-	}: HTMLButtonAttributes & {
+	const menu = getContext(COLLECTION_MENU);
+	const { class: className, 'aria-busy': ariaBusy, pendingLabel, variant = 'default', size = 'default', iconTreatment = 'circle', presentation = menu ? 'menu-item' : 'action', type = 'button', disabled = false, onclick, children, ...restProps }: HTMLButtonAttributes & {
 		variant?: ButtonVariant;
 		size?: ButtonSize;
+		iconTreatment?: IconTreatment;
+		presentation?: 'action' | 'menu-item';
 		children?: Snippet;
+		pendingLabel?: string;
 	} = $props();
+	const pending = $derived(ariaBusy === true || ariaBusy === 'true');
 </script>
-
-<button
-	{type}
-	{disabled}
-	{onclick}
-	class={buttonVariants({ variant, size, class: className })}
-	{...restProps}
->
-	{@render children?.()}
+<button {type} disabled={disabled || pending} aria-busy={ariaBusy} {onclick} class={buttonVariants({ variant, size, iconTreatment, presentation, class: className })} {...restProps}>
+	<span class="ui-action-content">{@render children?.()}{#if pendingLabel}<span class="ui-action-status" aria-hidden="true"><LoaderCircle class={pending ? 'motion-safe:animate-spin' : 'invisible'} /></span>{/if}</span>
 </button>
+{#if pendingLabel}<span class="sr-only" role="status">{pending ? pendingLabel : ''}</span>{/if}

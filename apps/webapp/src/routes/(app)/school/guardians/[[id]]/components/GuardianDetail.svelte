@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { Guardian } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
 	import { relationKey } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
+	import PersonProfileDetails from '$lib/components/school/shared/PersonProfileDetails.svelte';
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -17,32 +17,30 @@
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
+	import AccountLinkingSection from '$lib/smart-components/account-linking/AccountLinkingSection.svelte';
+	import GuardianRelationship from '$lib/smart-components/guardian-relationship/GuardianRelationship.svelte';
 	import { get } from 'svelte/store';
 	import { getGuardiansPageState } from '../../guardians-page.svelte';
 	import GuardianEditModal from './GuardianEditModal.svelte';
 
-	const {
-		guardian,
-		onDeleted,
-	}: {
+	const { guardian, onDeleted }: {
 		guardian: Guardian;
 		onDeleted?: () => void;
 	} = $props();
-
 	const guardiansPage = getGuardiansPageState();
-
-	const modals = createUrlSyncedModals({ allowed: ['edit-profile'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['edit-profile', 'delete', 'guardian-relationship'],
+		getUrl: () => $page.url,
+	});
 	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
 	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
-
+	const deleteOpen = bindUrlModal(modals, 'delete');
 	const linked = $derived(guardiansPage.linkedStudents(guardian));
-	const canChangePhoto = $derived(canUploadProfilePhoto('PARENT_UPDATE'));
-	let deleteOpen = $state(false);
+	const canChangePhoto = $derived(canUploadProfilePhoto('PARENT_MANAGE'));
 	let deleteBusy = $state(false);
-
 	async function handlePhotoChange(file: File) {
 		return guardiansPage.updateProfilePhoto({
 			guardianId: guardian.id,
@@ -50,7 +48,6 @@
 			successMessage: get(t)('profilePhoto.updateSuccess'),
 		});
 	}
-
 	async function confirmDelete() {
 		deleteBusy = true;
 		try {
@@ -58,7 +55,7 @@
 				successMessage: get(t)('guardian.toastDeleted', { name: guardian.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -72,7 +69,9 @@
 	<DrawerEntityHeader
 		name={guardian.name}
 		summary={$t('guardian.prefers', {
-			rel: $t(relationKey[guardian.relation]),
+			rel: relationKey[guardian.relation]
+				? $t(relationKey[guardian.relation]!)
+				: guardian.relation,
 			contact: $t(`guardian.contact.${guardian.preferredContact}`),
 		})}
 	>
@@ -90,20 +89,20 @@
 			{/if}
 		{/snippet}
 		{#snippet actions()}
-			<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
+			<PermissionGate permission="PARENT_MANAGE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<GuardianEditModal {guardian} {disabled} {title} bind:open={editProfileOpen.open} />
 				{/snippet}
 			</PermissionGate>
 		{/snippet}
 		{#snippet overflow()}
-			<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
+			<PermissionGate permission="PARENT_MANAGE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<RowActionMenuItem
 						destructive
 						{disabled}
 						{title}
-						onclick={() => (deleteOpen = true)}
+						onclick={() => (deleteOpen.open = true)}
 					>
 						<Trash2 class="h-4 w-4" />
 						{$t('common.delete')}
@@ -112,6 +111,17 @@
 			</PermissionGate>
 		{/snippet}
 	</DrawerEntityHeader>
+	<PersonProfileDetails kind="guardian" person={guardian} />
+	<section class="space-y-2"><h3 class="text-sm font-semibold">{$t('profile.contactMethods')}</h3>
+		<dl class="space-y-2">
+			{#each (['phone', 'alternativePhone', 'email'] as const) as field (field)}
+				<div><dt class="text-xs text-muted-foreground">{$t(`guardian.contacts.${field}`)}</dt><dd>{guardian[field] || '—'}</dd></div>
+			{/each}
+			{#each (['email', 'sms', 'push'] as const) as channel (channel)}
+				<div><dt class="text-xs text-muted-foreground">{$t(`account.notifications.${channel}`)}</dt><dd>{$t(guardian[`${channel}NotificationsEnabled`] ? 'common.yes' : 'common.no')}</dd></div>
+			{/each}
+		</dl><p class="text-xs">{$t('profile.portalAccess')}: {$t(guardian.hasAccess ? 'common.yes' : 'common.no')}</p>
+	</section>
 
 	<DrawerField label={$t('guardian.fullName')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{guardian.name}</div>
@@ -131,6 +141,7 @@
 		</DrawerField>
 	</div>
 
+	<GuardianRelationship onSaved={() => guardiansPage.invalidateIfStale()} guardianId={guardian.id} label={$t('profile.linkStudent')} />
 	<AccountLinkingSection
 		kind="guardian"
 		targetId={guardian.id}
@@ -152,7 +163,7 @@
 		{:else}
 			<div class="space-y-2">
 				{#each linked as student (student.id)}
-					<div class="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2">
+					<div class="flex items-center gap-2 rounded-collection bg-primary/5 px-3 py-2">
 						<PersonAvatar
 							name={student.name}
 							initials={student.initials}
@@ -160,7 +171,8 @@
 							size="md"
 						/>
 						<span class="text-sm">{student.name}</span>
-						<span class="ml-auto font-mono text-[10px] uppercase text-muted-foreground">{student.classId}</span>
+						<GuardianRelationship onSaved={() => guardiansPage.invalidateIfStale()} guardianId={guardian.id} studentId={student.id} classId={student.classId} link={guardian.links?.find(link => link.studentId === student.id)} />
+						<span class="ml-auto font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{student.classId}</span>
 					</div>
 				{/each}
 			</div>
@@ -169,7 +181,7 @@
 </div>
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('guardian.deleteConfirm', { name: guardian.name })}
 	confirmLabel={$t('common.delete')}

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it } from 'bun:test';
 import {
 	drawerTabRouteCacheKey,
 	isLikelyDetailPath,
@@ -6,6 +6,13 @@ import {
 } from '$lib/detail-route-patterns';
 
 describe('isLikelyDetailPath', () => {
+	it('recognizes permission profile drawers and shares their list cache', () => {
+		expect(isLikelyDetailPath('/configuration/permission-profiles/profile-1')).toBe(true);
+		expect(isLikelyDetailPath('/configuration/permission-profiles')).toBe(false);
+		expect(listRouteCacheKey(new URL('https://example.test/configuration/permission-profiles/profile-1?q=office&modal=edit&modalTarget=profile-1')))
+			.toBe(listRouteCacheKey(new URL('https://example.test/configuration/permission-profiles?q=office')));
+	});
+
 	it('recognizes school student drawer tabs', () => {
 		expect(isLikelyDetailPath('/school/students/stu-1')).toBe(true);
 		expect(isLikelyDetailPath('/school/students/stu-1/profile')).toBe(true);
@@ -25,6 +32,10 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/school/teachers/tch-1/profile')).toBe(true);
 		expect(isLikelyDetailPath('/school/teachers/tch-1/assignments')).toBe(true);
 		expect(isLikelyDetailPath('/school/teachers/tch-1/availability')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/timetable')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/evaluations')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/family-feedback')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/documents')).toBe(true);
 		expect(isLikelyDetailPath('/school/teachers')).toBe(false);
 	});
 
@@ -34,6 +45,14 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/school/activities/act-1/students')).toBe(true);
 		expect(isLikelyDetailPath('/school/activities/act-1/classes')).toBe(true);
 		expect(isLikelyDetailPath('/school/activities')).toBe(false);
+	});
+
+	it('recognizes class student drawer tabs', () => {
+		expect(isLikelyDetailPath('/classes/6a/students/stu-1')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/students/stu-1/profile')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/students/stu-1/grades')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/students/stu-1/documents')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/students')).toBe(false);
 	});
 
 	it('recognizes class evaluations drawer tabs', () => {
@@ -49,6 +68,26 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/classes/6a/timetable/s-1/attendance')).toBe(true);
 		expect(isLikelyDetailPath('/classes/6a/timetable/s-1/logbook')).toBe(true);
 		expect(isLikelyDetailPath('/classes/6a/timetable')).toBe(false);
+	});
+
+	it('recognizes class attendance drawer paths', () => {
+		expect(isLikelyDetailPath('/classes/6a/attendance/day-1')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/attendance')).toBe(false);
+	});
+
+	it('recognizes finance billing drawer paths', () => {
+		expect(isLikelyDetailPath('/finance/billing/sf-1')).toBe(true);
+		expect(isLikelyDetailPath('/finance/billing')).toBe(false);
+	});
+
+	it('recognizes configuration report-cards drawer paths', () => {
+		expect(isLikelyDetailPath('/configuration/structure/details/report-cards/rcd-1')).toBe(true);
+		expect(isLikelyDetailPath('/configuration/structure/details/report-cards')).toBe(false);
+	});
+
+	it('recognizes configuration notification template drawer paths', () => {
+		expect(isLikelyDetailPath('/configuration/notifications/report_card.published')).toBe(true);
+		expect(isLikelyDetailPath('/configuration/notifications')).toBe(false);
 	});
 });
 
@@ -89,6 +128,14 @@ describe('listRouteCacheKey', () => {
 		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/classes'))).toBe('/school/activities');
 	});
 
+	it('maps class student drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students'))).toBe('/classes/6a/students');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students/stu-1'))).toBe('/classes/6a/students');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students/stu-1/profile'))).toBe('/classes/6a/students');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students/stu-1/grades'))).toBe('/classes/6a/students');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students/stu-1/documents'))).toBe('/classes/6a/students');
+	});
+
 	it('maps class evaluations drawer paths to the list route', () => {
 		expect(listRouteCacheKey(new URL('http://local/classes/6a/evaluations'))).toBe('/classes/6a/evaluations');
 		expect(listRouteCacheKey(new URL('http://local/classes/6a/evaluations/e-1'))).toBe('/classes/6a/evaluations');
@@ -102,6 +149,28 @@ describe('listRouteCacheKey', () => {
 		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable/s-1/details'))).toBe('/classes/6a/timetable');
 		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable/s-1/attendance'))).toBe('/classes/6a/timetable');
 	});
+
+	it('maps class attendance drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/attendance'))).toBe('/classes/6a/attendance');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/attendance/day-1'))).toBe('/classes/6a/attendance');
+	});
+
+	it('maps finance billing drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/finance/billing'))).toBe('/finance/billing');
+		expect(listRouteCacheKey(new URL('http://local/finance/billing/sf-1'))).toBe('/finance/billing');
+	});
+
+	it('maps configuration report-cards drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/configuration/structure/details?gradeLevel=level-1'))).toBe('/configuration/structure/details|level:level-1');
+		expect(listRouteCacheKey(new URL('http://local/configuration/structure/details/report-cards/rcd-1?gradeLevel=level-1'))).toBe('/configuration/structure/details|level:level-1');
+	});
+
+	it('maps configuration notification template drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/configuration/notifications'))).toBe('/configuration/notifications');
+		expect(listRouteCacheKey(new URL('http://local/configuration/notifications/report_card.published'))).toBe(
+			'/configuration/notifications',
+		);
+	});
 });
 
 describe('drawerTabRouteCacheKey', () => {
@@ -109,5 +178,27 @@ describe('drawerTabRouteCacheKey', () => {
 		expect(drawerTabRouteCacheKey(new URL('http://local/school/students/stu-1'))).toBe('/school/students/stu-1');
 		expect(drawerTabRouteCacheKey(new URL('http://local/school/students/stu-1/profile'))).toBe('/school/students/stu-1/profile');
 		expect(drawerTabRouteCacheKey(new URL('http://local/school/students/stu-1/grades'))).toBe('/school/students/stu-1/grades');
+	});
+});
+
+describe('academic scope in default cache keys', () => {
+	async function loadContext() {
+		const { academicContext } = await import('$lib/academic/context.svelte');
+		return academicContext;
+	}
+
+	afterEach(async () => {
+		(await loadContext()).reset();
+	});
+
+	it('includes school, year, and period in list and drawer keys', async () => {
+		const academicContext = await loadContext();
+		academicContext.schoolScopeId = 'sch-1';
+		academicContext.yearId = 'year-1';
+		academicContext.periodId = 'period-1';
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/evaluations/e-1/grading')))
+			.toBe('/classes/6a/evaluations::scope=sch-1|year-1|period-1');
+		expect(drawerTabRouteCacheKey(new URL('http://local/school/students/stu-1/attendance')))
+			.toBe('/school/students/stu-1/attendance::scope=sch-1|year-1|period-1');
 	});
 });

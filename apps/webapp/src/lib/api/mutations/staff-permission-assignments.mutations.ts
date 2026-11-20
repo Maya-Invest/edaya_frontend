@@ -4,9 +4,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 
-type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignment'];
 type StaffPermissionAssignmentConfigCommand = components['schemas']['StaffPermissionAssignmentConfigCommand'];
 
 function schoolId(): string {
@@ -18,7 +16,7 @@ function academicYearId(): string {
 }
 
 function toStaffPermissionConfigCommand(
-	assignment: StaffPermissionAssignment,
+	assignment: StaffPermissionAssignmentView,
 ): StaffPermissionAssignmentConfigCommand {
 	return {
 		id: assignment.id,
@@ -26,33 +24,19 @@ function toStaffPermissionConfigCommand(
 		schoolId: assignment.schoolId,
 		academicYearId: assignment.academicYearId,
 		permission: assignment.permission,
-		scopeIds: assignment.scopeIds ?? '',
+		customScopes: assignment.customScopes ?? assignment.scopes.filter(scope => scope.kind !== 'school'),
+		useDefaultScopes: assignment.useDefaultScopes ?? false,
+		startsAt: assignment.startsAt,
+		endsAt: assignment.endsAt,
 		status: assignment.status,
-		sourceStaffAssignmentId: assignment.sourceStaffAssignmentId ?? null,
 	};
 }
 
-function applyStaffPermissionAssignment(
-	assignment: StaffPermissionAssignment,
-	previous?: StaffPermissionAssignmentView,
-) {
-	detailDataContext.upsertStaffPermissionAssignment({
-		...assignment,
-		scopeLabel: previous?.scopeLabel ?? assignment.scopeIds ?? '—',
-		tenantWide: (assignment.scopeIds ?? '') === '',
-		isSynced: Boolean(assignment.sourceStaffAssignmentId),
-		hasMissingScope: previous?.hasMissingScope ?? false,
-	});
-}
-
 export async function saveStaffPermissionAssignmentMutation(input: {
-	assignment: StaffPermissionAssignment;
+	assignment: StaffPermissionAssignmentView;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = detailDataContext.staffPermissionAssignments.find(
-		row => row.id === input.assignment.id,
-	);
 
 	const result = await runMutation(
 		() => client.commands.assignStaffPermission(
@@ -60,23 +44,9 @@ export async function saveStaffPermissionAssignmentMutation(input: {
 		),
 		{
 			successMessage: input.successMessage,
-			apply: () => {
-				applyStaffPermissionAssignment(input.assignment, previous);
-			},
-			rollback: () => {
-				if (previous) {
-					detailDataContext.upsertStaffPermissionAssignment(previous);
-				}
-				else {
-					detailDataContext.removeStaffPermissionAssignment(input.assignment.id);
-				}
-			},
+			versionKeys: ['staff'],
 		},
 	);
-
-	if (result) {
-		applyStaffPermissionAssignment(result, previous);
-	}
 
 	return result !== null;
 }
@@ -86,21 +56,12 @@ export async function deleteStaffPermissionAssignmentMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = detailDataContext.staffPermissionAssignments.find(row => row.id === input.id);
-	if (!previous) {
-		return false;
-	}
 
 	const result = await runMutation(
-		() => client.entities.staffPermissionAssignments.delete({ id: input.id }),
+		() => client.commands.removeStaffPermission({ assignmentId: input.id }),
 		{
 			successMessage: input.successMessage,
-			apply: () => {
-				detailDataContext.removeStaffPermissionAssignment(input.id);
-			},
-			rollback: () => {
-				detailDataContext.upsertStaffPermissionAssignment(previous);
-			},
+			versionKeys: ['staff'],
 		},
 	);
 
@@ -110,17 +71,24 @@ export async function deleteStaffPermissionAssignmentMutation(input: {
 export function createStaffPermissionAssignmentPayload(input: {
 	id: string;
 	staffId: string;
-	permission: StaffPermissionAssignment['permission'];
-	scopeIds?: string;
-}): StaffPermissionAssignment {
+	permission: StaffPermissionAssignmentView['permission'];
+	scopes: StaffPermissionAssignmentView['scopes'];
+	customScopes?: StaffPermissionAssignmentView['scopes'];
+	useDefaultScopes?: boolean;
+}): StaffPermissionAssignmentView {
 	return {
 		id: input.id,
 		staffId: input.staffId,
 		schoolId: schoolId(),
 		academicYearId: academicYearId(),
 		permission: input.permission,
-		scopeIds: input.scopeIds ?? '',
+		scopes: input.scopes,
+		customScopes: (input.customScopes ?? input.scopes).filter(scope => scope.kind !== 'school'),
+		useDefaultScopes: input.useDefaultScopes ?? true,
+		scopeLabel: '—',
+		renderedScopes: [],
+		tenantWide: false,
+		hasMissingScope: false,
 		status: 'active',
-		sourceStaffAssignmentId: null,
 	};
 }

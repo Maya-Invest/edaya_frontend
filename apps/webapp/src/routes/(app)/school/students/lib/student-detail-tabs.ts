@@ -1,11 +1,12 @@
 export const STUDENT_DETAIL_TABS = [
 	{ key: 'profile', segment: 'profile', labelKey: 'drawer.tab.profile' },
-	{ key: 'grades', segment: 'grades', labelKey: 'drawer.tab.grades' },
+	{ key: 'enrollments', segment: 'enrollments', labelKey: 'drawer.tab.enrollments' },
 	{ key: 'attendance', segment: 'attendance', labelKey: 'drawer.tab.attendance' },
+	{ key: 'grades', segment: 'grades', labelKey: 'drawer.tab.grades' },
+	{ key: 'reportCard', segment: 'report-card', labelKey: 'drawer.tab.reportCard' },
 	{ key: 'incidents', segment: 'incidents', labelKey: 'drawer.tab.incidents' },
 	{ key: 'finances', segment: 'finances', labelKey: 'drawer.tab.finances' },
-	{ key: 'reportCard', segment: 'report-card', labelKey: 'drawer.tab.reportCard' },
-	{ key: 'enrollments', segment: 'enrollments', labelKey: 'drawer.tab.enrollments' },
+	{ key: 'documents', segment: 'documents', labelKey: 'drawer.tab.documents' },
 ] as const;
 
 export type StudentDetailTabKey = (typeof STUDENT_DETAIL_TABS)[number]['key'];

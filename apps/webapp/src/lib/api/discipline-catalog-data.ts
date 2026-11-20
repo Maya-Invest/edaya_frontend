@@ -13,6 +13,7 @@ function mapDisciplinaryAction(raw: DisciplinaryActionRaw): DisciplinaryActionCa
 		id: raw.id,
 		schoolId: raw.schoolId,
 		name: raw.name,
+		shortName: raw.shortName,
 		kind: raw.kind,
 		severity: raw.severity ?? undefined,
 		defaultDurationDays: raw.defaultDurationDays ?? undefined,
