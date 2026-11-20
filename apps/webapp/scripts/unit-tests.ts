@@ -1,10 +1,10 @@
 import { resolve } from 'node:path';
 
-/** Module mocks and rune compiler plugins must not leak between state suites. */
+/** Isolate library module mocks and run state suites with their own compiler plugins. */
 export function unitInvocations(root: string): string[][] {
 	const files = [...new Bun.Glob('tests/unit/**/*.test.ts').scanSync({ cwd: root })].sort();
 	if (!files.length) throw new Error('No isolated unit suites discovered');
-	return [['test', 'tests/lib'], ...files.map(file => ['test', file])];
+	return [['test', '--isolate', 'tests/lib'], ...files.map(file => ['test', file])];
 }
 
 if (import.meta.main) {
