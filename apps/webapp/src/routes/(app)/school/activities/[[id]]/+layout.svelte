@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import { appPath } from '$lib/navigation/app-navigation';
 	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
+	import { untrack } from 'svelte';
 	import { getActivitiesPageState } from '../activities-page.svelte';
 	import {
 		clearActivityDetailTabStates,
@@ -16,8 +17,7 @@
 	const activitiesPage = getActivitiesPageState();
 	const detailTabs = createAndRegisterActivityDetailStates(() => activitiesPage);
 	const activity = $derived(activitiesPage.selected);
-	const shouldResolveSelection = createDrawerEntitySelection();
-	let selectionRequestVersion = 0;
+	const selectedId = $derived($page.params.id);
 
 	function closeDetail() {
 		clearActivityDetailTabStates(detailTabs);
@@ -25,44 +25,39 @@
 	}
 
 	$effect(() => {
-		const activityId = $page.params.id;
-		if (!shouldResolveSelection(activityId)) {
-			if (!activityId) {
-				clearActivityDetailTabStates(detailTabs);
-			}
+		const id = selectedId;
+		const ready = academicContext.shellReady;
+		const denied = activitiesPage.list.denied;
+		void activitiesPage.scope;
+		void activitiesPage.detailRevision;
+		untrack(() => {
+			clearActivityDetailTabStates(detailTabs);
+			activitiesPage.clearDetail();
+		});
+		if (!id || !ready)
+			return;
+		if (denied) {
+			closeDetail();
 			return;
 		}
-
-		const version = ++selectionRequestVersion;
-		activitiesPage.selectedResolving = true;
-
-		void activitiesPage.ensureDrawerSelection(activityId)
-			.then((ok) => {
-				if (version !== selectionRequestVersion) {
-					return;
-				}
-				if (!ok) {
+		const controller = new AbortController();
+		untrack(() => void activitiesPage.ensureDrawerSelection(id, controller.signal)
+			.then((found) => {
+				if (!found && !controller.signal.aborted)
 					closeDetail();
-				}
 			})
 			.catch(() => {
-				if (version !== selectionRequestVersion) {
-					return;
-				}
-				closeDetail();
-			})
-			.finally(() => {
-				if (version === selectionRequestVersion) {
-					activitiesPage.selectedResolving = false;
-				}
-			});
+				if (!controller.signal.aborted)
+					closeDetail();
+			}));
+		return () => controller.abort();
 	});
 </script>
 
 {#if $page.params.id}
 	<ActivityDrawer
 		{activity}
-		loading={drawerEntityLoading(activity?.id, $page.params.id)}
+		loading={activity?.id !== $page.params.id}
 		onClose={closeDetail}
 	>
 		{@render children()}

@@ -44,6 +44,8 @@ let bootstrapGeneration = 0;
 export interface BootstrapSessionOptions {
 	/** Refreshes session data without toggling authSession.ready (avoids full-page loaders). */
 	silent?: boolean;
+	/** A direct staff workspace visit also needs the authorized academic catalog. */
+	warmStaffShell?: boolean;
 }
 
 export async function bootstrapSession(
@@ -167,6 +169,14 @@ async function runBootstrapSession(
 		let onboardingStatusUnknown = false;
 
 		if (session?.kind === 'staff') {
+			if (options.warmStaffShell && selectedStaff?.schoolId === session.schoolId && selectedStaff.actorId === session.actorId) {
+				void import('./bootstrap-app').then(({ bootstrapAppShell }) => {
+					if (generation === bootstrapGeneration && authSession.schoolId === session.schoolId && authSession.userId === session.actorId)
+						return bootstrapAppShell();
+				}).catch(() => {
+					// The workspace route handles catalog errors and exposes its retry action.
+				});
+			}
 			const [sessionStaffResult, serverOnboardingStatusResult] = await Promise.allSettled([
 				fetchSessionStaffProfile(client, session.actorId, {
 					isElevated: session.grants.some(grant => grant.source === 'owner'),

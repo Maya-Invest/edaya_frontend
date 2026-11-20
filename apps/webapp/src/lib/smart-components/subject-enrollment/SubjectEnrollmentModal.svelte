@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EnrollmentEditorContext } from '$lib/subjects/enrollment-editor';
+	import type { LoadEnrollmentCandidates } from './subject-enrollment-state.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -8,8 +9,9 @@
 	import { onDestroy, untrack } from 'svelte';
 	import { SubjectEnrollmentState } from './subject-enrollment-state.svelte';
 
-	const { context, onClose, onSaved }: {
+	const { context, onClose, onSaved, loadCandidates }: {
 		context: EnrollmentEditorContext | null;
+		loadCandidates?: LoadEnrollmentCandidates;
 		onClose: () => void;
 		onSaved?: () => void | Promise<void>;
 	} = $props();
@@ -21,7 +23,7 @@
 			return;
 		lastContext = key;
 		const captured = context;
-		untrack(() => captured ? void workflow.open(captured) : workflow.close());
+		untrack(() => captured ? void workflow.open(captured, loadCandidates) : workflow.close());
 	});
 	onDestroy(() => workflow.close());
 	async function save() {
@@ -69,7 +71,7 @@
 			<p class="font-medium">{$t('list.selectedCount', { n: workflow.selectedIds.length })}</p>
 			<fieldset disabled={workflow.busy} class="space-y-2">
 				<legend class="text-sm font-medium">{$t('participation.selectStudents')}</legend>
-				{#each context.students as student (student.id)}
+				{#each workflow.context?.students ?? [] as student (student.id)}
 					<label class="flex min-h-11 items-center gap-3"><Checkbox checked={workflow.selectedIds.includes(student.id)} onCheckedChange={checked => workflow.toggleStudent(student.id, checked)} />{student.name}</label>
 				{/each}
 			</fieldset>

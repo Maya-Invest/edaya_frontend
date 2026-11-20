@@ -25,9 +25,7 @@
 	import { t } from '$lib/i18n';
 	import { Eye, GraduationCap, Pencil, Plus } from '$lib/icons';
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
-	import { loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { isListCardColumns, readListCardColumns, readListView, writeListCardColumns, writeListView } from '$lib/list/list-view-url';
-	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appendModal, MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
@@ -36,8 +34,8 @@
 	import DirectoryColumnData from '$lib/smart-components/directory-columns/DirectoryColumnData.svelte';
 	import StudentSubjectEnrollmentActions from '$lib/smart-components/subject-enrollment/StudentSubjectEnrollmentActions.svelte';
 	import { cn } from '$lib/utils';
-	import { studentListUsesFullRoster, cycleStudentListSort } from '../lib/student-list-filters';
-	import { getStudentsPageState, SCHOOL_STUDENTS_PAGE_SIZE } from '../students-page.svelte';
+	import { cycleStudentListSort } from '../lib/student-list-filters';
+	import { getStudentsPageState } from '../students-page.svelte';
 
 	const { onSelect, selectedId, onCreate }: {
 		onSelect?: (student: Student) => void;
@@ -86,20 +84,13 @@
 			});
 		}
 	});
-	const usesFullRoster = $derived(studentListUsesFullRoster(studentsPage.filters.values));
-	const filtered = $derived(studentsPage.filterVisible(usesFullRoster
-		? (studentsPage.fullRosterStudents.length > 0
-			? studentsPage.fullRosterStudents
-			: studentsPage.students)
-		: studentsPage.students));
-	const windowed = useInfiniteList(() => filtered, SCHOOL_STUDENTS_PAGE_SIZE);
-	const listTotal = $derived(usesFullRoster ? filtered.length : studentsPage.totalStudents);
-	const listLoading = $derived(usesFullRoster ? studentsPage.loadingFullRoster : studentsPage.listLoading);
-	const listLoadingMore = $derived(usesFullRoster ? false : studentsPage.listLoadingMore);
-	const listHasMore = $derived(usesFullRoster ? windowed.hasMore : studentsPage.students.length < studentsPage.totalStudents);
-	const listVisible = $derived(usesFullRoster ? windowed.visible : filtered);
+	const listTotal = $derived(studentsPage.totalStudents);
+	const listLoading = $derived(studentsPage.listLoading);
+	const listLoadingMore = $derived(studentsPage.listLoadingMore);
+	const listVisible = $derived(studentsPage.students);
 	const listVisibleCount = $derived(listVisible.length);
-	const selectionPool = $derived([...studentsPage.students, ...studentsPage.fullRosterStudents]);
+	const listHasMore = $derived(studentsPage.hasMore);
+	const selectionPool = $derived(studentsPage.students);
 	const directoryColumns = new DirectoryColumnsState('student');
 	const columns = $derived<ListEntityTableColumn[]>([
 		{
@@ -176,16 +167,11 @@
 		return attendance == null ? '—' : `${attendance}%`;
 	}
 	function loadMoreStudents() {
-		if (usesFullRoster) {
-			windowed.loadMore();
-			return;
-		}
 		void studentsPage.loadMore();
 	}
 	function applyFacetFilter(field: 'class' | 'status' | 'photoReview', value: string) {
 		studentsPage.filters.patch({ [field]: value });
 		studentsPage.filters.syncNow();
-		void studentsPage.refreshList();
 	}
 	function cycleSort(column: StudentSortColumn) {
 		const next = cycleStudentListSort(studentsPage.filters.values, column);
@@ -201,7 +187,7 @@
 		openDetailDrawer(detailHrefFor(student, modal), currentRouteSurfaceHref($page.url));
 	}
 	function exportValue(row: Student, key: string) {
-		return key === 'class' ? classes.find(entry => entry.id === row.classId)?.name ?? row.classId : key === 'attendance' ? attendanceLabel(row.attendance) : key === 'average' ? row.average.toFixed(2) : undefined;
+		return key === 'class' ? classes.find(entry => entry.id === row.classId)?.name ?? row.classId : key === 'attendance' ? attendanceLabel(row.attendance) : key === 'average' ? (row.gradesAvailable === false ? '—' : row.average.toFixed(2)) : undefined;
 	}
 	async function exportSelected() {
 		const rows = selection.resolveSelected(selectionPool);
@@ -210,14 +196,7 @@
 		await directoryColumns.exportCsv('students-selected.csv', rows, columns, exportValue);
 	}
 	async function exportMatching() {
-		const matching = await loadMatchingCollection({
-			isComplete: () => studentsPage.fullRosterStudents.length >= studentsPage.totalStudents
-				|| studentsPage.students.length >= studentsPage.totalStudents,
-			ensureComplete: () => studentsPage.loadFullRoster(),
-			current: () => studentsPage.filterVisible(studentsPage.fullRosterStudents.length > 0
-				? studentsPage.fullRosterStudents
-				: studentsPage.students),
-		});
+		const matching = await studentsPage.matchingRows();
 		await directoryColumns.exportCsv('students.csv', matching, columns, exportValue);
 	}
 </script>
@@ -337,6 +316,7 @@
 							name={student.name}
 							initials={student.initials}
 							photoUrl={student.photoUrl}
+							studentPortrait={student.photoAttachmentId ? { studentId: student.id, attachmentId: student.photoAttachmentId } : undefined}
 							size="list"
 							class="h-9 w-9 text-xs"
 						/>
@@ -348,7 +328,7 @@
 					<div class="col-span-2 text-sm text-foreground/80">{classGroup?.name}</div>
 				{:else if column.key === 'average'}
 					<div class="col-span-2 font-sans text-base font-semibold tabular-nums">
-						{student.average.toFixed(2)}
+						{student.gradesAvailable === false ? '—' : student.average.toFixed(2)}
 					</div>
 				{:else if column.key === 'attendance'}
 					<div class="col-span-2">
@@ -430,6 +410,7 @@
 							name={student.name}
 							initials={student.initials}
 							photoUrl={student.photoUrl}
+							studentPortrait={student.photoAttachmentId ? { studentId: student.id, attachmentId: student.photoAttachmentId } : undefined}
 							size="list"
 						/>
 						<div class="min-w-0">
@@ -440,7 +421,7 @@
 					<p class="truncate text-sm text-muted-foreground">{classGroup?.name}</p>
 				{:else if columnKey === 'average'}
 					<span class="font-sans font-semibold tabular-nums text-sm">
-						{student.average.toFixed(2)}
+						{student.gradesAvailable === false ? '—' : student.average.toFixed(2)}
 					</span>
 				{:else if columnKey === 'attendance'}
 					{#if student.attendance == null}

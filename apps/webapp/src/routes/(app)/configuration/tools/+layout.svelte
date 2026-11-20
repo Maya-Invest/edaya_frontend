@@ -31,22 +31,17 @@
 	});
 
 	const query = toolsPage.queryListPage();
-	const academicSelectionKey = $derived(`${academicContext.yearId}|${academicContext.periodId}`);
-
-	async function loadPlanningData(_key: string) {
-		toolsPage.planningPage.generationResult = null;
-		toolsPage.planningPage.resetRange();
-		try {
-			await toolsPage.planningPage.load();
-		}
-		catch { /* The planning state owns its load error; keep deep links until a load succeeds. */ }
-	}
+	const planningOpen = $derived(academicContext.shellReady && $page.url.pathname === toolsHref
+		&& toolsPage.modals.active === 'generate-timetable' && hasPermission('TIMETABLE_MANAGE'));
+	const scopeKey = $derived(`${academicContext.scopeGeneration}|${academicContext.schoolScopeId}|${academicContext.yearId}|${academicContext.periodId}`);
 
 	$effect(() => {
-		if (!academicContext.shellReady || $page.url.pathname !== toolsHref || !hasPermission('TIMETABLE_MANAGE')) {
+		const key = scopeKey;
+		if (!planningOpen)
 			return;
-		}
-		void loadPlanningData(academicSelectionKey);
+		const planning = toolsPage.planningPage;
+		untrack(() => planning.open(key));
+		return () => planning.close();
 	});
 </script>
 

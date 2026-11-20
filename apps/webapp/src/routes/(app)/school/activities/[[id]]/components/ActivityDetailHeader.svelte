@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Activity } from '$lib/types/school';
+	import type { ActivityView } from '../../activities-page.svelte';
 	import { page } from '$app/stores';
 	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -17,7 +17,7 @@
 		activity,
 		onDeleted,
 	}: {
-		activity: Activity;
+		activity: ActivityView;
 		onDeleted?: () => void;
 	} = $props();
 
@@ -70,7 +70,7 @@
 			{$t(`activities.cat.${live.category}`)}
 		</span>
 		<span class="rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] tabular-nums text-foreground/80">
-			{live.enrollments.length}/{live.capacity}
+			{live.enrollmentCount}/{live.capacity}
 		</span>
 	{/snippet}
 	{#snippet actions()}

@@ -1,19 +1,5 @@
-import type { ClassNode, Student } from '$lib/types/school';
 import type { StudentDetailTabKey } from '../../../../school/students/lib/student-detail-tabs';
 import { STUDENT_DETAIL_TABS } from '../../../../school/students/lib/student-detail-tabs';
-
-export interface ClassStudentsPageSlice {
-	classId: string;
-	students: Student[];
-	currentClass?: ClassNode;
-}
-
-export function emptyClassStudentsSlice(classId: string): ClassStudentsPageSlice {
-	return {
-		classId,
-		students: [],
-	};
-}
 
 export function classStudentsClassIdFromUrl(url: URL): string | undefined {
 	return url.pathname.match(/\/classes\/([^/]+)\/students/)?.[1];
@@ -35,13 +21,4 @@ export function activeClassStudentDetailTab(
 	const suffix = pathname.slice(base.length + 1);
 	const match = STUDENT_DETAIL_TABS.find(tab => tab.segment && tab.segment === suffix.split('/')[0]);
 	return match?.key ?? 'profile';
-}
-
-export function filterClassStudents(
-	students: readonly Student[],
-	filters: { q: string; status: string },
-): Student[] {
-	return students
-		.filter(student => filters.status === 'all' || student.status === filters.status)
-		.filter(student => student.name.toLowerCase().includes(filters.q.toLowerCase()));
 }

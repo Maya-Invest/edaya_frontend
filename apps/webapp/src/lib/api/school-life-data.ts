@@ -7,7 +7,7 @@ import {
 	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
-import { loadClassPeopleData, mapPeopleData } from '$lib/api/people-data';
+import { mapPeopleData } from '$lib/api/people-data';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -245,13 +245,14 @@ export async function loadCalendarEvents(
 	client: SchoolClient,
 	academicYearId: string,
 	schoolId = '',
+	signal?: AbortSignal,
 ): Promise<SchoolYearEvent[]> {
 	if (!academicYearId) {
 		return [];
 	}
 	const eventsRaw = await listAllEntityPages(
 		query => client.entities.calendarEvents.list(query),
-		{ baseQuery: schoolId ? { schoolId, academicYearId } : { academicYearId } },
+		{ signal, baseQuery: schoolId ? { schoolId, academicYearId } : { academicYearId } },
 	);
 	return mapCalendarEvents(eventsRaw ?? []);
 }
@@ -317,13 +318,11 @@ export interface IncidentResolveModalData {
 	incident: IncidentRaw;
 	involvements: InvolvementRaw[];
 	disciplinaryActions: DisciplinaryActionRaw[];
-	students: Student[];
 }
 
 export async function loadIncidentResolveModalData(
 	client: SchoolClient,
 	incidentId: string,
-	periodId: string,
 ): Promise<IncidentResolveModalData> {
 	const incident = await client.entities.incidents.get(incidentId);
 	const [involvements, disciplinaryActions] = await Promise.all([
@@ -336,32 +335,10 @@ export async function loadIncidentResolveModalData(
 		}),
 	]);
 
-	let students: Student[] = [];
-	if (incident.classGroupId) {
-		const classPeople = await loadClassPeopleData(client, incident.classGroupId, periodId);
-		students = classPeople.students;
-	}
-	else {
-		const studentIds = uniqueIds((involvements ?? []).map(entry => entry.studentId));
-		if (studentIds.length > 0) {
-			const studentsRaw = await listAllEntityPagesByIds(
-				query => client.entities.students.list(query),
-				studentIds,
-			);
-			students = mapPeopleData({
-				studentsRaw: studentsRaw ?? [],
-				enrollmentsRaw: [],
-				guardiansRaw: [],
-				linksRaw: [],
-			}).students;
-		}
-	}
-
 	return {
 		incident,
 		involvements: involvements ?? [],
 		disciplinaryActions: (disciplinaryActions ?? []).filter(action => action.kind === 'sanction'),
-		students,
 	};
 }
 

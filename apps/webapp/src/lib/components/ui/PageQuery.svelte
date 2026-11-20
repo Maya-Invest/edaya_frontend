@@ -77,7 +77,7 @@
 			result = cached;
 			loadedKey = identity;
 			loadedSurface = surface;
-			pageQueryStatus.markReady(key);
+			untrack(() => pageQueryStatus.markReady(key));
 			return () => {
 				controller.abort();
 			};
@@ -86,7 +86,8 @@
 		if (identity !== loadedKey && (!preserveWhileLoading || loadedSurface !== surface)) {
 			result = null;
 		}
-		pageQueryStatus.markPending(key);
+		// Publishing status must not subscribe this load to sibling queries.
+		untrack(() => pageQueryStatus.markPending(key));
 
 		const runQuery = untrack(() => bindPageQuery(query));
 		void untrack(() => runQuery(url, { signal: controller.signal }))

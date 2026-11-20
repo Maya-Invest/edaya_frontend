@@ -19,6 +19,7 @@
 		variant = 'destructive',
 		onCancel,
 		onOpenChange,
+		onCloseAutoFocus,
 		onConfirm,
 	}: {
 		open?: boolean;
@@ -34,6 +35,7 @@
 		variant?: 'default' | 'destructive';
 		onCancel?: () => void;
 		onOpenChange?: (open: boolean) => void;
+		onCloseAutoFocus?: (event: Event) => void;
 		onConfirm: () => void | Promise<void>;
 	} = $props();
 
@@ -79,7 +81,7 @@
 
 <Dialog.Root bind:open={() => open, handleOpenChange}>
 	{#if open}
-		<Dialog.Content data-testid="confirm-modal" class="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col overflow-hidden" onOpenAutoFocus={async (event) => {
+		<Dialog.Content {onCloseAutoFocus} data-testid="confirm-modal" class="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col overflow-hidden" onOpenAutoFocus={async (event) => {
 			event.preventDefault();
 			await tick();
 			document.getElementById(cancelId)?.focus();

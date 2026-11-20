@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { ResolvedPathname } from '$app/types';
-	import type { StudentSubjectGroupItem } from '../student-grades-tab.selectors';
+	import type { components } from '$lib/api/schema';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
-	import { locale } from '$lib/i18n';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { detailHref } from '$lib/detail-hrefs';
+	import { locale, t } from '$lib/i18n';
 	import { ChevronDown } from '$lib/icons';
 	import { cn } from '$lib/utils';
 
@@ -12,16 +14,27 @@
 		subjectAvg,
 		open = false,
 		onOpenChange,
+		total,
+		graded,
+		canLoadMore,
+		loadingMore,
+		loadError,
+		onMore,
 	}: {
 		subject: string;
-		items: StudentSubjectGroupItem[];
+		items: components['schemas']['StudentGradeHistoryPage']['items'];
+		total: number;
+		graded: number;
+		canLoadMore: boolean;
+		loadingMore: boolean;
+		loadError: boolean;
+		onMore: () => void;
 		subjectAvg: number | null;
 		open?: boolean;
 		onOpenChange?: (open: boolean) => void;
 	} = $props();
 
-	const collapsible = $derived(items.length > 1);
-	const graded = $derived(items.filter(item => item.mark !== null));
+	const collapsible = $derived(total > 1 || items.length === 0);
 	const shown = $derived(collapsible ? open : true);
 </script>
 
@@ -41,7 +54,7 @@
 			{/if}
 			<span class="text-sm font-semibold">{subject}</span>
 			<span class="text-[10px] uppercase tracking-wider text-muted-foreground">
-				{items.length} eval. - {graded.length} notees
+				{$t('student.historyGradeCount', { total, graded })}
 			</span>
 		</div>
 		<p class="font-sans text-lg tabular-nums">
@@ -51,16 +64,12 @@
 	</button>
 	{#if shown}
 		<div class="divide-y divide-border">
-			{#each items as { e, mark, href } (e.id)}
+			{#each items as e (e.id)}
 				<div class="px-3 py-2">
 					<div class="flex items-center justify-between gap-2">
-						{#if href}
-							<a href={href as ResolvedPathname} class="text-sm font-medium text-primary hover:underline">{e.title}</a>
-						{:else}
-							<p class="text-sm font-medium">{e.title}</p>
-						{/if}
+						<a href={detailHref.classEvaluation(e.classGroupId, e.assessmentId) as ResolvedPathname} class="text-sm font-medium text-primary hover:underline">{e.title}</a>
 						<p class="font-sans tabular-nums text-sm tabular-nums">
-							{mark !== null ? mark.toFixed(1) : '-'}
+							{e.score !== null ? e.score.toFixed(1) : '-'}
 							<span class="ml-0.5 text-xs text-muted-foreground">/{e.outOf}</span>
 						</p>
 					</div>
@@ -69,6 +78,12 @@
 					</p>
 				</div>
 			{/each}
+			{#if canLoadMore}
+				{#if loadError}<p role="alert">{$t('dataState.errorDefault')}</p>{/if}
+				<Button variant="outline" size="sm" disabled={loadingMore} onclick={onMore}>
+					{$t(loadError ? 'dataState.retry' : 'student.olderGrades')}
+				</Button>
+			{/if}
 		</div>
 	{/if}
 </div>

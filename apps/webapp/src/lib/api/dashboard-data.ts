@@ -8,6 +8,7 @@ export type SchoolOverviewResponse = components['schemas']['SchoolOverviewRespon
 
 export async function fetchSchoolOverview(
 	client: SchoolClient,
+	signal?: AbortSignal,
 ): Promise<SchoolOverviewResponse | null> {
 	const schoolId = authSession.schoolId;
 	if (!schoolId) {
@@ -24,5 +25,5 @@ export async function fetchSchoolOverview(
 		schoolId,
 		academicYearId,
 		...(selection ? { academicPeriodId: selection.academicPeriodId } : {}),
-	});
+	}, { signal });
 }

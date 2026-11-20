@@ -4,6 +4,7 @@ import type { TimetablePlacementOverrides } from '$lib/scheduling/timetable-plac
 import type { ClassNode } from '$lib/types/school';
 import type { TimetableMutationResult } from './lib/timetable-generation-errors';
 import { academicContext } from '$lib/academic/context.svelte';
+import { listAllEntityPagesByIds, listAllEntityPagesForIdFilters } from '$lib/api/entity-list-filters';
 import { executeMutation } from '$lib/api/mutations/execute-mutation';
 import {
   generateSchoolTimetable,
@@ -21,7 +22,6 @@ import {
 
 } from '$lib/scheduling/timetable-placement-parameters';
 import { toast } from '$lib/toast.svelte';
-import { SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';
 import {
   parseTimetableGenerationError,
@@ -51,8 +51,27 @@ export interface TimetablePlanningRow {
 export class TimetablePlanningPageState {
   private readonly versions = new RouteVersionSnapshot(['planning', 'subjects', 'teachers', 'school', 'periodDefinitions']);
 
+  private activeScope: string | undefined;
+  private generation = 0;
+
+  open(scope: string) {
+    this.activeScope = scope;
+    this.generationResult = null;
+    this.resetRange();
+    void this.load().catch(() => { /* The open form presents the load error. */ });
+  }
+
+  close() {
+    ++this.generation;
+    this.activeScope = undefined;
+    this.classSubjects = [];
+    this.subjectLabels = {};
+    this.teacherLabelsByClassSubjectId = {};
+    this.loadStatus = 'idle';
+  }
+
   async invalidateIfStale() {
-    if (!this.versions.hasLoaded() || !this.versions.isStale() || this.busy)
+    if (!this.activeScope || this.loadStatus === 'loading' || !this.versions.hasLoaded() || !this.versions.isStale() || this.busy)
       return;
     try {
       await this.load();
@@ -60,7 +79,6 @@ export class TimetablePlanningPageState {
     catch { /* Keep stale for the next visit; PageQuery owns first-paint errors. */ }
   }
 
-  sessions = $state<components['schemas']['LessonSession'][]>([]);
   classSubjects = $state<ClassSubject[]>([]);
   subjectLabels = $state<Record<string, string>>({});
   teacherLabelsByClassSubjectId = $state<Record<string, string>>({});
@@ -118,43 +136,36 @@ export class TimetablePlanningPageState {
   }
 
   async load() {
+    if (!this.activeScope)
+      return;
+    const generation = ++this.generation;
+    const versions = this.versions.capture();
     this.loadStatus = 'loading';
     this.loadError = '';
     try {
       const client = getBrowserSchoolClient();
-      const classIds = this.classes.map(row => row.id);
-      const [sessions, classSubjects] = await Promise.all([
-        classIds.length
-          ? client.entities.lessonSessions.list({ classGroupId: { $in: classIds } })
-          : Promise.resolve([]),
-        classIds.length
-          ? client.entities.classSubjects.list({ classGroupId: { $in: classIds } })
-          : Promise.resolve([]),
-      ]);
-      this.sessions = sessions;
-      this.classSubjects = classSubjects;
-      const subjectIds = classSubjects.map(row => row.subjectId);
+      const yearId = academicContext.yearId;
+      const classSubjects = await listAllEntityPagesForIdFilters(
+        query => client.entities.classSubjects.list(query),
+        [{ field: 'classGroupId', ids: this.classes.map(row => row.id) }],
+      );
+      if (generation !== this.generation)
+        return;
       const classSubjectIds = classSubjects.map(row => row.id);
       const [subjects, teacherAssignments] = await Promise.all([
-        subjectIds.length
-          ? client.entities.subjects.list({ id: { $in: subjectIds } })
-          : Promise.resolve([]),
-        classSubjectIds.length
-          ? client.entities.teacherAssignments.list({
-              classSubjectId: { $in: classSubjectIds },
-              academicYearId: academicContext.yearId,
-              status: 'active',
-            })
-          : Promise.resolve([]),
+        listAllEntityPagesByIds(query => client.entities.subjects.list(query), classSubjects.map(row => row.subjectId)),
+        listAllEntityPagesForIdFilters(query => client.entities.teacherAssignments.list(query), [{ field: 'classSubjectId', ids: classSubjectIds }], { extraQuery: { academicYearId: yearId, status: 'active' } }),
       ]);
+      if (generation !== this.generation)
+        return;
+      const teachers = await listAllEntityPagesByIds(query => client.entities.teachers.list(query), teacherAssignments.map(row => row.teacherId));
+      if (generation !== this.generation)
+        return;
+      this.classSubjects = classSubjects;
       this.subjectLabels = Object.fromEntries(subjects.map(subject => [
         subject.id,
         catalogSubjectName(subject.name, get(lang), subject.shortName),
       ]));
-      const teacherIds = [...new SvelteSet(teacherAssignments.map(row => row.teacherId))];
-      const teachers = teacherIds.length
-        ? await client.entities.teachers.list({ id: { $in: teacherIds } })
-        : [];
       const instructorSources = {
         teachersRaw: teachers,
         teacherAssignmentsRaw: teacherAssignments,
@@ -168,9 +179,11 @@ export class TimetablePlanningPageState {
         ]),
       );
       this.loadStatus = 'ready';
-      this.versions.markLoaded();
+      this.versions.markLoaded(versions);
     }
     catch (error) {
+      if (generation !== this.generation)
+        return;
       this.loadStatus = 'error';
       this.loadError = timetableErrorMessage(error, translateTimetable);
       throw error;

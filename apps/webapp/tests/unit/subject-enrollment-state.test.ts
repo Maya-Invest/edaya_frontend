@@ -23,6 +23,28 @@ function data(id: string, revision = 1): ParticipationData {
 	return { studentId: id, placements: [{ id: `p-${id}`, studentId: id, classGroupId: 'class', academicYearId: 'year', status: 'active' }], periods: [], enrollments: [], offerings: ['music', 'art'].map(id => ({ id, classGroupId: 'class', name: id, isOptional: true, isOffered: true, participationRevision: revision })) } as unknown as ParticipationData;
 }
 beforeEach(() => { bumps.length = 0; errors.length = 0; });
+test('teaching loads candidates on open and discards a closed or denied response', async () => {
+	let allow = true;
+	const reads: string[] = [];
+	const state = new SubjectEnrollmentState({ allowed: () => allow, identity: () => 'staff', load: async id => { reads.push(id); return data(id); } });
+	const entry = { ...context, students: [], chooseStudents: true, classSubjectId: 'music' };
+	let release!: () => void;
+	const waiting = new Promise<void>((resolve) => { release = resolve; });
+	const first = state.open(entry, async () => { await waiting; return context.students; });
+	state.close();
+	release();
+	await first;
+	expect(reads).toEqual([]);
+	await state.open(entry, async () => context.students);
+	expect(reads.sort()).toEqual(['a', 'b']);
+	expect(state.context?.students).toEqual(context.students);
+	expect(state.selectedIds).toEqual([]);
+	allow = false;
+	await state.reload();
+	expect(reads).toHaveLength(2);
+	expect(state.canSave).toBe(false);
+});
+
 test('individual, teaching and list contexts share one changed-pair submission path', async () => {
 	for (const entry of [{ ...context, classSubjectId: 'music', students: [context.students[0]!] }, { ...context, classSubjectId: 'music', chooseStudents: true }, context]) {
 		const commands: Command[] = [];

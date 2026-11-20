@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Activity, PlanningEvent, Subject, TimetableSchedule, TimetableScheduleKind } from '$lib/types/school';
+	import type { ActivityOption } from '$lib/api/activities-data';
+	import type { PlanningEvent, Subject, TimetableSchedule, TimetableScheduleKind } from '$lib/types/school';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -24,7 +25,7 @@
 		hideTrigger?: boolean;
 		onSaved?: () => Promise<void>;
 		subjects: Subject[];
-		activities: Activity[];
+		activities: ActivityOption[];
 	} = $props();
 	let busy = $state(false);
 	let isRecurring = $state(true);

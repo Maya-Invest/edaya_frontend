@@ -256,7 +256,7 @@ export class GuardiansPageState {
 	}
 
 	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
+		if (!this.versions.hasLoaded() || !this.versions.isStale()) {
 			return;
 		}
 		await this.refreshList();

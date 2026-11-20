@@ -1,6 +1,6 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Incident, Student } from '$lib/types/school';
-import { listAllEntityPages } from '$lib/api/entity-list-filters';
+import { academicContext } from '$lib/academic/context.svelte';
 import { runRouteMutation } from '$lib/api/mutations/route-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadIncidentInvolvements, loadIncidentSanctions, loadIncidentResolveModalData } from '$lib/api/school-life-data';
@@ -8,6 +8,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { queryClient } from '$lib/queries/client';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
@@ -19,10 +20,10 @@ import { createIncidentOnPage, deleteIncidentOnPage, resolveIncidentWithOutcomes
 const EVENTS_VERSION_FAMILIES = ['incidents', 'students'] as const satisfies readonly EntityVersionKey[];
 const EVENTS_PAGE_STATE_KEY = Symbol('events-page-state');
 export class EventsPageState {
-    async loadIncidentLessons(classGroupId: string) {
-        if (!classGroupId || !authSession.schoolId)
-            return [];
-        return listAllEntityPages(query => getBrowserSchoolClient().entities.lessonSessions.list(query), { baseQuery: { schoolId: authSession.schoolId, classGroupId } });
+    readonly lessonScope = $derived(JSON.stringify([authSession.authUserId, authSession.userId, authSession.schoolId, academicContext.yearId, academicContext.scopeGeneration, authSession.grants]));
+
+    loadIncidentLessons(input: { classGroupId: string; selectedId?: string; q?: string; cursor?: string }, signal: AbortSignal) {
+        return queryClient().queries.getIncidentLessonOptions(input, { signal });
     }
 
     involvements = $state<Awaited<ReturnType<typeof loadIncidentInvolvements>>>([]);
@@ -134,7 +135,7 @@ export class EventsPageState {
     }
 
     async invalidateIfStale() {
-        if (!this.versions.isStale()) {
+        if (!this.versions.hasLoaded() || !this.versions.isStale()) {
             return;
         }
         await this.refreshSlice();

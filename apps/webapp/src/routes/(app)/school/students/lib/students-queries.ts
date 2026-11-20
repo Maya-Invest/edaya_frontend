@@ -9,12 +9,7 @@ export function querySchoolStudentsPage(state: StudentsPageState) {
 		load: async (signal) => {
 			signal.throwIfAborted();
 			state.hydrateFiltersFromUrl();
-			if (state.usesFullRoster) {
-				await state.loadFullRoster();
-			}
-			else {
-				await state.loadFirstPage();
-			}
+			await state.loadFirstPage(signal);
 			signal.throwIfAborted();
 			return { totalStudents: state.totalStudents };
 		},

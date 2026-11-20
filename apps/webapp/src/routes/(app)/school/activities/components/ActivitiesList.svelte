@@ -23,19 +23,19 @@
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { isListCardColumns, readListCardColumns, readListView, writeListCardColumns, writeListView } from '$lib/list/list-view-url';
-	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { getActivitiesPageState } from '../activities-page.svelte';
-	import { cycleActivityListSort, filterActivityList } from '../lib/activity-list-filters';
+	import { cycleActivityListSort } from '../lib/activity-list-filters';
 	import ActivityFormModal from './ActivityFormModal.svelte';
 
 	const { onSelect, selectedId }: {
-		onSelect?: (activity: Activity) => void;
+		onSelect?: (activity: Pick<Activity, 'id'>) => void;
 		selectedId?: string;
 	} = $props();
 	const activitiesPage = getActivitiesPageState();
@@ -73,8 +73,8 @@
 		Wellbeing: 'bg-secondary text-foreground/80',
 	};
 	const listFilters = $derived.by(() => ({ ...activitiesPage.filters.values }));
-	const filtered = $derived(filterActivityList(activitiesPage.activities, listFilters));
-	const windowed = useInfiniteList(() => filtered, 30);
+	const list = activitiesPage.list;
+	const rows = $derived(list.current?.items ?? []);
 	const categoryFilterOptions = $derived(categoryKeys.map(key => ({
 		value: key,
 		label: key === 'all' ? $t('filter.all') : $t(`activities.cat.${key}`),
@@ -155,12 +155,12 @@
 		return exportMatchingList({
 			filename: 'activities.csv',
 			headers: ['name', 'category', 'coach', 'period', 'enrolled'],
-			loadAll: async () => filtered.map(activity => [
+			loadAll: async () => (await list.export({ filters: listFilters })).map(activity => [
 				activity.name,
 				activity.category,
 				activity.coach,
 				`${fmtActivityDate(activity.startDate, $locale)} → ${fmtActivityDate(activity.endDate, $locale)}`,
-				`${activity.enrollments.length}/${activity.capacity}`,
+				`${activity.enrollmentCount}/${activity.capacity}`,
 			]),
 		});
 	}
@@ -169,7 +169,7 @@
 <div class="animate-fade-in">
 	<ListPageHeader
 		eyebrow={$t('activities.eyebrow')}
-		title={$t('activities.count', { n: filtered.length })}
+		title={$t('activities.count', { n: list.current?.total ?? 0 })}
 		filterCount={Number(listFilters.category !== 'all')}
 		onResetFilters={() => activitiesPage.filters.patchImmediate({ category: 'all' })}
 	>
@@ -211,7 +211,7 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu {view} onViewChange={setView} exportLabel={$t('list.export')} onExport={() => void exportActivities()} />
+			<ListMoreMenu {view} onViewChange={setView} exportLabel={$t('list.export')} onExport={() => void exportActivities().catch(() => toast.error($t('dataState.errorDescription')))} />
 		{/snippet}
 	</ListPageHeader>
 
@@ -220,15 +220,15 @@
 	{#if view === 'table'}
 		<ListEntityTable listKey="ActivitiesList"
 			columns={columns.filter(column => column.key !== 'description')}
-			rows={windowed.visible}
+			{rows}
 			highlightId={selectedId}
 			sort={{ column: listFilters.sort, dir: listFilters.sortDir }}
 			onSort={key => cycleSort(key as ActivitySortColumn)}
-			loading={activitiesPage.listLoading}
-			hasMore={windowed.hasMore}
-			total={windowed.total}
-			visibleCount={windowed.visible.length}
-			onLoadMore={windowed.loadMore}
+			loading={list.loadingMore}
+			hasMore={Boolean(list.current?.nextCursor) && !list.failed}
+			total={list.current?.total ?? 0}
+			visibleCount={rows.length}
+			onLoadMore={() => list.more()}
 			onRowClick={activity => onSelect?.(activity)}
 			emptyLabel={$t('activities.none')}
 		>
@@ -254,7 +254,7 @@
 				{:else if column.key === 'enrolled'}
 					<div class="col-span-2 flex items-center justify-end gap-1 text-xs">
 						<Users class="h-3.5 w-3.5 text-muted-foreground" />
-						<span class="font-sans tabular-nums">{activity.enrollments.length}/{activity.capacity}</span>
+						<span class="font-sans tabular-nums">{activity.enrollmentCount}/{activity.capacity}</span>
 					</div>
 				{/if}
 			{/snippet}
@@ -262,17 +262,17 @@
 	{:else}
 		<ListEntityCards
 			{columns}
-			rows={windowed.visible}
+			{rows}
 			highlightId={selectedId}
 			sort={{ column: listFilters.sort, dir: listFilters.sortDir }}
 			onSort={key => cycleSort(key as ActivitySortColumn)}
 			columnsPerRow={cardColumns}
 			onColumnsPerRowChange={setCardColumns}
-			loading={activitiesPage.listLoading}
-			hasMore={windowed.hasMore}
-			total={windowed.total}
-			visibleCount={windowed.visible.length}
-			onLoadMore={windowed.loadMore}
+			loading={list.loadingMore}
+			hasMore={Boolean(list.current?.nextCursor) && !list.failed}
+			total={list.current?.total ?? 0}
+			visibleCount={rows.length}
+			onLoadMore={() => list.more()}
 			onRowClick={activity => onSelect?.(activity)}
 			emptyLabel={$t('activities.none')}
 		>
@@ -295,10 +295,13 @@
 				{:else if columnKey === 'enrolled'}
 					<span class="inline-flex items-center gap-1 text-xs">
 						<Users class="h-3.5 w-3.5 text-muted-foreground" />
-						<span class="font-sans tabular-nums">{activity.enrollments.length}/{activity.capacity}</span>
+						<span class="font-sans tabular-nums">{activity.enrollmentCount}/{activity.capacity}</span>
 					</span>
 				{/if}
 			{/snippet}
 		</ListEntityCards>
+	{/if}
+	{#if list.failed}
+		<Button variant="outline" onclick={() => list.failed === 'more' ? list.more() : activitiesPage.refreshList().catch(() => {})}>{$t('dataState.retry')}</Button>
 	{/if}
 </div>

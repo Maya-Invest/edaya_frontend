@@ -1,10 +1,10 @@
-import type { AppShellData } from '$lib/api/shell-data';
 import { academicContext } from '$lib/academic/context.svelte';
 import { configureBrowserSchoolClient } from '$lib/api/school-client';
 import { resetBootstrapSession } from '$lib/auth/bootstrap';
 import { authSession } from '$lib/auth/session.svelte';
 import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
 import { getAppShellData } from '$lib/queries/shell.queries';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 let bootstrapPromise: Promise<void> | null = null;
 let bootstrapShellKey = '';
@@ -14,15 +14,10 @@ function shellBootstrapKey(): string {
 	return `${authSession.sessionKind ?? ''}:${authSession.schoolId ?? ''}:${authSession.userId ?? ''}`;
 }
 
-function shellLooksEmpty(shell: AppShellData): boolean {
-	if (!authSession.schoolId) {
+function isTransientShellFailure(error: unknown): boolean {
+	if (typeof navigator !== 'undefined' && navigator.onLine === false)
 		return false;
-	}
-	return shell.academicYears.length === 0 && shell.schools.length === 0;
-}
-
-function delay(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeout(resolve, ms));
+	return error instanceof TypeError || (error instanceof ApiError && [502, 503, 504].includes(error.status));
 }
 
 export function bootstrapAppShell(): Promise<void> {
@@ -57,34 +52,22 @@ async function runBootstrapAppShell(key: string, generation: number) {
 	});
 
 	try {
-		let shell = await getAppShellData();
-		if (!isCurrent())
-			return;
-		if (shellLooksEmpty(shell)) {
-			await delay(400);
+		const shell = await getAppShellData().catch(async (error: unknown) => {
+			if (!isCurrent() || !isTransientShellFailure(error))
+				throw error;
+			await new Promise(resolve => setTimeout(resolve, 400));
 			if (!isCurrent())
-				return;
-			shell = await getAppShellData();
-		}
+				throw error;
+			return getAppShellData();
+		});
 		if (isCurrent())
 			academicContext.initFromShell(shell);
 	}
 	catch (error) {
 		if (!isCurrent())
 			return;
-		console.error('[bootstrapAppShell] failed to load shell data', error);
-		academicContext.initFromShell({
-			schools: [],
-			academicYears: [],
-			academicPeriods: [],
-			gradeLevels: [],
-			periodDefinitions: [],
-			classes: [],
-			hierarchy: [],
-			studentCount: 0,
-			guardianCount: 0,
-			staffCount: 0,
-			teacherCount: 0,
-		});
+		bootstrapPromise = null;
+		academicContext.clearShellCatalog();
+		throw error;
 	}
 }

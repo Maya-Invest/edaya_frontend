@@ -706,14 +706,14 @@ export async function pickDialogComboboxOption(
 ): Promise<boolean> {
 	const dialog = page.getByRole('dialog');
 	const trigger = dialog.locator('button[role="combobox"], button[aria-haspopup="listbox"]').nth(nth);
-	if (!(await trigger.isVisible({ timeout: 8_000 }).catch(() => false))) {
+	if (!(await trigger.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true, () => false))) {
 		const labels = await dialog.getByRole('button').allTextContents().catch(() => []);
 		console.log(`dialog select missing; buttons: ${labels.join(' | ') || '(none)'}`);
 		return false;
 	}
 	await trigger.click();
 	const options = page.locator('[role="option"]:visible');
-	if (!(await options.first().isVisible({ timeout: 8_000 }).catch(() => false))) {
+	if (!(await options.first().waitFor({ state: 'visible', timeout: 8_000 }).then(() => true, () => false))) {
 		const labels = await page.getByRole('option').allTextContents().catch(() => []);
 		console.log(`dialog select options: ${labels.join(' | ') || '(none)'}`);
 		await page.keyboard.press('Escape').catch(() => {});

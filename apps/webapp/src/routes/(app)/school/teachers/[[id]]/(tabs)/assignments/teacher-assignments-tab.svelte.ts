@@ -76,12 +76,13 @@ export class TeacherAssignmentsTabState {
                     return {};
                 }
                 const page = this.getPage();
-                await page.loadSubjectsIfNeeded();
                 const scope = page.teacherScope();
                 const assignments = await getBrowserSchoolClient().entities.teacherAssignments.list({
                     ...teacherAssignmentsForTeachers([teacherId]),
                     academicYearId: scope.academicYearId,
                 });
+                signal.throwIfAborted();
+                await page.ensureClassSubjectsCached((assignments ?? []).flatMap(row => row.classSubjectId ? [row.classSubjectId] : []), signal);
                 signal.throwIfAborted();
                 this.slice = {
                     teacherId,

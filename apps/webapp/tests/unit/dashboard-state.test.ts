@@ -12,6 +12,8 @@ let year: string | null = 'year';
 let period: string | null = null;
 let error: Error | undefined;
 let delay: Promise<void> | undefined;
+let transportSignal: AbortSignal | undefined;
+let onRequestStart: (() => void) | undefined;
 const requests: unknown[] = [];
 const response = { academicYearId: 'year', academicPeriodId: null, kpis: { studentCount: 1144 } };
 const versions = new Proxy<Record<string, number>>({}, {
@@ -24,7 +26,9 @@ mock.module('$lib/academic/context.svelte', () => ({ academicContext: {
 } }));
 mock.module('$lib/auth/session.svelte', () => ({ authSession: { schoolId: 'school' } }));
 mock.module('$lib/queries/client', () => ({ queryClient: () => ({ queries: {
-	getSchoolOverview: async (input: unknown) => {
+	getSchoolOverview: async (input: unknown, options?: { signal?: AbortSignal }) => {
+		transportSignal = options?.signal;
+		onRequestStart?.();
 		requests.push(input);
 		await delay;
 		if (error) throw error;
@@ -42,6 +46,7 @@ function owner() {
 }
 beforeEach(() => {
 	year = 'year'; period = null; error = undefined; delay = undefined; requests.length = 0;
+	transportSignal = undefined; onRequestStart = undefined;
 	for (const key of Object.keys(versions)) delete versions[key];
 });
 
@@ -88,8 +93,10 @@ test('a response from an aborted school/year scope cannot seed the dashboard', a
 	delay = new Promise<void>(resolve => { release = resolve; });
 	const state = owner();
 	const controller = new AbortController();
+	const started = new Promise<void>(resolve => { onRequestStart = resolve; });
 	const pending = state.query(url, { signal: controller.signal });
-	await Promise.resolve();
+	await started;
+	expect(transportSignal).toBe(controller.signal);
 	controller.abort();
 	release();
 	await expect(pending).rejects.toThrow();

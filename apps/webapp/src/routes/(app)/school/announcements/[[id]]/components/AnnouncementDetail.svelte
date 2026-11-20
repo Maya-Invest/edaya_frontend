@@ -49,6 +49,7 @@
 	const publishOpen = bindUrlModal(modals, 'publish');
 	const deleteOpen = bindUrlModal(modals, 'delete');
 	const live = $derived(announcementsPage.findAnnouncement(announcement.id) ?? announcement);
+	$effect(() => announcementsPage.watchTargetPeople(live.targets));
 	const isDraft = $derived(live.status === 'draft');
 	let deleteBusy = $state(false);
 	let deliveryOpen = $state(false);
@@ -70,7 +71,7 @@
 	function targetLabel(target: Announcement['targets'][number]) {
 		return resolveAnnouncementTargetLabel(target, {
 			academic: academicContext,
-			detail: announcementsPage,
+			detail: announcementsPage.targetPeople,
 			labelForKind: kind => get(t)(`announcements.targetKind.${kind}`),
 		});
 	}
@@ -290,7 +291,7 @@
 						{#each data.deliveries as delivery (delivery.id)}
 							<details class="my-2 space-y-1 rounded-collection border p-2 text-xs"><summary>{delivery.title} · {$t(`profile.deliveryStatus.${delivery.status}`)}</summary>
 								<p class="whitespace-pre-wrap">{delivery.body}</p>
-								<p>{$t('profile.recipient')}: {announcementsPage.guardians.find(row => row.id === delivery.recipientId)?.name ?? announcementsPage.students.find(row => row.id === delivery.recipientId)?.name ?? announcementsPage.staff.find(row => row.id === delivery.recipientId)?.name ?? $t('profile.restricted')}</p>
+								<p>{$t('profile.recipient')}: {delivery.recipientName ?? $t('profile.restricted')}</p>
 								{#if delivery.failureReason}<p>{$t('profile.failureReason')}: {delivery.failureReason}</p>{/if}
 								{#if delivery.sentAt}<p>{$t('profile.lastSentAt')}: {String(delivery.sentAt)}</p>{/if}
 								{#if delivery.readAt}<p>{$t('profile.readAt')}: {String(delivery.readAt)}</p>{/if}

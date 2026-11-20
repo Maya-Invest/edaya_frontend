@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { PageQueryRequest } from '$lib/queries/page-status';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -11,7 +12,6 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
-	import { runSelectionOperation } from '$lib/interaction/selection-operation';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { writeModalSurface } from '$lib/modal/modal-url';
 	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
@@ -27,6 +27,8 @@
 	const activityId = $derived($page.params.id ?? '');
 	const activity = $derived(activityId ? activitiesPage.findActivity(activityId) : undefined);
 	const classEnrollments = $derived(classesTab.classEnrollmentsFor(activityId));
+
+	const classesById = $derived(new Map(academicContext.classes.map(group => [group.id, group])));
 
 	type ActivityClassesModal = 'edit' | 'delete' | 'link-classes' | 'unlink-class';
 	const modals = createUrlSyncedModals<ActivityClassesModal>({
@@ -61,7 +63,7 @@
 	);
 	const removeClassName = $derived(
 		removeTarget
-			? (academicContext.classes.find(entry => entry.id === removeTarget.classGroupId)?.name ?? removeTarget.classGroupId)
+			? (classesById.get(removeTarget.classGroupId)?.name ?? removeTarget.classGroupId)
 			: '—',
 	);
 
@@ -88,8 +90,9 @@
 		}
 	}
 
-	async function query(url: URL) {
-		const result = await loadTab(url);
+	async function query(url: URL, request: PageQueryRequest) {
+		const result = await loadTab(url, request);
+		request.signal.throwIfAborted();
 		validateModal();
 		return result;
 	}
@@ -103,10 +106,7 @@
 		const current = () => session === pickerSession && addOpen.open && activityId === targetId && academicContext.scopeGeneration === generation;
 		busy = true;
 		try {
-			const result = await runSelectionOperation(classGroupIds, classGroupId => activitiesPage.ensureClassEnrollment({
-				activityId: targetId,
-				classGroupId,
-			}), current);
+			const result = await activitiesPage.addClasses(targetId, classGroupIds, current);
 			if (!current())
 				return;
 			classGroupIds = result.remaining;
@@ -144,7 +144,7 @@
 </script>
 
 {#if activity}
-	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.linkedClasses')}>
+	<PageQuery {query} cache={false} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.linkedClasses')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
 				<p class="text-sm text-muted-foreground">{$t('activities.classesTabHint')}</p>
@@ -174,7 +174,7 @@
 					{:else}
 						<ul class="divide-y divide-border">
 							{#each classEnrollments as enrollment (enrollment.id)}
-								{@const classGroup = academicContext.classes.find(entry => entry.id === enrollment.classGroupId)}
+								{@const classGroup = classesById.get(enrollment.classGroupId)}
 								<li class="flex items-center justify-between gap-3 px-4 py-2.5">
 									<div class="min-w-0">
 										<p class="truncate text-sm font-medium">{classGroup?.name ?? enrollment.classGroupId}</p>

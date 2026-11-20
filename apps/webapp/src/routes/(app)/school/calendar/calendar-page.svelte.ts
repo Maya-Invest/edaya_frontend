@@ -1,7 +1,7 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import type { AbsenceRecord, SchoolYearEvent } from '$lib/types/school';
+import type { SchoolYearEvent } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadAbsences, loadCalendarEvents } from '$lib/api/school-life-data';
+import { loadCalendarEvents } from '$lib/api/school-life-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readCalendarListFilters, writeCalendarListFilters } from '$lib/list/list-url-filters';
@@ -25,7 +25,6 @@ export class CalendarPageState {
 	deleteCalendarEvent = (...args: Parameters<typeof deleteCalendarEventOnPage> extends [unknown, ...infer Rest] ? Rest : never) => deleteCalendarEventOnPage(this, ...args);
 
 	events = $state<SchoolYearEvent[]>([]);
-	absences = $state<AbsenceRecord[]>([]);
 	readonly filters: ListFiltersState<{ q: string; type: string }>;
 
 	private readonly versions = new RouteVersionSnapshot(CALENDAR_VERSION_FAMILIES);
@@ -41,9 +40,8 @@ export class CalendarPageState {
 		);
 	}
 
-	seed(events: SchoolYearEvent[], absences: AbsenceRecord[]) {
+	seed(events: SchoolYearEvent[]) {
 		this.events = events;
-		this.absences = absences;
 		this.versions.markLoaded();
 	}
 
@@ -69,29 +67,27 @@ export class CalendarPageState {
 		return querySchoolCalendarPage(this);
 	}
 
-	async refreshSlice() {
-		const client = queryClient();
-		const classIds = academicContext.classes.map(entry => entry.id);
+	async refreshSlice(signal?: AbortSignal) {
 		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-		const [events, absences] = await Promise.all([
-			loadCalendarEvents(client, academicContext.yearId, schoolId).catch((error) => {
-				if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-					return this.events;
-				}
+		const yearId = academicContext.yearId;
+		let events: SchoolYearEvent[];
+		try {
+			events = await loadCalendarEvents(queryClient(), yearId, schoolId, signal);
+		}
+		catch (error) {
+			if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
 				throw error;
-			}),
-			loadAbsences(client, classIds).catch((error) => {
-				if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-					return [];
-				}
-				throw error;
-			}),
-		]);
-		this.seed(events, absences);
+			}
+			events = [];
+		}
+		signal?.throwIfAborted();
+		if (yearId === academicContext.yearId && schoolId === (authSession.schoolId ?? academicContext.schools[0]?.id ?? '')) {
+			this.seed(events);
+		}
 	}
 
 	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
+		if (!this.versions.hasLoaded() || !this.versions.isStale()) {
 			return;
 		}
 		await this.refreshSlice();

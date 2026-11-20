@@ -14,10 +14,11 @@ export interface StudentDetailHost {
 	loadPendingPhotoReviews: () => Promise<void>;
 }
 
-export async function loadPendingStudentPhotoReviews(): Promise<StudentPhotoSubmission[]> {
+export async function loadPendingStudentPhotoReviews(studentId?: string): Promise<StudentPhotoSubmission[]> {
 	return safeOptionalEntityList(() =>
 		getBrowserSchoolClient().entities.studentPhotoSubmissions.list({
 			status: 'pending',
+			...(studentId ? { studentId } : {}),
 			$limit: 200,
 		}),
 	);

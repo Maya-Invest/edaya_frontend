@@ -5,6 +5,8 @@ import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import type { StaffMember } from '$lib/types/school';
 import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
+import { directoryCache } from '$lib/api/directory-cache';
+import { studentPortraitCache } from '$lib/api/student-portrait-cache';
 import { clearAuthGate } from '$lib/auth/auth-gate';
 import {
 	clearOnboardingSummaryHold,
@@ -102,6 +104,8 @@ class AuthSession {
 
 	setPendingOnboarding(options: { authUserId: string; loginEmail: string | null }) {
 		if (authPrincipalChanged(this.authUserId, options.authUserId)) {
+			directoryCache.clear();
+			studentPortraitCache.clear();
 			accessTokens.clear();
 		}
 		this.authUserId = options.authUserId;
@@ -124,6 +128,8 @@ class AuthSession {
 
 	setAuthAccountOnly(options: { authUserId: string; loginEmail: string | null }) {
 		if (authPrincipalChanged(this.authUserId, options.authUserId)) {
+			directoryCache.clear();
+			studentPortraitCache.clear();
 			accessTokens.clear();
 		}
 		if (this.grants && this.userId) {
@@ -180,9 +186,15 @@ class AuthSession {
 		this.needsOnboarding = false;
 		const nextAuthUserId = options?.authUserId ?? options?.subjectId ?? this.authUserId;
 		if (authPrincipalChanged(this.authUserId, nextAuthUserId)) {
+			directoryCache.clear();
+			studentPortraitCache.clear();
 			accessTokens.clear();
 		}
 		this.authUserId = nextAuthUserId;
+		if (this.userId !== session.actorId || this.schoolId !== session.schoolId || this.sessionKind !== session.kind) {
+			directoryCache.clear();
+			studentPortraitCache.clear();
+		}
 		this.userId = session.actorId;
 		this.schoolId = session.schoolId;
 		this.sessionKind = session.kind;
@@ -223,6 +235,8 @@ class AuthSession {
 	}
 
 	clear() {
+		directoryCache.clear();
+		studentPortraitCache.clear();
 		accessTokens.clear();
 		this.userId = null;
 		this.authUserId = null;

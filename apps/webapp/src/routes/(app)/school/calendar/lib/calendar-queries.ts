@@ -1,35 +1,12 @@
 import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { CalendarPageState } from '../calendar-page.svelte';
-import { academicContext } from '$lib/academic/context.svelte';
-import { loadAbsences, loadCalendarEvents } from '$lib/api/school-life-data';
-import { authSession } from '$lib/auth/session.svelte';
-import { queryClient } from '$lib/queries/client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
-import { ApiError } from '@maya-invest/edaya-api-client';
 
 export function querySchoolCalendarPage(state: CalendarPageState) {
 	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => ({}),
 		load: async (signal) => {
-			const client = queryClient();
-			const classIds = academicContext.classes.map(entry => entry.id);
-			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-			const [events, absences] = await Promise.all([
-				loadCalendarEvents(client, academicContext.yearId, schoolId).catch((error) => {
-					if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-						return state.events;
-					}
-					throw error;
-				}),
-				loadAbsences(client, classIds).catch((error) => {
-					if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-						return [];
-					}
-					throw error;
-				}),
-			]);
-			signal.throwIfAborted();
-			state.seed(events, absences);
+			await state.refreshSlice(signal);
 			return {};
 		},
 		hasItems: listPageHasItems,

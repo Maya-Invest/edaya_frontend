@@ -70,16 +70,17 @@ function teacherNameForClassSubjectFromSources(
 export async function fetchClassTeachingLogSources(
 	client: SchoolClient,
 	classGroupId: string,
+	classSubjectId?: string,
 ): Promise<TeachingLogSources> {
 	const [
 		lessonSessionsRaw,
 		classSubjectsRaw,
 	] = await Promise.all([
 		listAllEntityPages(query => client.entities.lessonSessions.list(query), {
-			baseQuery: classGroupScope(classGroupId),
+			baseQuery: { ...classGroupScope(classGroupId), ...(classSubjectId ? { classSubjectId } : {}) },
 		}),
 		listAllEntityPages(query => client.entities.classSubjects.list(query), {
-			baseQuery: classGroupScope(classGroupId),
+			baseQuery: { ...classGroupScope(classGroupId), ...(classSubjectId ? { id: classSubjectId } : {}) },
 		}),
 	]);
 
@@ -188,9 +189,9 @@ export function mapTeachingLogEntries(
 export async function fetchTeachingLogEntries(
 	classGroupId: string,
 	client?: SchoolClient,
-	options?: { subjectName?: string },
+	options?: { subjectName?: string; classSubjectId?: string },
 ): Promise<LogEntry[]> {
 	const resolvedClient = client ?? (await import('$lib/api/school-client')).getBrowserSchoolClient();
-	const sources = await fetchClassTeachingLogSources(resolvedClient, classGroupId);
+	const sources = await fetchClassTeachingLogSources(resolvedClient, classGroupId, options?.classSubjectId);
 	return mapTeachingLogEntries(sources, options?.subjectName);
 }

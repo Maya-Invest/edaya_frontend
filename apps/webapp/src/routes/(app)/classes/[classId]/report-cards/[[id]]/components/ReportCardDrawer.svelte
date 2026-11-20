@@ -2,6 +2,7 @@
 	import type { ReportCardResult } from '$lib/types/report-cards';
 	import type { Snippet } from 'svelte';
 	import { kindLabelKey, kindStyle } from '$lib/components/school/shared/drawer-constants';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import DrawerFrame from '$lib/components/ui/DrawerFrame.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
@@ -9,11 +10,15 @@
 	const {
 		result,
 		loading = false,
+		failed = false,
+		onRetry,
 		onClose,
 		children,
 	}: {
 		result?: ReportCardResult;
 		loading?: boolean;
+		failed?: boolean;
+		onRetry: () => void;
 		onClose: () => void;
 		children: Snippet;
 	} = $props();
@@ -38,7 +43,10 @@
 	</header>
 
 	<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
-		{#if loading || !result}
+		{#if failed}
+			<p role="alert">{$t('dataState.errorDefault')}</p>
+			<Button variant="outline" onclick={onRetry}>{$t('dataState.retry')}</Button>
+		{:else if loading || !result}
 			<div class="flex min-h-[12rem] items-center justify-center" role="status" aria-live="polite">
 				<LoaderCircle class="h-6 w-6 animate-spin text-primary" />
 			</div>

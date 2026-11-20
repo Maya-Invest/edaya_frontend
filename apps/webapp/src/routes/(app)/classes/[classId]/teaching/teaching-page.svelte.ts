@@ -1,7 +1,7 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Subject } from '$lib/types/school';
-import type { LogEntry } from '$lib/types/teaching-log';
 import type { TeachingPageSlice } from './lib/teaching-helpers';
+import { academicContext } from '$lib/academic/context.svelte';
 import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
 import { setClassSubjectOfferedMutation } from '$lib/api/mutations/subject-offerings.mutations';
@@ -13,8 +13,6 @@ import { loadSubjectParticipationRevisions } from '$lib/subjects/update-subject'
 import { getContext, setContext } from 'svelte';
 import {
   emptyTeachingSlice,
-  logEntriesForClass,
-  logEntriesForSubject,
   overallClassProgress,
   subjectProgress,
   teachingClassIdFromUrl,
@@ -78,32 +76,18 @@ export class TeachingPageState {
     return this.slice?.classId === classId ? this.slice.subjects : [];
   }
 
-  logEntriesFor(classId: string) {
-    if (this.slice?.classId !== classId) {
-      return [];
-    }
-    return logEntriesForClass(classId, this.slice.subjects, this.slice.logEntries);
-  }
-
-  logEntriesForSubject(subject: Subject) {
-    if (this.slice?.classId !== subject.classId) {
-      return [];
-    }
-    return logEntriesForSubject(subject.name, subject.classId, this.slice.logEntries);
-  }
-
   subjectProgress(subject: Subject) {
     if (this.slice?.classId !== subject.classId) {
       return 0;
     }
-    return subjectProgress(subject, this.slice.logEntries);
+    return subjectProgress(subject);
   }
 
   overallProgress(classId: string) {
     if (this.slice?.classId !== classId) {
       return 0;
     }
-    return overallClassProgress(this.slice.subjects, this.slice.logEntries);
+    return overallClassProgress(this.slice.subjects);
   }
 
   selectedSubject(classId: string, subjectId?: string) {
@@ -141,37 +125,25 @@ export class TeachingPageState {
     if (!this.slice) {
       return;
     }
-    const removed = this.slice.subjects.find(subject => subject.id === id);
     this.slice = {
       ...this.slice,
       subjects: this.slice.subjects.filter(subject => subject.id !== id),
-      logEntries: removed
-        ? this.slice.logEntries.filter(entry => entry.subject !== removed.name)
-        : this.slice.logEntries,
     };
   }
 
-  setLogEntries(entries: LogEntry[]) {
-    if (!this.slice) {
-      return;
-    }
-    this.slice = {
-      ...this.slice,
-      logEntries: entries,
-    };
-  }
-
-  queryListPage(classId: string) {
-    return queryTeachingListPage(classId);
+  queryListPage() {
+    return queryTeachingListPage();
   }
 
   async refreshSlice(classId: string) {
+    const scope = academicContext.scopeGeneration;
     const data = await loadTeachingSlice(classId);
-    this.applySlice(classId, data);
+    if (scope === academicContext.scopeGeneration && teachingClassIdFromUrl(this.getUrl()) === classId)
+      this.applySlice(classId, data);
   }
 
   async invalidateIfStale() {
-    if (!this.versions.isStale()) {
+    if (!this.versions.hasLoaded() || !this.versions.isStale()) {
       return;
     }
     const classId = this.slice?.classId ?? teachingClassIdFromUrl(this.getUrl());
@@ -187,10 +159,6 @@ export class TeachingPageState {
   }): Promise<boolean> {
     const client = getBrowserSchoolClient();
     const previous = this.slice?.subjects.find(subject => subject.id === input.classSubjectId);
-    const previousEntries = previous && this.slice
-      ? this.slice.logEntries.filter(entry => entry.subject === previous.name)
-      : [];
-
     const result = await runTeachingRouteMutation({
       request: () => client.entities.classSubjects.delete({ id: input.classSubjectId }),
       successMessage: input.successMessage,
@@ -201,12 +169,6 @@ export class TeachingPageState {
       rollback: () => {
         if (previous) {
           this.appendSubject(previous);
-        }
-        if (previousEntries.length > 0 && this.slice) {
-          this.slice = {
-            ...this.slice,
-            logEntries: [...this.slice.logEntries, ...previousEntries],
-          };
         }
       },
     });

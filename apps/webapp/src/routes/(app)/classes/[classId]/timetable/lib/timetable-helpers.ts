@@ -1,5 +1,5 @@
+import type { ActivityOption } from '$lib/api/activities-data';
 import type {
-	Activity,
 	PlanningEvent,
 	SchoolYearEvent,
 	Student,
@@ -13,7 +13,7 @@ export interface TimetablePageSlice {
 	schedules: TimetableSchedule[];
 	students: Student[];
 	subjects: Subject[];
-	activities: Activity[];
+	activities: ActivityOption[];
 	schoolYearEvents: SchoolYearEvent[];
 }
 

@@ -1,7 +1,7 @@
 import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { TimetablePageSlice } from './timetable-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
-import { fetchActivities } from '$lib/api/activities-data';
+import { fetchActivityOptions } from '$lib/api/activities-data';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import { academicYearPlanningRange, loadClassPlanning } from '$lib/api/planning-data';
 import { safeOptionalFetch } from '$lib/api/safe-entity-access';
@@ -36,7 +36,7 @@ export async function loadTimetableSlice(classId: string): Promise<TimetablePage
 		),
 		safeOptionalFetch(() => getClassSubjects(classId), []),
 		schoolId
-			? safeOptionalFetch(() => fetchActivities(client, schoolId), [])
+			? safeOptionalFetch(() => fetchActivityOptions(client, schoolId), [])
 			: Promise.resolve([]),
 		yearId
 			? safeOptionalFetch(() => loadCalendarEvents(client, yearId, schoolId), [])

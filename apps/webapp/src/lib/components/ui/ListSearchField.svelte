@@ -7,6 +7,7 @@
 		value = $bindable(''),
 		disabled = false,
 		placeholder,
+		maxlength,
 		class: className,
 		inputClass,
 		oninput,
@@ -15,6 +16,7 @@
 		value?: string;
 		disabled?: boolean;
 		placeholder?: string;
+		maxlength?: number;
 		class?: string;
 		inputClass?: string;
 		onCommit?: () => void;
@@ -29,6 +31,7 @@
 	/>
 	<input
 		type="search"
+		{maxlength}
 		{disabled}
 		data-testid="list-search"
 		bind:value

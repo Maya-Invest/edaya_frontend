@@ -105,7 +105,7 @@
 			return;
 		}
 
-		void bootstrapSession();
+		void bootstrapSession({ warmStaffShell: $page.route.id?.startsWith('/(app)/') });
 	});
 </script>
 

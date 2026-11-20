@@ -121,8 +121,22 @@ function guardianDisplayName(
 	return `${guardian.firstName} ${guardian.lastName}`;
 }
 
-function computeAttendancePercent(studentId: string, attendanceRaw: AttendanceRaw[]): number | null {
-	const records = attendanceRaw.filter(record => record.studentId === studentId);
+function groupRows<T>(rows: readonly T[], key: (row: T) => string): Map<string, T[]> {
+	const groups = new Map<string, T[]>();
+	for (const row of rows) {
+		const id = key(row);
+		const group = groups.get(id);
+		if (group) {
+			group.push(row);
+		}
+		else {
+			groups.set(id, [row]);
+		}
+	}
+	return groups;
+}
+
+function computeAttendancePercent(records: AttendanceRaw[]): number | null {
 	if (records.length === 0) {
 		return null;
 	}
@@ -132,7 +146,6 @@ function computeAttendancePercent(studentId: string, attendanceRaw: AttendanceRa
 }
 
 function computeStudentAverage(
-	studentId: string,
 	resultsRaw: AssessmentResultRaw[],
 	assessmentsById: Map<string, AssessmentRaw>,
 ): number {
@@ -140,7 +153,7 @@ function computeStudentAverage(
 	let totalCoefficient = 0;
 
 	for (const result of resultsRaw) {
-		if (result.studentId !== studentId || typeof result.score !== 'number') {
+		if (typeof result.score !== 'number') {
 			continue;
 		}
 
@@ -628,16 +641,18 @@ export function mapStudents(
 	const { studentsRaw, enrollmentsRaw, guardiansRaw, linksRaw } = sources;
 	const assessmentsById = new Map(metrics.assessmentsRaw.map(assessment => [assessment.id, assessment]));
 
+	const activeByStudent = groupRows(enrollmentsRaw.filter(row => row.status === 'active'), row => row.studentId);
+	const linksByStudent = groupRows(linksRaw, row => row.studentId);
+	const guardiansById = new Map(guardiansRaw.map(row => [row.id, row]));
+	const attendanceByStudent = groupRows(metrics.attendanceRaw, row => row.studentId);
+	const resultsByStudent = groupRows(metrics.resultsRaw, row => row.studentId);
+
 	return studentsRaw.map((student) => {
-		const activeEnrollment = enrollmentsRaw.find(
-			enrollment => enrollment.studentId === student.id && enrollment.status === 'active',
-		);
+		const activeEnrollment = activeByStudent.get(student.id)?.[0];
 		const classId = activeEnrollment?.classGroupId ?? '';
-		const link = linksRaw.find(entry => entry.studentId === student.id);
-		const guardian = link
-			? guardiansRaw.find(entry => entry.id === link.guardianId)
-			: null;
-		const average = computeStudentAverage(student.id, metrics.resultsRaw, assessmentsById);
+		const link = linksByStudent.get(student.id)?.[0];
+		const guardian = link && guardiansById.get(link.guardianId);
+		const average = computeStudentAverage(resultsByStudent.get(student.id) ?? [], assessmentsById);
 
 		return {
 			id: student.id,
@@ -660,7 +675,7 @@ export function mapStudents(
 			identifier: student.identifier ?? null,
 			gender: student.gender ?? null,
 			guardian: guardianDisplayName(guardian),
-			attendance: computeAttendancePercent(student.id, metrics.attendanceRaw),
+			attendance: computeAttendancePercent(attendanceByStudent.get(student.id) ?? []),
 			average,
 			status: mapStudentApiStatus(student.status),
 			academicBadge: mapStudentAcademicBadge(average),
@@ -673,8 +688,9 @@ export function mapGuardians(
 	guardiansRaw: GuardianRaw[],
 	linksRaw: GuardianLinkRaw[],
 ): Guardian[] {
+	const linksByGuardian = groupRows(linksRaw, row => row.guardianId);
 	return guardiansRaw.map((guardian) => {
-		const guardianLinks = linksRaw.filter(link => link.guardianId === guardian.id);
+		const guardianLinks = linksByGuardian.get(guardian.id) ?? [];
 		const primaryLink = guardianLinks.find(link => link.isPrimary) ?? guardianLinks[0];
 		const email = guardian.email
 			?? '';
@@ -756,6 +772,7 @@ function isMissingEntityError(error: unknown): boolean {
 export async function fetchStudentById(
 	client: SchoolClient,
 	studentId: string,
+	classScope?: { classGroupId: string; periodId: string },
 ): Promise<Student | null> {
 	try {
 		const studentsRaw = await client.entities.students.list(entitiesByIds([studentId]));
@@ -773,13 +790,14 @@ export async function fetchStudentById(
 		const guardiansRaw = guardianIds.length > 0
 			? await client.entities.guardians.list(guardiansByIds(guardianIds)).catch(() => [])
 			: [];
+		const classEnrollments = classScope ? enrollmentsRaw?.filter(row => row.status === 'active' && row.classGroupId === classScope.classGroupId) : undefined;
 		let metrics: StudentMetricsSources = {
 			attendanceRaw: [],
 			assessmentsRaw: [],
 			resultsRaw: [],
 		};
 		try {
-			metrics = await fetchStudentMetricsSources(client, [studentId]);
+			metrics = await fetchStudentMetricsSources(client, [studentId], classEnrollments?.length ? classScope : undefined);
 		}
 		catch (error) {
 			if (!isMissingEntityError(error)) {
@@ -788,7 +806,7 @@ export async function fetchStudentById(
 		}
 		const sources: PeopleSources = {
 			studentsRaw: [studentRaw],
-			enrollmentsRaw: enrollmentsRaw ?? [],
+			enrollmentsRaw: classEnrollments?.length ? classEnrollments : enrollmentsRaw ?? [],
 			guardiansRaw: guardiansRaw ?? [],
 			linksRaw: linksRaw ?? [],
 		};

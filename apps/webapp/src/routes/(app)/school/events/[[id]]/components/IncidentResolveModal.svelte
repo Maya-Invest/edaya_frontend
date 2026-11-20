@@ -65,7 +65,7 @@
 		classGroupId = undefined;
 		disciplinaryActions = [];
 		try {
-			const data = await eventsPage.loadIncidentResolution(incidentId, academicContext.periodId);
+			const data = await eventsPage.loadIncidentResolution(incidentId);
 			if (generation !== loadGeneration || !open)
 				return;
 			classGroupId = data.incident.classGroupId ?? undefined;
@@ -106,7 +106,7 @@
 	// Compare identity values, so a refreshed instance of the same incident does
 	// not invalidate the command that caused that refresh.
 	const resolutionIdentity = $derived(open
-		? JSON.stringify([incident.id, academicContext.scopeGeneration, academicContext.periodId])
+		? JSON.stringify([incident.id, academicContext.scopeGeneration, academicContext.yearId])
 		: null);
 	$effect(() => {
 		if (resolutionIdentity)

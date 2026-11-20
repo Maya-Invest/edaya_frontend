@@ -50,6 +50,19 @@ describe('student tab selectors', () => {
 		expect(summary.overall).toBeGreaterThan(0);
 	});
 
+	it('uses each scored assessment’s own scale and weight after a pending mark', () => {
+		const shared = { classGroupId: 'c', title: 'Quiz', subject: 'Math', kind: 'quiz' as const, date: '2026-01-01' };
+		const rows = [
+			{ ...shared, assessmentId: 'pending', coefficient: 4, score: null, outOf: 10 },
+			{ ...shared, assessmentId: 'scored', coefficient: 2, score: 15, outOf: 20 },
+			{ ...shared, assessmentId: 'zero', coefficient: 1, score: 0, outOf: 5 },
+		];
+		const summary = buildStudentGradeSummaryFromRows(rows);
+		expect(summary.valid).toEqual([15, 0]);
+		expect(summary.overall).toBe(10);
+		expect(summary.subjectGroups[0]?.subjectAvg).toBe(10);
+	});
+
 	it('summarizes incident severities in descending date order', () => {
 		const summary = summarizeStudentIncidents([
 			{

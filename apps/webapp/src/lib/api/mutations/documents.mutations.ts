@@ -27,20 +27,19 @@ function sleep(ms: number) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function waitForTerminalIssuance(id: string, timeoutMs = 45000): Promise<DocumentIssuance> {
+async function waitForTerminalIssuance(issuance: DocumentIssuance, timeoutMs = 45000): Promise<DocumentIssuance> {
+	if (issuance.status !== 'requested' && issuance.status !== 'rendering')
+		return issuance;
 	const client = getBrowserSchoolClient();
 	const started = Date.now();
-	let latest = await loadDocumentIssuance(client, id);
-	while (Date.now() - started < timeoutMs) {
-		if (latest.status === 'ready' || latest.status === 'preview' || latest.status === 'failed' || latest.status === 'voided') {
-			// Rendering finishes after the command's initial invalidation. Refresh
-			// the document list again so its actions reflect the terminal state.
-			entityVersions.bump('documents');
+	let latest = await loadDocumentIssuance(client, issuance.id);
+	while (latest.status === 'requested' || latest.status === 'rendering') {
+		if (Date.now() - started >= timeoutMs)
 			return latest;
-		}
 		await sleep(500);
-		latest = await loadDocumentIssuance(client, id);
+		latest = await loadDocumentIssuance(client, issuance.id);
 	}
+	entityVersions.bump('documents');
 	return latest;
 }
 
@@ -52,6 +51,24 @@ function unwrapIssuance(result: unknown): DocumentIssuance {
 		return (result as { issuance: DocumentIssuance }).issuance;
 	}
 	throw new Error('Document issuance response was empty');
+}
+
+async function finishDocumentRequest(issuance: DocumentIssuance, openWhenReady: boolean) {
+	const settled = await waitForTerminalIssuance(issuance);
+	if (settled.status === 'ready' || settled.status === 'preview') {
+		if (openWhenReady)
+			await downloadDocumentMutation({ id: settled.id });
+		return settled;
+	}
+	if (settled.status === 'failed') {
+		toast.error(get(t)('documents.toastFailed', { code: settled.failureCode ?? settled.status }));
+		return settled;
+	}
+	const message = settled.status === 'superseded' || settled.status === 'voided'
+		? get(t)(`documents.status.${settled.status}`)
+		: get(t)('documents.toastRendering');
+	toast.info(message);
+	return settled;
 }
 
 export async function requestDocumentIssuanceMutation(input: Omit<RequestDocumentIssuanceInput, 'requestId' | 'locale'> & {
@@ -94,19 +111,7 @@ export async function requestDocumentIssuanceMutation(input: Omit<RequestDocumen
 	if (result === null) {
 		return null;
 	}
-	const issuance = unwrapIssuance(result);
-	const settled = await waitForTerminalIssuance(issuance.id);
-	if (settled.status === 'ready' || settled.status === 'preview') {
-		if (input.openWhenReady !== false)
-			await downloadDocumentMutation({ id: settled.id });
-		return settled;
-	}
-	if (settled.status === 'failed') {
-		toast.error(get(t)('documents.toastFailed', { code: settled.failureCode ?? settled.status }));
-		return settled;
-	}
-	toast.info(get(t)('documents.toastRendering'));
-	return settled;
+	return finishDocumentRequest(unwrapIssuance(result), input.openWhenReady !== false);
 }
 
 export async function requestDocumentIssuanceBatchMutation(input: {
@@ -152,19 +157,7 @@ export async function retryDocumentIssuanceMutation(input: {
 	if (result === null) {
 		return null;
 	}
-	const issuance = unwrapIssuance(result);
-	const settled = await waitForTerminalIssuance(issuance.id);
-	if (settled.status === 'ready' || settled.status === 'preview') {
-		if (input.openWhenReady !== false)
-			await downloadDocumentMutation({ id: settled.id });
-	}
-	else if (settled.status === 'failed') {
-		toast.error(get(t)('documents.toastFailed', { code: settled.failureCode ?? settled.status }));
-	}
-	else {
-		toast.info(get(t)('documents.toastRendering'));
-	}
-	return settled;
+	return finishDocumentRequest(unwrapIssuance(result), input.openWhenReady !== false);
 }
 
 export async function voidDocumentIssuanceMutation(input: {

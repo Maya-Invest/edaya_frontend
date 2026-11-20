@@ -316,7 +316,12 @@
 				<TimetableGenerationSetupTabs id="timetable-setup" activeTab={setupTab} onTabChange={onSetupTabChange} invalidTabs={[...(!selectedClasses.length || invalidSubject ? ['subjects' as const] : []), ...(!validRules ? ['advanced' as const] : [])]} />
 			</div>
 			<div class="timetable-setup-panel" id={`timetable-setup-panel-${setupTab}`} role="tabpanel" aria-labelledby={`timetable-setup-${setupTab}`}>
-				{#if setupTab === 'subjects'}
+				{#if setupTab === 'subjects' && planningPage.loadStatus === 'loading'}
+					<p role="status">{$t('dataState.loading')}</p>
+				{:else if setupTab === 'subjects' && planningPage.loadStatus === 'error'}
+					<p role="alert">{planningPage.loadError}</p>
+					<Button variant="outline" onclick={() => void planningPage.load().catch(() => {})}>{$t('dataState.retry')}</Button>
+				{:else if setupTab === 'subjects'}
 					<TimetableWorkloadConfigPanel
 						classes={planningPage.classes}
 						gradeLevels={academicContext.gradeLevels}

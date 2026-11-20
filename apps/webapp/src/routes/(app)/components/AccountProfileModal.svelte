@@ -5,14 +5,13 @@
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import AccountSettingsSection from '$lib/components/ui/AccountSettingsSection.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import SectionTabs from '$lib/components/ui/SectionTabs.svelte';
 	import { t } from '$lib/i18n';
 	import { X } from '$lib/icons';
 	import { getDirtyWork } from '$lib/interaction/dirty-work.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
-	import NotificationSettings from '$lib/smart-components/account-notifications/NotificationSettings.svelte';
-	import SecuritySettings from '$lib/smart-components/account-security/SecuritySettings.svelte';
 	import { tick } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getAccountState } from '../account-state.svelte';
@@ -26,6 +25,7 @@
 		onSectionChange: (section: 'profile' | 'notifications' | 'security') => void;
 	} = $props();
 	const uid = $props.id();
+	let panelAttempt = $state(0);
 	const sections = ['profile', 'notifications', 'security'] as const;
 	const activeSection = $derived(sections.find(item => item === section) ?? 'profile');
 	const tabs = $derived(sections.map(value => ({ value, label: $t(`account.settings.tab.${value}`) })));
@@ -90,8 +90,18 @@
 				<div id={`${uid}-panel-${item}`} role="tabpanel" aria-labelledby={`${uid}-tab-${item}`} hidden={activeSection !== item}>
 					{#if activeSection === item}
 						<AccountSettingsSection inset title={$t(`account.settings.tab.${item}`)} description={$t(`account.settings.description.${item}`)}>
-							{#if item === 'notifications'}<NotificationSettings embedded />
-							{:else if item === 'security'}<SecuritySettings embedded onSignOut={handleLogout} />
+							{#if item === 'notifications' || item === 'security'}
+								{#key panelAttempt}
+									{#await (item === 'notifications'
+										? import('$lib/smart-components/account-notifications/NotificationSettings.svelte')
+										: import('$lib/smart-components/account-security/SecuritySettings.svelte'))}
+										<DataState compact status="loading" />
+									{:then panel}
+										<panel.default embedded onSignOut={handleLogout} />
+									{:catch}
+										<DataState compact status="error" onRetry={() => panelAttempt++} />
+									{/await}
+								{/key}
 							{:else}
 								<div class="flex flex-wrap items-center gap-4">
 									{#if canChangePhoto}<ProfilePhotoPicker name={actor.name} initials={actor.initials} photoUrl={staffProfile?.photoUrl ?? actor.photoUrl ?? null} size="lg" onChange={handlePhotoChange} />

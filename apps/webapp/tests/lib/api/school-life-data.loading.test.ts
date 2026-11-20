@@ -5,6 +5,7 @@ import {
 	loadAbsences,
 	loadCalendarEvents,
 	loadIncidentRouteData,
+	loadIncidentResolveModalData,
 } from '$lib/api/school-life-data';
 import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
 
@@ -24,6 +25,20 @@ function listEnvelope<T>(items: readonly T[]) {
 }
 
 describe('school-life data loading', () => {
+	it('opens incident resolution with its participants and sanctions without loading a pupil directory', async () => {
+		for (const placement of [{ classGroupId }, {}]) {
+			const incident = { id: 'incident', schoolId: SEED_SCHOOL_ID, title: 'Fixture', description: 'Example', date: '2026-05-01', kind: 'minor_infraction' as const, status: 'open' as const, reporterId: 'staff', ...placement };
+			const involved = { id: 'involvement', incidentId: incident.id, studentId: 'student-1', role: 'subject' as const };
+			const sanction = { id: 'suspension', schoolId: SEED_SCHOOL_ID, name: 'Suspension', kind: 'sanction' as const };
+			const { client, requests } = createRecordingSchoolClient([
+				{ data: incident }, listEnvelope([involved]), listEnvelope([sanction, { id: 'other', kind: 'reward' }]),
+			]);
+			const result = await loadIncidentResolveModalData(client, incident.id);
+			expect(result).toEqual({ incident, involvements: [involved], disciplinaryActions: [sanction] });
+			expect(requests).toHaveLength(3);
+		}
+	});
+
 	it('loads calendar events for the active academic year', async () => {
 		const { client, requests } = createRecordingSchoolClient([listEnvelope([])]);
 

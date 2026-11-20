@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { AnnouncementTargetKind, Guardian, StaffMember, Student } from '$lib/types/school';
+	import type { AnnouncementTargetKind } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -83,17 +83,9 @@
 			targetId = '';
 			return;
 		}
-		if (usesPersonPicker) {
-			const pool: readonly (Student | Guardian | StaffMember)[] = targetKind === 'student'
-				? announcementsPage.students
-				: targetKind === 'guardian'
-				? announcementsPage.guardians
-				: announcementsPage.staff;
-			if (!pool.some(entry => entry.id === targetId)) {
-				targetId = '';
-			}
+		if (usesPersonPicker)
 			return;
-		}
+
 		if (!entityOptions.some(entry => entry.id === targetId)) {
 			targetId = entityOptions[0]?.id ?? '';
 		}
@@ -133,7 +125,12 @@
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('announcements.targetKindLabel')}
 		</Label>
-		<Select.Root type="single" value={targetKind} onValueChange={v => v && (targetKind = v as AnnouncementTargetKind)}>
+		<Select.Root type="single" value={targetKind} onValueChange={(v) => {
+			if (v && v !== targetKind) {
+				targetId = '';
+				targetKind = v as AnnouncementTargetKind;
+			}
+		}}>
 			<Select.Trigger>
 				<Select.Value placeholder={$t('announcements.targetKindLabel')}>
 					{targetKindLabel}

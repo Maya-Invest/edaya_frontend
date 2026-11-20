@@ -15,6 +15,9 @@
 
 	let {
 		students,
+		query = $bindable(''),
+		classFilter = $bindable('all'),
+		remotePanel,
 		value = $bindable(''),
 		values = $bindable<string[]>([]),
 		mode = 'single',
@@ -32,6 +35,13 @@
 	}: {
 		/** Optional bounded workflow projection; disables directory loading. */
 		students?: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'identifier' | 'email' | 'photoUrl'>[];
+		query?: string;
+		classFilter?: string;
+		remotePanel?: {
+			loading: boolean;
+			selectedNames: Readonly<Record<string, string>>;
+			select: (id: string, name: string) => void;
+		};
 		value?: string;
 		values?: string[];
 		mode?: 'single' | 'multi';
@@ -50,8 +60,6 @@
 	} = $props();
 
 	const pickerState = new StudentPickerState();
-	let classFilter = $state('all');
-	let query = $state('');
 
 	$effect(() => {
 		if (students === undefined && (active || variant === 'panel')) {
@@ -71,7 +79,7 @@
 		return null;
 	});
 
-	const requiresLinkedClasses = $derived(classGroupIds !== undefined && classGroupIds.length === 0);
+	const requiresLinkedClasses = $derived(!remotePanel && classGroupIds !== undefined && classGroupIds.length === 0);
 
 	const selectableClasses = $derived(
 		academicContext.classes
@@ -81,7 +89,7 @@
 	);
 
 	$effect(() => {
-		if (classFilter !== 'all' && restrictedClassIds && !restrictedClassIds.has(classFilter)) {
+		if (!remotePanel && classFilter !== 'all' && restrictedClassIds && !restrictedClassIds.has(classFilter)) {
 			classFilter = 'all';
 		}
 	});
@@ -92,7 +100,7 @@
 		sourceStudents
 			.filter(student => !isSelectable || isSelectable(student))
 			.filter(student => !excludeIds.includes(student.id))
-			.filter(student => !restrictedClassIds || restrictedClassIds.has(student.classId))
+			.filter(student => remotePanel || !restrictedClassIds || restrictedClassIds.has(student.classId))
 			.filter(student => classFilter === 'all' || student.classId === classFilter)
 			.sort((a, b) => a.name.localeCompare(b.name, 'fr')),
 	);
@@ -120,7 +128,7 @@
 		}),
 	);
 
-	const filtered = $derived(filterPersonPickerItems(items, query));
+	const filtered = $derived(remotePanel ? items : filterPersonPickerItems(items, query));
 	const selected = $derived(items.find(entry => entry.id === value));
 
 	const classFilterOptions = $derived([
@@ -136,6 +144,9 @@
 
 	function toggleSelection(studentId: string) {
 		if (mode === 'multi') {
+			const row = remotePanel && sourceStudents.find(student => student.id === studentId);
+			if (row && !values.includes(studentId))
+				remotePanel?.select(studentId, row.name);
 			values = values.includes(studentId)
 				? values.filter(id => id !== studentId)
 				: [...values, studentId];
@@ -182,7 +193,7 @@
 						onclick={() => removeChip(studentId)}
 						{disabled}
 					>
-						<span>{student?.name ?? studentId}</span>
+						<span>{student?.name ?? remotePanel?.selectedNames[studentId] ?? studentId}</span>
 						<span class="text-muted-foreground">×</span>
 					</button>
 				{/each}
@@ -201,6 +212,7 @@
 				<div class="relative">
 					<ListSearchField
 						bind:value={query}
+						maxlength={remotePanel ? 200 : undefined}
 						placeholder={placeholder ?? $t('activities.searchStudent')}
 
 						{disabled}
@@ -208,7 +220,7 @@
 				</div>
 			</div>
 			<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
-				{#if students === undefined && pickerState.loading}
+				{#if remotePanel?.loading || (students === undefined && pickerState.loading)}
 					<div class="flex items-center justify-center py-10" role="status">
 						<LoaderCircle class="h-5 w-5 animate-spin text-primary" />
 					</div>

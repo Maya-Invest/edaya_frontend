@@ -262,6 +262,18 @@ export async function loadClassReportCardResultsData(
 	return mapReportCardResults(resultsRaw ?? [], subjectsSources);
 }
 
+export async function loadClassReportDetail(client: SchoolClient, id: string, classId: string, periodId: string) {
+	const raw = await client.entities.results.get(id);
+	if (raw.classGroupId !== classId || raw.periodId !== periodId)
+		return undefined;
+	const sources = await fetchClassSubjectsSources(client, classId).catch((error: unknown) => {
+		if (!(error instanceof ApiError) || error.status !== 403)
+			throw error;
+		return { classSubjectsRaw: [], subjectsRaw: [], subjectMattersRaw: [], staffAssignmentsRaw: [], staffMembersRaw: [], teachersRaw: [], teacherAssignmentsRaw: [] };
+	});
+	return mapReportCardResults([raw], sources)[0];
+}
+
 /** Student/year results may refer to an earlier class after a transfer. */
 export async function loadStudentYearReportCardsData(client: SchoolClient, studentId: string, yearId: string, periodIds: string[]) {
 	const raw = (await loadStudentYearReportResults(client, studentId, periodIds))

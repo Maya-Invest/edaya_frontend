@@ -13,8 +13,11 @@
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { hasPermission } from '$lib/permissions';
 	import SubjectEnrollmentModal from '$lib/smart-components/subject-enrollment/SubjectEnrollmentModal.svelte';
-	import { SubjectStudentsState } from './subject-students.svelte';
+	import { getTeachingPageState } from '../../../teaching-page.svelte';
+	import { loadSubjectRosterCandidates, SubjectStudentsState } from './subject-students.svelte';
 
+	const teachingPage = getTeachingPageState();
+	const optional = $derived(Boolean(teachingPage.selected?.isOptional && teachingPage.selected?.isOffered));
 	const participationState = new SubjectStudentsState();
 	registerVersionInvalidation(participationState);
 	const id = $derived($page.params.id ?? '');
@@ -23,7 +26,7 @@
 	const modals = createUrlSyncedModals({ allowed: ['subject-roster'], getUrl: () => $page.url });
 	$effect(() => modals.hydrate());
 	const classId = $derived($page.params.classId ?? '');
-	const context = $derived(modals.active === 'subject-roster' && participationState.optional && hasPermission('ENROLLMENT_MANAGE', { classId })
+	const context = $derived(modals.active === 'subject-roster' && optional && hasPermission('ENROLLMENT_MANAGE', { classId })
 		? {
 			schoolId: academicContext.schoolScopeId,
 			academicYearId: academicContext.yearId,
@@ -31,10 +34,7 @@
 			className: academicContext.classes.find(row => row.id === classId)?.name ?? classId,
 			yearName: academicContext.years.find(row => row.id === academicContext.yearId)?.label ?? academicContext.yearId,
 			zone,
-			students: participationState.placements.filter(row => row.classGroupId === classId && row.academicYearId === academicContext.yearId && row.status === 'active' && (!row.endedAt || row.endedAt > new Date().toISOString())).map((placement) => {
-				const student = participationState.students.find(row => row.id === placement.studentId);
-				return { id: placement.studentId, name: student ? `${student.lastName} ${student.firstName}` : placement.studentId, enrollmentId: placement.id };
-			}),
+			students: [],
 			classSubjectId: id,
 			chooseStudents: true,
 		}
@@ -45,7 +45,7 @@
 		await appGoto(`${url.pathname}${url.search}`, { noScroll: true, keepFocus: true });
 	}
 </script>
-<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('participation.students')}>
+<PageQuery {query} cache={false} cacheKey={url => JSON.stringify([drawerTabRouteCacheKey(url), url.searchParams.get('rosterAt') ?? isoToZonedDateAndTime(new Date().toISOString(), zone).date])} loadingTitle={$t('participation.students')}>
 	{#snippet children(data)}
 		<DataState status={data.status} errorMessage={data.errorMessage}>
 			<div class="space-y-4">
@@ -56,9 +56,9 @@
 					<p class="font-semibold">{$t('participation.students')} · {participationState.roster?.count ?? 0}</p>
 					{#each participationState.roster?.students ?? [] as student (student.id)}<p class="rounded-collection border p-3">{student.lastName} {student.firstName}</p>{/each}
 				{/if}
-				{#if participationState.optional && hasPermission('ENROLLMENT_MANAGE', { classId: $page.params.classId })}<Button onclick={() => modals.open('subject-roster')}>{$t('participation.bulk')}</Button>{/if}
+				{#if optional && hasPermission('ENROLLMENT_MANAGE', { classId: $page.params.classId })}<Button onclick={() => modals.open('subject-roster')}>{$t('participation.bulk')}</Button>{/if}
 			</div>
 		</DataState>
 	{/snippet}
 </PageQuery>
-<SubjectEnrollmentModal {context} onClose={() => modals.close()} onSaved={() => participationState.invalidateIfStale()} />
+<SubjectEnrollmentModal {context} loadCandidates={loadSubjectRosterCandidates} onClose={() => modals.close()} onSaved={() => participationState.invalidateIfStale()} />

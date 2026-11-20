@@ -23,7 +23,7 @@
 
 	const classId = $derived($page.params.classId ?? '6a');
 	const selectedId = $derived(teachingPage.selectedId);
-	const query = $derived(teachingPage.queryListPage(classId));
+	const query = teachingPage.queryListPage();
 </script>
 
 <PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('tab.teaching')}>

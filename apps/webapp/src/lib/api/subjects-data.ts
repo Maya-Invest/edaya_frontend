@@ -121,10 +121,24 @@ export function catalogChapterNamesForSubject(subjectId: string, matters: readon
 	return catalogChaptersForSubject(subjectId, matters).map(matter => matter.name);
 }
 
+export type GradeSubjectOption = Pick<SubjectRaw, 'id' | 'gradeLevelId' | 'name'>;
+
+function catalogSubjectQuery(schoolId: string, academicYearId?: string) {
+	return { ...schoolSubjectsCatalogList(schoolId), ...(academicYearId ? { academicYearId } : {}) };
+}
+
+export async function fetchGradeSubjectOptions(client: SchoolClient, schoolId: string, academicYearId?: string, signal?: AbortSignal): Promise<GradeSubjectOption[]> {
+	const subjects = await safeOptionalEntityList(() => listAllEntityPages(
+		query => client.entities.subjects.list(query),
+		{ baseQuery: catalogSubjectQuery(schoolId, academicYearId), signal },
+	));
+	return subjects.map(({ id, gradeLevelId, name }) => ({ id, gradeLevelId, name }));
+}
+
 export async function fetchCatalogSubjectsSources(client: SchoolClient, schoolId: string, academicYearId?: string): Promise<CatalogSubjectsSources> {
 	if (!schoolId)
 		return { classSubjectsRaw: [], subjectsRaw: [], subjectMattersRaw: [] };
-	const subjectsRaw = await listPages(query => client.entities.subjects.list(query), { ...schoolSubjectsCatalogList(schoolId), ...(academicYearId ? { academicYearId } : {}) });
+	const subjectsRaw = await listPages(query => client.entities.subjects.list(query), catalogSubjectQuery(schoolId, academicYearId));
 	const ids = subjectsRaw.map(subject => subject.id);
 	const [classSubjectsRaw, subjectMattersRaw, categories] = await Promise.all([
 		listPagesForIds(ids, query => client.entities.classSubjects.list(query), 'subjectId'),
@@ -338,6 +352,23 @@ export function mapAllClassSubjects(sources: ClassSubjectsSources): Subject[] {
 export async function loadClassSubjects(client: SchoolClient, classGroupId: string): Promise<Subject[]> {
 	const sources = await fetchClassSubjectsSources(client, classGroupId);
 	return mapClassSubjects(classGroupId, sources);
+}
+
+/** Compact labels shared by the teacher assignment, evaluation and feedback drawers. */
+export async function loadClassSubjectLabels(client: SchoolClient, classSubjectIds: readonly string[]) {
+	const offerings = await listAllEntityPagesByIds(
+		query => safeOptionalEntityList(() => client.entities.classSubjects.list(query)),
+		classSubjectIds,
+	);
+	const subjects = await listAllEntityPagesByIds(
+		query => safeOptionalEntityList(() => client.entities.subjects.list(query)),
+		offerings.map(row => row.subjectId),
+	);
+	const names = new Map(subjects.map(row => [row.id, row.name]));
+	return offerings.flatMap((row) => {
+		const name = names.get(row.subjectId);
+		return name === undefined ? [] : [{ id: row.id, classId: row.classGroupId, name }];
+	});
 }
 
 export async function loadClassSubjectsByIds(

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Activity, PlanningEvent, Subject } from '$lib/types/school';
+	import type { ActivityOption } from '$lib/api/activities-data';
+	import type { PlanningEvent, Subject } from '$lib/types/school';
 
 	import type { NewSessionStep } from '../planning-surface';
 	import { afterNavigate } from '$app/navigation';
@@ -38,7 +39,7 @@
 		classId: string;
 		weekStart: Date;
 		subjects: Subject[];
-		activities: Activity[];
+		activities: ActivityOption[];
 		open?: boolean;
 		step: NewSessionStep;
 		onOpen?: () => void;

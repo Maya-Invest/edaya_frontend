@@ -19,21 +19,21 @@
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
-	import { readClassStudentListFilters } from '$lib/list/list-url-filters';
 	import { readListView, writeListView } from '$lib/list/list-view-url';
-	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import StudentSubjectEnrollmentActions from '$lib/smart-components/subject-enrollment/StudentSubjectEnrollmentActions.svelte';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import StudentCreateModal from '../../../../school/students/components/StudentCreateModal.svelte';
 	import { getClassStudentsPageState } from '../class-students-page.svelte';
+	import { ClassRosterExport } from '../lib/class-roster-export';
 
 	const { classId, onSelect, selectedId }: {
 		classId: string;
@@ -43,8 +43,7 @@
 	const classStudentsPage = getClassStudentsPageState();
 	const selection = classStudentsPage.selection;
 	const currentClass = $derived(classStudentsPage.currentClass);
-	const filtered = $derived(classStudentsPage.visibleStudents);
-	const infinite = useInfiniteList(() => filtered, 30);
+	const students = $derived(classStudentsPage.students);
 	const statusStyle: Record<Student['status'], string> = {
 		graduated: 'bg-secondary text-foreground/70',
 		active: 'bg-secondary text-foreground/70',
@@ -62,28 +61,38 @@
 		label: key === 'all' ? $t('filter.all') : $t(`studentStatus.${key}`),
 	})));
 	const view = $derived(readListView($page.url));
+	const rosterExport = new ClassRosterExport();
+	let exporting = $state(false);
 	async function exportRosterAndIdCards() {
-		await classStudentsPage.performRequestDocumentIssuance({
-			templateKey: 'class-roster.v1',
-			sourceId: classId,
-			classGroupId: classId,
-			openWhenReady: false,
-			successMessage: get(t)('documents.toastRequested'),
-		});
-		const students = classStudentsPage.visibleStudents;
-		if (students.length === 0) {
+		if (exporting)
 			return;
+		exporting = true;
+		try {
+			const selection = await classStudentsPage.matchingMemberIds();
+			const locale = get(lang);
+			const successMessage = get(t)('documents.toastRequested');
+			const remaining = await rosterExport.request({ ...selection, key: JSON.stringify([selection.key, locale]), classId }, {
+				roster: async requestId => Boolean(await classStudentsPage.performRequestDocumentIssuance({
+					requestId,
+					locale,
+					templateKey: 'class-roster.v1',
+					sourceId: classId,
+					classGroupId: classId,
+					openWhenReady: false,
+					successMessage,
+				})),
+				cards: items => classStudentsPage.performRequestDocumentIssuanceBatch({ locale, templateKey: 'student-id-card.v1', items, successMessage }),
+			});
+			if (remaining)
+				toast.error(get(t)('documents.rosterCardFailures', { n: remaining }));
 		}
-		await classStudentsPage.performRequestDocumentIssuanceBatch({
-			templateKey: 'student-id-card.v1',
-			items: students.map(student => ({
-				sourceId: student.id,
-				requestId: crypto.randomUUID(),
-				studentId: student.id,
-				classGroupId: classId,
-			})),
-			successMessage: get(t)('documents.toastRequested'),
-		});
+		catch (error) {
+			if (!(error instanceof DOMException && error.name === 'AbortError'))
+				toast.error(get(t)('documents.toastFailed', { code: error instanceof Error ? error.message : String(error) }));
+		}
+		finally {
+			exporting = false;
+		}
 	}
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
@@ -103,18 +112,6 @@
 		}
 	});
 	const createOpen = bindUrlModal(modals, 'create');
-	const initialFilters = $derived(readClassStudentListFilters($page.url));
-	$effect(() => {
-		classStudentsPage.filters.hydrate(initialFilters);
-	});
-	$effect(() => {
-		if (!classStudentsPage.filters.ready) {
-			return;
-		}
-		void classStudentsPage.filters.values.status;
-		void classStudentsPage.filters.values.q;
-		classStudentsPage.filters.scheduleSync();
-	});
 	function handleCreated(studentId: string) {
 		const path = detailHref.classStudent(classId, studentId);
 		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
@@ -139,23 +136,23 @@
 		filterCount={[classStudentsPage.filters.values.status].filter(value => value !== 'all').length}
 		onResetFilters={() => classStudentsPage.filters.patchImmediate({ status: 'all' })}
 		eyebrow={$t('students.roster')}
-		title={$t('students.enrolled', { n: filtered.length })}
+		title={$t('students.enrolled', { n: classStudentsPage.totalStudents })}
 		description={currentClass ? `${currentClass.name}${currentClass.level ? ` · ${currentClass.level}` : ''}` : undefined}
 	>
 		{#snippet search()}
 			<ListSearchField onCommit={() => classStudentsPage.filters.syncNow()}
-				bind:value={classStudentsPage.filters.values.q}
-				oninput={() => classStudentsPage.filters.scheduleSync()}
+				value={classStudentsPage.filters.values.q}
+				oninput={event => classStudentsPage.filters.patch({ q: event.currentTarget.value })}
 				placeholder={$t('common.searchStudent')}
 			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterPanel activeCount={statusFilterActive} title={$t('students.statusFilter')}>
 				<FilterSelect
-					bind:value={classStudentsPage.filters.values.status}
+					value={classStudentsPage.filters.values.status}
 					class="h-9 w-full rounded-md text-xs"
 					options={statusFilterOptions}
-					onchange={() => classStudentsPage.filters.scheduleSync()}
+					onchange={value => classStudentsPage.filters.patchImmediate({ status: value })}
 				/>
 			</FilterPanel>
 		{/snippet}
@@ -204,11 +201,11 @@
 	{#snippet studentField(student: Student, key: string)}
 		{#if key === 'name'}
 			<div class="flex min-w-0 items-center gap-3">
-				<PersonAvatar name={student.name} initials={student.initials} photoUrl={student.photoUrl} size="list" />
+				<PersonAvatar name={student.name} initials={student.initials} photoUrl={student.photoUrl} studentPortrait={student.photoAttachmentId ? { studentId: student.id, attachmentId: student.photoAttachmentId } : undefined} size="list" />
 				<div class="min-w-0"><p class="truncate text-sm font-medium">{student.name}</p></div>
 			</div>
 		{:else if key === 'average'}
-			<span class="font-sans font-semibold tabular-nums">{student.average.toFixed(2)} <span class="text-xs text-muted-foreground">/ 20</span></span>
+			{#if student.gradesAvailable === false}<span class="text-sm text-muted-foreground">—</span>{:else}<span class="font-sans font-semibold tabular-nums">{student.average.toFixed(2)} <span class="text-xs text-muted-foreground">/ 20</span></span>{/if}
 		{:else if key === 'attendance'}
 			{#if student.attendance === null}<span class="text-sm text-muted-foreground">—</span>{:else}<div class="h-1.5 overflow-hidden rounded-full bg-secondary"><div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div></div><p class="mt-1 text-xs tabular-nums text-muted-foreground">{student.attendance}%</p>{/if}
 		{:else if key === 'status'}
@@ -216,18 +213,18 @@
 		{/if}
 	{/snippet}
 	{#if view === 'table'}
-		<ListEntityTable listKey="ClassStudentsList" {columns} rows={infinite.visible} highlightId={selectedId}
+		<ListEntityTable listKey="ClassStudentsList" {columns} rows={students} highlightId={selectedId}
 			selectionMode={selection.selectionMode} selectedIds={selection.selectedIds}
 			onToggleSelected={(id, checked) => selection.toggleSelected(id, checked)}
-			onToggleAllVisible={checked => selection.toggleVisible(infinite.visible, checked)} allVisibleSelected={selection.allVisibleSelected(infinite.visible)}
-			hasMore={infinite.hasMore} total={infinite.total} visibleCount={infinite.visible.length} onLoadMore={infinite.loadMore}
+			onToggleAllVisible={checked => selection.toggleVisible(students, checked)} allVisibleSelected={selection.allVisibleSelected(students)}
+			hasMore={classStudentsPage.hasMore} total={classStudentsPage.totalStudents} visibleCount={students.length} loadingMore={classStudentsPage.listLoadingMore} onLoadMore={() => classStudentsPage.loadMore()}
 			onRowClick={onSelect}>
 			{#snippet cell(student, column)}{@render studentField(student, column.key)}{/snippet}
 		</ListEntityTable>
 	{:else}
-		<ListEntityCards {columns} rows={infinite.visible} highlightId={selectedId}
+		<ListEntityCards {columns} rows={students} highlightId={selectedId}
 			selectionMode={selection.selectionMode} selectedIds={selection.selectedIds} onToggleSelected={(id, checked) => selection.toggleSelected(id, checked)}
-			hasMore={infinite.hasMore} total={infinite.total} visibleCount={infinite.visible.length} onLoadMore={infinite.loadMore}
+			hasMore={classStudentsPage.hasMore} total={classStudentsPage.totalStudents} visibleCount={students.length} loadingMore={classStudentsPage.listLoadingMore} onLoadMore={() => classStudentsPage.loadMore()}
 			onRowClick={onSelect}>
 			{#snippet field(student, key)}{@render studentField(student, key)}{/snippet}
 		</ListEntityCards>
