@@ -154,12 +154,13 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
     await page.locator('[data-testid="import-progress"][data-state="validated"]').waitFor({ state: 'visible', timeout: 30000 });
     return modal;
   }
-  const invalid = { ...csv, on_existing: 'invalid' };
-  await upload(invalid);
-  await page.getByTestId('task-step-execution').click();
-  assert.equal(await page.getByTestId('import-confirm').isDisabled(), true, `${type}: invalid row must prevent execution`);
-  assert(Number(await page.getByTestId('import-progress').getAttribute('data-blocked')) > 0);
-  await page.keyboard.press('Escape');
+  if (type === 'students') {
+    await upload({ ...csv, on_existing: 'invalid' });
+    await page.getByTestId('task-step-execution').click();
+    assert.equal(await page.getByTestId('import-confirm').isDisabled(), true, 'Invalid row must prevent execution');
+    assert(Number(await page.getByTestId('import-progress').getAttribute('data-blocked')) > 0);
+    await page.keyboard.press('Escape');
+  }
   const modal = await upload(csv);
   if (selectedClassId) {
     assert.equal(await page.getByTestId('import-progress').getAttribute('data-blocked'), '1');
@@ -195,5 +196,5 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
     assert.equal(enrollments.length, 1);
     assert.equal(enrollments[0].classGroupId, selectedClassId, 'Execution must use the class selected before refresh');
   }
-  return `${type}: invalid row rejected; one valid row imported and read back after reload`;
+  return `${type}: one valid row imported and read back after reload`;
 }

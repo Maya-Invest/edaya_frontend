@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
 import { waitForResolvedAcademicYearId } from '../../scripts/qa-harness-ui';
+import { QA_TEMPLATE_MATRIX_RUNNABLE } from '../../scripts/qa-template-matrix';
 import { emptyEntities } from '../../scripts/qa-matrix-support';
 import { apiFetch } from './setup/journey-api';
 import { exerciseImportProgress } from './support/import-progress';
@@ -39,7 +40,11 @@ try {
 	const offerings = await request('entities/class-subjects/list', { classGroupId: classId }) as { id: string }[];
 	assert(offerings.length, 'Import fixture requires configured subjects for the selected grade');
 	const entities = { ...emptyEntities(), classId, teachingId: offerings[0].id };
-	const types = process.env.EDAYA_IMPORT_PROGRESS_ONLY === 'true' ? ['students'] as const : Object.keys(IMPORT_SCENARIOS) as (keyof typeof IMPORT_SCENARIOS)[];
+	const provisionedActions = new Set(QA_TEMPLATE_MATRIX_RUNNABLE.map(row => row.action));
+	const types = process.env.EDAYA_IMPORT_PROGRESS_ONLY === 'true'
+		? ['students'] as const
+		: (Object.keys(IMPORT_SCENARIOS) as (keyof typeof IMPORT_SCENARIOS)[])
+			.filter(type => type === 'students' || !provisionedActions.has(IMPORT_SCENARIOS[type]));
 	for (const type of types) {
 		console.log(await exerciseImport(page, base, type, entities));
 	}

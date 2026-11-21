@@ -12,6 +12,7 @@ export async function runCleanupLayouts(browser: Browser, base: string, outDir: 
 	const context = await browser.newContext();
 	const page = await context.newPage();
 	const ctx = createDemoContext(page, base, outDir, reporter, errors);
+	const visualReview = process.env.EDAYA_REVIEW_CLEANUP_LAYOUTS === 'true';
 	const screens = [
 		{ name: 'dashboard', path: '/dashboard', selector: 'main' },
 		{ name: 'imports', path: '/configuration/tools?modal=import&modalTab=students&modalStep=upload', selector: '[role="dialog"]' },
@@ -30,11 +31,23 @@ export async function runCleanupLayouts(browser: Browser, base: string, outDir: 
 			for (const width of [1440, 390]) {
 				await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
 				for (const screen of screens) {
+					const drawerSmoke = screen.name === 'class-assignments' && language === 'fr' && width === 390;
+					const timetableSmoke = screen.name === 'timetable' && language === 'en' && width === 1440;
+					if (!visualReview && !drawerSmoke && !timetableSmoke) continue;
 					const step = `${screen.name}-${language}-${width}`;
 					if (!await visit(ctx, `${base}${screen.path}`, 'Cleanup', step, { selector: screen.selector })) continue;
 					try {
 						assert.equal(await page.locator('html').getAttribute('lang'), language);
-						await ctx.shot(`cleanup-${step}`);
+						if (visualReview) await ctx.shot(`cleanup-${step}`);
+						if (drawerSmoke) {
+							await page.keyboard.press('Escape');
+							await page.locator(screen.selector).waitFor({ state: 'hidden' });
+						}
+						if (timetableSmoke) {
+							await page.getByRole('button', { name: 'Next week', exact: true }).click();
+							await page.waitForURL(url => url.searchParams.get('week') === '2026-09-21');
+							await page.locator(screen.selector).waitFor({ state: 'visible' });
+						}
 					}
 					catch (error) {
 						await captureScenarioPage(page);

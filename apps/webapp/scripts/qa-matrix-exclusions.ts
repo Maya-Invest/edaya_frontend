@@ -2,8 +2,13 @@
  * Matrix ownership boundaries: Auth/Onboarding execute in their dedicated suite.
  * Development-only routes remain explicit exclusions; tools/imports execute here.
  */
+import features from '../tests/integration/features.json';
 import type { QaModule, QaTemplateRow } from './qa-template-matrix.manual';
-import { isNamespaceRootPath } from './qa-route-catalog';
+import { isNamespaceRootPath, REDIRECT_SMOKE_ACTION } from './qa-route-catalog';
+
+export const loaderRedirectPaths = new Set(features
+	.filter(feature => feature.coverage === 'loader')
+	.map(feature => matrixEndpointPath(feature.endpoint)));
 
 /** Whole modules tested manually. */
 export const ALWAYS_EXCLUDED_MODULES: readonly QaModule[] = [
@@ -65,6 +70,7 @@ export function isExcludedMatrixRow(
 	}
 
 	const path = matrixEndpointPath(row.endpoint);
+	if (row.action === REDIRECT_SMOKE_ACTION && loaderRedirectPaths.has(path)) return true;
 	if (path !== '(app)' && path !== '(multi-comptes)' && isExcludedEndpointPath(path)) {
 		return true;
 	}

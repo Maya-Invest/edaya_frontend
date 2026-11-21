@@ -3,7 +3,7 @@ import { mock } from 'bun:test';
 function resolvePath(route: string, params: Record<string, string | undefined> = {}): string {
 	return route
 		.replace(/\/\([^)]+\)/g, '')
-		.replace(/\[\[[^\]]*\]\]/g, '')
+		.replace(/\/\[\[([^\]]+)\]\]/g, (_, key: string) => params[key] ? `/${params[key]}` : '')
 		.replace(/\[([^\]]+)\]/g, (_, key: string) => params[key] ?? '');
 }
 

@@ -22,6 +22,7 @@ import {
 import {
 	filterRunnableMatrix,
 	isExcludedCatalogPath,
+	loaderRedirectPaths,
 } from '../../scripts/qa-matrix-exclusions';
 import { QA_TEMPLATE_MATRIX } from '../../scripts/qa-template-matrix';
 import { QA_TEMPLATE_MATRIX_MANUAL } from '../../scripts/qa-template-matrix.manual';
@@ -36,6 +37,7 @@ import { ONBOARDING_SCENARIOS } from '../integration/onboarding/scenarios';
 const ONBOARDING_SCENE_IDS = ONBOARDING_SCENARIOS.map(scenario => scenario.id);
 
 const RUNNABLE_MATRIX = filterRunnableMatrix(QA_TEMPLATE_MATRIX);
+const LOADER_REDIRECTS = new Set([...loaderRedirectPaths].map(normalizeRoutePattern));
 
 function classNavPath(href: string): string {
 	return `/classes/[classId]/${href}`;
@@ -68,7 +70,7 @@ function hasModalDeepLink(parentRoute: string, modal: string): boolean {
 
 function hasRedirectSmoke(legacyPath: string): boolean {
 	const normalized = normalizeRoutePattern(legacyPath);
-	return RUNNABLE_MATRIX.some(
+	return LOADER_REDIRECTS.has(normalized) || RUNNABLE_MATRIX.some(
 		row => matrixPathForRow(row.endpoint) === normalized && row.action === REDIRECT_SMOKE_ACTION,
 	);
 }
