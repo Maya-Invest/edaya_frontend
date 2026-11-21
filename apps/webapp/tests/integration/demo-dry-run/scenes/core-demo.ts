@@ -31,7 +31,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	}
 
 	await visit(ctx, `${base}/dashboard`, 'D0', '0.2 Dashboard / school context', {
-		expectText: /tableau|dashboard|directeur|cocody/i,
+		expectText: /Cocody/i,
 	});
 	await selectAcademicPeriod(ctx);
 	await visit(ctx, `${base}/school/students`, 'D0', '0.3 Sidebar school students');

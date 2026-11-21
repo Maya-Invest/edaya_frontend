@@ -86,8 +86,9 @@ async function verifyVisitExpectations(
 	const { page, reporter, shot, pageErrors } = ctx;
 
 	await waitForAppShell(ctx);
-	await waitForResolvedAcademicYearId(page);
+	// The sidebar can appear before the dashboard has loaded the school's academic year.
 	await waitForLoadingHidden(ctx);
+	await waitForResolvedAcademicYearId(page);
 
 	const navigation = await waitForPathStable(ctx, expectedPath);
 	if (!navigation.ok) {
