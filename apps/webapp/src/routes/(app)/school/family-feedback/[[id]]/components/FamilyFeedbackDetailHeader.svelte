@@ -7,10 +7,8 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import {
 		FAMILY_FEEDBACK_CAMPAIGN_MANAGE_PERMISSION,
@@ -26,6 +24,8 @@
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import FamilyFeedbackFormModal from '../../components/FamilyFeedbackFormModal.svelte';
+	import FamilyFeedbackPickerFields from '../../components/FamilyFeedbackPickerFields.svelte';
+	import FamilyFeedbackSelect from '../../components/FamilyFeedbackSelect.svelte';
 	import { getFamilyFeedbackPageState } from '../../family-feedback-page.svelte';
 	import { familyFeedbackActionAvailable, familyFeedbackActionBlocker } from '../../lib/family-feedback-actions';
 
@@ -74,7 +74,7 @@
 	const title = $derived(familyFeedbackPage.campaignTitle(live));
 	const periodName = $derived(academicContext.periods.find(period => period.id === live.academicPeriodId)?.label ?? live.academicPeriodId);
 	const moderatorName = $derived.by(() => {
-		const name = familyFeedbackPage.staff.find(entry => entry.id === live.moderatorStaffId)?.name;
+		const name = live.moderatorName;
 		return name ?? $t('familyFeedback.noModerator');
 	});
 
@@ -259,7 +259,7 @@
 	description={$t('familyFeedback.assignModeratorDescription')}
 	submitLabel={$t('common.save')}
 	busy={actionBusy}
-	submitDisabled={!moderatorStaffId}
+	submitDisabled={familyFeedbackPage.optionsStatus !== 'ready' || !moderatorStaffId}
 	onSubmit={() => runAction(
 		() => familyFeedbackPage.assignModerator({
 			id: live.id,
@@ -269,23 +269,11 @@
 		assignOpen,
 	)}
 >
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('familyFeedback.moderator')}
-		</Label>
-		<Select.Root type="single" value={moderatorStaffId} onValueChange={v => v && (moderatorStaffId = v)}>
-			<Select.Trigger>
-				<Select.Value placeholder={$t('familyFeedback.moderator')}>
-					{familyFeedbackPage.staff.find(staff => staff.id === moderatorStaffId)?.name ?? moderatorName}
-				</Select.Value>
-			</Select.Trigger>
-			<Select.Content class="z-[100]">
-				{#each familyFeedbackPage.staff as staff (staff.id)}
-					<Select.Item value={staff.id} label={staff.name}>{staff.name}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-	</div>
+	{#if assignOpen.open}
+		<FamilyFeedbackPickerFields>
+			<FamilyFeedbackSelect picker="moderators" label={$t('familyFeedback.moderator')} fallback={moderatorName} bind:value={moderatorStaffId} />
+		</FamilyFeedbackPickerFields>
+	{/if}
 </FormModal>
 
 <FormModal

@@ -4,7 +4,7 @@ import type { FamilyFeedbackAction } from './family-feedback-actions';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
 	createFamilyFeedbackCampaign,
-	getFamilyFeedbackCampaign,
+	loadStaffFeedbackCampaigns,
 	previewFamilyFeedbackAudience,
 	runFamilyFeedbackCampaignCommand,
 } from '$lib/api/family-feedback-data';
@@ -41,6 +41,7 @@ export async function createFamilyFeedbackCampaignOnPage(
 		return null;
 	}
 
+	const creationScope = state.optionScope;
 	const result = await runFamilyFeedbackRouteMutation({
 		request: () => createFamilyFeedbackCampaign(client(), {
 			academicYearId,
@@ -52,7 +53,14 @@ export async function createFamilyFeedbackCampaignOnPage(
 		}),
 		successMessage: input.successMessage,
 		onSuccess: (campaign) => {
-			state.appendCampaign(campaign);
+			if (creationScope !== state.optionScope)
+				return;
+			state.appendCampaign({
+				...campaign,
+				assignment: state.findOption('assignments', campaign.teacherAssignmentId)?.display,
+				moderatorName: state.findOption('moderators', campaign.moderatorStaffId)?.label,
+			});
+			void state.refreshSlice().catch(() => {});
 		},
 	});
 	return result?.id ?? null;
@@ -95,7 +103,7 @@ export async function assignFamilyFeedbackModeratorOnPage(
 		),
 		successMessage: input.successMessage,
 		onSuccess: (campaign) => {
-			state.patchCampaign(campaign.id, campaign);
+			state.patchCampaign(campaign.id, { ...campaign, moderatorName: state.findOption('moderators', campaign.moderatorStaffId)?.label });
 		},
 	});
 	return Boolean(result);
@@ -142,7 +150,7 @@ async function runIdCommand(
 		onConflict: async () => {
 			if (scope() !== capturedScope)
 				return;
-			const campaign = await getFamilyFeedbackCampaign(selectedClient, id);
+			const [campaign] = await loadStaffFeedbackCampaigns(selectedClient, id);
 			if (campaign && scope() === capturedScope)
 				state.patchCampaign(id, campaign);
 		},

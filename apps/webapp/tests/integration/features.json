@@ -11,7 +11,8 @@
     "feature": "web.configuration",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/other/grade-scales",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.messaging.1",
@@ -1965,42 +1966,48 @@
     "feature": "web.school.students.id",
     "module": "École",
     "endpoint": "http://localhost:5173/school/students/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0288",
     "feature": "web.school.staff.id",
     "module": "École",
     "endpoint": "http://localhost:5173/school/staff/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0289",
     "feature": "web.school.teachers.id",
     "module": "École",
     "endpoint": "http://localhost:5173/school/teachers/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0290",
     "feature": "web.school.activities.id",
     "module": "École",
     "endpoint": "http://localhost:5173/school/activities/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0291",
     "feature": "web.configuration.classes.id",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/structure/classes/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0292",
     "feature": "web.configuration.subjects.id",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/structure/subjects/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0293",
@@ -2014,56 +2021,64 @@
     "feature": "web.classes.classId.teaching.id",
     "module": "Classes",
     "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0295",
     "feature": "web.classes.classId.students.id",
     "module": "Classes",
     "endpoint": "http://localhost:5173/classes/[classId]/students/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0296",
     "feature": "web.classes.classId.evaluations.id",
     "module": "Classes",
     "endpoint": "http://localhost:5173/classes/[classId]/evaluations/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0297",
     "feature": "web.classes.classId.subjects.id",
     "module": "Classes",
     "endpoint": "http://localhost:5173/classes/[classId]/subjects/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0298",
     "feature": "web.classes.classId.homework.id",
     "module": "Classes",
     "endpoint": "http://localhost:5173/classes/[classId]/homework/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0299",
     "feature": "web.configuration.staff.id",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/staff/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0300",
     "feature": "web.configuration.roles.role",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/roles/[role]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0301",
     "feature": "web.configuration.subjects.level.level",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/structure/subjects/level/[level]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0302",
@@ -2693,7 +2708,8 @@
     "feature": "web.school.teacher.assignments",
     "module": "École",
     "endpoint": "http://localhost:5173/school/teacher-assignments",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0399",
@@ -2714,28 +2730,32 @@
     "feature": "web.app",
     "module": "Configuration",
     "endpoint": "/configuration/structure",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0402",
     "feature": "web.app",
     "module": "Configuration",
     "endpoint": "/configuration/subjects",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0403",
     "feature": "web.app",
     "module": "Configuration",
     "endpoint": "/configuration/classes",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0404",
     "feature": "web.app",
     "module": "Configuration",
     "endpoint": "/configuration/grade-levels",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0405",
@@ -2770,21 +2790,24 @@
     "feature": "web.school.corrections",
     "module": "École",
     "endpoint": "http://localhost:5173/school/marks-review",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.scenario.0050",
     "feature": "web.school.staff.id.assignments",
     "module": "École",
     "endpoint": "http://localhost:5173/school/staff/[id]/assignments",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.configuration.report-cards.redirect",
     "feature": "web.configuration",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/report-cards/[id]",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.configuration.permission-profiles.detail.navigation",
@@ -2833,7 +2856,8 @@
     "feature": "web.finance",
     "module": "Finance",
     "endpoint": "http://localhost:5173/finance/reconciliation",
-    "action": "Redirect — cible attendue"
+    "action": "Redirect — cible attendue",
+    "coverage": "loader"
   },
   {
     "id": "web.finance.restructure.7",

@@ -19,7 +19,15 @@ export const FAMILY_FEEDBACK_QUESTION_IDS = [
 
 export type FamilyFeedbackQuestionId = (typeof FAMILY_FEEDBACK_QUESTION_IDS)[number];
 
+export interface FamilyFeedbackAssignmentLabel {
+	teacherName?: string;
+	subjectName?: string;
+	classGroupId?: string | null;
+}
+
 export interface FamilyFeedbackCampaign {
+	assignment?: FamilyFeedbackAssignmentLabel;
+	moderatorName?: string;
 	id: string;
 	status: FamilyFeedbackCampaignStatus;
 	academicYearId: string;
@@ -79,13 +87,19 @@ export interface FamilyFeedbackAggregate {
 	themes?: string;
 }
 
-export interface FamilyFeedbackAssignmentOption {
+export type FeedbackPicker = 'assignments' | 'moderators';
+
+export interface FeedbackOption {
 	id: string;
-	teacherId: string;
-	classSubjectId?: string | null;
-	classGroupId?: string | null;
-	subjectId?: string | null;
 	label: string;
+	display?: FamilyFeedbackAssignmentLabel;
+}
+
+export interface FeedbackOptionsPage {
+	assignments: FeedbackOption[];
+	moderators: FeedbackOption[];
+	nextAssignment: string | null;
+	nextModerator: string | null;
 }
 
 export function isFamilyFeedbackStatus(value: string): value is FamilyFeedbackCampaignStatus {

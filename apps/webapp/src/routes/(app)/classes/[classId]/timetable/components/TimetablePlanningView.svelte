@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Activity, PlanningEvent, SchoolYearEvent, Student, Subject } from '$lib/types/school';
+	import type { ActivityOption } from '$lib/api/activities-data';
+	import type { PlanningEvent, SchoolYearEvent, Student, Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 
@@ -46,7 +47,7 @@
 		events: PlanningEvent[];
 		students: Student[];
 		subjects: Subject[];
-		activities: Activity[];
+		activities: ActivityOption[];
 		schoolYearEvents?: SchoolYearEvent[];
 		focusDate?: string;
 		expandCalendar?: boolean;

@@ -1,4 +1,5 @@
-import type { AnnouncementTarget, AnnouncementTargetKind, ClassNode, GradeLevel, Guardian, StaffMember, Student } from '$lib/types/school';
+import type { AnnouncementPeople } from '$lib/api/announcements-data';
+import type { AnnouncementTarget, AnnouncementTargetKind, ClassNode, GradeLevel } from '$lib/types/school';
 
 const BROADCAST_TARGET_KINDS = new Set<AnnouncementTargetKind>([
 	'school',
@@ -15,7 +16,7 @@ export function resolveAnnouncementTargetLabel(
 	target: AnnouncementTarget,
 	context: {
 		academic: { classes: ClassNode[]; gradeLevels: GradeLevel[] };
-		detail: { students: Student[]; guardians: Guardian[]; staff: StaffMember[] };
+		detail: AnnouncementPeople;
 		labelForKind: (kind: AnnouncementTargetKind) => string;
 	},
 ): string {
@@ -30,11 +31,11 @@ export function resolveAnnouncementTargetLabel(
 		case 'grade_level':
 			return `${base} — ${context.academic.gradeLevels.find(entry => entry.id === target.targetId)?.name ?? target.targetId}`;
 		case 'staff_member':
-			return `${base} — ${context.detail.staff.find(entry => entry.id === target.targetId)?.name ?? target.targetId}`;
+			return `${base} — ${context.detail.staff.get(target.targetId) ?? target.targetId}`;
 		case 'guardian':
-			return `${base} — ${context.detail.guardians.find(entry => entry.id === target.targetId)?.name ?? target.targetId}`;
+			return `${base} — ${context.detail.guardians.get(target.targetId) ?? target.targetId}`;
 		case 'student':
-			return `${base} — ${context.detail.students.find(entry => entry.id === target.targetId)?.name ?? target.targetId}`;
+			return `${base} — ${context.detail.students.get(target.targetId) ?? target.targetId}`;
 		default:
 			return base;
 	}

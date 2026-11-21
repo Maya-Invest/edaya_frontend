@@ -16,6 +16,8 @@ import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';
 
 type Command = components['schemas']['ManageStudentSubjectEnrollmentsCommand'];
+export type LoadEnrollmentCandidates = (context: EnrollmentEditorContext) => Promise<EnrollmentEditorContext['students']>;
+
 interface Dependencies {
 	load: (studentId: string, academicYearId: string) => Promise<ParticipationData>;
 	submit: (command: Command) => Promise<components['schemas']['ManageStudentSubjectEnrollmentsResponse']>;
@@ -43,6 +45,7 @@ export class SubjectEnrollmentState {
 	loadError = $state('');
 	private touched = $state(false);
 	private generation = 0;
+	private loadCandidates?: LoadEnrollmentCandidates;
 	private identity = '';
 	private readonly replay = new EnrollmentRequest();
 	private readonly dependencies: Dependencies;
@@ -83,8 +86,9 @@ export class SubjectEnrollmentState {
 		return [...new SvelteSet(this.data.filter(row => this.selectedIds.includes(row.studentId)).flatMap(row => editorEnrollment(row, context, subjectId, new SvelteDate().toISOString())?.periods.map(period => period.periodId) ?? []))];
 	}
 
-	async open(context: EnrollmentEditorContext) {
+	async open(context: EnrollmentEditorContext, loadCandidates?: LoadEnrollmentCandidates) {
 		this.close();
+		this.loadCandidates = loadCandidates;
 		this.identity = this.dependencies.identity();
 		this.context = { ...context, students: [...context.students] };
 		this.selectedIds = context.chooseStudents ? [] : context.students.map(row => row.id);
@@ -94,6 +98,7 @@ export class SubjectEnrollmentState {
 	close() {
 		++this.generation;
 		this.context = null;
+		this.loadCandidates = undefined;
 		this.data = [];
 		this.selectedIds = [];
 		this.drafts = {};
@@ -149,6 +154,15 @@ export class SubjectEnrollmentState {
 		try {
 			if (!this.allowed)
 				throw new Error(get(t)('participation.permission'));
+			if (this.loadCandidates) {
+				const candidates = await this.loadCandidates(context);
+				if (generation !== this.generation || !this.allowed)
+					return;
+				context.students = candidates;
+				const eligible = new SvelteSet(candidates.map(row => row.id));
+				if (this.selectedIds.some(id => !eligible.has(id)))
+					throw new Error(get(t)('participation.reselect'));
+			}
 			if (!context.students.length || new SvelteSet(context.students.map(row => row.id)).size !== context.students.length)
 				throw new Error(get(t)('participation.reselect'));
 			const data: ParticipationData[] = [];

@@ -36,15 +36,14 @@ export class TeacherFamilyFeedbackTabState {
 				if (!teacherId) {
 					return {};
 				}
-				this.getPage();
 				const yearId = academicContext.yearId;
 				const campaigns = await listFamilyFeedbackCampaigns(getBrowserSchoolClient());
 				signal.throwIfAborted();
-				this.slice = {
-					teacherId,
-					campaigns: campaigns.filter(campaign =>
-						campaign.teacherId === teacherId && (!yearId || campaign.academicYearId === yearId)),
-				};
+				const matching = campaigns.filter(campaign =>
+					campaign.teacherId === teacherId && (!yearId || campaign.academicYearId === yearId));
+				await this.getPage().ensureClassSubjectsCached(matching.flatMap(row => row.classSubjectId ? [row.classSubjectId] : []), signal);
+				signal.throwIfAborted();
+				this.slice = { teacherId, campaigns: matching };
 				return {};
 			},
 			hasItems: () => true,

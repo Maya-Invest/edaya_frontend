@@ -85,13 +85,14 @@ export async function clearAcademicSelectionStorage(page: Page): Promise<void> {
 	});
 }
 
-export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000): Promise<void> {
-	await page.waitForFunction(() => {
+export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000): Promise<string> {
+	const selectedYear = await page.waitForFunction(() => {
 		const trigger = document.querySelector('[data-testid="app-shell"]') ?? document.querySelector('[data-testid="academic-year-trigger"]');
 		const schoolId = trigger?.getAttribute('data-school-id');
 		const yearId = trigger?.getAttribute('data-year-id');
-		return Boolean(schoolId && yearId && sessionStorage.getItem(`edaya:yearId:${schoolId}`) === yearId);
+		return schoolId && yearId && sessionStorage.getItem(`edaya:yearId:${schoolId}`) === yearId ? yearId : '';
 	}, undefined, { timeout });
+	return selectedYear.jsonValue();
 }
 
 /** Keep date inputs inside their min/max (academic-year bounds on calendar create). */
@@ -706,14 +707,14 @@ export async function pickDialogComboboxOption(
 ): Promise<boolean> {
 	const dialog = page.getByRole('dialog');
 	const trigger = dialog.locator('button[role="combobox"], button[aria-haspopup="listbox"]').nth(nth);
-	if (!(await trigger.isVisible({ timeout: 8_000 }).catch(() => false))) {
+	if (!(await trigger.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true, () => false))) {
 		const labels = await dialog.getByRole('button').allTextContents().catch(() => []);
 		console.log(`dialog select missing; buttons: ${labels.join(' | ') || '(none)'}`);
 		return false;
 	}
 	await trigger.click();
 	const options = page.locator('[role="option"]:visible');
-	if (!(await options.first().isVisible({ timeout: 8_000 }).catch(() => false))) {
+	if (!(await options.first().waitFor({ state: 'visible', timeout: 8_000 }).then(() => true, () => false))) {
 		const labels = await page.getByRole('option').allTextContents().catch(() => []);
 		console.log(`dialog select options: ${labels.join(' | ') || '(none)'}`);
 		await page.keyboard.press('Escape').catch(() => {});

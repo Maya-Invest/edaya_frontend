@@ -24,11 +24,14 @@ const classStudentListFiltersCodec = defineUrlFilterCodec({
 	status: { type: 'string', default: 'all' },
 });
 
+const activitySortColumns = ['roster', 'name', 'category', 'coach', 'period', 'enrolled'] as const;
+const activitySortDirections = ['asc', 'desc'] as const;
+
 const activityListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	category: { type: 'string', default: 'all' },
-	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'category', 'coach', 'period', 'enrolled'] as const },
-	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
+	sort: { type: 'enum', default: 'roster', values: activitySortColumns },
+	sortDir: { type: 'enum', default: 'asc', values: activitySortDirections },
 });
 
 const announcementListFiltersCodec = defineUrlFilterCodec({
@@ -140,7 +143,7 @@ export type ConfigSubjectListFilters = ReturnType<typeof configSubjectListFilter
 export type TeachingListFilters = ReturnType<typeof teachingListFiltersCodec.read>;
 export type PlanningListFilters = ReturnType<typeof planningListFiltersCodec.read>;
 export type ClassStudentListFilters = ReturnType<typeof classStudentListFiltersCodec.read>;
-export type ActivityListFilters = ReturnType<typeof activityListFiltersCodec.read>;
+export type ActivityListFilters = ReturnType<typeof readActivityListFilters>;
 export type AnnouncementListFilters = ReturnType<typeof announcementListFiltersCodec.read>;
 export type FamilyFeedbackListFilters = ReturnType<typeof familyFeedbackListFiltersCodec.read>;
 export type StudentListFilters = ReturnType<typeof studentListFiltersCodec.read>;
@@ -202,8 +205,9 @@ export function writeClassStudentListFilters(url: URL, filters: ClassStudentList
 	return classStudentListFiltersCodec.write(url, filters);
 }
 
-export function readActivityListFilters(url: URL): ActivityListFilters {
-	return activityListFiltersCodec.read(url);
+export function readActivityListFilters(url: URL) {
+	const values = activityListFiltersCodec.read(url);
+	return { ...values, sort: values.sort as typeof activitySortColumns[number], sortDir: values.sortDir as typeof activitySortDirections[number] };
 }
 
 export function writeActivityListFilters(url: URL, filters: ActivityListFilters): string {

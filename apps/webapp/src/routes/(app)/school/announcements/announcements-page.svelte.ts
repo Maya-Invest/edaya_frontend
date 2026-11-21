@@ -2,9 +2,12 @@ import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { AnnouncementListFilters } from '$lib/list/list-url-filters';
 import type { PageQueryRequest } from '$lib/queries/page-status';
-import type { Announcement, AnnouncementTarget, Guardian, StaffMember, Student } from '$lib/types/school';
+import type { Announcement, AnnouncementTarget } from '$lib/types/school';
+import { academicContext } from '$lib/academic/context.svelte';
+import { deliveryRecipientName, emptyAnnouncementPeople, fetchAnnouncementPeople } from '$lib/api/announcements-data';
 import { listAllEntityPages } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readAnnouncementListFilters, writeAnnouncementListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
@@ -19,19 +22,43 @@ const ANNOUNCEMENTS_VERSION_FAMILIES = ['announcements'] as const satisfies read
 const ANNOUNCEMENTS_PAGE_STATE_KEY = Symbol('announcements-page-state');
 export class AnnouncementsPageState {
     queryDeliveries = (announcementId: string, url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
-        empty: () => ({ deliveries: [] as components['schemas']['MessageDelivery'][] }),
+        empty: () => ({ deliveries: [] as (components['schemas']['MessageDelivery'] & { recipientName?: string })[] }),
         hasItems: () => true,
         load: async (signal) => {
-            const deliveries = await listAllEntityPages(query => getBrowserSchoolClient().entities.messageDeliveries.list(query), { baseQuery: { announcementId } });
-            signal?.throwIfAborted();
-            return { deliveries };
+            const client = getBrowserSchoolClient();
+            const schoolId = authSession.schoolId ?? '';
+            const yearId = academicContext.yearId;
+            const deliveries = await listAllEntityPages(query => client.entities.messageDeliveries.list(query), { baseQuery: { announcementId }, signal });
+            signal.throwIfAborted();
+            const refs = deliveries.map(row => ({ kind: row.recipientKind, id: row.recipientId }));
+            const people = await fetchAnnouncementPeople(client, schoolId, yearId, refs, signal).catch(() => emptyAnnouncementPeople());
+            signal.throwIfAborted();
+            return { deliveries: deliveries.map((row, index) => ({ ...row, recipientName: deliveryRecipientName(refs[index]!, people) })) };
         },
     }, request);
 
     announcements = $state<Announcement[]>([]);
-    guardians = $state<Guardian[]>([]);
-    staff = $state<StaffMember[]>([]);
-    students = $state<Student[]>([]);
+    targetPeople = $state.raw(emptyAnnouncementPeople());
+
+    watchTargetPeople(targets: readonly AnnouncementTarget[]) {
+        const schoolId = authSession.schoolId ?? '';
+        const yearId = academicContext.yearId;
+        const grants = authSession.grants;
+        const generation = academicContext.scopeGeneration;
+        const actor = authSession.userId;
+        const controller = new AbortController();
+        const refs = targets.map(target => ({ kind: target.targetKind, id: target.targetId }));
+        this.targetPeople = emptyAnnouncementPeople();
+        if (schoolId && grants && actor) {
+            void fetchAnnouncementPeople(getBrowserSchoolClient(), schoolId, yearId, refs, controller.signal).then((people) => {
+                if (!controller.signal.aborted && generation === academicContext.scopeGeneration && grants === authSession.grants && schoolId === authSession.schoolId && actor === authSession.userId) {
+                    this.targetPeople = people;
+                }
+            }).catch(() => { /* Optional labels fall back to the authorized target ID. */ });
+        }
+        return () => controller.abort();
+    }
+
     readonly filters: ListFiltersState<AnnouncementListFilters>;
 
     private readonly versions = new RouteVersionSnapshot(ANNOUNCEMENTS_VERSION_FAMILIES);
@@ -59,16 +86,8 @@ export class AnnouncementsPageState {
         return this.announcements.find(announcement => announcement.id === id);
     }
 
-    seed(data: {
-        announcements: Announcement[];
-        guardians: Guardian[];
-        staff: StaffMember[];
-        students: Student[];
-    }) {
+    seed(data: { announcements: Announcement[] }) {
         this.announcements = data.announcements;
-        this.guardians = data.guardians;
-        this.staff = data.staff;
-        this.students = data.students;
         this.versions.markLoaded();
     }
 
@@ -114,7 +133,7 @@ export class AnnouncementsPageState {
     }
 
     async invalidateIfStale() {
-        if (!this.versions.isStale()) {
+        if (!this.versions.hasLoaded() || !this.versions.isStale()) {
             return;
         }
         await this.refreshSlice();

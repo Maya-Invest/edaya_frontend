@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { AccountActor } from '$lib/auth/account-actor';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -23,7 +24,7 @@
 	<div class="ui-app-header-actions" data-testid="header-actions">
 		<LanguageSelector />
 		<button type="button" data-testid="user-menu" onclick={onOpenProfile} class="ui-app-header-profile control-focus" title={`${actor.name} · ${$t(actor.subtitleKey)}`} aria-label={$t('account.profile.openProfile')} aria-haspopup="dialog" aria-expanded={profileOpen}>
-			<PersonAvatar name={actor.name} initials={actor.initials} photoUrl={actor.photoUrl} size="md" />
+			<PersonAvatar name={actor.name} initials={actor.initials} photoUrl={academicContext.shellReady ? actor.photoUrl : null} size="md" />
 			<span class="ui-app-header-profile-label"><span class="text-xs font-semibold">{actor.name}</span><span class="text-xs text-muted-foreground">{$t(actor.subtitleKey)}</span></span>
 		</button>
 	</div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
+	import type { LogEntry } from '$lib/types/teaching-log';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
@@ -7,10 +8,9 @@
 	import { Paperclip } from '$lib/icons';
 	import { getTeachingPageState } from '../../../../teaching-page.svelte';
 
-	const { subject }: { subject: Subject } = $props();
+	const { subject, entries }: { subject: Subject; entries: LogEntry[] } = $props();
 
 	const teachingPage = getTeachingPageState();
-	const entries = $derived(teachingPage.logEntriesForSubject(subject));
 	const classId = $derived(subject.classId);
 </script>
 

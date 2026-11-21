@@ -1,59 +1,27 @@
-import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import type { ClassNode, Student } from '$lib/types/school';
-import type { StudentPhotoSubmission } from '../../../school/students/lib/student-detail-host';
-import type { ClassStudentsPageSlice } from './lib/class-students-helpers';
+import type { DirectoryQuery } from '../../../school/students/lib/directory-page';
 import { academicContext } from '$lib/academic/context.svelte';
 import { requestDocumentIssuanceMutation, requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
-import { fetchStudentById } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
-import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 import { readClassStudentListFilters, writeClassStudentListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
-import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
-import {
-	loadPendingStudentPhotoReviews,
-	pendingStudentPhotoFor,
-} from '../../../school/students/lib/student-detail-host';
-import {
-	classStudentDetailIdFromUrl,
-	classStudentsClassIdFromUrl,
-	emptyClassStudentsSlice,
-	filterClassStudents,
-} from './lib/class-students-helpers';
+import { StudentDirectoryState } from '../../../school/students/lib/student-directory-state.svelte';
+import { classStudentDetailIdFromUrl, classStudentsClassIdFromUrl } from './lib/class-students-helpers';
 import { createClassStudentOnPage } from './lib/class-students-list-mutations';
-import {
-	ensureClassStudentDrawerSelection,
-	loadClassStudentsSlice,
-	queryClassStudentsListPage,
-} from './lib/class-students-queries';
-
-const CLASS_STUDENTS_VERSION_FAMILIES = ['students', 'guardians', 'enrollments'] as const satisfies readonly EntityVersionKey[];
+import { queryClassStudentsListPage } from './lib/class-students-queries';
 
 const CLASS_STUDENTS_PAGE_STATE_KEY = Symbol('class-students-page-state');
 
-export type { ClassStudentsPageSlice };
-
-export class ClassStudentsPageState {
-	readonly selection = new ListSelectionState<Student>();
-
-	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
-
-	performRequestDocumentIssuanceBatch = (...args: Parameters<typeof requestDocumentIssuanceBatchMutation>) => requestDocumentIssuanceBatchMutation(...args);
-
-	students = $state<Student[]>([]);
-	currentClass = $state<ClassNode | undefined>(undefined);
-	classId = $state<string | null>(null);
-	selectedResolving = $state(false);
-	pendingPhotoSubmissions = $state<StudentPhotoSubmission[]>([]);
-
-	private readonly versions = new RouteVersionSnapshot(CLASS_STUDENTS_VERSION_FAMILIES);
+export class ClassStudentsPageState extends StudentDirectoryState {
+	private readonly exportController = new AbortController();
+	performRequestDocumentIssuance = requestDocumentIssuanceMutation;
+	performRequestDocumentIssuanceBatch = requestDocumentIssuanceBatchMutation;
 
 	readonly filters: ListFiltersState<{ q: string; status: string }>;
 
-	constructor(private readonly getUrl: () => URL) {
+	constructor(getUrl: () => URL) {
+		super(getUrl, 30);
 		this.filters = new ListFiltersState(
 			{
 				getUrl,
@@ -64,98 +32,49 @@ export class ClassStudentsPageState {
 		);
 	}
 
-	get hierarchy() {
-		return academicContext.hierarchy;
+	get currentClass() {
+		return this.classes.find(entry => entry.id === classStudentsClassIdFromUrl(this.getUrl()));
 	}
 
 	get selectedId() {
 		return classStudentDetailIdFromUrl(this.getUrl());
 	}
 
-	get selected() {
-		const id = this.selectedId;
-		if (!id) {
-			return undefined;
-		}
-		return this.findStudent(id);
+	protected detailClassScope() {
+		const classGroupId = classStudentsClassIdFromUrl(this.getUrl());
+		return classGroupId ? { classGroupId, periodId: academicContext.periodId || '' } : undefined;
 	}
 
-	findStudent(id: string): Student | undefined {
-		return this.students.find(student => student.id === id);
+	protected requestFor(url: URL, { q, status } = readClassStudentListFilters(url)): DirectoryQuery | null {
+		const classGroupId = classStudentsClassIdFromUrl(url);
+		const knownStatus = (['active', 'inactive', 'graduated', 'archived'] as const).find(value => value === status);
+		if (!classGroupId || (status !== 'all' && !knownStatus))
+return null;
+		return { view: 'class-roster', classGroupId, q: q || undefined, status: knownStatus, sort: 'roster', periodId: academicContext.periodId || undefined };
 	}
 
-	async ensureSelectedStudent(id: string, force = false): Promise<boolean> {
-		const identity = JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]);
-		if (!force && this.findStudent(id)) {
-			return true;
-		}
-		const student = await fetchStudentById(getBrowserSchoolClient(), id);
-		if (identity !== JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]))
-return true;
-		if (!student) {
-			return false;
-		}
-		this.mergeStudents([student]);
-		return true;
+	async matchingMemberIds() {
+		const url = this.getUrl();
+		const query = this.requestFor(url, this.filters.values);
+		const scope = this.scopeKey();
+		const selectionKey = JSON.stringify(query);
+		const signal = this.exportController.signal;
+		const assertCurrent = () => {
+			signal.throwIfAborted();
+			const current = this.requestFor(this.getUrl(), this.filters.values);
+			if (scope !== this.scopeKey() || selectionKey !== JSON.stringify(current))
+				throw new DOMException('Roster changed', 'AbortError');
+		};
+		const result = query?.classGroupId
+			? await getBrowserSchoolClient().queries.getClassRosterMemberIds({ classGroupId: query.classGroupId, status: query.status, q: query.q }, { signal })
+			: { studentIds: [] };
+		assertCurrent();
+		return { key: JSON.stringify([scope, selectionKey]), studentIds: result.studentIds, assertCurrent };
 	}
 
-	get visibleStudents() {
-		return filterClassStudents(this.students, this.filters.values);
-	}
-
-	applySlice(classId: string, data: Partial<Omit<ClassStudentsPageSlice, 'classId'>>) {
-		this.classId = classId;
-		this.students = data.students ?? [];
-		this.currentClass = data.currentClass;
-		this.versions.markLoaded();
-	}
-
-	seed(classId: string, data: Partial<Omit<ClassStudentsPageSlice, 'classId'>>) {
-		this.applySlice(classId, data);
-	}
-
-	mergeStudents(incoming: readonly Student[]) {
-		const byId = Object.fromEntries(this.students.map(student => [student.id, student])) as Record<string, Student>;
-		for (const student of incoming) {
-			byId[student.id] = student;
-		}
-		this.students = Object.values(byId);
-	}
-
-	patchStudent(id: string, patch: Partial<Student>) {
-		const index = this.students.findIndex(student => student.id === id);
-		if (index >= 0) {
-			this.students[index] = { ...this.students[index], ...patch };
-		}
-	}
-
-	pendingPhotoFor(studentId: string): StudentPhotoSubmission | undefined {
-		return pendingStudentPhotoFor(this.pendingPhotoSubmissions, studentId);
-	}
-
-	private photoReadVersion = 0;
- async loadPendingPhotoReviews() {
-  const version = ++this.photoReadVersion;
-  const scope = JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]);
-  const rows = await loadPendingStudentPhotoReviews();
-  if (version === this.photoReadVersion && scope === JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]))
-this.pendingPhotoSubmissions = rows;
- }
-
-	async refreshList(classId: string) {
-		const data = await loadClassStudentsSlice(classId);
-		this.applySlice(classId, data);
-	}
-
-	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
-			return;
-		}
-		const classId = this.classId ?? classStudentsClassIdFromUrl(this.getUrl());
-		if (!classId) {
-			return;
-		}
-		await this.refreshList(classId);
+	override dispose() {
+		this.exportController.abort();
+		super.dispose();
 	}
 
 	hydrateFiltersFromUrl() {
@@ -166,12 +85,12 @@ this.pendingPhotoSubmissions = rows;
 		return createClassStudentOnPage(this, ...args);
 	}
 
-	queryListPage(classId: string) {
-		return queryClassStudentsListPage(classId, this);
+	queryListPage() {
+		return queryClassStudentsListPage(this);
 	}
 
 	ensureDrawerSelection(studentId: string) {
-		return ensureClassStudentDrawerSelection(this, studentId);
+		return this.ensureSelectedStudent(studentId);
 	}
 }
 
@@ -181,8 +100,4 @@ export function setClassStudentsPageState(state: ClassStudentsPageState) {
 
 export function getClassStudentsPageState() {
 	return getContext<ClassStudentsPageState>(CLASS_STUDENTS_PAGE_STATE_KEY);
-}
-
-export function emptyClassStudentsPageSlice(classId: string) {
-	return emptyClassStudentsSlice(classId);
 }

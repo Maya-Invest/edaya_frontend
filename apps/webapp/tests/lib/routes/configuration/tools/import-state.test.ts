@@ -238,7 +238,7 @@ test('confirmed settings survive failed refresh without replaying the write or r
 	finally { spy.mockRestore(); }
 });
 
-test('execution submits only the reviewed revision and digest, and rejects stale previews', async () => {
+test('execution requires a pending row and the reviewed revision and digest', async () => {
 	const validated = detail('batch');
 	validated.batch.state = 'validated';
 	validated.batch.revision = 7;
@@ -280,6 +280,11 @@ test('execution submits only the reviewed revision and digest, and rejects stale
 		expect(await state.confirm()).toBeNull();
 		expect(submitted).toHaveLength(0);
 		state.previewStale = false;
+		state.detail = { ...validated, rows: validated.rows.map(row => ({ ...row, outcome: 'blocked' })) };
+		expect(state.canExecute).toBe(false);
+		expect(await state.confirm()).toBeNull();
+		expect(submitted).toHaveLength(0);
+		state.detail = validated;
 		await state.confirm();
 		expect(submitted).toEqual([{ batchId: 'batch', revision: 7, previewDigest: 'reviewed-digest' }]);
 		state.disconnect();

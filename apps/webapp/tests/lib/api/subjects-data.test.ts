@@ -1,4 +1,6 @@
-import { mapCatalogSubjects, mapClassSubjects } from '$lib/api/subjects-data';
+import { ApiError } from '@maya-invest/edaya-api-client';
+import { createRecordingSchoolClient } from '$tests/support/recording-school-client';
+import { fetchGradeSubjectOptions, mapCatalogSubjects, mapClassSubjects } from '$lib/api/subjects-data';
 import { classSubject, staffMember, subject } from '$tests/support/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
@@ -34,6 +36,26 @@ const sources = {
 	teachersRaw: [],
 	teacherAssignmentsRaw: [],
 };
+
+describe('permission subject options', () => {
+	it('returns only the authorized grade labels and clears partial choices when a later page is denied', async () => {
+		const rows = sources.subjectsRaw.map(data => ({ data }));
+		const { client, requests } = createRecordingSchoolClient([rows]);
+		expect(await fetchGradeSubjectOptions(client, SEED_SCHOOL_ID, 'year')).toEqual(
+			sources.subjectsRaw.map(({ id, gradeLevelId, name }) => ({ id, gradeLevelId, name })),
+		);
+		expect(requests).toEqual([{
+			method: 'POST', path: '/core/entities/subjects/list', body: { schoolId: SEED_SCHOOL_ID, academicYearId: 'year', $limit: 500, $offset: 0 },
+		}]);
+		let pages = 0;
+		client.entities.subjects.list = async () => {
+			if (++pages === 2) throw new ApiError(403, {});
+			return Array.from({ length: 500 }, () => sources.subjectsRaw[0]!);
+		};
+		expect(await fetchGradeSubjectOptions(client, SEED_SCHOOL_ID, 'year')).toEqual([]);
+		expect(pages).toBe(2);
+	});
+});
 
 describe('mapCatalogSubjects', () => {
 	it('keeps same-name subjects separate and loads only their own chapters', () => {

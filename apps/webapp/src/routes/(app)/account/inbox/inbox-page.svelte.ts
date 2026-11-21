@@ -71,7 +71,7 @@ this.offset = data.deliveries.length;
   }
 
   async invalidateIfStale() {
-    if (this.versions.isStale())
+    if (this.versions.hasLoaded() && this.versions.isStale())
       await this.refreshSlice();
   }
 

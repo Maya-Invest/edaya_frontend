@@ -13,8 +13,10 @@ export class MessageCountState {
 	private pending = false;
 
 	get scope() {
-		return authSession.ready && authSession.isLoggedIn && authSession.sessionKind === 'staff' && (hasPermission('SCHOOL_MESSAGES_READ') || hasPermission('TEACHER_MESSAGES_REVIEW'))
-			? `${authSession.subjectId}|${authSession.schoolId}|${authSession.userId}`
+		const school = hasPermission('SCHOOL_MESSAGES_READ');
+		const oversight = hasPermission('TEACHER_MESSAGES_REVIEW');
+		return authSession.ready && authSession.isLoggedIn && authSession.sessionKind === 'staff' && (school || oversight)
+			? `${authSession.subjectId}|${authSession.schoolId}|${authSession.userId}|${school}|${oversight}`
 			: '';
 	}
 
@@ -22,7 +24,7 @@ export class MessageCountState {
 		return this.scope && this.loadedScope === this.scope ? this.value : null;
 	}
 
-	async refresh() {
+	async refresh(signal?: AbortSignal) {
 		const scope = this.scope;
 		if (!scope || this.pending)
 			return;
@@ -30,12 +32,9 @@ export class MessageCountState {
 		this.pending = true;
 		try {
 			const client = getBrowserSchoolClient();
-			const [school, guardian] = await Promise.all([
-				client.queries.listConversations({ status: 'awaiting_school', order: 'latest', offset: 0, limit: 1 }),
-				client.queries.listConversations({ status: 'awaiting_guardian', order: 'latest', offset: 0, limit: 1 }),
-			]);
+			const { count } = await client.queries.getUnresolvedConversationCount({}, { signal });
 			if (generation === this.generation && scope === this.scope) {
-				this.value = school.total + guardian.total;
+				this.value = count;
 				this.loadedScope = scope;
 			}
 		}
@@ -50,16 +49,31 @@ export class MessageCountState {
 	}
 
 	start() {
-		const refresh = () => {
-			if (!document.hidden)
-				void this.refresh();
+		const controller = new AbortController();
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		let interval = 15_000;
+		const poll = async () => {
+			if (document.hidden || controller.signal.aborted)
+				return;
+			const previous = this.count;
+			await this.refresh(controller.signal);
+			if (controller.signal.aborted || document.hidden)
+				return;
+			interval = previous !== null && this.count === previous ? Math.min(interval * 2, 60_000) : 15_000;
+			timer = setTimeout(poll, interval);
 		};
-		refresh();
-		const timer = setInterval(refresh, 15000);
-		document.addEventListener('visibilitychange', refresh);
+		const onVisibility = () => {
+			clearTimeout(timer);
+			interval = 15_000;
+			if (!document.hidden && !this.pending)
+				void poll();
+		};
+		void poll();
+		document.addEventListener('visibilitychange', onVisibility);
 		return () => {
-			clearInterval(timer);
-			document.removeEventListener('visibilitychange', refresh);
+			controller.abort();
+			clearTimeout(timer);
+			document.removeEventListener('visibilitychange', onVisibility);
 			this.generation++;
 			this.pending = false;
 		};

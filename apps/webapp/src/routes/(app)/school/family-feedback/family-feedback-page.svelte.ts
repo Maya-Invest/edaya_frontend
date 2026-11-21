@@ -1,13 +1,15 @@
 import type {
 	FamilyFeedbackAggregate,
-	FamilyFeedbackAssignmentOption,
+	FeedbackOption,
+	FeedbackOptionsPage,
+	FeedbackPicker,
 	FamilyFeedbackCampaign,
 	FamilyFeedbackComment,
 } from '$lib/api/family-feedback-types';
-import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import type { StaffMember, Teacher } from '$lib/types/school';
-import { getFamilyFeedbackAggregateReview, listFamilyFeedbackComments } from '$lib/api/family-feedback-data';
+import { academicContext } from '$lib/academic/context.svelte';
+import { feedbackAssignmentTitle, feedbackClassNames, getFamilyFeedbackAggregateReview, listFamilyFeedbackComments, loadFeedbackOptions, loadStaffFeedbackCampaigns } from '$lib/api/family-feedback-data';
+import { authSession } from '$lib/auth/session.svelte';
 import { FAMILY_FEEDBACK_MODERATE_PERMISSION } from '$lib/family-feedback/permissions';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readFamilyFeedbackListFilters, writeFamilyFeedbackListFilters } from '$lib/list/list-url-filters';
@@ -15,6 +17,7 @@ import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { hasPermission } from '$lib/permissions';
 import { queryClient } from '$lib/queries/client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { getContext, setContext } from 'svelte';
 import {
 	previewAudienceOnPage,
@@ -29,14 +32,13 @@ import {
 	scheduleFamilyFeedbackCampaignOnPage,
 	updateFamilyFeedbackCampaignOnPage,
 } from './lib/family-feedback-detail-mutations';
+import { FamilyFeedbackHistory } from './lib/family-feedback-history.svelte';
 import {
 	ensureFamilyFeedbackDrawerSelection,
-	loadFamilyFeedbackPageSlice,
+
 	querySchoolFamilyFeedbackPage,
 } from './lib/family-feedback-queries';
 import { familyFeedbackDetailIdFromUrl } from './lib/family-feedback-selectors';
-
-type SubjectRaw = components['schemas']['Subject'];
 
 const FAMILY_FEEDBACK_VERSION_FAMILIES = ['familyFeedback', 'teachers', 'staff', 'subjects'] as const satisfies readonly EntityVersionKey[];
 
@@ -44,15 +46,28 @@ const FAMILY_FEEDBACK_PAGE_STATE_KEY = Symbol('family-feedback-page-state');
 
 export class FamilyFeedbackPageState {
 	previewAudience = (...args: Parameters<typeof previewAudienceOnPage>) => previewAudienceOnPage(...args);
-	campaigns = $state<FamilyFeedbackCampaign[]>([]);
-	teachers = $state<Teacher[]>([]);
-	staff = $state<StaffMember[]>([]);
-	assignments = $state<FamilyFeedbackAssignmentOption[]>([]);
-	subjects = $state<SubjectRaw[]>([]);
+	private detail = $state<FamilyFeedbackCampaign>();
+	private loadedScope = $state<string>();
+	private classNames = $derived(feedbackClassNames());
+
+	readonly history = new FamilyFeedbackHistory(() => ({
+		...readFamilyFeedbackListFilters(this.getUrl()),
+		academicYearId: academicContext.yearId || academicContext.years[0]?.id,
+		lang: academicContext.uiLang,
+		scope: this.optionScope,
+	}), () => {
+		this.clearDetail();
+		this.clearOptions();
+		if (!this.history.denied)
+			this.detailReload++;
+	});
+
+	firstOptions = $state<FeedbackOptionsPage>();
+	private chosen = $state<Partial<Record<FeedbackPicker, FeedbackOption>>>({});
+	optionsStatus = $state<'loading' | 'ready' | 'error' | 'denied'>('loading');
 	comments = $state<FamilyFeedbackComment[]>([]);
 	aggregate = $state<FamilyFeedbackAggregate | undefined>(undefined);
 	reviewCampaignId = $state<string | undefined>(undefined);
-	selectedResolving = $state(false);
 
 	readonly filters: ListFiltersState<{ q: string; status: string }>;
 
@@ -82,74 +97,140 @@ export class FamilyFeedbackPageState {
 	}
 
 	findCampaign(id: string): FamilyFeedbackCampaign | undefined {
-		return this.campaigns.find(campaign => campaign.id === id);
+		return this.loadedScope === this.optionScope && this.detail?.id === id ? this.detail : undefined;
 	}
 
 	campaignTitle(campaign: FamilyFeedbackCampaign): string {
-		return this.assignments.find(entry => entry.id === campaign.teacherAssignmentId)?.label
-			?? campaign.teacherAssignmentId;
+		return feedbackAssignmentTitle(campaign.teacherAssignmentId, campaign.assignment, this.classNames);
 	}
 
-	seed(data: {
-		campaigns: FamilyFeedbackCampaign[];
-		teachers: Teacher[];
-		staff: StaffMember[];
-		assignments: FamilyFeedbackAssignmentOption[];
-		subjects: SubjectRaw[];
-	}) {
-		this.campaigns = data.campaigns;
-		this.teachers = data.teachers;
-		this.staff = data.staff;
-		this.assignments = data.assignments;
-		this.subjects = data.subjects;
-		this.versions.markLoaded();
+	readCampaign(id: string, signal?: AbortSignal) {
+		return loadStaffFeedbackCampaigns(queryClient(), id, signal);
+	}
+
+	get optionScope() {
+		return JSON.stringify([authSession.authUserId, authSession.userId, authSession.schoolId, academicContext.yearId, academicContext.scopeGeneration]);
+	}
+
+	clearOptions() {
+		this.firstOptions = undefined;
+		this.chosen = {};
+		this.optionsStatus = 'loading';
+	}
+
+	findOption(picker: FeedbackPicker, id?: string) {
+		if (!id) {
+			return undefined;
+		}
+		const chosen = this.chosen[picker];
+		return chosen?.id === id ? chosen : this.firstOptions?.[picker].find(option => option.id === id);
+	}
+
+	chooseOption(picker: FeedbackPicker, option: FeedbackOption) {
+		this.chosen[picker] = option;
+	}
+
+	readOptions(picker: FeedbackPicker | 'both', signal: AbortSignal, q?: string, after?: string) {
+		const academicYearId = academicContext.yearId || academicContext.years[0]?.id;
+		return academicYearId
+			? loadFeedbackOptions(queryClient(), { academicYearId, picker, q, after }, signal)
+			: Promise.resolve({ assignments: [], moderators: [], nextAssignment: null, nextModerator: null } satisfies FeedbackOptionsPage);
+	}
+
+	handleOptionsDenial(error: unknown) {
+		if (!(error instanceof ApiError) || (error.status !== 401 && error.status !== 403)) {
+			return false;
+		}
+		this.clearOptions();
+		this.optionsStatus = 'denied';
+		return true;
+	}
+
+	async loadOptions(includeAssignments: boolean, signal: AbortSignal) {
+		const scope = this.optionScope;
+		this.clearOptions();
+		try {
+			const page = await this.readOptions(includeAssignments ? 'both' : 'moderators', signal);
+			if (signal.aborted || scope !== this.optionScope) {
+				return;
+			}
+			this.firstOptions = page;
+			this.optionsStatus = 'ready';
+		}
+		catch (error) {
+			if (!signal.aborted && scope === this.optionScope && !this.handleOptionsDenial(error))
+				this.optionsStatus = 'error';
+		}
 	}
 
 	appendCampaign(campaign: FamilyFeedbackCampaign) {
-		this.campaigns = [campaign, ...this.campaigns.filter(entry => entry.id !== campaign.id)];
+		this.detail = campaign;
+		this.loadedScope = this.optionScope;
+	}
+
+	detailGeneration = 0;
+	detailReload = $state(0);
+
+	clearDetail() {
+		this.detailGeneration++;
+		this.detail = undefined;
+		this.reviewCampaignId = undefined;
+		this.comments = [];
+		this.aggregate = undefined;
 	}
 
 	patchCampaign(id: string, patch: Partial<FamilyFeedbackCampaign>) {
-		this.campaigns = this.campaigns.map(campaign =>
-			campaign.id === id ? { ...campaign, ...patch } : campaign,
-		);
+		const current = this.findCampaign(id);
+		if (!current)
+			return;
+		this.detail = { ...current, ...patch };
+		if (this.detail.status !== current.status || this.detail.opensAt !== current.opensAt || this.detail.closesAt !== current.closesAt)
+			void this.refreshSlice().catch(() => {});
 	}
 
 	async loadComments(campaignId: string) {
+		const scope = this.optionScope;
 		this.reviewCampaignId = campaignId;
 		if (!hasPermission(FAMILY_FEEDBACK_MODERATE_PERMISSION)) {
 			this.comments = [];
 			return;
 		}
 		const comments = await listFamilyFeedbackComments(queryClient(), campaignId).catch(() => []);
-		if (this.reviewCampaignId !== campaignId) {
+		if (this.reviewCampaignId !== campaignId || scope !== this.optionScope) {
 			return;
 		}
 		this.comments = comments;
 	}
 
 	async loadAggregates(campaignId: string) {
+		const scope = this.optionScope;
 		this.reviewCampaignId = campaignId;
 		const campaign = this.findCampaign(campaignId);
 		const aggregate = campaign && (campaign.status === 'closed' || campaign.status === 'published' || campaign.status === 'archived')
 			? await getFamilyFeedbackAggregateReview(queryClient(), campaignId).catch(() => undefined)
 			: undefined;
-		if (this.reviewCampaignId !== campaignId) {
+		if (this.reviewCampaignId !== campaignId || scope !== this.optionScope) {
 			return;
 		}
 		this.aggregate = aggregate;
 	}
 
-	async refreshSlice() {
-		const data = await loadFamilyFeedbackPageSlice();
-		this.seed(data);
+	async refreshSlice(signal?: AbortSignal) {
+		const version = this.versions.capture();
+		if (await this.history.refresh(signal))
+			this.versions.markLoaded(version);
 	}
 
 	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
+		if (!this.versions.hasLoaded() || !this.versions.isStale()) {
 			return;
 		}
 		await this.refreshSlice();
+		const selected = this.selectedId;
+		if (selected && this.findCampaign(selected)) {
+			this.clearDetail();
+			this.detailReload++;
+		}
 	}
 
 	hydrateFiltersFromUrl() {
@@ -160,8 +241,11 @@ export class FamilyFeedbackPageState {
 		return querySchoolFamilyFeedbackPage(this);
 	}
 
-	ensureDrawerSelection(campaignId: string) {
-		return ensureFamilyFeedbackDrawerSelection(this, campaignId);
+	async ensureDrawerSelection(campaignId: string, signal?: AbortSignal) {
+		const { bootstrapAppShell } = await import('$lib/auth/bootstrap-app');
+		await bootstrapAppShell();
+		signal?.throwIfAborted();
+		return ensureFamilyFeedbackDrawerSelection(this, campaignId, signal);
 	}
 
 	createCampaign(...args: Parameters<typeof createFamilyFeedbackCampaignOnPage> extends [FamilyFeedbackPageState, ...infer R] ? R : never) {

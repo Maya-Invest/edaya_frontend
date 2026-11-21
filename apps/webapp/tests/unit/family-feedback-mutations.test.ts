@@ -16,7 +16,7 @@ mock.module('$lib/i18n', () => ({ t: { subscribe: (fn: (value: unknown) => void)
 mock.module('$lib/api/family-feedback-data', () => ({
 	createFamilyFeedbackCampaign: async () => ({}), previewFamilyFeedbackAudience: async () => ({}),
 	runFamilyFeedbackCampaignCommand: async () => { requests++; return command(); },
-	getFamilyFeedbackCampaign: async () => { reads++; return read(); },
+	loadStaffFeedbackCampaigns: async () => { reads++; return [await read()]; },
 }));
 const { openFamilyFeedbackCampaignOnPage, closeFamilyFeedbackCampaignOnPage } = await import('../../src/routes/(app)/school/family-feedback/lib/family-feedback-detail-mutations');
 const initial = { id: 'campaign', status: 'draft', moderatorStaffId: 'moderator' } as FamilyFeedbackCampaign;

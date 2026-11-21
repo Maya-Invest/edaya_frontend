@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Activity } from '$lib/types/school';
+	import type { ActivityView } from '../../activities-page.svelte';
 	import { page } from '$app/stores';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
@@ -8,7 +8,7 @@
 	import { cn } from '$lib/utils';
 	import { ACTIVITY_DETAIL_TABS, activeActivityDetailTab } from '../../lib/activity-detail-tabs';
 
-	const { activity }: { activity: Activity } = $props();
+	const { activity }: { activity: ActivityView } = $props();
 
 	const activeTab = $derived(activeActivityDetailTab($page.url.pathname, activity.id));
 

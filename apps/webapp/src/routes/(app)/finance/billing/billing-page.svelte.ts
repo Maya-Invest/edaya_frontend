@@ -194,7 +194,7 @@ export class BillingPageState {
     }
 
     async invalidateIfStale() {
-        if (!this.versions.isStale()) {
+        if (!this.versions.hasLoaded() || !this.versions.isStale()) {
             return;
         }
         await this.refreshSlice();

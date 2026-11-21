@@ -5,8 +5,8 @@ import { queryClient } from '$lib/queries/client';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { emptyDashboardSlice } from './dashboard-helpers';
 
-export async function loadDashboardSlice() {
-	const overview = await fetchSchoolOverview(queryClient());
+export async function loadDashboardSlice(signal?: AbortSignal) {
+	const overview = await fetchSchoolOverview(queryClient(), signal);
 
 	return { overview };
 }
@@ -16,7 +16,7 @@ export function queryDashboardListPage(state: DashboardPageState) {
 		empty: () => emptyDashboardSlice(),
 		load: async (signal) => {
 			state.clear();
-			const data = await loadDashboardSlice();
+			const data = await loadDashboardSlice(signal);
 			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;

@@ -35,6 +35,7 @@ export async function listAllEntityPages<T>(
 	options?: {
 		baseQuery?: EntityQuery;
 		pageSize?: number;
+		signal?: AbortSignal;
 	},
 ): Promise<T[]> {
 	const pageSize = options?.pageSize ?? CATALOG_LIST_PAGE_SIZE;
@@ -43,6 +44,7 @@ export async function listAllEntityPages<T>(
 	let offset = 0;
 
 	while (true) {
+		options?.signal?.throwIfAborted();
 		const page = (await fetchPage(paginatedList(baseQuery, {
 			limit: pageSize,
 			offset,
@@ -61,6 +63,9 @@ export async function listAllEntityPages<T>(
 export const listCompleteCollection = listAllEntityPages;
 
 export function chunkIds(ids: readonly string[], size = DEFAULT_LIST_PAGE_SIZE): string[][] {
+	if (!Number.isInteger(size) || size < 1) {
+		throw new RangeError('Batch size must be a positive integer');
+	}
 	const unique = uniqueIds(ids);
 	const chunks: string[][] = [];
 	for (let index = 0; index < unique.length; index += size) {
@@ -76,6 +81,7 @@ export async function listAllEntityPagesForIdFilters<T>(
 		extraQuery?: EntityQuery;
 		pageSize?: number;
 		batchSize?: number;
+		signal?: AbortSignal;
 	},
 ): Promise<T[]> {
 	if (filters.some(filter => uniqueIds(filter.ids).length === 0)) {
@@ -88,24 +94,38 @@ export async function listAllEntityPagesForIdFilters<T>(
 		batches: chunkIds(filter.ids, batchSize),
 	}));
 
-	let combos: EntityQuery[] = [{}];
-	for (const entry of batched) {
-		const next: EntityQuery[] = [];
-		for (const combo of combos) {
-			for (const batch of entry.batches) {
-				next.push({
-					...combo,
-					[entry.field]: { $in: batch },
+	// Produce the Cartesian product lazily and preserve its ordering in the result.
+	function* queries(index: number, query: EntityQuery): Generator<EntityQuery> {
+		if (index === batched.length) {
+			yield query;
+			return;
+		}
+		const { field, batches } = batched[index]!;
+		for (const batch of batches) {
+			yield* queries(index + 1, { ...query, [field]: { $in: batch } });
+		}
+	}
+
+	const remaining = queries(0, options?.extraQuery ?? {});
+	const pages: T[][] = [];
+	async function readBatches() {
+		try {
+			for (const query of remaining) {
+				const position = pages.length;
+				pages.push([]);
+				pages[position] = await listAllEntityPages(fetchPage, {
+					baseQuery: query,
+					pageSize: options?.pageSize,
+					signal: options?.signal,
 				});
 			}
 		}
-		combos = next;
+		catch (error) {
+			remaining.return(undefined);
+			throw error;
+		}
 	}
-
-	const pages = await Promise.all(combos.map(combo => listAllEntityPages(fetchPage, {
-		baseQuery: { ...options?.extraQuery, ...combo },
-		pageSize: options?.pageSize,
-	})));
+	await Promise.all(Array.from({ length: 4 }, readBatches));
 	return pages.flat();
 }
 
@@ -116,6 +136,7 @@ export function listAllEntityPagesByIds<T>(
 		extraQuery?: EntityQuery;
 		pageSize?: number;
 		batchSize?: number;
+		signal?: AbortSignal;
 	},
 ): Promise<T[]> {
 	return listAllEntityPagesForIdFilters(fetchPage, [{ field: 'id', ids }], options);

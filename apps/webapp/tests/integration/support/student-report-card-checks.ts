@@ -197,7 +197,16 @@ export async function checkStudentReportCards(page: Page, origin: string, output
     read = false; await page.reload(); await page.getByTestId('student-drawer-body').getByText(locale === 'en' ? 'Access denied' : 'Accès refusé', { exact: true }).first().waitFor();
     assert.equal(await panel.count(), 0);
     read = true; denied = true; await page.reload(); await page.getByTestId('student-drawer-body').getByText(locale === 'en' ? 'Access denied' : 'Accès refusé', { exact: true }).first().waitFor(); assert.equal(await panel.count(), 0); denied = false;
-    fail = 100; await page.reload(); await page.getByRole('button', { name: text.retry, exact: true }).last().waitFor(); fail = 0; await page.getByRole('button', { name: text.retry, exact: true }).last().click(); await status.waitFor();
+    fail = 100;
+    await page.reload();
+    const retryReport = page.getByTestId('student-drawer-body').getByRole('button', { name: text.retry, exact: true });
+    await retryReport.waitFor();
+    fail = 0;
+    const refreshed = page.waitForResponse(response =>
+     new URL(response.url()).pathname.endsWith('/results/list') && response.ok());
+    await retryReport.click();
+    await refreshed;
+    await status.waitFor();
     writes = true; await page.reload(); await status.waitFor();
     for (const width of [1440, 390]) for (const scale of [1, 2]) {
      await page.setViewportSize({ width, height: 1000 }); await page.evaluate(scale => document.documentElement.style.fontSize = `${16 * scale}px`, scale);

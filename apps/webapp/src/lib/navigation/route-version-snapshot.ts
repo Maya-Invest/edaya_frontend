@@ -7,10 +7,12 @@ export class RouteVersionSnapshot {
 
 	constructor(private readonly families: readonly EntityVersionKey[]) {}
 
-	markLoaded() {
-		for (const family of this.families) {
-			this.snapshots.set(family, entityVersions[family]);
-		}
+	capture() {
+		return new Map(this.families.map(family => [family, entityVersions[family]]));
+	}
+
+	markLoaded(snapshot = this.capture()) {
+		this.snapshots = snapshot;
 	}
 
 	isStale(): boolean {

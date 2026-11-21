@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { FamilyFeedbackCampaign, FamilyFeedbackCampaignStatus } from '$lib/api/family-feedback-types';
+	import type { FamilyFeedbackCampaignStatus } from '$lib/api/family-feedback-types';
+	import type { CampaignHistoryRow } from '../lib/family-feedback-history.svelte';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -15,10 +16,10 @@
 	import { t } from '$lib/i18n';
 	import { HeartHandshake, Plus } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
-	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { getFamilyFeedbackPageState } from '../family-feedback-page.svelte';
 	import FamilyFeedbackFormModal from './FamilyFeedbackFormModal.svelte';
@@ -27,12 +28,13 @@
 		onSelect,
 		selectedId,
 	}: {
-		onSelect?: (campaign: FamilyFeedbackCampaign) => void;
+		onSelect?: (campaign: CampaignHistoryRow) => void;
 		selectedId?: string;
 	} = $props();
 
 	const familyFeedbackPage = getFamilyFeedbackPageState();
-	const campaigns = $derived(familyFeedbackPage.campaigns);
+	const history = familyFeedbackPage.history;
+	const campaigns = $derived(history.current?.items ?? []);
 
 	const statusKeys = ['all', 'draft', 'scheduled', 'open', 'closed', 'published', 'archived', 'cancelled'] as const;
 
@@ -42,22 +44,7 @@
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 
-	const filtered = $derived(
-		campaigns
-			.filter(campaign => familyFeedbackPage.filters.values.status === 'all' || campaign.status === familyFeedbackPage.filters.values.status)
-			.filter((campaign) => {
-				const needle = familyFeedbackPage.filters.values.q.toLowerCase();
-				if (!needle) {
-					return true;
-				}
-				const title = familyFeedbackPage.campaignTitle(campaign).toLowerCase();
-				return title.includes(needle) || campaign.status.includes(needle);
-			}),
-	);
-
-	const infinite = useInfiniteList(() => filtered, 30);
-
-	function fmtDate(value: string | undefined) {
+	function fmtDate(value: string | null) {
 		if (!value) {
 			return '—';
 		}
@@ -72,8 +59,9 @@
 		return $t(`familyFeedback.status.${value}`);
 	}
 
-	function periodLabel(campaign: FamilyFeedbackCampaign) {
-		return academicContext.periods.find(period => period.id === campaign.academicPeriodId)?.label ?? campaign.academicPeriodId;
+	const periodLabels = $derived(new Map(academicContext.periods.map(period => [period.id, period.label])));
+	function periodLabel(campaign: CampaignHistoryRow) {
+		return periodLabels.get(campaign.academicPeriodId) ?? campaign.academicPeriodId;
 	}
 
 	function handleCreated(campaignId: string) {
@@ -102,7 +90,7 @@
 		filterCount={[familyFeedbackPage.filters.values.status].filter(value => value !== 'all').length}
 		onResetFilters={() => familyFeedbackPage.filters.patchImmediate({ status: 'all' })}
 		eyebrow={$t('familyFeedback.eyebrow')}
-		title={$t('familyFeedback.count', { n: filtered.length })}
+		title={$t('familyFeedback.count', { n: history.current?.total ?? 0 })}
 	>
 		{#snippet search()}
 			<ListSearchField onCommit={() => familyFeedbackPage.filters.syncNow()}
@@ -143,13 +131,13 @@
 				onExport={() => void exportMatchingList({
 					filename: 'family-feedback.csv',
 					headers: ['title', 'period', 'status', 'closesAt'],
-					loadAll: async () => filtered.map(campaign => [
-						familyFeedbackPage.campaignTitle(campaign),
+					loadAll: async () => (await history.export(familyFeedbackPage.filters.values)).map(campaign => [
+						campaign.title,
 						periodLabel(campaign),
 						campaign.status,
 						campaign.closesAt ?? '',
 					]),
-				})}
+				}).catch(() => toast.error($t('dataState.errorDescription')))}
 			/>
 		{/snippet}
 	</ListPageHeader>
@@ -166,13 +154,14 @@
 			<span class="text-right">{$t('familyFeedback.closesAtLabel')}</span>
 		</div>
 		<InfiniteList
-			hasMore={infinite.hasMore}
-			total={infinite.total}
-			visibleCount={infinite.visible.length}
-			onLoadMore={infinite.loadMore}
+			hasMore={Boolean(history.current?.nextCursor) && !history.failed}
+			loading={history.loadingMore}
+			total={history.current?.total ?? 0}
+			visibleCount={campaigns.length}
+			onLoadMore={() => void history.more()}
 		>
 			<ul class="divide-y divide-border">
-				{#each infinite.visible as campaign (campaign.id)}
+				{#each campaigns as campaign (campaign.id)}
 					{@const isSelected = campaign.id === selectedId}
 					<li>
 						<button
@@ -185,7 +174,7 @@
 							)}
 						>
 							<div class="min-w-0">
-								<p class="truncate font-display text-sm font-semibold">{familyFeedbackPage.campaignTitle(campaign)}</p>
+								<p class="truncate font-display text-sm font-semibold">{campaign.title}</p>
 								<p class="line-clamp-1 text-xs text-muted-foreground">{$t('familyFeedback.confidentiality')}</p>
 							</div>
 							<span class="text-xs text-foreground/80">{periodLabel(campaign)}</span>
@@ -206,12 +195,15 @@
 						</button>
 					</li>
 				{/each}
-				{#if filtered.length === 0}
+				{#if campaigns.length === 0 && !history.failed}
 					<li class="px-4 py-12 text-center text-sm text-muted-foreground">
 						{$t('familyFeedback.none')}
 					</li>
 				{/if}
 			</ul>
 		</InfiniteList>
+		{#if history.failed}
+			<Button variant="outline" onclick={() => history.failed === 'more' ? history.more() : history.refresh().catch(() => {})}>{$t('dataState.retry')}</Button>
+		{/if}
 	</div>
 </div>

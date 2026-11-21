@@ -47,6 +47,8 @@ export interface Student {
 	/** Null when no attendance records exist (do not invent 100%). */
 	attendance: number | null;
 	average: number;
+	gradesAvailable?: boolean;
+	pendingPhoto?: boolean;
 	/** API enrollment/person status — not honor/warning. */
 	status: StudentApiStatus;
 	/** Derived from grades only; never overwrites `status`. */

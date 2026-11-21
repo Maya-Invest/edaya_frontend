@@ -6,20 +6,18 @@
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
-	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { readClassStudentListFilters } from '$lib/list/list-url-filters';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import {
 		ClassStudentsPageState,
 		setClassStudentsPageState,
 	} from './class-students-page.svelte';
 	import ClassStudentsList from './components/ClassStudentsList.svelte';
-	import ClassStudentsPageHydrator from './components/ClassStudentsPageHydrator.svelte';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 
@@ -30,12 +28,14 @@
 
 	const classId = $derived($page.params.classId ?? '6a');
 	const selectedId = $derived(classStudentsPage.selectedId);
-	const query = $derived(classStudentsPage.queryListPage(classId));
+	const query = classStudentsPage.queryListPage();
+	onDestroy(() => classStudentsPage.dispose());
 
 	const urlFilters = $derived(readClassStudentListFilters($page.url));
 
 	$effect(() => {
-		classStudentsPage.filters.hydrate(urlFilters);
+		const filters = urlFilters;
+		untrack(() => classStudentsPage.filters.hydrate(filters));
 	});
 
 	$effect(() => {
@@ -49,9 +49,8 @@
 	}
 </script>
 
-<PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('tab.students')}>
+<PageQuery {query} cache={false} cacheKey={url => classStudentsPage.directoryKey(url)} loadingTitle={$t('tab.students')}>
 	{#snippet children(data)}
-		<ClassStudentsPageHydrator {data} />
 		<DataState
 			preserveShell
 			status={data.status}

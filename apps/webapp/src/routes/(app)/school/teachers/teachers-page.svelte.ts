@@ -1,11 +1,11 @@
 import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { TeacherListFilters } from '$lib/list/list-url-filters';
-import type { Subject, Teacher } from '$lib/types/school';
+import type { Teacher } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { DEFAULT_LIST_PAGE_SIZE, uniqueIds } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { fetchSchoolSubjectsSources, loadClassSubjectsByIds, mapAllClassSubjects } from '$lib/api/subjects-data';
+import { loadClassSubjectLabels } from '$lib/api/subjects-data';
 import { fetchTeacherById, fetchTeachersPage } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
@@ -13,8 +13,8 @@ import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readTeacherListFilters, writeTeacherListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { getContext, setContext } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 import {
 	createTeacherOnPage,
 	deleteTeacherUnavailabilityOnPage,
@@ -46,7 +46,7 @@ export class TeachersPageState {
 	fullRosterTeachers = $state<Teacher[]>([]);
 	assignmentCounts = $state<Record<string, number>>({});
 	teacherUnavailabilities = $state<TeacherUnavailability[]>([]);
-	subjects = $state<Subject[]>([]);
+	subjects = $state<Awaited<ReturnType<typeof loadClassSubjectLabels>>>([]);
 	totalTeachers = $state(0);
 	listLoading = $state(false);
 	listLoadingMore = $state(false);
@@ -54,7 +54,6 @@ export class TeachersPageState {
 	selectedResolving = $state(false);
 
 	private listRequestVersion = 0;
-	private subjectsLoaded = false;
 
 	private readonly versions = new RouteVersionSnapshot(TEACHERS_VERSION_FAMILIES);
 
@@ -174,27 +173,19 @@ export class TeachersPageState {
 		return this.subjects.find(subject => subject.id === classSubjectId)?.name ?? classSubjectId;
 	}
 
-	mergeSubjects(incoming: readonly Subject[]) {
-		this.subjects = mergeById(this.subjects, incoming);
-	}
-
-	async ensureClassSubjectsCached(classSubjectIds: readonly string[]) {
-		await this.loadSubjectsIfNeeded();
-		const missing = uniqueIds(
-			classSubjectIds.filter(id => id && !this.subjects.some(subject => subject.id === id)),
-		);
-		if (missing.length === 0) {
+	async ensureClassSubjectsCached(classSubjectIds: readonly string[], signal?: AbortSignal) {
+		const cachedIds = new SvelteSet(this.subjects.map(subject => subject.id));
+		const missing = uniqueIds(classSubjectIds.filter(id => id && !cachedIds.has(id)));
+		if (!missing.length) {
 			return;
 		}
-
-		const mapped = await loadClassSubjectsByIds(getBrowserSchoolClient(), missing);
-		if (mapped.length > 0) {
-			this.mergeSubjects(mapped);
-			return;
+		const scope = this.teacherScope();
+		const labels = await loadClassSubjectLabels(getBrowserSchoolClient(), missing);
+		signal?.throwIfAborted();
+		const current = this.teacherScope();
+		if (labels.length && current.schoolId === scope.schoolId && current.academicYearId === scope.academicYearId) {
+			this.subjects = mergeById(this.subjects, labels);
 		}
-
-		this.subjectsLoaded = false;
-		await this.loadSubjectsIfNeeded();
 	}
 
 	seedPage(
@@ -258,32 +249,6 @@ export class TeachersPageState {
 		return true;
 	}
 
-	async loadSubjectsIfNeeded() {
-		if (this.subjectsLoaded) {
-			return;
-		}
-		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? null;
-		if (!schoolId) {
-			this.subjects = [];
-			this.subjectsLoaded = true;
-			return;
-		}
-		const client = getBrowserSchoolClient();
-		try {
-			const sources = await fetchSchoolSubjectsSources(client, schoolId);
-			this.subjects = mapAllClassSubjects(sources);
-			this.subjectsLoaded = true;
-		}
-		catch (error) {
-			if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-				this.subjects = [];
-				this.subjectsLoaded = true;
-				return;
-			}
-			throw error;
-		}
-	}
-
 	async refreshList() {
 		if (this.usesFullRoster) {
 			return;
@@ -301,7 +266,6 @@ export class TeachersPageState {
 		this.listLoading = true;
 		this.fullRosterTeachers = [];
 		try {
-			await this.loadSubjectsIfNeeded();
 			const result = await fetchTeachersPage(
 				getBrowserSchoolClient(),
 				this.teacherScope(),
@@ -354,7 +318,6 @@ export class TeachersPageState {
 		this.listLoading = true;
 		this.loadingFullRoster = true;
 		try {
-			await this.loadSubjectsIfNeeded();
 			let offset = 0;
 			let total = 0;
 			let teachers: Teacher[] = [];
@@ -388,7 +351,7 @@ export class TeachersPageState {
 	}
 
 	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
+		if (!this.versions.hasLoaded() || !this.versions.isStale()) {
 			return;
 		}
 		await this.refreshList();

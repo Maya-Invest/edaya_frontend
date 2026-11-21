@@ -30,24 +30,21 @@ describe('ensureFamilyFeedbackDrawerSelection', () => {
 		await expect(ensureFamilyFeedbackDrawerSelection(state as FamilyFeedbackPageState, 'camp-1')).resolves.toBe(true);
 	});
 
-	it('refreshes the list when the drawer id is not in memory yet', async () => {
+	it('resolves a missing selection once by ID', async () => {
+		const requests: string[] = [];
 		const campaigns: FamilyFeedbackCampaign[] = [];
 		const state = {
-			findCampaign: (id: string) => campaigns.find(entry => entry.id === id),
-			refreshSlice: async () => {
-				campaigns.push(campaign('camp-1'));
-			},
-		} as Pick<FamilyFeedbackPageState, 'findCampaign' | 'refreshSlice'>;
-
-		await expect(ensureFamilyFeedbackDrawerSelection(state as FamilyFeedbackPageState, 'camp-1')).resolves.toBe(true);
+			selectedId: 'camp-1', findCampaign: () => undefined,
+			readCampaign: async (id: string) => { requests.push(id); return [campaign(id)]; },
+			appendCampaign: (row: FamilyFeedbackCampaign) => campaigns.push(row),
+		};
+		await expect(ensureFamilyFeedbackDrawerSelection(state as unknown as FamilyFeedbackPageState, 'camp-1')).resolves.toBe(true);
+		expect(requests).toEqual(['camp-1']);
+		expect(campaigns.map(row => row.id)).toEqual(requests);
 	});
 
-	it('returns false when the campaign is still missing after refresh', async () => {
-		const state = {
-			findCampaign: () => undefined,
-			refreshSlice: async () => {},
-		} as Pick<FamilyFeedbackPageState, 'findCampaign' | 'refreshSlice'>;
-
-		await expect(ensureFamilyFeedbackDrawerSelection(state as FamilyFeedbackPageState, 'camp-1')).resolves.toBe(false);
+	it('returns false for an unavailable campaign', async () => {
+		const state = { findCampaign: () => undefined, readCampaign: async () => [] };
+		await expect(ensureFamilyFeedbackDrawerSelection(state as unknown as FamilyFeedbackPageState, 'camp-1')).resolves.toBe(false);
 	});
 });

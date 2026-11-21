@@ -58,7 +58,7 @@
 		<DrawerField label={$t('activities.enrolled')}>
 			<div class={cn(fieldClass, 'flex items-center gap-2 font-sans tabular-nums text-foreground/80')}>
 				<Users class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-				{activity.enrollments.length}
+				{activity.enrollmentCount}
 			</div>
 		</DrawerField>
 	</div>

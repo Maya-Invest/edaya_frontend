@@ -6,12 +6,12 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getEventsPageState } from '../events-page.svelte';
+	import IncidentLessonSelect from './IncidentLessonSelect.svelte';
 
 	type IncidentKind = 'positive' | 'minor_infraction' | 'major_infraction' | 'emergency';
 	const INCIDENT_KINDS: IncidentKind[] = [
@@ -36,37 +36,19 @@
 	let kind = $state<IncidentKind>('minor_infraction');
 	let date = $state('');
 	let lessonSessionId = $state('');
-	let lessons = $state<Awaited<ReturnType<typeof eventsPage.loadIncidentLessons>>>([]);
-	let lessonLoadGeneration = 0;
-	let lessonsLoading = $state(false);
-	let lessonError = $state(false);
-	async function loadLessons(classId: string) {
-		const generation = ++lessonLoadGeneration;
-		lessonsLoading = true;
-		lessonError = false;
-		try {
-			const data = await eventsPage.loadIncidentLessons(classId);
-			if (generation === lessonLoadGeneration)
-				lessons = data;
-		}
-		catch {
-			if (generation === lessonLoadGeneration)
-				lessonError = true;
-		}
-		finally {
-			if (generation === lessonLoadGeneration)
-				lessonsLoading = false;
-		}
-	}
+	let showAdditionalFields = $state(false);
 	const isEdit = $derived(incident !== undefined);
 	const schoolId = $derived.by(() => {
 		return academicContext.schoolScopeId || academicContext.schools[0]?.id || '';
 	});
 	const selectedStudent = $derived(eventsPage.students.find(entry => entry.id === studentId));
+	const lessonClassId = $derived(incident?.classGroupId ?? selectedStudent?.classId);
+	let previousClass: string | undefined;
 	$effect(() => {
-		const classId = incident?.classGroupId ?? selectedStudent?.classId;
-		if (open && classId)
-			void loadLessons(classId);
+		const next = lessonClassId;
+		if (open && !isEdit && previousClass !== undefined && next !== previousClass)
+			lessonSessionId = '';
+		previousClass = open ? next : undefined;
 	});
 	const kindLabel = $derived($t(`events.kind.${kind}`));
 	const studentClass = $derived(selectedStudent
@@ -76,6 +58,7 @@
 		return incidentTitle.trim().length > 0 && description.trim().length > 0 && (isEdit || (studentId.length > 0 && schoolId.length > 0));
 	});
 	function resetForm() {
+		showAdditionalFields = false;
 		if (incident) {
 			studentId = incident.studentId;
 			incidentTitle = incident.title ?? incident.summary;
@@ -189,9 +172,13 @@
 		</Label>
 		<Input id="incident-title" data-testid="incident-title-input" bind:value={incidentTitle} />
 	</div>
-	<details class="space-y-3 rounded-collection border p-3"><summary>{$t('profile.additionalFields')}</summary>
-		<Label class="block space-y-2"><span>{$t('profile.lessonOccurrence')}</span><SelectField class="w-full border bg-card" bind:value={lessonSessionId} disabled={lessonsLoading || lessonError}><option value="">{$t('profile.notProvided')}</option>{#if lessonSessionId && !lessons.some(lesson => lesson.id === lessonSessionId)}<option value={lessonSessionId}>{$t('profile.restricted')}</option>{/if}{#each lessons as lesson (lesson.id)}<option value={lesson.id}>{lesson.displayLabel ?? $t('profile.lessonOccurrence')} · {lesson.startsAt}</option>{/each}</SelectField></Label>
-		{#if lessonError}<p role="alert">{$t('dataState.error')}</p>{/if}
+	<details bind:open={showAdditionalFields} class="space-y-3 rounded-collection border p-3">
+		<summary>{$t('profile.additionalFields')}</summary>
+		{#if open && showAdditionalFields}
+			{#key JSON.stringify([eventsPage.lessonScope, lessonClassId])}
+				<IncidentLessonSelect classGroupId={lessonClassId} bind:value={lessonSessionId} />
+			{/key}
+		{/if}
 	</details>
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">

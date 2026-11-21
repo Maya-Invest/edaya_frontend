@@ -14,10 +14,9 @@
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import StudentCreateModal from './components/StudentCreateModal.svelte';
 	import StudentsList from './components/StudentsList.svelte';
-	import { studentListUsesFullRoster } from './lib/student-list-filters';
 	import {
 		StudentsPageState,
 		setStudentsPageState,
@@ -40,52 +39,9 @@
 
 	const urlFilters = $derived(readStudentListFilters($page.url));
 
-	let lastPagedFilterKey = $state('');
-	let wasFullRoster = false;
-
+	onDestroy(() => studentsPage.dispose());
 	$effect(() => {
 		studentsPage.filters.hydrate(urlFilters);
-	});
-
-	$effect(() => {
-		if (!studentsPage.filters.ready) {
-			return;
-		}
-		void studentsPage.filters.values.q;
-		void studentsPage.filters.values.status;
-		void studentsPage.filters.values.class;
-		void studentsPage.filters.values.sort;
-		void studentsPage.filters.values.photoReview;
-
-		if (!studentListUsesFullRoster(studentsPage.filters.values)) {
-			studentsPage.clearFullRoster();
-			if (wasFullRoster) {
-				void studentsPage.refreshList();
-			}
-			wasFullRoster = false;
-			return;
-		}
-
-		wasFullRoster = true;
-		void studentsPage.loadFullRoster();
-	});
-
-	$effect(() => {
-		const key = JSON.stringify(urlFilters);
-		const active = urlFilters.class !== 'all' || urlFilters.status !== 'all' || urlFilters.q.trim() !== '';
-
-		if (!lastPagedFilterKey) {
-			lastPagedFilterKey = key;
-			if (active && !studentListUsesFullRoster(urlFilters)) {
-				void studentsPage.refreshList();
-			}
-			return;
-		}
-
-		if (key !== lastPagedFilterKey && !studentListUsesFullRoster(urlFilters)) {
-			void studentsPage.refreshList();
-		}
-		lastPagedFilterKey = key;
 	});
 
 	$effect(() => {
@@ -112,7 +68,7 @@
 	onCreated={handleCreated}
 />
 
-<PageQuery {query} loadingTitle={$t('school.students')}>
+<PageQuery {query} cache={false} cacheKey={url => studentsPage.directoryKey(url)} loadingTitle={$t('school.students')}>
 	{#snippet children(data)}
 		<DataState
 			preserveShell

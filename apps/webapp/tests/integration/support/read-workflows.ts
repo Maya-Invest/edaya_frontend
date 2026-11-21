@@ -283,7 +283,7 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   'web.scenario.0118': async ctx => {
     const report = await entity(ctx,'results',ctx.entities.reportCardId);
     const student = await entity(ctx,'students',report.studentId);
-    await exerciseFilter(ctx,report.status,ctx.page.locator('main tr').filter({hasText:student.lastName}));
+    await exerciseFilter(ctx,report.status,ctx.page.locator('main tr').filter({hasText:student.lastName}),'status');
   },
   'web.scenario.0066': fixtureName('activities','activityId','name','[role="dialog"].ui-drawer'),
   'web.scenario.0067': async ctx => {

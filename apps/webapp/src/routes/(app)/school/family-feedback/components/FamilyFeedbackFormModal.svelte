@@ -10,6 +10,8 @@
 	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getFamilyFeedbackPageState } from '../family-feedback-page.svelte';
+	import FamilyFeedbackPickerFields from './FamilyFeedbackPickerFields.svelte';
+	import FamilyFeedbackSelect from './FamilyFeedbackSelect.svelte';
 
 	let {
 		campaign,
@@ -35,23 +37,15 @@
 	const isEdit = $derived(campaign !== undefined);
 	const periods = $derived(academicContext.periodsForYear);
 	const periodLabel = $derived(periods.find(period => period.id === academicPeriodId)?.label ?? $t('familyFeedback.periodLabel'));
-	const assignmentLabel = $derived.by(() => {
-		const label = familyFeedbackPage.assignments.find(entry => entry.id === teacherAssignmentId)?.label;
-		return label ?? $t('familyFeedback.assignmentLabel');
-	});
-	const moderatorLabel = $derived.by(() => {
-		const name = familyFeedbackPage.staff.find(entry => entry.id === moderatorStaffId)?.name;
-		return name ?? $t('familyFeedback.moderator');
-	});
 	const canSubmit = $derived.by(() => {
 		if (isEdit) {
 			return true;
 		}
-		return academicPeriodId.length > 0 && teacherAssignmentId.length > 0;
+		return familyFeedbackPage.optionsStatus === 'ready' && academicPeriodId.length > 0 && Boolean(familyFeedbackPage.findOption('assignments', teacherAssignmentId));
 	});
 
 	$effect(() => {
-		if (isEdit || !academicPeriodId || !teacherAssignmentId) {
+		if (!open || isEdit || !academicPeriodId || !teacherAssignmentId) {
 			preview = null;
 			return;
 		}
@@ -112,64 +106,30 @@
 	onSubmit={submit}
 >
 	<p class="text-sm text-muted-foreground">{$t('familyFeedback.confidentiality')}</p>
-	{#if !isEdit}
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('familyFeedback.assignmentLabel')}
-			</Label>
-			<Select.Root type="single" value={teacherAssignmentId} onValueChange={v => v && (teacherAssignmentId = v)}>
-				<Select.Trigger>
-					<Select.Value placeholder={$t('familyFeedback.assignmentLabel')}>
-						{assignmentLabel}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content class="z-[100]">
-					{#each familyFeedbackPage.assignments as entry (entry.id)}
-						<Select.Item value={entry.id} label={entry.label}>
-							{entry.label}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('familyFeedback.periodLabel')}
-			</Label>
-			<Select.Root type="single" value={academicPeriodId} onValueChange={v => v && (academicPeriodId = v)}>
-				<Select.Trigger>
-					<Select.Value placeholder={$t('familyFeedback.periodLabel')}>
-						{periodLabel}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content class="z-[100]">
-					{#each periods as period (period.id)}
-						<Select.Item value={period.id} label={period.label}>
-							{period.label}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('familyFeedback.moderator')}
-			</Label>
-			<Select.Root type="single" value={moderatorStaffId} onValueChange={v => (moderatorStaffId = v ?? '')}>
-				<Select.Trigger>
-					<Select.Value placeholder={$t('familyFeedback.moderator')}>
-						{moderatorLabel}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content class="z-[100]">
-					{#each familyFeedbackPage.staff as staff (staff.id)}
-						<Select.Item value={staff.id} label={staff.name}>
-							{staff.name}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
+	{#if open && !isEdit}
+		<FamilyFeedbackPickerFields includeAssignments>
+			<FamilyFeedbackSelect picker="assignments" label={$t('familyFeedback.assignmentLabel')} bind:value={teacherAssignmentId} />
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('familyFeedback.periodLabel')}
+				</Label>
+				<Select.Root type="single" value={academicPeriodId} onValueChange={v => v && (academicPeriodId = v)}>
+					<Select.Trigger>
+						<Select.Value placeholder={$t('familyFeedback.periodLabel')}>
+							{periodLabel}
+						</Select.Value>
+					</Select.Trigger>
+					<Select.Content class="z-[100]">
+						{#each periods as period (period.id)}
+							<Select.Item value={period.id} label={period.label}>
+								{period.label}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
+			<FamilyFeedbackSelect picker="moderators" label={$t('familyFeedback.moderator')} bind:value={moderatorStaffId} />
+		</FamilyFeedbackPickerFields>
 	{/if}
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">

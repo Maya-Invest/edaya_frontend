@@ -47,16 +47,25 @@ function formatDate(value: unknown): string {
 	return String(value).slice(0, 10);
 }
 
+export type ActivityOption = Pick<Activity, 'id' | 'name'>;
+
+function listSchoolActivities(client: SchoolClient, schoolId: string, signal?: AbortSignal) {
+	return safeOptionalEntityList(() => listAllEntityPages(
+		query => client.entities.activities.list(query),
+		{ baseQuery: { schoolId }, signal },
+	));
+}
+
+export async function fetchActivityOptions(client: SchoolClient, schoolId: string, signal?: AbortSignal): Promise<ActivityOption[]> {
+	const activities = await listSchoolActivities(client, schoolId, signal);
+	return activities.map(({ id, name }) => ({ id, name }));
+}
+
 export async function fetchActivitySources(
 	client: SchoolClient,
 	schoolId: string,
 ): Promise<ActivitySources> {
-	const activitiesRaw = await safeOptionalEntityList(
-		() => listAllEntityPages(
-			query => client.entities.activities.list(query),
-			{ baseQuery: { schoolId } },
-		),
-	);
+	const activitiesRaw = await listSchoolActivities(client, schoolId);
 	const activityIds = uniqueIds(activitiesRaw.map(activity => activity.id));
 	const activityEnrollmentsRaw = await safeOptionalEntityList(
 		() => listAllEntityPagesForIdFilters(
@@ -125,7 +134,9 @@ export async function fetchActivities(client: SchoolClient, schoolId: string): P
 export async function fetchActivityById(
 	client: SchoolClient,
 	activityId: string,
+	signal?: AbortSignal,
 ): Promise<Activity | null> {
+	signal?.throwIfAborted();
 	const activitiesRaw = await safeOptionalEntityList(async () => {
 		const activity = await client.entities.activities.one({ id: activityId });
 		return activity ? [activity] : [];
@@ -134,12 +145,12 @@ export async function fetchActivityById(
 		return null;
 	}
 
-	const activityEnrollmentsRaw = await safeOptionalEntityList(
-		() => client.entities.activityEnrollments.list({ activityId }),
-	);
-	const classActivityEnrollmentsRaw = await safeOptionalEntityList(
-		() => client.entities.classActivityEnrollments.list({ activityId }),
-	);
+	const options = { baseQuery: { activityId }, signal };
+	const [activityEnrollmentsRaw, classActivityEnrollmentsRaw] = await Promise.all([
+		safeOptionalEntityList(() => listAllEntityPages(query => client.entities.activityEnrollments.list(query), options)),
+		safeOptionalEntityList(() => listAllEntityPages(query => client.entities.classActivityEnrollments.list(query), options)),
+	]);
+	signal?.throwIfAborted();
 
 	return mapActivities({ activitiesRaw, activityEnrollmentsRaw, classActivityEnrollmentsRaw })[0] ?? null;
 }

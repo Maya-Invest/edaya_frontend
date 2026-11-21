@@ -13,20 +13,29 @@ let replyError: Error | null = null;
 let version = 1;
 let allowed = true;
 let olderPage = false;
+let unread = true;
+let failReceipt = false;
+let sequence = 1;
 const sent: Record<string, unknown>[] = [];
-const detail = () => ({ conversation: { id: 'thread', version, unread: true, allowedActions: { reply: allowed, resolve: allowed } }, messages: [{ id: 'one', sequence: 1, body: 'Opening hours?' }], hasMore: false });
+const detail = () => ({ conversation: { id: 'thread', version, unread, allowedActions: { reply: allowed, resolve: allowed } }, messages: [{ id: 'one', sequence, body: 'Opening hours?' }], hasMore: false });
 interface ListRow { id: string }
 interface ListResponse { items: ListRow[]; total: number; unreadCount: number }
 interface ListRequest { search?: string; destination?: string; status?: string; order: string; offset: number; limit: number }
 let listHandler = async (_input: ListRequest): Promise<ListResponse> => ({ items: [], total: 0, unreadCount: 1 });
 const listCalls: ListRequest[] = [];
+const readBadge = mock(async () => ({ count: 0 }));
 const client = { queries: {
+	getUnresolvedConversationCount: readBadge,
 	listConversations: async (input: ListRequest) => { listCalls.push(input); return listHandler(input); },
 	getConversation: async (input: { beforeSequence?: number }) => olderPage
 		? { ...detail(), messages: [{ id: String(input.beforeSequence ? 1 : 2), sequence: input.beforeSequence ? 1 : 2, body: 'History' }], hasMore: !input.beforeSequence }
 		: detail(),
 }, commands: {
-	markConversationRead: async (input: Record<string, unknown>) => { sent.push(input); },
+	markConversationRead: async (input: Record<string, unknown>) => {
+        sent.push(input);
+        if (failReceipt) throw new Error('Receipt unavailable');
+        unread = false;
+    },
 	replyConversation: async (input: Record<string, unknown>) => {
 		sent.push(input); if (replyError)
 			throw replyError; version++; return detail().conversation;
@@ -44,8 +53,48 @@ mock.module('$lib/api/mutations/run-mutation', () => ({ runMutation: async (fn: 
 } }));
 const { ApiError } = await import('@maya-invest/edaya-api-client');
 const { MessagesPageState } = await import('../../src/routes/(app)/school/messages/messages-page.svelte');
-afterEach(() => { canReadMessages = true; canReviewMessages = false; replyError = null; version = 1; allowed = true; olderPage = false; sent.length = 0; session.schoolId = 'school'; listCalls.length = 0; listHandler = async () => ({ items: [], total: 0, unreadCount: 1 }); });
+afterEach(() => { canReadMessages = true; canReviewMessages = false; replyError = null; version = 1; allowed = true; olderPage = false; unread = true; sequence = 1; failReceipt = false; sent.length = 0; session.schoolId = 'school'; listCalls.length = 0; listHandler = async () => ({ items: [], total: 0, unreadCount: 1 }); });
 describe('staff messaging integration state', () => {
+    test('the receipt clears only the visible row covered by the displayed message', async () => {
+        const state = new MessagesPageState(() => new URL('http://local/school/messages/thread'));
+        listHandler = async () => ({ items: [{ id: 'thread', lastSequence: 2, unread: true }], total: 1, unreadCount: 1 });
+        await state.load();
+        expect(state.items[0].unread).toBe(true);
+        expect(state.unreadCount).toBe(1);
+        sequence = 2;
+        await state.refresh();
+        expect(state.items[0].unread).toBe(false);
+        expect(state.unreadCount).toBe(0);
+        unread = true;
+        listHandler = async () => ({ items: [{ id: 'another', lastSequence: 2, unread: true }], total: 1, unreadCount: 1 });
+        await state.refresh();
+        expect(state.unreadCount).toBe(1);
+        unread = true;
+        listHandler = async ({ limit }) => ({ items: Array.from({ length: limit }, (_, i) => ({ id: String(i) })), total: 75, unreadCount: unread ? 5 : 4 });
+        await state.refresh();
+        expect(listCalls.at(-1)?.limit).toBe(1);
+        expect(state.unreadCount).toBe(4);
+    });
+    test('read receipt writes follow the authorized unread state through polling and retry', async () => {
+        const state = new MessagesPageState(() => new URL('http://local/school/messages/thread'));
+        await state.load();
+        for (let poll = 0; poll < 5; poll++) await state.refresh();
+        const afterIdle = sent.length;
+        sequence = 2; // Another device has already read this message.
+        await state.refresh();
+        const afterOtherDevice = sent.length;
+        sequence = 3;
+        unread = true;
+        failReceipt = true;
+        await state.refresh();
+        expect(state.error).toBeTruthy();
+        failReceipt = false;
+        await state.refresh();
+        await state.refresh();
+        expect(state.error).toBe('');
+        expect({ afterIdle, afterOtherDevice, sequences: sent.map(input => input.throughSequence) })
+            .toEqual({ afterIdle: 1, afterOtherDevice: 1, sequences: [1, 3, 3] });
+    });
 	test('concurrent staff activity retains the draft and requires review before resubmission', async () => {
 		const state = new MessagesPageState(() => new URL('http://local/school/messages/thread'));
 		await state.load(); state.beginReply(); state.draft = 'The office opens at eight.';
@@ -89,12 +138,29 @@ describe('staff messaging integration state', () => {
 function pagedRoster(total: number) {
 	listHandler = async ({ offset, limit }) => ({ items: Array.from({ length: Math.max(0, Math.min(limit, total - offset)) }, (_, i) => ({ id: String(offset + i) })), total, unreadCount: 0 });
 }
-function deferredPage() {
-	let resolve!: (page: ListResponse) => void;
-	const promise = new Promise<ListResponse>((done) => { resolve = done; });
+function deferredPage<T = ListResponse>() {
+	let resolve!: (page: T) => void;
+	const promise = new Promise<T>((done) => { resolve = done; });
 	return { promise, resolve };
 }
 describe('conversation infinite loading', () => {
+    test('refreshes the whole retained window within the API page limit and removes revoked rows', async () => {
+        pagedRoster(130);
+        const state = new MessagesPageState(() => new URL('http://local/school/messages'));
+        await state.load();
+        for (let page = 1; page < 5; page++) await state.loadMore();
+        expect(state.items).toHaveLength(125);
+        listCalls.length = 0;
+        listHandler = async ({ offset, limit }) => {
+            const items = Array.from({ length: 130 }, (_, index) => ({ id: String(index) })).filter(row => row.id !== '67');
+            return { items: items.slice(offset, offset + limit), total: items.length, unreadCount: 0 };
+        };
+        await state.refresh();
+        expect(state.items).toHaveLength(125);
+        expect(state.items.some(row => row.id === '67')).toBe(false);
+        expect(state.items.at(-1)?.id).toBe('125');
+        expect(listCalls.map(({ offset, limit }) => [offset, limit])).toEqual([[0, 100], [100, 25]]);
+    });
 	for (const view of ['', '?type=school', '?type=teacher', '?view=teacher']) {
 		test(`appends all batches and preserves them across refresh and selection ${view}`, async () => {
 			pagedRoster(61);
@@ -115,7 +181,8 @@ describe('conversation infinite loading', () => {
 			await state.loadMore();
 			expect(state.items).toHaveLength(61);
 			expect(state.hasMore).toBe(false);
-			expect(listCalls.every(call => call.limit === 25 && call.destination === (view.includes('teacher') ? 'teacher' : view.includes('school') ? 'school' : undefined))).toBe(true);
+			expect(listCalls.map(call => call.limit)).toEqual([25, 25, 50, 50, 50, 25]);
+			expect(listCalls.every(call => call.destination === (view.includes('teacher') ? 'teacher' : view.includes('school') ? 'school' : undefined))).toBe(true);
 		});
 	}
 	test('shows both types together by default and narrows only when a type filter is selected', async () => {
@@ -231,17 +298,16 @@ describe('conversation infinite loading', () => {
 
 const { MessageCountState } = await import('../../src/lib/shell/message-count.svelte');
 describe('unresolved messages sidebar badge', () => {
-	test('counts both unresolved statuses using totals instead of loaded rows', async () => {
-		listHandler = async input => ({ items: [{ id: 'only-one-loaded' }], total: input.status === 'awaiting_school' ? 42 : 17, unreadCount: 99 });
+	afterEach(() => readBadge.mockClear());
+	test('uses a single authorized aggregate without fetching message lists', async () => {
+		readBadge.mockResolvedValueOnce({ count: 59 });
 		const count = new MessageCountState();
 		expect(count.count).toBeNull();
 		await count.refresh();
 		expect(count.count).toBe(59);
-		expect(listCalls.map(({ destination, status, limit, offset }) => ({ destination, status, limit, offset }))).toEqual([
-			{ destination: undefined, status: 'awaiting_school', limit: 1, offset: 0 },
-			{ destination: undefined, status: 'awaiting_guardian', limit: 1, offset: 0 },
-		]);
-		listHandler = async () => ({ items: [], total: 0, unreadCount: 0 });
+		expect(readBadge).toHaveBeenCalledTimes(1);
+		expect(listCalls).toHaveLength(0);
+		readBadge.mockResolvedValueOnce({ count: 0 });
 		await count.refresh();
 		expect(count.count).toBe(0);
 	});
@@ -250,27 +316,29 @@ describe('unresolved messages sidebar badge', () => {
 		const count = new MessageCountState();
 		await count.refresh();
 		expect(count.count).toBeNull();
+		expect(readBadge).not.toHaveBeenCalled();
 		expect(listCalls).toHaveLength(0);
 	});
 	test('includes the authorized count for staff who can only review teacher conversations', async () => {
 		canReadMessages = false;
 		canReviewMessages = true;
-		listHandler = async () => ({ items: [], total: 4, unreadCount: 0 });
+		readBadge.mockResolvedValueOnce({ count: 8 });
 		const count = new MessageCountState();
 		await count.refresh();
 		expect(count.count).toBe(8);
-		expect(listCalls.every(call => call.destination === undefined)).toBe(true);
+		expect(readBadge).toHaveBeenCalledTimes(1);
+		expect(listCalls).toHaveLength(0);
 	});
 	test('hides counts after access changes and discards responses from the previous account', async () => {
 		const count = new MessageCountState();
-		const pending = deferredPage();
-		listHandler = () => pending.promise;
+		const pending = deferredPage<{ count: number }>();
+		readBadge.mockImplementationOnce(() => pending.promise);
 		const refreshing = count.refresh();
 		session.schoolId = 'other';
-		pending.resolve({ items: [], total: 7, unreadCount: 0 });
+		pending.resolve({ count: 7 });
 		await refreshing;
 		expect(count.count).toBeNull();
-		listHandler = async () => ({ items: [], total: 3, unreadCount: 0 });
+		readBadge.mockResolvedValueOnce({ count: 6 });
 		await count.refresh();
 		expect(count.count).toBe(6);
 		canReadMessages = false;
@@ -278,9 +346,10 @@ describe('unresolved messages sidebar badge', () => {
 	});
 	test('does not show a misleading zero or stale count after a failed request', async () => {
 		const count = new MessageCountState();
-		listHandler = async () => ({ items: [], total: 3, unreadCount: 0 });
+		readBadge.mockResolvedValueOnce({ count: 3 });
 		await count.refresh();
-		listHandler = async () => { throw new Error('offline'); };
+		expect(count.count).toBe(3);
+		readBadge.mockRejectedValueOnce(new Error('offline'));
 		await count.refresh();
 		expect(count.count).toBeNull();
 	});

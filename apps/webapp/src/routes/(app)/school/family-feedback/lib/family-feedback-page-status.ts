@@ -1,5 +1,6 @@
 import type { PageLoadMeta } from '$lib/page/load-state';
 import type { PageQueryRequest } from '$lib/queries/page-status';
+import { academicContext } from '$lib/academic/context.svelte';
 import { resolvePageLoad } from '$lib/queries/page-status';
 
 export type { PageQueryRequest } from '$lib/queries/page-status';
@@ -18,5 +19,5 @@ export function resolveFamilyFeedbackPageLoad<T>(
 	},
 	request?: PageQueryRequest,
 ): Promise<T & PageLoadMeta> {
-	return resolvePageLoad(url, { ...options, waitForShell: false }, request);
+	return resolvePageLoad(url, { ...options, waitForShell: !academicContext.shellReady }, request);
 }

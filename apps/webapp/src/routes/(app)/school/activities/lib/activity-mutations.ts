@@ -1,5 +1,5 @@
 import type { Activity, ActivityEnrollment, ActivityEnrollmentStatus, ClassActivityEnrollment } from '$lib/types/school';
-import type { ActivitiesPageState } from '../activities-page.svelte';
+import type { ActivitiesPageState, ActivityView } from '../activities-page.svelte';
 import { buildActivityConfigCommand, DEFAULT_ACTIVITY_SCHEDULE } from '$lib/api/activity-save-payload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
@@ -28,14 +28,13 @@ export async function createActivityOnPage(
 
 	const activityId = `act-${Date.now().toString(36)}`;
 	const schedule = input.schedule?.trim() || DEFAULT_ACTIVITY_SCHEDULE;
-	const optimistic: Activity = {
+	const optimistic: ActivityView = {
 		id: activityId,
 		name: input.name.trim(),
-		shortName: input.shortName,
 		category: input.category,
 		coach: input.coach.trim(),
 		schedule,
-		participants: 0,
+		enrollmentCount: 0,
 		capacity: input.capacity,
 		description: input.description.trim(),
 		startDate: input.startDate,
@@ -44,7 +43,7 @@ export async function createActivityOnPage(
 		classEnrollments: [],
 	};
 
-	const result = await runActivityRouteMutation({
+	const result = await runActivityRouteMutation(state, {
 		request: () => client.commands.configureActivity(
 			buildActivityConfigCommand(null, {
 				id: activityId,
@@ -116,7 +115,7 @@ export async function updateActivityOnPage(
 		schedule,
 	};
 
-	const result = await runActivityRouteMutation({
+	const result = await runActivityRouteMutation(state, {
 		request: () => client.commands.configureActivity(
 			buildActivityConfigCommand(existing, {
 				id: input.activityId,
@@ -154,7 +153,7 @@ export async function deleteActivityOnPage(
 		return false;
 	}
 
-	const result = await runActivityRouteMutation({
+	const result = await runActivityRouteMutation(state, {
 		request: () => client.entities.activities.delete({ id: activityId }),
 		successMessage: opts?.successMessage,
 		apply: () => {
@@ -178,16 +177,19 @@ export async function enrollStudentInActivityOnPage(
 		createdAt?: string;
 		successMessage?: string;
 	},
+	recordSave?: () => void,
 ): Promise<boolean> {
+	const scope = state.scope;
 	const client = getBrowserSchoolClient();
 	const activity = state.findActivity(input.activityId);
-	if (!activity) {
+	if (!activity?.enrollments) {
 		return false;
 	}
 
 	const previous = activity.enrollments;
 	const existing = previous.find(enrollment => enrollment.studentId === input.studentId);
 	const id = input.enrollmentId ?? existing?.id ?? `ae-${Date.now().toString(36)}`;
+	const enrollmentCount = activity.enrollmentCount + (existing ? 0 : 1);
 	const createdAt = input.createdAt ?? (existing ? undefined : new Date().toISOString());
 	const optimistic: ActivityEnrollment = {
 		id,
@@ -195,7 +197,7 @@ export async function enrollStudentInActivityOnPage(
 		status: input.status,
 	};
 
-	const result = await runActivityRouteMutation({
+	const result = await runActivityRouteMutation(state, {
 		request: () => client.commands.enrollStudentInActivity({
 			id,
 			activityId: input.activityId,
@@ -206,16 +208,17 @@ export async function enrollStudentInActivityOnPage(
 		successMessage: input.successMessage,
 		apply: () => {
 			const next = previous.filter(enrollment => enrollment.studentId !== input.studentId);
-			state.patchActivity(input.activityId, { enrollments: [...next, optimistic] });
+			state.patchActivity(input.activityId, { enrollments: [...next, optimistic], enrollmentCount });
 		},
 		rollback: () => {
-			state.patchActivity(input.activityId, { enrollments: previous });
+			state.patchActivity(input.activityId, { enrollments: previous, enrollmentCount: activity.enrollmentCount });
 		},
-	});
+	}, recordSave);
 
-	if (result) {
+	if (result && scope === state.scope) {
 		const next = previous.filter(enrollment => enrollment.studentId !== input.studentId);
 		state.patchActivity(input.activityId, {
+			enrollmentCount,
 			enrollments: [...next, {
 				id: result.id,
 				studentId: result.studentId,
@@ -237,7 +240,7 @@ export async function removeActivityEnrollmentOnPage(
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const activity = state.findActivity(input.activityId);
-	if (!activity) {
+	if (!activity?.enrollments) {
 		return false;
 	}
 
@@ -247,16 +250,17 @@ export async function removeActivityEnrollmentOnPage(
 		return false;
 	}
 
-	const result = await runActivityRouteMutation({
+	const result = await runActivityRouteMutation(state, {
 		request: () => client.entities.activityEnrollments.delete({ id: input.enrollmentId }),
 		successMessage: input.successMessage,
 		apply: () => {
 			state.patchActivity(input.activityId, {
 				enrollments: previous.filter(enrollment => enrollment.id !== input.enrollmentId),
+				enrollmentCount: Math.max(0, activity.enrollmentCount - 1),
 			});
 		},
 		rollback: () => {
-			state.patchActivity(input.activityId, { enrollments: previous });
+			state.patchActivity(input.activityId, { enrollments: previous, enrollmentCount: activity.enrollmentCount });
 		},
 	});
 
@@ -270,10 +274,12 @@ export async function ensureClassActivityEnrollmentOnPage(
 		classGroupId: string;
 		successMessage?: string;
 	},
+	recordSave?: () => void,
 ): Promise<boolean> {
+	const scope = state.scope;
 	const client = getBrowserSchoolClient();
 	const activity = state.findActivity(input.activityId);
-	if (!activity) {
+	if (!activity?.classEnrollments) {
 		return false;
 	}
 
@@ -288,7 +294,7 @@ export async function ensureClassActivityEnrollmentOnPage(
 		classGroupId: input.classGroupId,
 	};
 
-	const result = await runActivityRouteMutation({
+	const result = await runActivityRouteMutation(state, {
 		request: () => client.entities.classActivityEnrollments.save({
 			id,
 			activityId: input.activityId,
@@ -304,9 +310,9 @@ export async function ensureClassActivityEnrollmentOnPage(
 		rollback: () => {
 			state.patchActivity(input.activityId, { classEnrollments: previous });
 		},
-	});
+	}, recordSave);
 
-	if (result) {
+	if (result && scope === state.scope) {
 		state.patchActivity(input.activityId, {
 			classEnrollments: [...previous.filter(row => row.classGroupId !== input.classGroupId), {
 				id: result.id,
@@ -328,7 +334,7 @@ export async function removeClassActivityEnrollmentOnPage(
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const activity = state.findActivity(input.activityId);
-	if (!activity) {
+	if (!activity?.classEnrollments) {
 		return false;
 	}
 
@@ -338,7 +344,7 @@ export async function removeClassActivityEnrollmentOnPage(
 		return false;
 	}
 
-	const result = await runActivityRouteMutation({
+	const result = await runActivityRouteMutation(state, {
 		request: () => client.entities.classActivityEnrollments.delete({ id: input.enrollmentId }),
 		successMessage: input.successMessage,
 		apply: () => {

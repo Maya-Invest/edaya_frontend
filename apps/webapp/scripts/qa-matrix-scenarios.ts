@@ -50,6 +50,7 @@ import {
 } from './qa-harness-ui';
 import {
 	assertNoFatalError,
+	buildTimetableSessionPath,
 	discoverEntities,
 	emptyEntities,
 	formatError,
@@ -64,9 +65,8 @@ import {
 } from './qa-matrix-support';
 import {
 	MODAL_SURFACES,
-	ROUTE_REDIRECTS,
+	REDIRECT_SMOKE_ACTION,
 	ROUTE_SMOKE_ACTION,
-	inventoryRouteToMatrixPath,
 } from './qa-route-catalog';
 import { isStudentBlockedScenario, STUDENT_SETUP_BLOCKER } from '../tests/integration/setup/setup-blockers';
 import { isFilterOrSearchRow, runFilterScenario } from './filter-setup-registry';
@@ -734,23 +734,19 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return runShellScenario(row, ctx, browser, entities);
 	}
 
-	// ── Generated: legacy redirect smoke ──
-	if (/^Redirect — cible attendue$/i.test(action)) {
-		const nav = await navigateToRow(ctx, row, entities);
-		if (!nav.url) return na(row, nav.reason ?? 'URL non résolue');
-		await page.waitForTimeout(1_500);
-		const pathname = new URL(page.url()).pathname;
-		const routeKey = inventoryRouteToMatrixPath(pathname).replace(/\[id\]/g, ':id?').replace(/\[classId\]/g, ':classId');
-		const expected = ROUTE_REDIRECTS[routeKey] ?? ROUTE_REDIRECTS[inventoryRouteToMatrixPath(row.endpoint.replace(/^https?:\/\/[^/]+/i, '').split('?')[0] ?? '')];
-		if (!expected) {
-			return ok(row, `Redirected to ${pathname}`);
-		}
-		const targetPrefix = expected.split('?')[0]?.replace(':classId', entities.classId ?? '')
-			.replace(':id?', entities.studentId ?? '')
-			.replace(':id', entities.studentId ?? '') ?? expected;
-		const okRedirect = pathname.startsWith(targetPrefix.split('?')[0] ?? targetPrefix)
-			|| page.url().includes(targetPrefix.replace(/:\w+\??/g, ''));
-		return okRedirect ? ok(row, page.url()) : notOk(row, `Expected redirect toward ${expected}, got ${page.url()}`);
+	if (action === REDIRECT_SMOKE_ACTION) {
+		if (new URL(row.endpoint, ctx.base).pathname !== '/classes/[classId]/timetable/[id]')
+			return notOk(row, 'Missing redirect assertion for this route');
+		const { classId, sessionId, timetableWeek } = entities;
+		if (!classId || !sessionId) return na(row, 'A real timetable session is required');
+		const legacy = buildTimetableSessionPath(classId, sessionId, undefined, timetableWeek);
+		const expected = new URL(buildTimetableSessionPath(classId, sessionId, 'details', timetableWeek), ctx.base);
+		await page.goto(new URL(legacy, ctx.base).href, { waitUntil: 'domcontentloaded' });
+		await page.waitForURL(url => url.origin === expected.origin
+			&& decodeURIComponent(url.pathname) === decodeURIComponent(expected.pathname)
+			&& url.search === expected.search);
+		await page.getByRole('dialog').getByTestId('drawer-tab-bar').waitFor({ state: 'visible' });
+		return ok(row, page.url());
 	}
 
 	// ── Generated: sidebar href smoke ──

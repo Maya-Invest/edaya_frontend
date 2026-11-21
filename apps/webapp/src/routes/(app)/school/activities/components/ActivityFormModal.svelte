@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Activity } from '$lib/types/school';
+	import type { ActivityView } from '../activities-page.svelte';
 	import { DEFAULT_ACTIVITY_SCHEDULE } from '$lib/api/activity-save-payload';
 	import ShortNameField from '$lib/components/school/shared/ShortNameField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -10,6 +11,7 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getActivitiesPageState } from '../activities-page.svelte';
 
@@ -22,7 +24,7 @@
 		disabled = false,
 		title,
 	}: {
-		activity?: Activity;
+		activity?: ActivityView;
 		open?: boolean;
 		onCreated?: (activityId: string) => void;
 		disabled?: boolean;
@@ -32,7 +34,9 @@
 	const activitiesPage = getActivitiesPageState();
 
 	let busy = $state(false);
-	let wasOpen = $state(false);
+	let configurationStatus = $state<'ready' | 'loading' | 'error'>('ready');
+	let retry = $state(0);
+	let participants = $state(0);
 	let name = $state('');
 	let shortName = $state('');
 	let category = $state<Activity['category']>('Sport');
@@ -49,11 +53,11 @@
 	const numericCapacity = $derived(Number.parseInt(capacity, 10));
 	const minCapacity = $derived(
 		isEdit && activity
-			? Math.max(activity.enrollments.length, activity.participants)
+			? Math.max(activity.enrollmentCount, participants)
 			: 1,
 	);
 	const canSubmit = $derived.by(() => {
-		return name.trim().length > 0
+		return configurationStatus === 'ready' && name.trim().length > 0
 			&& coach.trim().length > 0
 			&& description.trim().length > 0
 			&& startDate.length > 0
@@ -63,10 +67,11 @@
 			&& startDate <= endDate;
 	});
 
-	function resetForm() {
+	function resetForm(config: { shortName?: string | null; participants: number } | undefined) {
+		participants = config?.participants ?? 0;
 		if (activity) {
 			name = activity.name;
-			shortName = activity?.shortName ?? activity?.name ?? '';
+			shortName = config?.shortName ?? activity.name;
 			category = activity.category;
 			coach = activity.coach;
 			capacity = String(activity.capacity);
@@ -91,11 +96,30 @@
 		}
 	}
 
+	const editingId = $derived(activity?.id);
 	$effect(() => {
-		if (open && !wasOpen) {
-			resetForm();
+		const scope = activitiesPage.scope;
+		const id = editingId;
+		void retry;
+		if (!open)
+			return;
+		if (!id) {
+			untrack(() => resetForm(undefined));
+			configurationStatus = 'ready';
+			return;
 		}
-		wasOpen = open;
+		const controller = new AbortController();
+		configurationStatus = 'loading';
+		untrack(() => void activitiesPage.client().entities.activities.get(id).then((config) => {
+			if (!controller.signal.aborted && scope === activitiesPage.scope) {
+				resetForm(config);
+				configurationStatus = 'ready';
+			}
+		}).catch(() => {
+			if (!controller.signal.aborted)
+				configurationStatus = 'error';
+		}));
+		return () => controller.abort();
 	});
 
 	async function submit() {
@@ -150,7 +174,7 @@
 		busy = false;
 		if (activityId) {
 			open = false;
-			resetForm();
+			resetForm(undefined);
 			onCreated?.(activityId);
 		}
 	}
@@ -176,84 +200,91 @@
 	submitLabel={$t('common.save')}
 	busy={busy}
 	submitDisabled={!canSubmit}
-	onCancel={resetForm}
+	onCancel={() => resetForm(undefined)}
 	onSubmit={submit}
 >
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('activities.name')}
-		</Label>
-		<Input bind:value={name} />
-	</div>
-	<div class="grid gap-3 sm:grid-cols-2">
+	{#if configurationStatus === 'loading'}
+		<p role="status">{$t('dataState.loading')}</p>
+	{:else if configurationStatus === 'error'}
+		<p role="alert">{$t('dataState.errorDescription')}</p>
+		<Button variant="outline" onclick={() => retry++}>{$t('dataState.retry')}</Button>
+	{:else}
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('activities.category')}
+				{$t('activities.name')}
 			</Label>
-			<Select.Root type="single" value={category} onValueChange={v => v && (category = v as Activity['category'])}>
-				<Select.Trigger>
-					<Select.Value placeholder={$t('activities.category')}>
-						{categoryLabel}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content class="z-[100]">
-					{#each CATEGORIES as entry (entry)}
-						<Select.Item value={entry} label={$t(`activities.cat.${entry}`)}>
-							{$t(`activities.cat.${entry}`)}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
+			<Input bind:value={name} />
+		</div>
+		<div class="grid gap-3 sm:grid-cols-2">
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('activities.category')}
+				</Label>
+				<Select.Root type="single" value={category} onValueChange={v => v && (category = v as Activity['category'])}>
+					<Select.Trigger>
+						<Select.Value placeholder={$t('activities.category')}>
+							{categoryLabel}
+						</Select.Value>
+					</Select.Trigger>
+					<Select.Content class="z-[100]">
+						{#each CATEGORIES as entry (entry)}
+							<Select.Item value={entry} label={$t(`activities.cat.${entry}`)}>
+								{$t(`activities.cat.${entry}`)}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('activities.capacity')}
+				</Label>
+				<Input type="number" min={minCapacity} step="1" bind:value={capacity} />
+			</div>
+		</div>
+		<div class="grid gap-3 sm:grid-cols-2">
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('activities.coach')}
+				</Label>
+				<Input bind:value={coach} />
+			</div>
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('activities.schedule')}
+				</Label>
+				<Input bind:value={schedule} placeholder={DEFAULT_ACTIVITY_SCHEDULE} />
+			</div>
+		</div>
+		<div class="grid gap-3 sm:grid-cols-2">
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('activities.startDate')}
+				</Label>
+				<Input type="date" bind:value={startDate} />
+			</div>
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('activities.endDate')}
+				</Label>
+				<Input type="date" bind:value={endDate} />
+			</div>
 		</div>
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('activities.capacity')}
+				{$t('activities.description')}
 			</Label>
-			<Input type="number" min={minCapacity} step="1" bind:value={capacity} />
+			<Textarea bind:value={description} rows={4} />
 		</div>
-	</div>
-	<div class="grid gap-3 sm:grid-cols-2">
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('activities.coach')}
-			</Label>
-			<Input bind:value={coach} />
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('activities.schedule')}
-			</Label>
-			<Input bind:value={schedule} placeholder={DEFAULT_ACTIVITY_SCHEDULE} />
-		</div>
-	</div>
-	<div class="grid gap-3 sm:grid-cols-2">
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('activities.startDate')}
-			</Label>
-			<Input type="date" bind:value={startDate} />
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('activities.endDate')}
-			</Label>
-			<Input type="date" bind:value={endDate} />
-		</div>
-	</div>
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('activities.description')}
-		</Label>
-		<Textarea bind:value={description} rows={4} />
-	</div>
-	{#if !isEdit}
-		<div class="space-y-2">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('activities.linkClasses')}
-			</Label>
-			<p class="text-xs text-muted-foreground">{$t('activities.linkClassesHint')}</p>
-			<ClassGroupPicker bind:values={linkedClassGroupIds} mode="multi" variant="embedded" active={open} />
-		</div>
+		{#if !isEdit}
+			<div class="space-y-2">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('activities.linkClasses')}
+				</Label>
+				<p class="text-xs text-muted-foreground">{$t('activities.linkClassesHint')}</p>
+				<ClassGroupPicker bind:values={linkedClassGroupIds} mode="multi" variant="embedded" active={open} />
+			</div>
+		{/if}
+		<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 	{/if}
-	<ShortNameField name={name} bind:value={shortName} creating={!isEdit} />
 </FormModal>

@@ -5,7 +5,7 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
-	import { bootstrapAppShell, invalidateAppShellBootstrapCache } from '$lib/auth/bootstrap-app';
+	import { bootstrapAppShell } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
 	import { leaveStaffWebappForSessionKind } from '$lib/auth/leave-staff-webapp';
 	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
@@ -159,18 +159,15 @@
 		if (!browser || !authSession.ready || !authSession.isLoggedIn) {
 			return;
 		}
-		if (!authSession.sessionKind) {
+		if (authSession.sessionKind !== 'staff') {
 			return;
 		}
 		const shellIdentity = `${authSession.sessionKind}:${authSession.schoolId ?? ''}:${authSession.userId ?? ''}`;
 		void shellIdentity;
-		void (async () => {
-			await bootstrapAppShell();
-			if (authSession.schoolId && academicContext.schools.length === 0) {
-				invalidateAppShellBootstrapCache();
-				await bootstrapAppShell();
-			}
-		})();
+		// PageQuery shares this request and presents the retry action on failure.
+		untrack(() => {
+			void bootstrapAppShell().catch(() => {});
+		});
 	});
 
 </script>

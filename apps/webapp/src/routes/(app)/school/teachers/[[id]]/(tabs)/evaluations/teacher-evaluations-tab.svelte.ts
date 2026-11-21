@@ -60,7 +60,6 @@ export class TeacherEvaluationsTabState {
 					return {};
 				}
 
-				await page.loadSubjectsIfNeeded();
 				const client = getBrowserSchoolClient();
 				const assignments = await listAllEntityPagesForIdFilters(
 					query => client.entities.teacherAssignments.list(query),
@@ -73,7 +72,7 @@ export class TeacherEvaluationsTabState {
 				const classSubjectIds = uniqueIds(
 					subjectAssignments.map(row => row.classSubjectId).filter((id): id is string => Boolean(id)),
 				);
-				await page.ensureClassSubjectsCached(classSubjectIds);
+				await page.ensureClassSubjectsCached(classSubjectIds, signal);
 				const classIds = uniqueIds([
 					...subjectAssignments.map(row =>
 						page.subjects.find(subject => subject.id === row.classSubjectId)?.classId

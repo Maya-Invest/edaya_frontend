@@ -1,16 +1,16 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { ActivityListFilters } from '$lib/list/list-url-filters';
-import type { Activity, Student } from '$lib/types/school';
+import type { ActivityEnrollment, ClassActivityEnrollment } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { fetchActivities } from '$lib/api/activities-data';
-import { fetchPeopleSources, mapStudents } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { mergeById } from '$lib/detail-data/seed-policies';
+import { entityVersions } from '$lib/entity-versions.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readActivityListFilters, writeActivityListFilters } from '$lib/list/list-url-filters';
+import { ScopedCursorList } from '$lib/list/scoped-cursor-list.svelte';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { queryClient } from '$lib/queries/client';
 import { getContext, setContext } from 'svelte';
 import {
 	createActivityOnPage,
@@ -23,23 +23,37 @@ import {
 	removeClassActivityEnrollmentOnPage,
 	updateActivityOnPage,
 } from './lib';
-import { filterActivityList } from './lib/activity-list-filters';
+import { saveActivityMembershipSelection } from './lib/activity-route-mutation';
 import { activityDetailIdFromUrl } from './lib/activity-selectors';
 
+type ProfileResult = Awaited<ReturnType<ReturnType<typeof queryClient>['queries']['getStaffActivityProfile']>>;
+export type ActivityView = NonNullable<ProfileResult['activity']> & {
+	enrollments?: ActivityEnrollment[];
+	classEnrollments?: ClassActivityEnrollment[];
+};
+
+const listHandoffLifetime = 60_000;
 const ACTIVITIES_VERSION_FAMILIES = ['activities'] as const satisfies readonly EntityVersionKey[];
 
 const ACTIVITIES_PAGE_STATE_KEY = Symbol('activities-page-state');
 
 export class ActivitiesPageState {
-	activities = $state<Activity[]>([]);
-	students = $state<Student[]>([]);
-	studentsLoading = $state(false);
-	studentsLoaded = $state(false);
-	selectedResolving = $state(false);
-	listLoading = $state(false);
+	private detail = $state<{ scope: string; activity: ActivityView }>();
+	private handoff?: { id: string; key: string };
+	private listLoadedAt = 0;
+	private mutationRead?: { version: number; pending: Promise<void> };
+	detailRevision = $state(0);
+	readonly list = new ScopedCursorList(
+		() => ({ scope: this.scope, filters: readActivityListFilters(this.getUrl()) }),
+		() => {
+			this.handoff = undefined;
+			this.clearDetail();
+			this.detailRevision++;
+		},
+		({ filters }, cursor, signal) => queryClient().queries.getStaffActivityList({ ...filters, cursor }, { signal }),
+		async ({ filters }) => (await queryClient().queries.getStaffActivityListExport(filters)).items,
+	);
 
-	private studentsLoadVersion = 0;
-	private listRequestVersion = 0;
 	private readonly versions = new RouteVersionSnapshot(ACTIVITIES_VERSION_FAMILIES);
 
 	readonly filters: ListFiltersState<ActivityListFilters>;
@@ -71,116 +85,82 @@ export class ActivitiesPageState {
 		return getBrowserSchoolClient();
 	}
 
-	findActivity(id: string): Activity | undefined {
-		return this.activities.find(activity => activity.id === id);
+	readonly scope = $derived(JSON.stringify([authSession.authUserId, authSession.userId, authSession.schoolId, academicContext.yearId, academicContext.scopeGeneration, authSession.grants]));
+
+	findActivity(id: string): ActivityView | undefined {
+		const detail = this.detail;
+		return detail?.activity.id === id && detail.scope === this.scope ? detail.activity : undefined;
 	}
 
-	findStudent(id: string): Student | undefined {
-		return this.students.find(student => student.id === id);
+	clearDetail() {
+		this.detail = undefined;
 	}
 
-	filterVisible(activities: readonly Activity[] = this.activities): Activity[] {
-		return filterActivityList(activities, this.filters.values);
-	}
-
-	get visibleActivities() {
-		return this.filterVisible();
-	}
-
-	seedPage(activities: Activity[]) {
-		this.activities = activities;
-		this.versions.markLoaded();
-	}
-
-	mergeActivities(incoming: readonly Activity[]) {
-		this.activities = mergeById(this.activities, incoming);
-	}
-
-	appendActivity(activity: Activity) {
-		this.mergeActivities([activity]);
+	appendActivity(activity: ActivityView) {
+		this.detail = { scope: this.scope, activity };
 	}
 
 	removeActivity(id: string) {
-		this.activities = this.activities.filter(activity => activity.id !== id);
+		if (this.detail?.activity.id === id)
+			this.clearDetail();
 	}
 
-	patchActivity(id: string, patch: Partial<Activity>) {
-		const index = this.activities.findIndex(activity => activity.id === id);
-		if (index >= 0) {
-			this.activities[index] = { ...this.activities[index], ...patch };
+	patchActivity(id: string, patch: Partial<ActivityView>) {
+		const current = this.findActivity(id);
+		if (current)
+			this.appendActivity({ ...current, ...patch });
+	}
+
+	async refreshList(signal?: AbortSignal) {
+		const snapshot = this.versions.capture();
+		if (await this.list.refresh(signal)) {
+			this.versions.markLoaded(snapshot);
+			this.listLoadedAt = Date.now();
 		}
 	}
 
-	async loadActivities() {
-		const version = ++this.listRequestVersion;
-		this.listLoading = true;
+	selectFromList(id: string) {
+		this.handoff = { id, key: this.list.key };
+	}
+
+	takeListSelection(id: string) {
+		const intent = this.handoff;
+		this.handoff = undefined;
+		if (intent?.id !== id || intent.key !== this.list.key || this.list.denied || this.list.failed
+			|| this.versions.isStale() || Date.now() - this.listLoadedAt >= listHandoffLifetime) {
+			return undefined;
+		}
+		return this.list.current?.items.find(row => row.id === id);
+	}
+
+	async refreshAfterMutation() {
+		const read = { version: entityVersions.activities, pending: this.refreshList() };
+		this.mutationRead = read;
 		try {
-			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-			if (!schoolId) {
-				if (version === this.listRequestVersion) {
-					this.seedPage([]);
-				}
-				return;
-			}
-			const activities = await fetchActivities(this.client(), schoolId);
-			if (version === this.listRequestVersion) {
-				this.seedPage(activities);
-			}
+			await read.pending;
 		}
 		finally {
-			if (version === this.listRequestVersion) {
-				this.listLoading = false;
-			}
+			if (this.mutationRead === read)
+				this.mutationRead = undefined;
 		}
-	}
-
-	async ensureStudents(): Promise<void> {
-		if (this.studentsLoaded || this.studentsLoading) {
-			return;
-		}
-
-		const version = ++this.studentsLoadVersion;
-		this.studentsLoading = true;
-		try {
-			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-			if (!schoolId) {
-				return;
-			}
-			const sources = await fetchPeopleSources(this.client(), schoolId);
-			if (version !== this.studentsLoadVersion) {
-				return;
-			}
-			this.students = mapStudents(sources);
-			this.studentsLoaded = true;
-		}
-		finally {
-			if (version === this.studentsLoadVersion) {
-				this.studentsLoading = false;
-			}
-		}
-	}
-
-	async refreshList() {
-		await this.loadActivities();
 	}
 
 	async invalidateIfStale() {
-		if (!this.versions.isStale()) {
+		if (this.mutationRead?.version === entityVersions.activities)
+			return this.mutationRead.pending;
+		if (!this.versions.hasLoaded() || !this.versions.isStale()) {
 			return;
 		}
+		this.detailRevision++;
 		await this.refreshList();
-	}
-
-	hydrateFiltersFromUrl() {
-		this.filters.hydrate(readActivityListFilters(this.getUrl()));
 	}
 
 	queryListPage() {
 		return querySchoolActivitiesPage(this);
 	}
 
-	ensureDrawerSelection(activityId: string) {
-		return ensureActivityDrawerSelection(this, activityId);
+	ensureDrawerSelection(activityId: string, signal: AbortSignal) {
+		return ensureActivityDrawerSelection(this, activityId, signal);
 	}
 
 	createActivity(...args: Parameters<typeof createActivityOnPage> extends [ActivitiesPageState, ...infer R] ? R : never) {
@@ -197,6 +177,16 @@ export class ActivitiesPageState {
 
 	enrollStudent(...args: Parameters<typeof enrollStudentInActivityOnPage> extends [ActivitiesPageState, ...infer R] ? R : never) {
 		return enrollStudentInActivityOnPage(this, ...args);
+	}
+
+	addStudents(activityId: string, ids: string[], isCurrent: () => boolean) {
+		return saveActivityMembershipSelection(this, ids, (studentId, recordSave) =>
+			enrollStudentInActivityOnPage(this, { activityId, studentId, status: 'pending' }, recordSave), isCurrent);
+	}
+
+	addClasses(activityId: string, ids: string[], isCurrent: () => boolean) {
+		return saveActivityMembershipSelection(this, ids, (classGroupId, recordSave) =>
+			ensureClassActivityEnrollmentOnPage(this, { activityId, classGroupId }, recordSave), isCurrent);
 	}
 
 	removeEnrollment(...args: Parameters<typeof removeActivityEnrollmentOnPage> extends [ActivitiesPageState, ...infer R] ? R : never) {

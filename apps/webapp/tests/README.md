@@ -257,3 +257,5 @@ Note edit deep links wait for the notes section to finish loading before rejecti
 Completion-filter fixtures derive all three dates from the recorded complete day, and assertions use that same fixture identity. The final logout scenario opens account Security, checks the sign-out response, then revisits a protected page to verify the session is gone.
 
 Student status deep links must remain registered for both school and class detail routes; the shell canonicalizer must not erase them on cold loads. The drawer still owns permission checks and the status form still requires an explicit save.
+
+The blocking demo layout checks exercise the French class drawer on a narrow viewport and English timetable navigation on desktop. Set `EDAYA_REVIEW_CLEANUP_LAYOUTS=true` when running the demo suite to capture all nine surfaces at both widths and in both languages. Redirect rows marked `coverage: loader` in the feature catalog run in the unit job. The provisioned browser follows a real legacy session link to its details drawer.

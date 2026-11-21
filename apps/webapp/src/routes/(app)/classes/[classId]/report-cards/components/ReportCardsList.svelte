@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ReportCardResult } from '$lib/types/report-cards';
+	import type { ReportListHeader } from '../lib/report-cards-queries';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
@@ -23,6 +23,7 @@
 	import { toast } from '$lib/toast.svelte';
 	import { formatPersistedGrade, formatReportRank } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getReportCardsPageState } from '../report-cards-page.svelte';
 
@@ -32,14 +33,14 @@
 		selectedId,
 	}: {
 		classId: string;
-		onSelect?: (result: ReportCardResult) => void;
+		onSelect?: (result: ReportListHeader) => void;
 		selectedId?: string;
 	} = $props();
 
 	const reportCardsPage = getReportCardsPageState();
 	const initialFilters = $derived(readClassReportCardListFilters($page.url));
-	const results = $derived(reportCardsPage.resultsFor(classId));
-	const classStudents = $derived(reportCardsPage.studentsFor(classId));
+	const list = reportCardsPage.list;
+	const rows = $derived(list.current?.items ?? []);
 	const period = $derived(academicContext.period);
 
 	const listFilters = new ListFiltersState<{ q: string; status: string }>(
@@ -53,33 +54,6 @@
 
 	const statusKeys = ['all', 'none', 'draft', 'generated', 'published'] as const;
 	type StatusFilter = (typeof statusKeys)[number];
-
-	const status = $derived(
-		statusKeys.includes(listFilters.values.status as StatusFilter)
-			? listFilters.values.status as StatusFilter
-			: 'all',
-	);
-
-	const filteredStudents = $derived(
-		classStudents.filter((student) => {
-			const needle = listFilters.values.q.trim().toLowerCase();
-			if (needle && !student.name.toLowerCase().includes(needle)) {
-				return false;
-			}
-			const result = results.find(entry => entry.studentId === student.id);
-			if (status === 'none') {
-				return !result;
-			}
-			if (status === 'all') {
-				return true;
-			}
-			return result?.status === status;
-		}),
-	);
-
-	function resultForStudent(studentId: string) {
-		return results.find(entry => entry.studentId === studentId);
-	}
 
 	function statusLabel(key: (typeof statusKeys)[number]) {
 		if (key === 'all') {
@@ -97,7 +71,7 @@
 		return $t('reportCards.statusPublished');
 	}
 
-	function resultStatusLabel(result: ReportCardResult) {
+	function resultStatusLabel(result: ReportListHeader) {
 		if (result.status === 'published') {
 			return $t('reportCards.statusPublished');
 		}
@@ -108,20 +82,13 @@
 	}
 
 	$effect(() => {
-		listFilters.hydrate({
-			q: initialFilters.q,
-			status: statusKeys.includes(initialFilters.status as StatusFilter)
-				? initialFilters.status
+		const next = initialFilters;
+		untrack(() => listFilters.hydrate({
+			q: next.q,
+			status: statusKeys.includes(next.status as StatusFilter)
+				? next.status
 				: 'all',
-		});
-	});
-
-	$effect(() => {
-		if (!listFilters.ready) {
-			return;
-		}
-		void listFilters.values.status;
-		listFilters.scheduleSync();
+		}));
 	});
 
 	const statusFilterOptions = $derived(
@@ -146,33 +113,16 @@
 		});
 	}
 
-	async function publishOne(resultId: string) {
-		const result = results.find(entry => entry.id === resultId);
-		if (!result) {
-			return;
-		}
+	async function publishOne(result: ReportListHeader) {
 		const name = reportCardsPage.studentFor(result.studentId)?.name ?? '';
 		await reportCardsPage.publishResult({
-			resultId,
+			resultId: result.id,
 			successMessage: get(t)('reportCards.toastPublished', { name }),
 		});
 	}
 
-	async function exportBulletinPack() {
-		const published = results.filter(entry => entry.status === 'published');
-		if (published.length === 0) {
-			return;
-		}
-		await reportCardsPage.performRequestDocumentIssuanceBatch({
-			templateKey: 'report-card.v1',
-			items: published.map(entry => ({
-				sourceId: entry.id,
-				requestId: crypto.randomUUID(),
-				studentId: entry.studentId,
-				classGroupId: classId,
-			})),
-			successMessage: get(t)('documents.toastRequested'),
-		});
+	function exportBulletinPack() {
+		return reportCardsPage.exportPublished(classId, get(t)('documents.toastRequested')).catch(error => toast.error(String(error)));
 	}
 </script>
 
@@ -181,7 +131,7 @@
 		filterCount={[listFilters.values.status].filter(value => value !== 'all').length}
 		onResetFilters={() => listFilters.patchImmediate({ status: 'all' })}
 		eyebrow="{$t('reportCards.classSubtitle')} · {period?.label ?? '—'}"
-		title={$t('reportCards.studentsCount', { n: filteredStudents.length })}
+		title={$t('reportCards.studentsCount', { n: list.current?.total ?? 0 })}
 	>
 		{#snippet search()}
 			<ListSearchField onCommit={() => listFilters.syncNow()} bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
@@ -189,7 +139,8 @@
 		{#snippet filters()}
 			<AcademicPeriodSelector />
 			<FilterSelect
-				bind:value={listFilters.values.status}
+				value={listFilters.values.status}
+				onchange={status => listFilters.patchImmediate({ status })}
 				class="h-9 min-w-[10rem] rounded-full text-xs"
 				options={statusFilterOptions}
 			/>
@@ -213,22 +164,26 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<ReportCardAvailabilityNotice results={results.filter(result => filteredStudents.some(student => student.id === result.studentId))} />
+	<ReportCardAvailabilityNotice summary={list.current} />
 
-	<ListEntityTable listKey="ReportCardsList" rows={filteredStudents} highlightId={selectedId ? filteredStudents.find(student => resultForStudent(student.id)?.id === selectedId)?.id : undefined} canInspect={student => Boolean(resultForStudent(student.id))} onRowClick={(student) => {
-		const result = resultForStudent(student.id);
-		if (result)
-			onSelect?.(result);
-	}} emptyLabel={$t('dataState.emptyDescription')} columns={[{ key: 'name', label: $t('tab.students'), span: 4, required: true }, { key: 'overall', label: $t('reportCards.overall'), span: 2 }, { key: 'rank', label: $t('reportCards.rank'), span: 2 }, { key: 'status', label: $t('reportCards.status'), span: 2 }, { key: 'actions', label: '', span: 1 }]}>
-		{#snippet cell(student, column)}{@const result = resultForStudent(student.id)}
+	<ListEntityTable listKey="ReportCardsList" {rows} total={list.current?.total ?? 0} visibleCount={rows.length}
+		hasMore={Boolean(list.current?.nextCursor) && !list.failed} loadingMore={list.loadingMore} onLoadMore={() => list.more()} highlightId={selectedId ? rows.find(student => student.report?.id === selectedId)?.id : undefined} canInspect={student => Boolean(student.report)} onRowClick={(student) => {
+			const result = student.report;
+			if (result)
+				onSelect?.(result);
+		}} emptyLabel={$t('dataState.emptyDescription')} columns={[{ key: 'name', label: $t('tab.students'), span: 4, required: true }, { key: 'overall', label: $t('reportCards.overall'), span: 2 }, { key: 'rank', label: $t('reportCards.rank'), span: 2 }, { key: 'status', label: $t('reportCards.status'), span: 2 }, { key: 'actions', label: '', span: 1 }]}>
+		{#snippet cell(student, column)}{@const result = student.report}
 			{#if column.key === 'name'}{student.name}
 			{:else if column.key === 'overall'}<span class="tabular-nums">{formatPersistedGrade(result?.grading, result?.overallAverage)}</span>
 			{:else if column.key === 'rank'}<span class="tabular-nums">{formatReportRank(result)}</span>
 			{:else if column.key === 'status'}{#if result}<span class={cn('text-xs', result.status === 'published' ? 'text-accent' : result.status === 'generated' ? 'text-highlight' : 'text-muted-foreground')}>{resultStatusLabel(result)}</span>{:else}<span class="text-muted-foreground">—</span>{/if}
 			{:else if !result || result.status === 'generated' || result.status === 'published'}<RowActionMenu label={`${$t('list.rowActions')} · ${student.name}`}>
 				{#if !result}<RowActionMenuItem onclick={() => generateOne(student.id)}>{$t('reportCards.generate')}</RowActionMenuItem>
-				{:else if result.status === 'generated'}<RowActionMenuItem onclick={() => publishOne(result.id)}>{$t('reportCards.publish')}</RowActionMenuItem>
+				{:else if result.status === 'generated'}<RowActionMenuItem onclick={() => publishOne(result)}>{$t('reportCards.publish')}</RowActionMenuItem>
 				{:else if result.status === 'published'}<RowActionMenuItem onclick={() => void reportCardsPage.performRequestDocumentIssuance({ templateKey: 'report-card.v1', sourceId: result.id, studentId: result.studentId, classGroupId: classId, successMessage: get(t)('documents.toastRequested') })}>{downloadDocumentLabel($t, 'report-card.v1')}</RowActionMenuItem>{/if}
 			</RowActionMenu>{/if}{/snippet}
 	</ListEntityTable>
+	{#if list.failed}
+		<Button variant="outline" onclick={() => list.failed === 'more' ? list.more() : reportCardsPage.refreshList().catch(() => {})}>{$t('dataState.retry')}</Button>
+	{/if}
 </div>

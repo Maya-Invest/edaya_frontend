@@ -1,39 +1,19 @@
-import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { StaffMember, Teacher } from '$lib/types/school';
 import type {
 	FamilyFeedbackAggregate,
-	FamilyFeedbackAssignmentOption,
+	FeedbackOptionsPage,
+	FeedbackPicker,
+	FamilyFeedbackAssignmentLabel,
 	FamilyFeedbackAudiencePreview,
 	FamilyFeedbackCampaign,
 	FamilyFeedbackComment,
 	FamilyFeedbackQuestionAggregate,
 } from './family-feedback-types';
 import { academicContext } from '$lib/academic/context.svelte';
-import {
-	listAllEntityPages,
-	schoolSubjectsCatalogList,
-} from '$lib/api/entity-list-filters';
 import { familyFeedbackCommand, familyFeedbackQuery, familyFeedbackRequestId } from '$lib/api/family-feedback-client';
 import { mapFamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
-import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
-import { fetchStaffMembers } from '$lib/api/staff-data';
-import { fetchAllTeachers } from '$lib/api/teachers-data';
-import { authSession } from '$lib/auth/session.svelte';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
-type TeacherAssignmentRaw = components['schemas']['TeacherAssignment'];
-type SubjectRaw = components['schemas']['Subject'];
-type ClassSubjectRaw = components['schemas']['ClassSubject'];
-
-export interface FamilyFeedbackSlice {
-	campaigns: FamilyFeedbackCampaign[];
-	teachers: Teacher[];
-	staff: StaffMember[];
-	assignments: FamilyFeedbackAssignmentOption[];
-	subjects: SubjectRaw[];
-}
-
 function asRecordList(value: unknown): Record<string, unknown>[] {
 	if (Array.isArray(value)) {
 		return value.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object');
@@ -52,20 +32,6 @@ export async function listFamilyFeedbackCampaigns(client: SchoolClient): Promise
 		{},
 	);
 	return asRecordList(result).map(mapFamilyFeedbackCampaign).filter(campaign => campaign.id.length > 0);
-}
-
-export async function getFamilyFeedbackCampaign(
-	client: SchoolClient,
-	id: string,
-): Promise<FamilyFeedbackCampaign | null> {
-	const result = await familyFeedbackQuery<Record<string, unknown>>(
-		client,
-		'getFamilyFeedbackCampaign',
-		'get-family-feedback-campaign',
-		{ id },
-	);
-	const campaign = mapFamilyFeedbackCampaign(result ?? {});
-	return campaign.id.length > 0 ? campaign : null;
 }
 
 export async function previewFamilyFeedbackAudience(
@@ -126,66 +92,37 @@ export async function getFamilyFeedbackAggregateReview(
 	};
 }
 
-function assignmentLabel(
-	assignment: TeacherAssignmentRaw,
-	teachers: readonly Teacher[],
-	classSubjects: readonly ClassSubjectRaw[],
-	subjects: readonly SubjectRaw[],
-): string {
-	const teacher = teachers.find(entry => entry.id === assignment.teacherId);
-	const classSubject = classSubjects.find(entry => entry.id === assignment.classSubjectId);
-	const subject = subjects.find(entry => entry.id === classSubject?.subjectId);
-	const className = academicContext.classes.find(entry => entry.id === (assignment.classGroupId ?? classSubject?.classGroupId))?.name;
-	return [teacher?.name, subject?.name, className].filter(Boolean).join(' · ') || assignment.id;
+export function feedbackClassNames() {
+	return new Map(academicContext.classes.map(group => [group.id, group.name]));
 }
 
-export async function loadFamilyFeedbackSlice(client: SchoolClient): Promise<FamilyFeedbackSlice> {
-	const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-	const academicYearId = academicContext.yearId || academicContext.years[0]?.id || '';
-	if (!schoolId) {
-		return { campaigns: [], teachers: [], staff: [], assignments: [], subjects: [] };
-	}
+export function feedbackAssignmentTitle(id: string, label: FamilyFeedbackAssignmentLabel | undefined, classes: ReadonlyMap<string, string>) {
+	if (!label)
+		return id;
+	const className = label.classGroupId ? classes.get(label.classGroupId) : undefined;
+	return [label.teacherName, label.subjectName, className].filter(Boolean).join(' · ') || id;
+}
 
-	const [campaigns, teachers, staff, assignmentsRaw, subjects, classSubjects] = await Promise.all([
-		safeOptionalFetch(() => listFamilyFeedbackCampaigns(client), []),
-		academicYearId
-			? safeOptionalFetch(() => fetchAllTeachers(client, { schoolId, academicYearId }), [])
-			: Promise.resolve([]),
-		academicYearId
-			? safeOptionalFetch(() => fetchStaffMembers(client, { schoolId, academicYearId }), [])
-			: Promise.resolve([]),
-		academicYearId
-			? safeOptionalEntityList(() => listAllEntityPages(
-					query => client.entities.teacherAssignments.list(query),
-					{ baseQuery: { academicYearId } },
-				))
-			: Promise.resolve([]),
-		safeOptionalEntityList(() => listAllEntityPages(
-			query => client.entities.subjects.list(query),
-			{ baseQuery: schoolSubjectsCatalogList(schoolId) },
-		)),
-		safeOptionalEntityList(() => listAllEntityPages(
-			query => client.entities.classSubjects.list(query),
-			{ baseQuery: { schoolId } },
-		)),
-	]);
-	const assignments = (assignmentsRaw as TeacherAssignmentRaw[])
-		.filter(assignment => assignment.kind === 'subject' && assignment.status === 'active' && assignment.classSubjectId)
-		.map(assignment => ({
-			id: assignment.id,
-			teacherId: assignment.teacherId,
-			classSubjectId: assignment.classSubjectId,
-			classGroupId: assignment.classGroupId,
-			subjectId: classSubjects.find(entry => entry.id === assignment.classSubjectId)?.subjectId,
-			label: assignmentLabel(assignment, teachers, classSubjects as ClassSubjectRaw[], subjects as SubjectRaw[]),
-		}));
+export async function loadStaffFeedbackCampaigns(client: SchoolClient, campaignId?: string, signal?: AbortSignal): Promise<FamilyFeedbackCampaign[]> {
+	const academicYearId = academicContext.yearId || academicContext.years[0]?.id;
+	const { items } = await client.queries.getStaffFeedbackCampaigns({ academicYearId, campaignId }, { signal });
+	return items.map(row => ({ ...mapFamilyFeedbackCampaign(row), assignment: row.assignment, moderatorName: row.moderatorName }));
+}
 
+export async function loadFeedbackOptions(
+	client: SchoolClient,
+	input: { academicYearId: string; picker: FeedbackPicker | 'both'; q?: string; after?: string },
+	signal: AbortSignal,
+): Promise<FeedbackOptionsPage> {
+	const page = await client.queries.getStaffFeedbackOptions(input, { signal });
+	const classes = feedbackClassNames();
 	return {
-		campaigns,
-		teachers,
-		staff,
-		assignments,
-		subjects: subjects as SubjectRaw[],
+		...page,
+		assignments: page.assignments.map(({ id, teacherName, subjectName, classGroupId }) => {
+			const display = { teacherName: teacherName ?? undefined, subjectName: subjectName ?? undefined, classGroupId };
+			return { id, label: feedbackAssignmentTitle(id, display, classes), display };
+		}),
+		moderators: page.moderators.map(({ id, name }) => ({ id, label: name })),
 	};
 }
 

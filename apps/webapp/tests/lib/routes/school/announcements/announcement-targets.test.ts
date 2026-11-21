@@ -79,7 +79,7 @@ describe('announcement target labels', () => {
 	it('uses the school-wide kind label without an entity suffix', () => {
 		expect(resolveAnnouncementTargetLabel(target({ targetKind: 'school' }), {
 			academic: { classes: [], gradeLevels: [] },
-			detail: { students: [], guardians: [], staff: [] },
+			detail: { students: new Map(), guardians: new Map(), staff: new Map() },
 			labelForKind: kind => kind === 'school' ? 'All school' : kind,
 		})).toBe('All school');
 	});

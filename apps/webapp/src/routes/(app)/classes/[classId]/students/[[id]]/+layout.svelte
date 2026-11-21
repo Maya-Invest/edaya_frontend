@@ -2,7 +2,6 @@
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { authSession } from '$lib/auth/session.svelte';
 	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
 	import { appPath } from '$lib/navigation/app-navigation';
 	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
@@ -20,7 +19,7 @@
 	const detailTabs = createAndRegisterStudentDetailStates(() => classStudentsPage);
 
 	const classId = $derived($page.params.classId ?? '6a');
-	const scope = $derived(JSON.stringify([authSession.authUserId, authSession.schoolId, academicContext.scopeGeneration, authSession.grants]));
+	const scope = $derived(classStudentsPage.scopeKey());
 	let resolvedScope = $state(untrack(() => scope));
 	let requestedScope = untrack(() => scope);
 	const student = $derived(resolvedScope === scope ? classStudentsPage.selected : undefined);

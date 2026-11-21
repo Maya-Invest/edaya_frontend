@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Activity } from '$lib/types/school';
 	import type { Snippet } from 'svelte';
+	import type { ActivityView } from '../../activities-page.svelte';
 	import { kindStyle, kindLabelKey } from '$lib/components/school/shared/drawer-constants';
 	import DrawerFrame from '$lib/components/ui/DrawerFrame.svelte';
 	import { t } from '$lib/i18n';
@@ -14,7 +14,7 @@
 		onClose,
 		children,
 	}: {
-		activity?: Activity;
+		activity?: ActivityView;
 		loading?: boolean;
 		onClose: () => void;
 		children: Snippet;
@@ -39,7 +39,7 @@
 		</button>
 	</header>
 
-	<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+	<div data-activity-drawer-scroll class="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
 		{#if loading || !activity}
 			<div class="flex min-h-[12rem] items-center justify-center" role="status" aria-live="polite">
 				<LoaderCircle class="h-6 w-6 animate-spin text-primary" />

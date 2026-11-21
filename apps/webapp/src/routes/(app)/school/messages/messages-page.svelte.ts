@@ -13,6 +13,7 @@ type Summary = components['schemas']['ConversationsResponse']['items'][number];
 type Detail = components['schemas']['ConversationDetailResponse'];
 type ListInput = Omit<Parameters<ReturnType<typeof getBrowserSchoolClient>['queries']['listConversations']>[0], 'offset' | 'limit'>;
 const PAGE_SIZE = 25;
+const MAX_REFRESH_PAGE_SIZE = 100;
 export class MessagesPageState {
     readonly queryKey = messageQueryKey;
     items = $state<Summary[]>([]);
@@ -85,7 +86,8 @@ export class MessagesPageState {
         let unreadCount = 0;
         let exhausted = false;
         do {
-            const page = await getBrowserSchoolClient().queries.listConversations({ ...input, offset, limit: PAGE_SIZE });
+            const limit = Math.min(MAX_REFRESH_PAGE_SIZE, count - offset);
+            const page = await getBrowserSchoolClient().queries.listConversations({ ...input, offset, limit });
             if (!isCurrent())
                 throw new Error('Conversation list changed during refresh');
             items.push(...page.items);
@@ -210,10 +212,20 @@ export class MessagesPageState {
             this.error = '';
             if (detail?.messages.length) {
                 const through = detail.messages[detail.messages.length - 1].sequence;
-                await getBrowserSchoolClient().commands.markConversationRead({ conversationId: detail.conversation.id, throughSequence: through });
-                if (isCurrent()) {
-                    this.items = this.items.map(row => row.id === detail.conversation.id ? { ...row, unread: false } : row);
-                    this.unreadCount = Math.max(0, page.unreadCount - (detail.conversation.unread ? 1 : 0));
+                if (detail.conversation.unread)
+                    await getBrowserSchoolClient().commands.markConversationRead({ conversationId: detail.conversation.id, throughSequence: through });
+                if (!isCurrent())
+                    return;
+                const listed = page.items.find(row => row.id === detail.conversation.id);
+                if (listed?.unread && listed.lastSequence <= through) {
+                    this.items = this.items.map(row => row.id === listed.id ? { ...row, unread: false } : row);
+                    this.unreadCount = Math.max(0, page.unreadCount - 1);
+                }
+                else if (!listed && detail.conversation.unread && !page.exhausted && page.unreadCount > 0) {
+                    // A direct link can point beyond this window or outside the filter.
+                    const counts = await getBrowserSchoolClient().queries.listConversations({ ...this.listInput(), offset: 0, limit: 1 });
+                    if (isCurrent())
+                        this.unreadCount = counts.unreadCount;
                 }
             }
         }

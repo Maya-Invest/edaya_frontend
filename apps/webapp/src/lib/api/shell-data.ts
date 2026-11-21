@@ -11,7 +11,7 @@ import type {
 } from '$lib/types/school';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
 import { listAllEntityPages, schoolScopedEntityList, schoolWideEntityList } from '$lib/api/entity-list-filters';
-import { fetchSchoolById, mapSchoolFromApi } from '$lib/api/school-data';
+import { mapSchoolFromApi } from '$lib/api/school-data';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
@@ -109,9 +109,6 @@ async function safeAppShellCounts(
 		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
 			return emptyAppShellCounts();
 		}
-		if (error instanceof TypeError) {
-			return emptyAppShellCounts();
-		}
 		throw error;
 	}
 }
@@ -122,9 +119,6 @@ async function safeEntityList<T>(load: () => Promise<T[] | null | undefined>): P
 	}
 	catch (error) {
 		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-			return [];
-		}
-		if (error instanceof TypeError) {
 			return [];
 		}
 		throw error;
@@ -186,7 +180,11 @@ async function fetchSupplementalShellForSchool(
 		periodDefsRaw,
 		classGroupsRaw,
 	] = await Promise.all([
-		fetchSchoolById(client, schoolId),
+		client.entities.schools.get(schoolId).catch((error: unknown) => {
+			if (error instanceof ApiError && [401, 403, 404].includes(error.status))
+				return null;
+			throw error;
+		}),
 		safeEntityList(() => schoolCatalogPages(query => client.entities.academicYears.list(query), schoolId)),
 		safeEntityList(() => schoolCatalogPages(query => client.entities.academicPeriods.list(query), schoolId)),
 		safeEntityList(() => schoolCatalogPages(query => client.entities.gradeLevels.list(query), schoolId)),

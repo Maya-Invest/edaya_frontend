@@ -2,6 +2,7 @@
 	import type { GrantScope, ScopeGrain } from '$lib/api/grant-scopes';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { emptyGrantScope } from '$lib/api/grant-scopes';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { lang, t } from '$lib/i18n';
@@ -18,18 +19,29 @@
 	} = $props();
 
 	const data = new ScopeBuilderDataState();
+	const needsOptions = $derived(active && (grain === 'activity' || grain === 'subject') && scopes.some(scope => scope.kind === grain));
+	let retry = $state(0);
 	const allSelected = $derived(scopes.some(scope => scope.kind === 'all' && scope.grain === grain));
-	const parentOptions = $derived(grain === 'student'
-		? data.students
-		: grain === 'activity'
+	const parentOptions = $derived(grain === 'activity'
 		? data.activities
 		: grain === 'grade_level' || grain === 'subject'
 		? academicContext.gradeLevels
 		: academicContext.classes);
 
 	$effect(() => {
-		if (active)
-			void data.ensureLoaded();
+		const school = academicContext.schools[0]?.id;
+		const year = academicContext.yearId;
+		void retry;
+		void academicContext.scopeGeneration;
+		void authSession.authUserId;
+		void authSession.userId;
+		void authSession.grants;
+		data.reset();
+		if (!needsOptions || !school || (grain !== 'activity' && grain !== 'subject'))
+			return;
+		const controller = new AbortController();
+		void data.load(grain, school, year, controller.signal);
+		return () => controller.abort();
 	});
 
 	function replace(index: number, scope: GrantScope) {
@@ -96,8 +108,11 @@
 	{:else}
 		<p class="text-xs text-muted-foreground">{$t('roles.scopeClassRequired')}</p>
 	{/if}
-	{#if data.loading && !data.loaded}
+	{#if data.loading}
 		<div class="flex justify-center py-8" role="status"><LoaderCircle class="h-5 w-5 animate-spin text-primary" /></div>
+	{:else if data.failed}
+		<p role="alert" class="text-sm text-muted-foreground">{$t('dataState.errorDescription')}</p>
+		<button type="button" class="text-sm text-primary" onclick={() => retry++}>{$t('dataState.retry')}</button>
 	{:else if !allSelected || (grain === 'subject' && subjectClassRequired)}
 		{#each scopes as scope, index (index)}
 			<div class="space-y-3 rounded-collection border border-border p-3">
@@ -124,7 +139,7 @@
 							onchange={event => setSubject(index, event.currentTarget.value)}>
 							<option value="">{$t('roles.scopeAllSubjects')}</option>
 							{#each subjects as subject (subject.id)}
-								<option value={subject.id}>{catalogSubjectName(subject.name, $lang, subject.shortName)}</option>
+								<option value={subject.id}>{catalogSubjectName(subject.name, $lang)}</option>
 							{/each}
 						</SelectField>
 					</label>

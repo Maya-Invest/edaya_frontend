@@ -16,7 +16,7 @@
 		if (!live) {
 			return '';
 		}
-		const name = familyFeedbackPage.staff.find(entry => entry.id === live.moderatorStaffId)?.name;
+		const name = live.moderatorName;
 		return name ?? $t('familyFeedback.noModerator');
 	});
 	const fieldClass = 'min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm';

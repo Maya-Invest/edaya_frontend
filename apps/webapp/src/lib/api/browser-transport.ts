@@ -5,6 +5,7 @@ import { bearerFetch } from '$lib/auth/bearer-fetch';
 import { authSession } from '$lib/auth/session.svelte';
 import { lang } from '$lib/i18n';
 import { get } from 'svelte/store';
+import { directoryCache } from './directory-cache';
 import { parseApiResponse, resolveApiUrl } from './http';
 
 export function schoolRequestHeaders(yearId?: string, membership?: StaffSchoolMembership): Headers {
@@ -26,7 +27,7 @@ export function schoolRequestHeaders(yearId?: string, membership?: StaffSchoolMe
 
 export function createBrowserTransport(getYearId: () => string | undefined, membership?: StaffSchoolMembership): Transport {
 	return {
-		async request<T>(method: string, path: string, options?: { body?: unknown }): Promise<T> {
+		async request<T>(method: string, path: string, options?: { body?: unknown; signal?: AbortSignal }): Promise<T> {
 			const headers = schoolRequestHeaders(getYearId(), membership);
 			headers.set('Accept', 'application/json');
 			headers.set('Accept-Language', get(lang) === 'en' ? 'en-US' : 'fr-FR');
@@ -35,9 +36,20 @@ export function createBrowserTransport(getYearId: () => string | undefined, memb
 			}
 
 			const base = PUBLIC_API_URL;
-			const response = await bearerFetch(resolveApiUrl(base, path), {
+			const url = resolveApiUrl(base, path);
+			if (method === 'GET' && new URL(url).pathname === '/core/directory/students') {
+				const scope = JSON.stringify([authSession.authUserId, authSession.subjectId, authSession.grants, [...headers], base]);
+				return directoryCache.read<T>(scope, path, (etag) => {
+					const requestHeaders = new Headers(headers);
+					if (etag)
+						requestHeaders.set('If-None-Match', etag);
+					return bearerFetch(url, { method, headers: requestHeaders, signal: options?.signal, cache: 'no-store' });
+				});
+			}
+			const response = await bearerFetch(url, {
 				method,
 				headers,
+				signal: options?.signal,
 				body: options?.body === undefined ? undefined : JSON.stringify(options.body),
 			});
 
